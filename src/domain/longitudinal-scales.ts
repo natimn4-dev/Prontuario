@@ -8,6 +8,8 @@ export interface LongitudinalScalePoint {
   scaleVersion: string;
   score: number | null;
   appliedAt: Date | string;
+  consultationOccurredAt?: Date | string;
+  consultationCreatedAt?: Date | string;
   isBaseline?: boolean;
 }
 
@@ -62,7 +64,11 @@ export function buildScaleEvolution(points: readonly LongitudinalScalePoint[]) {
   if (points.length === 0) {
     return { current: null, previous: null, baseline: null, vsPrevious: compareScalePoints(null, null), vsBaseline: compareScalePoints(null, null) };
   }
-  const sorted = [...points].sort((a,b) => new Date(a.appliedAt).getTime() - new Date(b.appliedAt).getTime());
+  const sorted = [...points].sort((a, b) =>
+    new Date(a.consultationOccurredAt ?? a.appliedAt).getTime() - new Date(b.consultationOccurredAt ?? b.appliedAt).getTime()
+    || new Date(a.consultationCreatedAt ?? a.appliedAt).getTime() - new Date(b.consultationCreatedAt ?? b.appliedAt).getTime()
+    || new Date(a.appliedAt).getTime() - new Date(b.appliedAt).getTime()
+    || a.consultationId.localeCompare(b.consultationId));
   const current = sorted.at(-1)!;
   const previous = sorted.length > 1 ? sorted.at(-2)! : null;
   const baseline = sorted.find((point) => point.isBaseline) ?? sorted[0]!;

@@ -163,7 +163,10 @@ export function AgaReportPreview({ consultationId }: { consultationId: string })
   }
 
   return (
-    <section className="report-workspace">
+    <section
+      className="report-workspace"
+      data-clinical-review={clinicalReviewConfirmed ? "confirmed" : "pending"}
+    >
       <div className="report-toolbar no-print" aria-label="Ações do relatório">
         <div>
           <p className="eyebrow">Relatório compartilhado de cuidado</p>
@@ -184,6 +187,10 @@ export function AgaReportPreview({ consultationId }: { consultationId: string })
       </div>
 
       {error ? <p className="field-error no-print" role="alert">{error}</p> : null}
+
+      <p className="print-review-blocker">
+        Relatório não liberado para impressão — revisão clínica pendente.
+      </p>
 
       {generated ? (
         <>

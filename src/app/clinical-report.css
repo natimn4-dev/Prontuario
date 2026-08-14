@@ -107,6 +107,10 @@
   white-space: nowrap;
 }
 
+.print-review-blocker {
+  display: none;
+}
+
 .care-report {
   color: var(--care-ink);
   background: var(--care-paper);
@@ -542,6 +546,27 @@
   body {
     font-size: 11pt;
     line-height: 1.4;
+  }
+
+  .consultation-shell > * {
+    display: none !important;
+  }
+
+  .consultation-shell > .report-workspace {
+    display: block !important;
+  }
+
+  .report-workspace[data-clinical-review="pending"] > * {
+    display: none !important;
+  }
+
+  .report-workspace[data-clinical-review="pending"] > .print-review-blocker {
+    display: block !important;
+    padding: 12mm;
+    border: 2px solid #5b1f24;
+    color: #5b1f24;
+    font-size: 14pt;
+    font-weight: 700;
   }
 
   .care-report {
