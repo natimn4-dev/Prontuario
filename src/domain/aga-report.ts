@@ -4,6 +4,12 @@ import { splitProblems, type ClinicalProblem } from "./problems.ts";
 import { SCALE_CATALOG, scaleCatalogEntry } from "./scale-catalog.ts";
 
 export type AgaReportConsultationStatus = "DRAFT" | "IN_REVIEW" | "FINALIZED";
+export type AgaScaleTrend =
+  | "favorable"
+  | "unfavorable"
+  | "stable"
+  | "not-comparable"
+  | "insufficient-data";
 
 export interface AgaCollectedDatum {
   field: string;
@@ -27,12 +33,17 @@ export interface AgaScaleReportSection {
     classification?: string;
   };
   interpretation?: string;
+  clinicalColor?: string;
   relatedProblemProposals: { title: string; type: "CLINICAL" | "GERIATRIC" }[];
   interventionSuggestions: AgaInterventionSuggestion[];
   evolution: {
     previous: number | null;
+    previousVersion: string | null;
     baseline: number | null;
+    baselineVersion: string;
     current: number | null;
+    currentVersion: string;
+    trend: AgaScaleTrend;
     vsPrevious: string;
     vsBaseline: string;
   };
@@ -44,7 +55,7 @@ export interface AgaScaleReportSection {
 }
 
 export interface AgaReportModel {
-  schemaVersion: "1.0";
+  schemaVersion: "1.1";
   patientId: string;
   consultationId: string;
   consultationStatus: AgaReportConsultationStatus;
@@ -55,6 +66,26 @@ export interface AgaReportModel {
   assessedScales: AgaScaleReportSection[];
   notAssessedScaleCodes: string[];
   alerts: { severity: string; message: string }[];
+  changeSummary: {
+    headline: string;
+    narrative: string[];
+    counts: {
+      favorable: number;
+      stable: number;
+      unfavorable: number;
+      notComparable: number;
+      insufficientData: number;
+      urgentAlerts: number;
+    };
+  };
+  carePlan: {
+    now: string[];
+    mediumTerm: string[];
+    caregiver: string[];
+    referrals: string[];
+    contact: string[];
+    urgent: string[];
+  };
 }
 
 function displayCollectedValue(value: unknown): string | null {
@@ -102,7 +133,7 @@ export function buildAgaReportModel(input: {
   const assessedCodes = new Set(summary.cards.map((card) => card.scaleId));
 
   return {
-    schemaVersion: "1.0",
+    schemaVersion: "1.1",
     patientId: input.patientId,
     consultationId: input.consultationId,
     consultationStatus: input.consultationStatus,
@@ -133,6 +164,7 @@ export function buildAgaReportModel(input: {
           classification: card.current.classification,
         },
         interpretation: card.current.interpretation,
+        clinicalColor: card.current.color,
         relatedProblemProposals: relatedProposals,
         interventionSuggestions: interventionTexts(card).map((text) => ({
           text,
@@ -140,8 +172,12 @@ export function buildAgaReportModel(input: {
         })),
         evolution: {
           previous: card.vsPrevious.fromScore,
+          previousVersion: card.previous?.scaleVersion ?? null,
           baseline: card.baseline.score,
+          baselineVersion: card.baseline.scaleVersion,
           current: card.current.score,
+          currentVersion: card.current.scaleVersion,
+          trend: card.vsPrevious.trend,
           vsPrevious: card.trendLabel,
           vsBaseline: card.vsBaseline.trend,
         },
@@ -157,6 +193,19 @@ export function buildAgaReportModel(input: {
       severity: alert.severity,
       message: alert.message,
     })),
+    changeSummary: {
+      headline: summary.headline,
+      narrative: [...summary.narrative],
+      counts: { ...summary.counts },
+    },
+    carePlan: {
+      now: [...summary.combinedPlan.agora],
+      mediumTerm: [...summary.combinedPlan.medio],
+      caregiver: [...summary.combinedPlan.cuidador],
+      referrals: [...summary.combinedPlan.encaminhamentos],
+      contact: [...summary.combinedPlan.contato],
+      urgent: [...summary.combinedPlan.urgencia],
+    },
   };
 }
 
@@ -164,22 +213,30 @@ function list(items: readonly string[]): string {
   return items.length > 0 ? items.map((item) => `- ${item}`).join("\n") : "- sem dados registrados";
 }
 
+function carePlanBlock(title: string, items: readonly string[]): string[] {
+  return ["", title, list(items)];
+}
+
 export function renderAgaReportText(model: AgaReportModel): string {
   const blocks = [
-    `RELATÓRIO DA AVALIAÇÃO GERIÁTRICA AMPLA — ${model.patientName}`,
+    `RELATÓRIO DA AVALIAÇÃO GERIÁTRICA AMPLA — LONGITUDINAL — ${model.patientName}`,
     `Consulta: ${model.consultationId} · Estado: ${model.consultationStatus}`,
+    "",
+    "RESUMO LONGITUDINAL",
+    model.changeSummary.headline,
+    list(model.changeSummary.narrative),
   ];
   if (model.draftContext) {
-    blocks.push("ATENÇÃO: relatório gerado antes da finalização da consulta.");
+    blocks.push("", "ATENÇÃO: relatório gerado antes da finalização da consulta.");
   }
 
   blocks.push(
     "",
     "PROBLEMAS CLÍNICOS",
-    list(model.clinicalProblems.map((problem) => problem.title)),
+    list(model.clinicalProblems.map((problem) => `${problem.title} [${problem.status}]`)),
     "",
     "PROBLEMAS GERIÁTRICOS",
-    list(model.geriatricProblems.map((problem) => problem.title)),
+    list(model.geriatricProblems.map((problem) => `${problem.title} [${problem.status}]`)),
   );
 
   for (const scale of model.assessedScales) {
@@ -190,13 +247,21 @@ export function renderAgaReportText(model: AgaReportModel): string {
       `Resultado/pontuação: ${scale.result.scoreText ?? scale.result.score ?? "sem pontuação registrada"}`,
       `Classificação: ${scale.result.classification ?? "sem classificação registrada"}`,
       `Interpretação: ${scale.interpretation ?? "sem interpretação registrada"}`,
+      `Trajetória: baseline ${scale.evolution.baseline ?? "—"} (v${scale.evolution.baselineVersion}); anterior ${scale.evolution.previous ?? "—"}${scale.evolution.previousVersion ? ` (v${scale.evolution.previousVersion})` : ""}; atual ${scale.evolution.current ?? "—"} (v${scale.evolution.currentVersion}); ${scale.evolution.vsPrevious}`,
       `Problema relacionado (proposta): ${scale.relatedProblemProposals.map((problem) => `[${problem.type}] ${problem.title}`).join("; ") || "nenhum proposto"}`,
-      `Evolução: atual ${scale.evolution.current ?? "—"}; anterior ${scale.evolution.previous ?? "—"}; baseline ${scale.evolution.baseline ?? "—"}; ${scale.evolution.vsPrevious}`,
       `Fonte/status: ${scale.source.status}${scale.source.citation ? ` · ${scale.source.citation}` : ""}`,
       "Intervenções/sugestões pendentes de revisão médica:",
       list(scale.interventionSuggestions.map((suggestion) => suggestion.text)),
     );
   }
+
+  blocks.push("", "PLANO DE CUIDADO — SUGESTÕES PENDENTES DE REVISÃO MÉDICA");
+  blocks.push(...carePlanBlock("Agora", model.carePlan.now));
+  blocks.push(...carePlanBlock("Médio prazo", model.carePlan.mediumTerm));
+  blocks.push(...carePlanBlock("Família/cuidador", model.carePlan.caregiver));
+  blocks.push(...carePlanBlock("Encaminhamentos", model.carePlan.referrals));
+  blocks.push(...carePlanBlock("Quando entrar em contato", model.carePlan.contact));
+  blocks.push(...carePlanBlock("Urgência", model.carePlan.urgent));
 
   blocks.push("", "ALERTAS VISÍVEIS", list(model.alerts.map((alert) => `[${alert.severity}] ${alert.message}`)));
   return blocks.join("\n");
