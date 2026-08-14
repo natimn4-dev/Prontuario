@@ -12,7 +12,8 @@ const consultations = [
 const assessments = [
   { patientId: "p1", consultationId: "baseline", scaleCode: "barthel", scaleVersion: "1.0", score: 10, appliedAt: "2026-01-01", isBaseline: true },
   { patientId: "p1", consultationId: "consultation-a", scaleCode: "barthel", scaleVersion: "1.0", score: 20, appliedAt: "2026-03-01" },
-  { patientId: "p1", consultationId: "consultation-b", scaleCode: "barthel", scaleVersion: "1.0", score: 30, appliedAt: "2026-06-01" },
+  { patientId: "p1", consultationId: "consultation-b", scaleCode: "barthel", scaleVersion: "1.0", score: 25, appliedAt: "2026-06-01T09:00:00Z" },
+  { patientId: "p1", consultationId: "consultation-b", scaleCode: "barthel", scaleVersion: "1.0", score: 30, appliedAt: "2026-06-01T10:00:00Z" },
 ];
 
 const problems = [

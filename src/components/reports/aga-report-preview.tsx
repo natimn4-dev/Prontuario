@@ -57,6 +57,10 @@ function displayPoint(value: number | null, version: string | null): string {
   return version ? `${score} (v${version})` : score;
 }
 
+function displayAssessmentDate(value: string): string {
+  return new Intl.DateTimeFormat("pt-BR", { timeZone: "UTC" }).format(new Date(value));
+}
+
 function CareList({ title, items }: { title: string; items: readonly string[] }) {
   if (items.length === 0) return null;
   return (
@@ -74,7 +78,7 @@ function ScaleTable({ scales }: { scales: AgaScaleReportSection[] }) {
         <thead>
           <tr>
             <th scope="col">Instrumento</th>
-            <th scope="col">Resultado atual</th>
+            <th scope="col">Resultado</th>
             <th scope="col">Trajetória</th>
             <th scope="col">Interpretação registrada</th>
           </tr>
@@ -89,13 +93,23 @@ function ScaleTable({ scales }: { scales: AgaScaleReportSection[] }) {
               <td>
                 <strong>{displayResult(scale)}</strong>
                 <span>{scale.result.classification ?? "Sem classificação registrada"}</span>
+                <span className="scale-assessment-status">
+                  {scale.assessedInTargetConsultation
+                    ? "Avaliado nesta consulta"
+                    : "Último valor conhecido — não avaliado nesta consulta"}
+                </span>
+                {!scale.assessedInTargetConsultation ? (
+                  <span>Consulta {scale.lastKnown.consultationId} · {displayAssessmentDate(scale.lastKnown.appliedAt)}</span>
+                ) : null}
               </td>
               <td>
                 <span className={`trend-badge trend-${scale.evolution.trend}`}>
                   {TREND_LABEL[scale.evolution.trend]}
                 </span>
                 <span className="trajectory">
-                  baseline {displayPoint(scale.evolution.baseline, scale.evolution.baselineVersion)} → anterior {displayPoint(scale.evolution.previous, scale.evolution.previousVersion)} → atual {displayPoint(scale.evolution.current, scale.evolution.currentVersion)}
+                  baseline {displayPoint(scale.evolution.baseline, scale.evolution.baselineVersion)} → anterior {displayPoint(scale.evolution.previous, scale.evolution.previousVersion)} → {scale.assessedInTargetConsultation
+                    ? `atual ${displayPoint(scale.evolution.current, scale.evolution.currentVersion)}`
+                    : `último conhecido ${displayPoint(scale.lastKnown.score, scale.lastKnown.version)}`}
                 </span>
               </td>
               <td>{scale.interpretation ?? "Sem interpretação registrada"}</td>

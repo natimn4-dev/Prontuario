@@ -46,7 +46,7 @@ test("v8 expõe resumo longitudinal, tendência e plano consolidado sem mudar re
   assert.ok(report.carePlan.now.length > 0);
   const text = renderAgaReportText(report);
   assert.match(text, /RESUMO LONGITUDINAL/);
-  assert.match(text, /Dado coletado: sf1=2/);
+  assert.match(text, /Dado coletado nesta consulta: sf1=2/);
   assert.match(text, /Fonte\/status:/);
   assert.match(text, /SUGESTÕES PENDENTES DE REVISÃO MÉDICA/);
 });

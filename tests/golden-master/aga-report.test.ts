@@ -22,11 +22,56 @@ test("relatório separa dado, resultado, interpretação, proposta, intervençã
   const section = report.assessedScales[0]!;
   assert.deepEqual(section.collectedData, [{ field: "sf1", value: "2" }]);
   assert.equal(section.result.score, 5);
+  assert.equal(section.assessedInTargetConsultation, true);
   assert.equal(section.interpretation, "Sarcopenia provável.");
   assert.ok(section.relatedProblemProposals.length > 0);
   assert.ok(section.interventionSuggestions.every((item) => item.reviewStatus === "pending-medical-review"));
   assert.equal(section.evolution.baseline, 3);
   assert.equal(report.geriatricProblems[0]?.status, "RESOLVED");
+});
+
+test("relatório distingue último valor conhecido quando escala não foi reaplicada", () => {
+  const report = buildAgaReportModel({
+    patientId: "p1",
+    consultationId: "consultation-b",
+    consultationStatus: "IN_REVIEW",
+    patientName: "Paciente Sintético",
+    longitudinalProblems: [],
+    longitudinalAssessments: [
+      { patientId: "p1", consultationId: "baseline", scaleCode: "barthel", scaleVersion: "1", score: 80, color: "verde", appliedAt: "2026-01-01", isBaseline: true },
+      { patientId: "p1", consultationId: "consultation-a", scaleCode: "barthel", scaleVersion: "1", score: 60, color: "vermelho", appliedAt: "2026-03-01" },
+    ],
+  });
+  const scale = report.assessedScales[0]!;
+
+  assert.equal(scale.assessedInTargetConsultation, false);
+  assert.equal(scale.lastKnown.consultationId, "consultation-a");
+  assert.equal(scale.lastKnown.score, 60);
+  assert.equal(scale.evolution.current, null);
+  assert.ok(report.notAssessedScaleCodes.includes("barthel"));
+  assert.match(renderAgaReportText(report), /Último valor conhecido — não avaliado nesta consulta/);
+  assert.doesNotMatch(renderAgaReportText(report), /atual 60/);
+  assert.deepEqual(scale.interventionSuggestions, []);
+  assert.deepEqual(scale.relatedProblemProposals, []);
+});
+
+test("alerta urgente histórico não é recriado sem reaplicação na consulta alvo", () => {
+  const report = buildAgaReportModel({
+    patientId: "p1",
+    consultationId: "consultation-b",
+    consultationStatus: "IN_REVIEW",
+    patientName: "Paciente Sintético",
+    longitudinalProblems: [],
+    longitudinalAssessments: [
+      { patientId: "p1", consultationId: "consultation-a", scaleCode: "cam", scaleVersion: "1", score: 1, scoreText: "Positivo", color: "vermelho", answers: { c1: 1, c2: 1, c3: 1 }, appliedAt: "2026-03-01", isBaseline: true },
+    ],
+  });
+
+  assert.equal(report.assessedScales[0]?.assessedInTargetConsultation, false);
+  assert.deepEqual(report.alerts, []);
+  assert.equal(report.changeSummary.counts.urgentAlerts, 0);
+  assert.deepEqual(report.carePlan.urgent, []);
+  assert.equal(report.assessedScales[0]?.lastKnown.score, 1);
 });
 
 test("relatório sem escala não inventa pontuação ou interpretação", () => {

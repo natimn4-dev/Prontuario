@@ -21,6 +21,40 @@ export interface ScaleComparison {
   reason?: string;
 }
 
+function timestamp(value: Date | string | undefined): number {
+  return value === undefined ? Number.NEGATIVE_INFINITY : new Date(value).getTime();
+}
+
+/**
+ * Mantém a rastreabilidade dos registros persistidos fora desta projeção e
+ * escolhe somente o ponto efetivo mais recente de cada consulta.
+ */
+export function effectiveScalePoints(
+  points: readonly LongitudinalScalePoint[],
+): LongitudinalScalePoint[] {
+  if (points.length === 0) return [];
+
+  const patientIds = new Set(points.map((point) => point.patientId));
+  const scaleCodes = new Set(points.map((point) => point.scaleCode));
+  if (patientIds.size !== 1 || scaleCodes.size !== 1) {
+    throw new Error("Evolução de escala não pode misturar pacientes ou instrumentos diferentes.");
+  }
+
+  const byConsultation = new Map<string, LongitudinalScalePoint>();
+  for (const point of points) {
+    const existing = byConsultation.get(point.consultationId);
+    if (!existing || timestamp(point.appliedAt) >= timestamp(existing.appliedAt)) {
+      byConsultation.set(point.consultationId, {
+        ...point,
+        isBaseline: Boolean(point.isBaseline || existing?.isBaseline),
+      });
+    } else if (point.isBaseline && !existing.isBaseline) {
+      byConsultation.set(point.consultationId, { ...existing, isBaseline: true });
+    }
+  }
+  return [...byConsultation.values()];
+}
+
 export const SCALE_DIRECTIONS: Record<string, ScaleDirection> = {
   ecog: "higher-worse",
   crash_mna_sf: "higher-worse",
@@ -64,7 +98,7 @@ export function buildScaleEvolution(points: readonly LongitudinalScalePoint[]) {
   if (points.length === 0) {
     return { current: null, previous: null, baseline: null, vsPrevious: compareScalePoints(null, null), vsBaseline: compareScalePoints(null, null) };
   }
-  const sorted = [...points].sort((a, b) =>
+  const sorted = effectiveScalePoints(points).sort((a, b) =>
     new Date(a.consultationOccurredAt ?? a.appliedAt).getTime() - new Date(b.consultationOccurredAt ?? b.appliedAt).getTime()
     || new Date(a.consultationCreatedAt ?? a.appliedAt).getTime() - new Date(b.consultationCreatedAt ?? b.appliedAt).getTime()
     || new Date(a.appliedAt).getTime() - new Date(b.appliedAt).getTime()

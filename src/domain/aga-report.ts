@@ -26,6 +26,13 @@ export interface AgaScaleReportSection {
   version: string;
   name: string;
   dimension: string;
+  assessedInTargetConsultation: boolean;
+  lastKnown: {
+    consultationId: string;
+    appliedAt: string;
+    score: number | null;
+    version: string;
+  };
   collectedData: AgaCollectedDatum[];
   result: {
     score: number | null;
@@ -42,7 +49,7 @@ export interface AgaScaleReportSection {
     baseline: number | null;
     baselineVersion: string;
     current: number | null;
-    currentVersion: string;
+    currentVersion: string | null;
     trend: AgaScaleTrend;
     vsPrevious: string;
     vsBaseline: string;
@@ -122,15 +129,21 @@ export function buildAgaReportModel(input: {
     throw new Error("Problema de outro paciente detectado no relatório AGA.");
   }
 
-  const summary = buildClinicalChangeSummary(input.longitudinalAssessments);
+  const summary = buildClinicalChangeSummary(input.longitudinalAssessments, {
+    targetConsultationId: input.consultationId,
+  });
   if (summary.patientId && summary.patientId !== input.patientId) {
     throw new Error("Avaliação de outro paciente detectada no relatório AGA.");
   }
 
-  const currentAssessments = summary.cards.map((card) => card.current);
+  const currentAssessments = summary.cards
+    .filter((card) => card.assessedInTargetConsultation)
+    .map((card) => card.current);
   const proposals = proposeProblemsFromAssessments(currentAssessments);
   const problems = splitProblems([...input.longitudinalProblems]);
-  const assessedCodes = new Set(summary.cards.map((card) => card.scaleId));
+  const assessedCodes = new Set(summary.cards
+    .filter((card) => card.assessedInTargetConsultation)
+    .map((card) => card.scaleId));
 
   return {
     schemaVersion: "1.1",
@@ -157,6 +170,13 @@ export function buildAgaReportModel(input: {
         version: card.scaleVersion,
         name: card.name,
         dimension: card.dimension,
+        assessedInTargetConsultation: card.assessedInTargetConsultation,
+        lastKnown: {
+          consultationId: card.current.consultationId,
+          appliedAt: new Date(card.current.appliedAt).toISOString(),
+          score: card.current.score,
+          version: card.current.scaleVersion,
+        },
         collectedData,
         result: {
           score: card.current.score,
@@ -165,8 +185,8 @@ export function buildAgaReportModel(input: {
         },
         interpretation: card.current.interpretation,
         clinicalColor: card.current.color,
-        relatedProblemProposals: relatedProposals,
-        interventionSuggestions: interventionTexts(card).map((text) => ({
+        relatedProblemProposals: card.assessedInTargetConsultation ? relatedProposals : [],
+        interventionSuggestions: (card.assessedInTargetConsultation ? interventionTexts(card) : []).map((text) => ({
           text,
           reviewStatus: "pending-medical-review" as const,
         })),
@@ -175,8 +195,8 @@ export function buildAgaReportModel(input: {
           previousVersion: card.previous?.scaleVersion ?? null,
           baseline: card.baseline.score,
           baselineVersion: card.baseline.scaleVersion,
-          current: card.current.score,
-          currentVersion: card.current.scaleVersion,
+          current: card.assessedInTargetConsultation ? card.current.score : null,
+          currentVersion: card.assessedInTargetConsultation ? card.current.scaleVersion : null,
           trend: card.vsPrevious.trend,
           vsPrevious: card.trendLabel,
           vsBaseline: card.vsBaseline.trend,
@@ -240,14 +260,23 @@ export function renderAgaReportText(model: AgaReportModel): string {
   );
 
   for (const scale of model.assessedScales) {
+    const resultLabel = scale.assessedInTargetConsultation
+      ? "Avaliado nesta consulta"
+      : `Último valor conhecido — não avaliado nesta consulta (consulta ${scale.lastKnown.consultationId}, ${scale.lastKnown.appliedAt.slice(0, 10)})`;
+    const finalPoint = scale.assessedInTargetConsultation
+      ? `atual ${scale.evolution.current ?? "—"}${scale.evolution.currentVersion ? ` (v${scale.evolution.currentVersion})` : ""}`
+      : `último conhecido ${scale.lastKnown.score ?? "—"} (v${scale.lastKnown.version}; consulta ${scale.lastKnown.consultationId})`;
+    const collectedDataLabel = scale.assessedInTargetConsultation
+      ? "Dado coletado nesta consulta"
+      : "Dados do último registro conhecido";
     blocks.push(
       "",
       `${scale.name} (${scale.code} · versão ${scale.version})`,
-      `Dado coletado: ${scale.collectedData.length > 0 ? scale.collectedData.map((item) => `${item.field}=${item.value}`).join("; ") : "sem respostas detalhadas registradas"}`,
-      `Resultado/pontuação: ${scale.result.scoreText ?? scale.result.score ?? "sem pontuação registrada"}`,
+      `${collectedDataLabel}: ${scale.collectedData.length > 0 ? scale.collectedData.map((item) => `${item.field}=${item.value}`).join("; ") : "sem respostas detalhadas registradas"}`,
+      `${resultLabel}: ${scale.result.scoreText ?? scale.result.score ?? "sem pontuação registrada"}`,
       `Classificação: ${scale.result.classification ?? "sem classificação registrada"}`,
       `Interpretação: ${scale.interpretation ?? "sem interpretação registrada"}`,
-      `Trajetória: baseline ${scale.evolution.baseline ?? "—"} (v${scale.evolution.baselineVersion}); anterior ${scale.evolution.previous ?? "—"}${scale.evolution.previousVersion ? ` (v${scale.evolution.previousVersion})` : ""}; atual ${scale.evolution.current ?? "—"} (v${scale.evolution.currentVersion}); ${scale.evolution.vsPrevious}`,
+      `Trajetória: baseline ${scale.evolution.baseline ?? "—"} (v${scale.evolution.baselineVersion}); anterior ${scale.evolution.previous ?? "—"}${scale.evolution.previousVersion ? ` (v${scale.evolution.previousVersion})` : ""}; ${finalPoint}; ${scale.evolution.vsPrevious}`,
       `Problema relacionado (proposta): ${scale.relatedProblemProposals.map((problem) => `[${problem.type}] ${problem.title}`).join("; ") || "nenhum proposto"}`,
       `Fonte/status: ${scale.source.status}${scale.source.citation ? ` · ${scale.source.citation}` : ""}`,
       "Intervenções/sugestões pendentes de revisão médica:",

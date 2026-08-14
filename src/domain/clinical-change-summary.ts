@@ -3,6 +3,7 @@ import { clinicalAlertsFor, type ClinicalAlert } from "./clinical-alerts.ts";
 import {
   buildCombinedPlan,
   interventionFor,
+  emptyInterventionPlan,
   type InterventionPlan,
 } from "./interventions.ts";
 import {
@@ -36,6 +37,7 @@ export interface ScaleChangeCard {
   priority: number;
   intervention: InterventionPlan;
   alerts: ClinicalAlert[];
+  assessedInTargetConsultation: boolean;
 }
 
 export interface ChangeSummaryCounts {
@@ -113,6 +115,7 @@ function makeScaleResult(point: LongitudinalAssessment): Pick<ScaleResult, "scor
 
 export function buildClinicalChangeSummary(
   assessments: readonly LongitudinalAssessment[],
+  options: { targetConsultationId?: string } = {},
 ): ClinicalChangeSummary {
   if (assessments.length === 0) {
     return {
@@ -146,12 +149,18 @@ export function buildClinicalChangeSummary(
     const evolution = buildScaleEvolution(points);
     if (!evolution.current || !evolution.baseline) continue;
     const current = evolution.current as LongitudinalAssessment;
-    const alerts = clinicalAlertsFor(scaleId, {
-      answers: current.answers,
-      result: makeScaleResult(current),
-    });
+    const assessedInTargetConsultation = options.targetConsultationId === undefined
+      || current.consultationId === options.targetConsultationId;
+    const alerts = assessedInTargetConsultation
+      ? clinicalAlertsFor(scaleId, {
+          answers: current.answers,
+          result: makeScaleResult(current),
+        })
+      : [];
     const metadata = scaleCatalogEntry(scaleId);
-    const intervention = interventionFor(scaleId, current.color ?? "cinza");
+    const intervention = assessedInTargetConsultation
+      ? interventionFor(scaleId, current.color ?? "cinza")
+      : emptyInterventionPlan();
     cards.push({
       scaleId,
       scaleVersion: current.scaleVersion,
@@ -164,9 +173,12 @@ export function buildClinicalChangeSummary(
       vsPrevious: evolution.vsPrevious,
       vsBaseline: evolution.vsBaseline,
       trendLabel: trendLabel(evolution.vsPrevious.trend),
-      priority: priorityFor({ color: current.color, trend: evolution.vsPrevious.trend, alerts }),
+      priority: assessedInTargetConsultation
+        ? priorityFor({ color: current.color, trend: evolution.vsPrevious.trend, alerts })
+        : 8,
       intervention,
       alerts,
+      assessedInTargetConsultation,
     });
   }
 
@@ -176,15 +188,15 @@ export function buildClinicalChangeSummary(
   const urgentAlerts = allAlerts.filter((alert) => alert.severity === "urgent");
   const attentionAlerts = allAlerts.filter((alert) => alert.severity === "attention");
   const counts: ChangeSummaryCounts = {
-    favorable: cards.filter((card) => card.vsPrevious.trend === "favorable").length,
-    stable: cards.filter((card) => card.vsPrevious.trend === "stable").length,
-    unfavorable: cards.filter((card) => card.vsPrevious.trend === "unfavorable").length,
-    notComparable: cards.filter((card) => card.vsPrevious.trend === "not-comparable").length,
-    insufficientData: cards.filter((card) => card.vsPrevious.trend === "insufficient-data").length,
+    favorable: cards.filter((card) => card.assessedInTargetConsultation && card.vsPrevious.trend === "favorable").length,
+    stable: cards.filter((card) => card.assessedInTargetConsultation && card.vsPrevious.trend === "stable").length,
+    unfavorable: cards.filter((card) => card.assessedInTargetConsultation && card.vsPrevious.trend === "unfavorable").length,
+    notComparable: cards.filter((card) => card.assessedInTargetConsultation && card.vsPrevious.trend === "not-comparable").length,
+    insufficientData: cards.filter((card) => card.assessedInTargetConsultation && card.vsPrevious.trend === "insufficient-data").length,
     urgentAlerts: urgentAlerts.length,
   };
 
-  const currentPlanInputs = cards.map((card) => ({
+  const currentPlanInputs = cards.filter((card) => card.assessedInTargetConsultation).map((card) => ({
     scaleId: card.scaleId,
     color: card.current.color ?? "cinza" as ClinicalColor,
   }));
@@ -196,6 +208,7 @@ export function buildClinicalChangeSummary(
   if (counts.stable) headlineParts.push(`${counts.stable} estabilidade(s)`);
   if (counts.urgentAlerts) headlineParts.push(`${counts.urgentAlerts} alerta(s) urgente(s)`);
 
+  const assessedCards = cards.filter((card) => card.assessedInTargetConsultation);
   return {
     patientId,
     cards,
@@ -203,7 +216,11 @@ export function buildClinicalChangeSummary(
     urgentAlerts,
     attentionAlerts,
     combinedPlan,
-    headline: headlineParts.length > 0 ? headlineParts.join(" · ") : "Sem mudança numérica classificável.",
-    narrative: cards.map(narrativeFor).filter((item): item is string => Boolean(item)),
+    headline: headlineParts.length > 0
+      ? headlineParts.join(" · ")
+      : assessedCards.length === 0 && cards.length > 0
+        ? "Nenhuma escala reaplicada nesta consulta; últimos valores conhecidos preservados para contexto longitudinal."
+        : "Sem mudança numérica classificável.",
+    narrative: assessedCards.map(narrativeFor).filter((item): item is string => Boolean(item)),
   };
 }

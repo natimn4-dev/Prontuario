@@ -390,6 +390,12 @@
   color: var(--care-muted);
 }
 
+.clinical-table .scale-assessment-status {
+  margin-top: 6px;
+  color: var(--care-ink-soft);
+  font-weight: 700;
+}
+
 .trend-badge {
   width: fit-content;
   margin-bottom: 6px;

@@ -36,3 +36,29 @@ test("evolução compara atual com anterior e baseline explicitamente", () => {
   assert.equal(result.vsPrevious.trend, "unfavorable");
   assert.equal(result.vsBaseline.delta, -20);
 });
+
+test("consolida gravações da mesma consulta antes de escolher anterior e atual", () => {
+  const result = buildScaleEvolution([
+    { ...point(80, "2026-01-01"), consultationId: "baseline", isBaseline: true },
+    { ...point(70, "2026-03-01"), consultationId: "consultation-a" },
+    { ...point(60, "2026-06-01T10:00:00Z"), consultationId: "consultation-b" },
+    { ...point(65, "2026-06-01T11:00:00Z"), consultationId: "consultation-b" },
+  ]);
+
+  assert.equal(result.baseline?.score, 80);
+  assert.equal(result.previous?.score, 70);
+  assert.equal(result.previous?.consultationId, "consultation-a");
+  assert.equal(result.current?.score, 65);
+  assert.equal(result.current?.consultationId, "consultation-b");
+});
+
+test("baseline usa a gravação efetiva mais recente da consulta baseline", () => {
+  const result = buildScaleEvolution([
+    { ...point(75, "2026-01-01T09:00:00Z"), consultationId: "baseline", isBaseline: true },
+    { ...point(80, "2026-01-01T10:00:00Z"), consultationId: "baseline", isBaseline: true },
+    { ...point(70, "2026-03-01"), consultationId: "consultation-a" },
+  ]);
+
+  assert.equal(result.baseline?.score, 80);
+  assert.equal(result.current?.score, 70);
+});
