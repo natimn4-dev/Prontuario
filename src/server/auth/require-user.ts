@@ -7,6 +7,7 @@ import {
   parseEmailSet,
   type Permission,
 } from "../../domain/security/auth-policy";
+import { AccessForbiddenError, AuthenticationRequiredError } from "./access-errors";
 
 export async function requireAuthenticatedUser(permission?: Permission) {
   const session = await auth.api.getSession({
@@ -15,7 +16,7 @@ export async function requireAuthenticatedUser(permission?: Permission) {
   });
 
   if (!session?.user?.id) {
-    throw new Error("Autenticação obrigatória.");
+    throw new AuthenticationRequiredError();
   }
 
   const user = await prisma.user.findUnique({
@@ -23,14 +24,18 @@ export async function requireAuthenticatedUser(permission?: Permission) {
     select: { id: true, email: true, name: true, role: true, active: true },
   });
 
-  if (!user) throw new Error("Usuário autenticado não encontrado.");
+  if (!user) throw new AccessForbiddenError();
 
-  assertActiveAllowedUser({
-    user,
-    allowedEmails: parseEmailSet(process.env.AUTH_ALLOWED_EMAILS),
-  });
+  try {
+    assertActiveAllowedUser({
+      user,
+      allowedEmails: parseEmailSet(process.env.AUTH_ALLOWED_EMAILS),
+    });
 
-  if (permission) assertPermission(user.role, permission);
+    if (permission) assertPermission(user.role, permission);
+  } catch {
+    throw new AccessForbiddenError();
+  }
 
   return { session, user };
 }
