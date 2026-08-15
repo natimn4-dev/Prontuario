@@ -3,6 +3,7 @@ import { ProblemColumns } from "@/components/problems/problem-columns";
 import type { ClinicalProblem } from "@/domain/problems";
 import { requireAuthenticatedUser } from "@/server/auth/require-user";
 import { prisma } from "@/server/db";
+import { CreateConsultationButton } from "@/components/consultations/create-consultation-button";
 
 export default async function PatientPage({ params }: { params: Promise<{ id: string }> }) {
   await requireAuthenticatedUser("patient.read");
@@ -14,6 +15,7 @@ export default async function PatientPage({ params }: { params: Promise<{ id: st
       fullName: true,
       birthDate: true,
       needsIdentityReview: true,
+      baselineConsultationId: true,
       problems: {
         orderBy: [{ priority: "asc" }, { createdAt: "asc" }],
         select: { id: true, patientId: true, type: true, status: true, title: true, description: true, priority: true },
@@ -36,7 +38,13 @@ export default async function PatientPage({ params }: { params: Promise<{ id: st
       </header>
       <ProblemColumns problems={patient.problems as ClinicalProblem[]} />
       <section className="panel">
-        <h2>Consultas</h2>
+        <div className="section-heading">
+          <h2>Consultas</h2>
+          <CreateConsultationButton
+            patientId={patient.id}
+            baselineConsultationId={patient.baselineConsultationId}
+          />
+        </div>
         {patient.consultations.length ? (
           <ul className="clean-list">
             {patient.consultations.map((consultation) => (
