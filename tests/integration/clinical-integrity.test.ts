@@ -57,7 +57,8 @@ test("chaves compostas bloqueiam mistura entre pacientes", {
   const consultationAId = `ca-${suffix}`;
   const consultationBId = `cb-${suffix}`;
   const problemId = `problem-${suffix}`;
-  const medicationId = `med-${suffix}`;
+  const medicationAId = `med-a-${suffix}`;
+  const medicationBId = `med-b-${suffix}`;
   try {
     await client.user.create({ data: { id: userId, email: `${suffix}@example.test`, name: "Médica Teste" } });
     await client.patient.createMany({ data: [
@@ -72,14 +73,25 @@ test("chaves compostas bloqueiam mistura entre pacientes", {
       id: problemId, patientId: patientAId, originConsultationId: consultationAId,
       type: "CLINICAL", title: "Problema teste",
     } });
-    await client.medication.create({ data: { id: medicationId, patientId: patientAId, name: "Medicamento teste" } });
+    await client.medication.createMany({ data: [
+      { id: medicationAId, patientId: patientAId, name: "Medicamento teste A" },
+      { id: medicationBId, patientId: patientBId, name: "Medicamento teste B" },
+    ] });
+
+    await client.medicationStatusEvent.create({ data: {
+      patientId: patientAId,
+      medicationId: medicationAId,
+      consultationId: consultationAId,
+      previousStatus: null,
+      newStatus: "ACTIVE",
+    } });
 
     await assert.rejects(client.scaleAssessment.create({ data: {
       patientId: patientAId, consultationId: consultationBId,
       scaleCode: "katz", scaleVersion: "1.0", answers: {},
     } }));
     await assert.rejects(client.medicationRegimen.create({ data: {
-      patientId: patientAId, medicationId, consultationId: consultationBId,
+      patientId: patientAId, medicationId: medicationAId, consultationId: consultationBId,
     } }));
     await assert.rejects(client.problemEvent.create({ data: {
       patientId: patientAId, problemId, consultationId: consultationBId, newStatus: "ACTIVE",
@@ -88,8 +100,23 @@ test("chaves compostas bloqueiam mistura entre pacientes", {
       patientId: patientAId, consultationId: consultationBId, type: "AGA_REPORT",
       version: 1, content: {}, sourceConsultationStatus: "DRAFT",
     } }));
+    await assert.rejects(client.medicationStatusEvent.create({ data: {
+      patientId: patientAId,
+      medicationId: medicationAId,
+      consultationId: consultationBId,
+      previousStatus: "ACTIVE",
+      newStatus: "SUSPENDED",
+    } }));
+    await assert.rejects(client.medicationStatusEvent.create({ data: {
+      patientId: patientAId,
+      medicationId: medicationBId,
+      consultationId: consultationAId,
+      previousStatus: null,
+      newStatus: "ACTIVE",
+    } }));
   } finally {
-    await client.medication.deleteMany({ where: { id: medicationId } });
+    await client.medicationStatusEvent.deleteMany({ where: { medicationId: { in: [medicationAId, medicationBId] } } });
+    await client.medication.deleteMany({ where: { id: { in: [medicationAId, medicationBId] } } });
     await client.clinicalProblem.deleteMany({ where: { id: problemId } });
     await client.consultation.deleteMany({ where: { id: { in: [consultationAId, consultationBId] } } });
     await client.patient.deleteMany({ where: { id: { in: [patientAId, patientBId] } } });
