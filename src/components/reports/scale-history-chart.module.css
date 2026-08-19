@@ -19,7 +19,8 @@
 }
 
 .caption span,
-.trendNote {
+.trendNote,
+.emptyState {
   color: var(--care-muted);
   font-size: 12px;
   line-height: 1.45;
@@ -28,12 +29,21 @@
 .chartWrap {
   width: 100%;
   overflow-x: auto;
+  padding-bottom: 4px;
+  scrollbar-gutter: stable;
+}
+
+.chartWrap:focus-visible {
+  outline: 2px solid var(--care-accent-deep);
+  outline-offset: 3px;
+  border-radius: 6px;
 }
 
 .chart {
   display: block;
-  width: 100%;
-  min-width: 520px;
+  width: auto;
+  min-width: 100%;
+  max-width: none;
   height: auto;
 }
 
@@ -73,6 +83,13 @@
 .missing {
   font-size: 11px;
   font-style: italic;
+}
+
+.emptyState {
+  margin: 0;
+  padding: 10px 12px;
+  border: 1px dashed var(--care-line);
+  border-radius: 8px;
 }
 
 .trendNote {
@@ -118,7 +135,13 @@
     padding: 3mm;
   }
 
+  .chartWrap {
+    overflow: visible;
+    padding-bottom: 0;
+  }
+
   .chart {
+    width: 100%;
     min-width: 0;
   }
 
