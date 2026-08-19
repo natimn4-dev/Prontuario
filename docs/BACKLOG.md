@@ -66,6 +66,8 @@
 - sinais de atenção;
 - impressão A4.
 
+**Estado atual (2026-08-19):** estrutura A4 vertical, separação clínico/geriátrico, revisão clínica antes do compartilhamento e apêndice técnico opcional estão implementados. O corpo principal passa a omitir metadados de escala e trajetória numérica destinados à rastreabilidade técnica, reduzindo carga cognitiva para família/cuidadores sem alterar dados clínicos.
+
 ### P1-10 Tabela de medicamentos
 - nome/apresentação;
 - dose;
