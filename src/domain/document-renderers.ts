@@ -13,6 +13,10 @@ function bulletList(items: readonly string[]): string {
   return items.length > 0 ? items.map((item) => `- ${item}`).join("\n") : "- sem dados registrados";
 }
 
+function uniqueInOrder(items: readonly string[]): string[] {
+  return [...new Set(items)];
+}
+
 export interface SoapMedication {
   medicationText: string;
   doseInstruction?: string;
@@ -113,7 +117,7 @@ export function buildFamilyReportModel(input: FamilyReportInput): FamilyReportMo
     mediumTerm: [...input.plan.medio],
     caregiver: [...input.plan.cuidador],
     referrals: [...input.plan.encaminhamentos],
-    attentionSigns: [...(input.attentionSigns ?? []), ...input.plan.contato, ...input.plan.urgencia],
+    attentionSigns: uniqueInOrder([...(input.attentionSigns ?? []), ...input.plan.contato, ...input.plan.urgencia]),
     contactPhone: input.contactPhone,
   };
 }
