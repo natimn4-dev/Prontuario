@@ -31,3 +31,20 @@ Prioridade: **P0 — vínculo paciente ↔ consulta ↔ documento**.
 - nenhum escore, interpretação ou intervenção é recalculado;
 - nenhuma salvaguarda existente foi removida;
 - dados reais continuam proibidos até conclusão dos itens P0 de go-live.
+
+## 2026-08-19 — Relatório familiar sem sinais de atenção duplicados
+
+Prioridade: **relatório final para família/cuidadores — clareza e redução de redundância**.
+
+### Alterações
+- `buildFamilyReportModel` agora deduplica sinais de atenção idênticos quando o mesmo texto chega por `attentionSigns`, `plan.contato` e/ou `plan.urgencia`;
+- a ordem original da primeira ocorrência é preservada;
+- nenhum conteúdo clínico é criado, removido ou reinterpretado: apenas ocorrências textualmente idênticas deixam de ser repetidas no documento final.
+
+### Testes adicionados
+- `tests/golden-master/document-renderers.test.ts` valida que sinais idênticos provenientes de múltiplas fontes aparecem uma única vez no modelo e no texto renderizado.
+
+### Limites preservados
+- nenhuma regra clínica, escore, interpretação ou intervenção foi alterada;
+- textos diferentes continuam sendo mantidos integralmente, mesmo quando semanticamente semelhantes;
+- nenhuma salvaguarda de geração ou persistência documental foi removida.
