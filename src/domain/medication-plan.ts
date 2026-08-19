@@ -26,6 +26,11 @@ export interface MedicationPlanRow {
   moments: Readonly<Record<MedicationMoment, boolean>>;
 }
 
+export interface MedicationPlanViewModel {
+  patientName: string;
+  rows: MedicationPlanRow[];
+}
+
 export const MEDICATION_MOMENTS: readonly MedicationMoment[] = [
   "manha",
   "almoco",
@@ -136,15 +141,24 @@ export function buildMedicationPlanRows(
   }));
 }
 
+export function buildMedicationPlanViewModel(
+  patientName: string,
+  items: readonly MedicationPlanItem[],
+): MedicationPlanViewModel {
+  return {
+    patientName: normalizePatientDisplayName(patientName),
+    rows: buildMedicationPlanRows(items),
+  };
+}
+
 export function renderMedicationPlanText(
   patientName: string,
   items: readonly MedicationPlanItem[],
 ): string {
-  const displayPatientName = normalizePatientDisplayName(patientName);
-  const rows = buildMedicationPlanRows(items);
-  const lines = [`PLANO DE MEDICAMENTOS — ${displayPatientName}`];
+  const model = buildMedicationPlanViewModel(patientName, items);
+  const lines = [`PLANO DE MEDICAMENTOS — ${model.patientName}`];
 
-  for (const row of rows) {
+  for (const row of model.rows) {
     const details = [row.doseInstruction, row.route, row.continuous ? "uso contínuo" : undefined]
       .filter(Boolean)
       .join(" · ");
