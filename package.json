@@ -20,6 +20,8 @@
     "validate:security": "node --experimental-strip-types --test tests/golden-master/security-*.test.ts tests/golden-master/html-safety.test.ts tests/golden-master/consultation-workflow.test.ts",
     "backup:check": "bash scripts/check-backup-tools.sh",
     "audit:soap-json": "node --experimental-strip-types scripts/audit-consultation-note-json.ts",
+    "release:clinical:prestart": "node --experimental-strip-types scripts/check-clinical-readiness.ts",
+    "release:clinical:smoke": "node --experimental-strip-types scripts/smoke-clinical-production.ts",
     "validate:repo": "node scripts/validate-repo.mjs",
     "test:backup": "bash scripts/test-backup-roundtrip.sh"
   },
