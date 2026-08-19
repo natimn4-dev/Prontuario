@@ -19,12 +19,20 @@ function series(scores: readonly (number | null)[], baselineIndex = 0): ScaleCha
   };
 }
 
-test("mantém histórico textual quando ainda não há dois escores numéricos", () => {
+test("mantém a seção histórica quando existe registro mesmo sem dois escores numéricos", () => {
   const presentation = buildScaleChartPresentation(series([null, 4, null]));
+  assert.equal(presentation.hasHistory, true);
   assert.equal(presentation.canPlot, false);
   assert.equal(presentation.numericPointCount, 1);
   assert.equal(presentation.totalPointCount, 3);
   assert.deepEqual(presentation.visibleDateLabelIndexes, [0, 1, 2]);
+});
+
+test("sem registros não cria seção histórica nem gráfico", () => {
+  const presentation = buildScaleChartPresentation(series([]));
+  assert.equal(presentation.hasHistory, false);
+  assert.equal(presentation.canPlot, false);
+  assert.deepEqual(presentation.visibleDateLabelIndexes, []);
 });
 
 test("habilita gráfico somente com pelo menos dois escores numéricos", () => {
