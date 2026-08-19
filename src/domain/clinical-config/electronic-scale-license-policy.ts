@@ -13,6 +13,8 @@ export type ElectronicScaleRestriction = {
   reason: string;
 };
 
+type EnvironmentLike = Readonly<Record<string, string | undefined>>;
+
 const RESTRICTIONS: Record<LicensedElectronicScaleCode, Omit<ElectronicScaleRestriction, "code"> & { flag: keyof ElectronicScaleLicenseFlags }> = {
   mna_full: {
     name: "MNA completa",
@@ -34,7 +36,7 @@ const RESTRICTIONS: Record<LicensedElectronicScaleCode, Omit<ElectronicScaleRest
   },
 };
 
-export function electronicScaleLicenseFlagsFromEnvironment(env: NodeJS.ProcessEnv): ElectronicScaleLicenseFlags {
+export function electronicScaleLicenseFlagsFromEnvironment(env: EnvironmentLike): ElectronicScaleLicenseFlags {
   const confirmed = (value: string | undefined) => value?.trim().toLowerCase() === "true";
   return {
     mnaEhrConfirmed: confirmed(env.CLINICAL_LICENSE_MNA_EHR_CONFIRMED),
