@@ -7,6 +7,7 @@ import {
   normalizePatientIdentifier,
   normalizePersonName,
   patientIdentityFingerprint,
+  preferredDuplicateCandidate,
   type DuplicateCandidateReason,
   type PatientIdentifierInput,
 } from "../../domain/patient-identity";
@@ -76,9 +77,9 @@ export async function createPatientSafely(
         },
       });
 
-      const duplicates = findDuplicateCandidates({ incoming: input, existing: candidates });
-      const duplicate =
-        duplicates.find((candidate) => candidate.reason === "strong-identifier") ?? duplicates[0];
+      const duplicate = preferredDuplicateCandidate(
+        findDuplicateCandidates({ incoming: input, existing: candidates }),
+      );
 
       if (duplicate && (!input.confirmTrueHomonym || duplicate.reason === "strong-identifier")) {
         await tx.auditEvent.create({
@@ -142,7 +143,7 @@ export async function createPatientSafely(
   } catch (error) {
     if (!isUniqueConstraintError(error)) throw error;
 
-    const existing = await prisma.patient.findFirst({
+    const existingCandidates = await prisma.patient.findMany({
       where: {
         OR: [
           { identityFingerprint, homonymDiscriminator: "primary" },
@@ -157,13 +158,34 @@ export async function createPatientSafely(
             : []),
         ],
       },
-      select: { id: true },
+      select: {
+        id: true,
+        fullName: true,
+        birthDate: true,
+        identifiers: { select: { type: true, value: true } },
+      },
     });
-    if (!existing) throw error;
+    const duplicate = preferredDuplicateCandidate(
+      findDuplicateCandidates({ incoming: input, existing: existingCandidates }),
+    );
+    if (!duplicate) throw error;
+
+    await prisma.auditEvent.create({
+      data: {
+        userId: user.id,
+        entityType: "Patient",
+        entityId: duplicate.patientId,
+        action: "patient.create.blocked_duplicate",
+        requestId: input.requestId,
+        outcome: "denied",
+        reasonCode: duplicate.reason,
+      },
+    });
+
     return {
       created: false,
-      existingPatientId: existing.id,
-      reason: "same-name-and-birth-date",
+      existingPatientId: duplicate.patientId,
+      reason: duplicate.reason,
     };
   }
 }
