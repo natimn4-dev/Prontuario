@@ -81,7 +81,7 @@
 ## P1 — Evolução
 ### P1-11 Dashboard “O que mudou?”
 
-**Estado atual (2026-08-19):** o domínio longitudinal já produz headline, narrativa e contagens de tendência. Foi adicionada uma camada de apresentação testada que expõe separadamente tendências desfavoráveis, favoráveis, estáveis, avaliações não comparáveis, dados insuficientes e alertas urgentes. “Não comparável” e “dados insuficientes” permanecem neutros e não podem ser apresentados como estabilidade. A próxima etapa é conectar esse view model ao dashboard visual sem mover regras clínicas para React.
+**Estado atual (2026-08-19):** o domínio longitudinal produz headline, narrativa e contagens de tendência, e a camada de apresentação testada agora está conectada ao dashboard visual do relatório. A interface renderiza os seis estados do view model — desfavorável, favorável, estável, não comparável, dados insuficientes e alertas urgentes — sem recalcular regras no React. “Não comparável” e “dados insuficientes” permanecem neutros e não são apresentados como estabilidade.
 
 ### P1-12 Gráficos de escalas
 ### P1-13 Comparação consulta anterior × baseline
