@@ -121,9 +121,9 @@ model Verification {
   id         String   @id @default(cuid())
   identifier String
   value      String   @db.Text
-  expiresAt  DateTime
-  createdAt  DateTime @default(now())
-  updatedAt  DateTime @updatedAt
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   @@index([identifier])
   @@index([expiresAt])
@@ -195,6 +195,7 @@ model Consultation {
   problemEvents     ProblemEvent[]
   scaleAssessments  ScaleAssessment[]
   medicationRegimens MedicationRegimen[]
+  medicationStatusEvents MedicationStatusEvent[]
   documents         DocumentSnapshot[]
   createdAt         DateTime            @default(now())
   updatedAt         DateTime            @updatedAt
@@ -295,6 +296,7 @@ model Medication {
   status      MedicationStatus @default(ACTIVE)
   patient     Patient          @relation(fields: [patientId], references: [id], onDelete: Restrict)
   regimens    MedicationRegimen[]
+  statusEvents MedicationStatusEvent[]
   createdAt   DateTime         @default(now())
   updatedAt   DateTime         @updatedAt
 
@@ -335,6 +337,21 @@ model MedicationScheduleSlot {
   @@index([moment])
 }
 
+model MedicationStatusEvent {
+  id             String           @id @default(cuid())
+  medicationId   String
+  patientId      String
+  consultationId String
+  previousStatus MedicationStatus?
+  newStatus      MedicationStatus
+  medication     Medication       @relation(fields: [medicationId, patientId], references: [id, patientId], onDelete: Restrict)
+  consultation   Consultation     @relation(fields: [consultationId, patientId], references: [id, patientId], onDelete: Restrict)
+  createdAt      DateTime         @default(now())
+
+  @@index([medicationId, patientId, createdAt])
+  @@index([consultationId, patientId])
+}
+
 model DocumentSnapshot {
   id             String       @id @default(cuid())
   patientId      String
@@ -367,7 +384,7 @@ model AuditEvent {
   outcome    String?
   reasonCode String?
   user       User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
-  createdAt  DateTime @default(now())
+  createdAt DateTime @default(now())
 
   @@index([entityType, entityId, createdAt])
   @@index([userId, createdAt])
