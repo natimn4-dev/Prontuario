@@ -64,3 +64,24 @@ test("relatório familiar não repete sinais de atenção idênticos", () => {
   assert.equal(text.match(/Nova queda ou piora do equilíbrio\./g)?.length, 1);
   assert.equal(text.match(/Procure atendimento em caso de perda de consciência\./g)?.length, 1);
 });
+
+test("relatório familiar deduplica variações apenas de caixa e espaços preservando a primeira redação", () => {
+  const plan = emptyInterventionPlan();
+  plan.contato.push("nova   queda ou piora do equilíbrio.");
+  plan.urgencia.push("PROCURE ATENDIMENTO EM CASO DE PERDA DE CONSCIÊNCIA.");
+
+  const model = buildFamilyReportModel({
+    patientName: "Paciente Teste",
+    problems,
+    plan,
+    attentionSigns: [
+      "Nova queda ou piora do equilíbrio.",
+      "Procure atendimento em caso de perda de consciência.",
+    ],
+  });
+
+  assert.deepEqual(model.attentionSigns, [
+    "Nova queda ou piora do equilíbrio.",
+    "Procure atendimento em caso de perda de consciência.",
+  ]);
+});
