@@ -48,3 +48,18 @@ export interface ChangeProblemStatusCommand {
   newStatus: ProblemStatus;
   requestId?: string;
 }
+
+export function assertProblemWorkspaceEditable(input: {
+  consultationStatus: "DRAFT" | "IN_REVIEW" | "FINALIZED";
+  isLatestConsultation: boolean;
+}): void {
+  if (input.consultationStatus === "FINALIZED") {
+    throw new ProblemWorkspaceError("CONSULTATION_FINALIZED", "Consulta finalizada é imutável.");
+  }
+  if (!input.isLatestConsultation) {
+    throw new ProblemWorkspaceError(
+      "RETROSPECTIVE_EDIT_BLOCKED",
+      "Problemas não podem ser alterados retrospectivamente quando já existe consulta posterior.",
+    );
+  }
+}
