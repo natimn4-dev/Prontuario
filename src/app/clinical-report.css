@@ -675,3 +675,22 @@
     content: "";
   }
 }
+
+/* Keep the family-facing scale summary readable; technical metadata remains available in the optional appendix. */
+.clinical-table .scale-version,
+.clinical-table .trajectory,
+.clinical-table .scale-assessment-status + span {
+  display: none;
+}
+
+.clinical-table tbody th {
+  width: 26%;
+}
+
+.clinical-table td:nth-child(2) {
+  width: 24%;
+}
+
+.clinical-table td:nth-child(3) {
+  width: 18%;
+}
