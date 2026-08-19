@@ -1,4 +1,5 @@
 import type { AgaScaleReportSection } from "@/domain/aga-report";
+import { buildScaleChartPresentation } from "@/domain/scale-chart-presentation";
 import styles from "./scale-history-chart.module.css";
 
 const HEIGHT = 220;
@@ -7,7 +8,6 @@ const RIGHT = 26;
 const TOP = 28;
 const BOTTOM = 52;
 const MIN_WIDTH = 720;
-const POINT_SPACING = 112;
 
 function displayDate(value: string): string {
   return new Intl.DateTimeFormat("pt-BR", {
@@ -22,8 +22,14 @@ function pointLabel(point: AgaScaleReportSection["chartSeries"]["points"][number
   return point.isBaseline ? `AGA inicial · ${displayDate(point.appliedAt)}` : displayDate(point.appliedAt);
 }
 
+function pointSpacing(pointCount: number): number {
+  if (pointCount <= 8) return 112;
+  if (pointCount <= 16) return 88;
+  return 72;
+}
+
 function chartWidth(pointCount: number): number {
-  return Math.max(MIN_WIDTH, LEFT + RIGHT + Math.max(1, pointCount - 1) * POINT_SPACING);
+  return Math.max(MIN_WIDTH, LEFT + RIGHT + Math.max(1, pointCount - 1) * pointSpacing(pointCount));
 }
 
 function positionX(index: number, total: number, width: number): number {
@@ -39,16 +45,18 @@ function positionY(score: number, min: number, max: number): number {
 }
 
 export function ScaleHistoryChart({ scale }: { scale: AgaScaleReportSection }) {
+  const presentation = buildScaleChartPresentation(scale.chartSeries);
+  if (!presentation.hasHistory) return null;
+
   const points = scale.chartSeries.points;
   const numeric = points.filter((point): point is typeof point & { score: number } => point.score !== null);
-  if (numeric.length < 2) return null;
-
-  const min = Math.min(...numeric.map((point) => point.score));
-  const max = Math.max(...numeric.map((point) => point.score));
+  const min = presentation.canPlot ? Math.min(...numeric.map((point) => point.score)) : 0;
+  const max = presentation.canPlot ? Math.max(...numeric.map((point) => point.score)) : 0;
   const width = chartWidth(points.length);
   const chartTitle = `Trajetória de ${scale.name}`;
   const chartDescription = `Série histórica com ${points.length} registro(s). Trechos incompatíveis ou sem dados suficientes são exibidos com uma interrupção, sem conexão visual.`;
   const pointIndex = new Map(points.map((point, index) => [point.consultationId, index]));
+  const visibleDateLabels = new Set(presentation.visibleDateLabelIndexes);
 
   return (
     <figure className={styles.figure}>
@@ -59,64 +67,76 @@ export function ScaleHistoryChart({ scale }: { scale: AgaScaleReportSection }) {
         </span>
       </figcaption>
 
-      <div className={styles.chartWrap}>
-        <svg
-          className={styles.chart}
-          viewBox={`0 0 ${width} ${HEIGHT}`}
-          width={width}
-          role="img"
-          aria-label={`${chartTitle}. ${chartDescription}`}
+      {presentation.canPlot ? (
+        <div
+          className={styles.chartWrap}
+          tabIndex={0}
+          aria-label={`${chartTitle}. Região rolável horizontalmente quando o histórico é extenso.`}
         >
-          <line x1={LEFT} y1={HEIGHT - BOTTOM} x2={width - RIGHT} y2={HEIGHT - BOTTOM} className={styles.axis} />
+          <svg
+            className={styles.chart}
+            viewBox={`0 0 ${width} ${HEIGHT}`}
+            width={width}
+            role="img"
+            aria-label={`${chartTitle}. ${chartDescription}`}
+          >
+            <line x1={LEFT} y1={HEIGHT - BOTTOM} x2={width - RIGHT} y2={HEIGHT - BOTTOM} className={styles.axis} />
 
-          {scale.chartSeries.segments.map((segment) => {
-            if (!segment.drawable) return null;
-            const fromIndex = pointIndex.get(segment.fromConsultationId);
-            const toIndex = pointIndex.get(segment.toConsultationId);
-            if (fromIndex === undefined || toIndex === undefined) return null;
-            const from = points[fromIndex];
-            const to = points[toIndex];
-            if (!from || !to || from.score === null || to.score === null) return null;
-            return (
-              <line
-                key={`${segment.fromConsultationId}-${segment.toConsultationId}`}
-                x1={positionX(fromIndex, points.length, width)}
-                y1={positionY(from.score, min, max)}
-                x2={positionX(toIndex, points.length, width)}
-                y2={positionY(to.score, min, max)}
-                className={styles.axis}
-                aria-hidden="true"
-              />
-            );
-          })}
+            {scale.chartSeries.segments.map((segment) => {
+              if (!segment.drawable) return null;
+              const fromIndex = pointIndex.get(segment.fromConsultationId);
+              const toIndex = pointIndex.get(segment.toConsultationId);
+              if (fromIndex === undefined || toIndex === undefined) return null;
+              const from = points[fromIndex];
+              const to = points[toIndex];
+              if (!from || !to || from.score === null || to.score === null) return null;
+              return (
+                <line
+                  key={`${segment.fromConsultationId}-${segment.toConsultationId}`}
+                  x1={positionX(fromIndex, points.length, width)}
+                  y1={positionY(from.score, min, max)}
+                  x2={positionX(toIndex, points.length, width)}
+                  y2={positionY(to.score, min, max)}
+                  className={styles.axis}
+                  aria-hidden="true"
+                />
+              );
+            })}
 
-          {points.map((point, index) => {
-            const x = positionX(index, points.length, width);
-            const score = point.score;
-            return (
-              <g key={`${point.consultationId}-${point.appliedAt}`}>
-                <line x1={x} y1={TOP} x2={x} y2={HEIGHT - BOTTOM} className={styles.guide} />
-                <text x={x} y={HEIGHT - 21} textAnchor="middle" className={styles.axisLabel}>{pointLabel(point)}</text>
-                {score === null ? (
-                  <text x={x} y={TOP + 18} textAnchor="middle" className={styles.missing}>sem dado</text>
-                ) : (
-                  <>
-                    <circle cx={x} cy={positionY(score, min, max)} r="7" className={styles.point} />
-                    <text
-                      x={x}
-                      y={positionY(score, min, max) - 14}
-                      textAnchor="middle"
-                      className={styles.score}
-                    >
-                      {score}
-                    </text>
-                  </>
-                )}
-              </g>
-            );
-          })}
-        </svg>
-      </div>
+            {points.map((point, index) => {
+              const x = positionX(index, points.length, width);
+              const score = point.score;
+              return (
+                <g key={`${point.consultationId}-${point.appliedAt}`}>
+                  <line x1={x} y1={TOP} x2={x} y2={HEIGHT - BOTTOM} className={styles.guide} />
+                  {visibleDateLabels.has(index) ? (
+                    <text x={x} y={HEIGHT - 21} textAnchor="middle" className={styles.axisLabel}>{pointLabel(point)}</text>
+                  ) : null}
+                  {score === null ? (
+                    <text x={x} y={TOP + 18} textAnchor="middle" className={styles.missing}>sem dado</text>
+                  ) : (
+                    <>
+                      <circle cx={x} cy={positionY(score, min, max)} r="7" className={styles.point} />
+                      <text
+                        x={x}
+                        y={positionY(score, min, max) - 14}
+                        textAnchor="middle"
+                        className={styles.score}
+                      >
+                        {score}
+                      </text>
+                    </>
+                  )}
+                </g>
+              );
+            })}
+          </svg>
+        </div>
+      ) : (
+        <p className={styles.emptyState}>
+          Histórico registrado, mas ainda não há pelo menos dois escores numéricos para desenhar uma trajetória. Os registros permanecem disponíveis na tabela abaixo.
+        </p>
+      )}
 
       <p className={styles.trendNote}>
         Tendência mais recente registrada: <strong>{scale.evolution.vsPrevious}</strong>.
