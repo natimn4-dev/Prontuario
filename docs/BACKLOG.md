@@ -58,6 +58,8 @@
 - “sem dados registrados” quando necessário;
 - único botão “Copiar para prontuário”.
 
+**Estado atual (2026-08-19):** o renderer de domínio já produz S/O/A/P, exame físico, sinais vitais, antropometria, medicações em uso, problemas numerados e plano por problema sem inventar dados. A tela de consulta ainda não possui prévia/cópia SOAP. Embora `Consultation` tenha campos JSON `subjective`, `objective`, `assessment` e `plan`, ainda não existe um contrato persistido estável nem endpoint de edição que permita interpretar esses JSON com segurança. Próximo passo: definir e testar esse contrato antes de expor um único botão “Copiar para prontuário”.
+
 ### P1-09 Relatório para família
 - vertical;
 - problemas clínicos e geriátricos separados;
@@ -66,7 +68,7 @@
 - sinais de atenção;
 - impressão A4.
 
-**Estado atual (2026-08-19):** estrutura A4 vertical, separação clínico/geriátrico, revisão clínica antes do compartilhamento e apêndice técnico opcional estão implementados. O corpo principal passa a omitir metadados de escala e trajetória numérica destinados à rastreabilidade técnica, reduzindo carga cognitiva para família/cuidadores sem alterar dados clínicos.
+**Estado atual (2026-08-19):** estrutura A4 vertical, separação clínico/geriátrico, revisão clínica antes do compartilhamento e apêndice técnico opcional estão implementados. A tabela principal destinada a família/cuidadores mostra nome da avaliação, resultado/classificação, evolução desde a última avaliação, evolução desde a AGA inicial e interpretação registrada. Código/versão, identificador interno de consulta e trajetória numérica técnica não aparecem mais nessa tabela; a rastreabilidade técnica permanece no apêndice e no snapshot.
 
 ### P1-10 Tabela de medicamentos
 - nome/apresentação;
@@ -88,6 +90,8 @@
 **Estado atual (2026-08-19):** a fundação de domínio para séries gráficas longitudinais está integrada ao modelo do relatório. A visualização passa a receber a série histórica completa, ordenada e consolidada pelo domínio, em vez de reconstruir apenas baseline/anterior/atual no React. O SVG e a tabela textual exibem todos os registros disponíveis; linhas são desenhadas somente nos segmentos explicitamente marcados como comparáveis pelo domínio, preservando lacunas quando há mudança de versão ou score ausente. O gráfico não recalcula score, classificação ou direção clínica e não usa cor como único indicador. Permanecem como refinamentos futuros a seleção de janela temporal e estratégias de densidade para históricos muito longos.
 
 ### P1-13 Comparação consulta anterior × baseline
+
+**Estado atual (2026-08-19):** a tabela longitudinal do relatório passa a exibir separadamente a tendência validada desde a última avaliação e desde a AGA inicial. Ambos os estados vêm do domínio clínico; o React apenas rotula os valores já calculados. “Não comparável” e “dados insuficientes” são preservados explicitamente, sem inferência de estabilidade ou significância clínica.
 
 ## P2 — Refinamentos
 - atalhos de produtividade;
