@@ -3,6 +3,20 @@ import type { MedicationLifecycleStatus } from "./medication-status-history.ts";
 
 export type MedicationWorkspaceStatus = MedicationLifecycleStatus | "UNKNOWN";
 export type MedicationStatusSource = "explicit-history" | "current-record-only" | "unknown";
+export type MedicationWorkspaceErrorCode =
+  | "CONSULTATION_NOT_FOUND"
+  | "CONSULTATION_FINALIZED"
+  | "RETROSPECTIVE_EDIT_BLOCKED"
+  | "MEDICATION_NOT_FOUND";
+
+export class MedicationWorkspaceError extends Error {
+  readonly code: MedicationWorkspaceErrorCode;
+  constructor(code: MedicationWorkspaceErrorCode, message: string) {
+    super(message);
+    this.name = "MedicationWorkspaceError";
+    this.code = code;
+  }
+}
 
 export interface MedicationWorkspaceRegimenRecord {
   id: string;
@@ -37,6 +51,21 @@ export interface MedicationWorkspaceView {
   consultationStatus: "DRAFT" | "IN_REVIEW" | "FINALIZED";
   isLatestConsultation: boolean;
   items: MedicationWorkspaceItem[];
+}
+
+export function assertMedicationWorkspaceEditable(input: {
+  consultationStatus: "DRAFT" | "IN_REVIEW" | "FINALIZED";
+  isLatestConsultation: boolean;
+}): void {
+  if (input.consultationStatus === "FINALIZED") {
+    throw new MedicationWorkspaceError("CONSULTATION_FINALIZED", "Consulta finalizada é imutável.");
+  }
+  if (!input.isLatestConsultation) {
+    throw new MedicationWorkspaceError(
+      "RETROSPECTIVE_EDIT_BLOCKED",
+      "A reconciliação medicamentosa não pode ser alterada retrospectivamente quando já existe consulta posterior.",
+    );
+  }
 }
 
 /**
