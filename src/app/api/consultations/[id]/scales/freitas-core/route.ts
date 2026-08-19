@@ -63,6 +63,7 @@ export async function GET(_request: Request, context: { params: Promise<{ id: st
 
 export async function POST(request: Request, context: { params: Promise<{ id: string }> }) {
   try {
+    await requireAuthenticatedUser("consultation.write");
     const { id } = await context.params;
     const consultation = await consultationContext(id);
     if (consultation.status === "FINALIZED") return NextResponse.json({ code: "CONSULTATION_FINALIZED", message: "Consulta finalizada não aceita nova avaliação." }, { status: 409 });
