@@ -73,6 +73,17 @@
 ### 10. Auditoria virando segundo prontuário
 **Controle:** auditoria registra ator, entidade, ação, outcome e códigos operacionais; não duplica texto clínico livre.
 
+### 11. Cadastro concorrente do mesmo paciente
+**Risco:** duas requisições simultâneas tentarem criar o mesmo paciente ou o mesmo identificador forte.
+
+**Controles:**
+- unicidade no banco para fingerprint padrão de identidade e identificadores normalizados;
+- transação serializável no fluxo de criação;
+- conflito `P2002` é tratado como tentativa bloqueada, não como autorização para criar um segundo cadastro;
+- após conflito concorrente, os candidatos são reavaliados pela mesma regra de domínio usada no caminho normal;
+- identificador forte tem precedência sobre coincidência por nome/data;
+- tentativa bloqueada por corrida também gera evento `patient.create.blocked_duplicate`, sem copiar conteúdo clínico para a auditoria.
+
 ## Riscos residuais antes do go-live
 - dependências ainda precisam ser instaladas e auditadas em ambiente conectado;
 - schema Prisma precisa ser validado pela CLI da versão instalada;
