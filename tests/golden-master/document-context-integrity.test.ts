@@ -40,6 +40,43 @@ test("falha fechado quando escala pertence a outro paciente", () => {
   );
 });
 
+test("falha fechado quando escala pertence a consulta fora do horizonte", () => {
+  assert.throws(
+    () => assertDocumentContextIntegrity({
+      ...base,
+      scaleAssessments: [{ patientId: "patient-1", consultationId: "consultation-3" }],
+    }),
+    /escala pertence a consulta fora do horizonte/,
+  );
+});
+
+test("falha fechado quando problema pertence a outro paciente", () => {
+  assert.throws(
+    () => assertDocumentContextIntegrity({
+      ...base,
+      problems: [{ ...base.problems[0], patientId: "patient-2" }],
+    }),
+    /problema pertence a paciente diferente/,
+  );
+});
+
+test("falha fechado quando evento de problema aponta para outro problema", () => {
+  assert.throws(
+    () => assertDocumentContextIntegrity({
+      ...base,
+      problems: [{
+        ...base.problems[0],
+        events: [{
+          problemId: "problem-2",
+          patientId: "patient-1",
+          consultationId: "consultation-2",
+        }],
+      }],
+    }),
+    /evento pertence a problema diferente/,
+  );
+});
+
 test("falha fechado quando evento de problema cruza paciente", () => {
   assert.throws(
     () => assertDocumentContextIntegrity({
@@ -54,6 +91,23 @@ test("falha fechado quando evento de problema cruza paciente", () => {
       }],
     }),
     /evento de problema pertence a paciente diferente/,
+  );
+});
+
+test("falha fechado quando evento de problema pertence a consulta fora do horizonte", () => {
+  assert.throws(
+    () => assertDocumentContextIntegrity({
+      ...base,
+      problems: [{
+        ...base.problems[0],
+        events: [{
+          problemId: "problem-1",
+          patientId: "patient-1",
+          consultationId: "consultation-3",
+        }],
+      }],
+    }),
+    /evento de problema pertence a consulta fora do horizonte/,
   );
 });
 
