@@ -54,6 +54,7 @@ test("v8 expõe resumo longitudinal, tendência e plano consolidado sem mudar re
 
   assert.equal(report.schemaVersion, "1.1");
   assert.equal(report.assessedScales[0]?.evolution.trend, "unfavorable");
+  assert.equal(report.assessedScales[0]?.evolution.vsBaseline, "unfavorable");
   assert.equal(report.changeSummary.counts.unfavorable, 1);
   assert.ok(report.carePlan.now.length > 0);
   assert.deepEqual(
@@ -118,6 +119,7 @@ test("v8 identifica versões incompatíveis em cada ponto da trajetória", () =>
   const section = report.assessedScales[0]!;
   const evolution = section.evolution;
   assert.equal(evolution.trend, "not-comparable");
+  assert.equal(evolution.vsBaseline, "not-comparable");
   assert.equal(evolution.baselineVersion, "1.0");
   assert.equal(evolution.previousVersion, "1.0");
   assert.equal(evolution.currentVersion, "2.0");
