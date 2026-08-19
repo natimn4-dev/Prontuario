@@ -49,6 +49,9 @@
 ### P1-02 Extrair INTERVENCOES do legado
 ### P1-03 Golden master tests
 ### P1-04 Migrar cálculo das escalas
+
+**Estado atual (2026-08-19):** além de Katz, Lawton e GDS-15 em versões novas governadas pelo Freitas/Py, o fluxo real passa a incorporar MNA completa (18 itens, 0–30), Pfeffer FAQ de 10 itens (0–30), SPPB com tempos brutos preservados e POMA na versão Freitas/Py de 57 pontos. A MNA mantém separação explícita da MNA-SF; Pfeffer-10 não reutiliza o legado de 11 itens; SPPB usa o percurso de 3 m documentado no apêndice; e POMA não recebe cortes da versão Tinetti de 28 pontos. Lacunas pontuais do apêndice são completadas somente por fontes suplementares identificadas e versionadas, com golden masters nos limites.
+
 ### P1-05 Migrar lista de problemas
 ### P1-06 Migrar motor de plano
 ### P1-07 Migrar medicamentos
