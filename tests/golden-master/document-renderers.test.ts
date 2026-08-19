@@ -39,3 +39,27 @@ test("relatório familiar separa problemas clínicos e geriátricos", () => {
   assert.match(text, /Problemas geriátricos/);
   assert.match(text, /71 99992-1416/);
 });
+
+test("relatório familiar não repete sinais de atenção idênticos", () => {
+  const plan = emptyInterventionPlan();
+  plan.contato.push("Nova queda ou piora do equilíbrio.");
+  plan.urgencia.push("Procure atendimento em caso de perda de consciência.");
+  const model = buildFamilyReportModel({
+    patientName: "Paciente Teste",
+    problems,
+    plan,
+    attentionSigns: [
+      "Nova queda ou piora do equilíbrio.",
+      "Procure atendimento em caso de perda de consciência.",
+      "Nova queda ou piora do equilíbrio.",
+    ],
+  });
+
+  assert.deepEqual(model.attentionSigns, [
+    "Nova queda ou piora do equilíbrio.",
+    "Procure atendimento em caso de perda de consciência.",
+  ]);
+  const text = renderFamilyReportText(model);
+  assert.equal(text.match(/Nova queda ou piora do equilíbrio\./g)?.length, 1);
+  assert.equal(text.match(/Procure atendimento em caso de perda de consciência\./g)?.length, 1);
+});
