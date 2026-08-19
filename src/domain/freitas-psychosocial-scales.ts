@@ -38,7 +38,7 @@ const apgarChoices=[c(0,"Nunca"),c(1,"Algumas vezes"),c(2,"Sempre")] as const;
 export const FAMILY_APGAR_BR_ELDERLY: PsychosocialScaleDefinition = {
   code:"family_apgar_br_elderly",version:"freitas-py-family-apgar-br-elderly-2026-08-v1",name:"APGAR familiar",dimension:"familia",
   instruction:"Avalia satisfação percebida com cinco dimensões do funcionamento familiar. Cada item recebe 0, 1 ou 2; total 0–10.",
-  sourceNote:"Freitas/Py Tabela A.16 para os cinco itens; validação em idosos do Nordeste brasileiro para respostas 0/1/2 e faixas 0–4, 5–6 e 7–10.",
+  sourceNote:"Freitas/Py Tabela A.16 para os cinco itens; validação em idosos do Nordeste brasileiro para respostas nunca=0, algumas vezes=1, sempre=2 e faixas 0–4, 5–6 e 7–10.",
   questions:[
     {id:"adaptation",label:"Estou satisfeito(a) pois posso recorrer à minha família em busca de ajuda quando algo me incomoda ou preocupa",choices:apgarChoices},
     {id:"partnership",label:"Estou satisfeito(a) com a maneira pela qual minha família e eu conversamos e compartilhamos problemas",choices:apgarChoices},
@@ -48,15 +48,16 @@ export const FAMILY_APGAR_BR_ELDERLY: PsychosocialScaleDefinition = {
   ],
 };
 
-const zaritChoices=[c(0,"Nunca"),c(1,"Raramente"),c(2,"Algumas vezes"),c(3,"Frequentemente"),c(4,"Quase sempre")] as const;
+const zaritFrequency=[c(0,"Nunca"),c(1,"Raramente"),c(2,"Algumas vezes"),c(3,"Frequentemente"),c(4,"Sempre ou quase sempre")] as const;
+const zaritGlobal=[c(0,"Nem um pouco"),c(1,"Um pouco"),c(2,"Moderadamente"),c(3,"Muito"),c(4,"Extremamente")] as const;
 const zaritItems=[
-  "A pessoa cuidada pede mais ajuda do que necessita?","Por causa do tempo gasto com o cuidado, você não tem tempo suficiente para si?","Você se sente estressado(a) entre cuidar e cumprir outras responsabilidades familiares ou de trabalho?","Você se sente envergonhado(a) com o comportamento da pessoa cuidada?","Você se sente irritado(a) quando a pessoa cuidada está por perto?","O cuidado afeta negativamente seus relacionamentos com familiares ou amigos?","Você sente receio pelo futuro da pessoa cuidada?","Você sente que a pessoa cuidada depende de você?","Você se sente tenso(a) quando a pessoa cuidada está por perto?","Você sente que sua saúde foi afetada pelo envolvimento com o cuidado?","Você sente que perdeu privacidade por causa do cuidado?","Você sente que sua vida social foi prejudicada porque está cuidando?","Você não se sente à vontade para receber visitas em casa por causa da pessoa cuidada?","Você sente que a pessoa cuidada espera que você seja a única pessoa de quem ela pode depender?","Você sente que não tem dinheiro suficiente para cuidar da pessoa e manter suas outras despesas?","Você sente que será capaz de cuidar por mais tempo?","Você sente que perdeu o controle de sua vida desde a doença da pessoa cuidada?","Você gostaria de deixar que outra pessoa cuidasse?","Você se sente em dúvida sobre o que fazer pela pessoa cuidada?","Você sente que poderia estar fazendo mais?","Você sente que poderia cuidar melhor?","De maneira geral, quanto você se sente sobrecarregado(a) por cuidar?",
+  "A pessoa cuidada pede mais ajuda do que necessita?","Por causa do tempo gasto com o cuidado, você não tem tempo suficiente para si?","Você se sente estressado(a) entre cuidar e cumprir outras responsabilidades familiares ou de trabalho?","Você se sente envergonhado(a) com o comportamento da pessoa cuidada?","Você se sente irritado(a) quando a pessoa cuidada está por perto?","O cuidado afeta negativamente seus relacionamentos com familiares ou amigos?","Você sente receio pelo futuro da pessoa cuidada?","Você sente que a pessoa cuidada depende de você?","Você se sente tenso(a) quando a pessoa cuidada está por perto?","Você sente que sua saúde foi afetada pelo envolvimento com o cuidado?","Você sente que perdeu privacidade por causa do cuidado?","Você sente que sua vida social foi prejudicada porque está cuidando?","Você não se sente à vontade para receber visitas em casa por causa da pessoa cuidada?","Você sente que a pessoa cuidada espera que você seja a única pessoa de quem ela pode depender?","Você sente que não tem dinheiro suficiente para cuidar da pessoa e manter suas outras despesas?","Você se sente incapaz de cuidar da pessoa por muito mais tempo?","Você sente que perdeu o controle de sua vida desde a doença da pessoa cuidada?","Você gostaria de deixar que outra pessoa cuidasse?","Você se sente em dúvida sobre o que fazer pela pessoa cuidada?","Você sente que poderia estar fazendo mais?","Você sente que poderia cuidar melhor?","De maneira geral, quanto você se sente sobrecarregado(a) por cuidar?",
 ] as const;
 export const ZARIT_BR_22: PsychosocialScaleDefinition = {
   code:"zarit_br_22",version:"freitas-py-zarit-br22-scazufca-2026-08-v1",name:"Zarit Burden Interview — 22 itens",dimension:"sobrecarga_cuidador",
-  instruction:"Aplicar ao cuidador principal. Cada item varia de 0 (nunca) a 4 (quase sempre); total 0–88. Maior total indica maior sobrecarga percebida.",
-  sourceNote:"Freitas/Py Tabela A.17 para os 22 itens; Scazufca 2002 para validação brasileira e pontuação 0–4/total 0–88. A validação brasileira não é usada aqui para inventar faixas categóricas de gravidade.",
-  questions:zaritItems.map((label,index)=>({id:`i${index+1}`,label,choices:zaritChoices})),
+  instruction:"Aplicar ao cuidador principal. Itens 1–21 usam frequência de 0 a 4; o item 22 usa intensidade de sobrecarga de 0 a 4. Total 0–88. Maior total indica maior sobrecarga percebida.",
+  sourceNote:"Freitas/Py Tabela A.17 para os 22 itens; Scazufca 2002 resolve a redação validada do item 16 (incapaz de cuidar por muito mais tempo) e a escala específica do item 22. A validação brasileira não é usada aqui para inventar faixas categóricas de gravidade.",
+  questions:zaritItems.map((label,index)=>({id:`i${index+1}`,label,choices:index===21?zaritGlobal:zaritFrequency})),
 };
 
 export const PSYCHOSOCIAL_FREITAS_SCALES=[CESD_BR_ELDERLY,MOS_SSS_BR_19,FAMILY_APGAR_BR_ELDERLY,ZARIT_BR_22] as const;
