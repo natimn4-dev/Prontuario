@@ -1,52 +1,88 @@
-import { prisma } from "../db";
-import { requireAuthenticatedUser } from "../auth/require-user";
-import { assertConsultationCanFinalize } from "../../domain/security/consultation-workflow";
+import { clinicalAlertsFor } from "../../domain/clinical-alerts.ts";
+import type { ClinicalColor } from "../../domain/clinical-engine.ts";
+import { requireAuthenticatedUser } from "../auth/require-user.ts";
+import { prisma } from "../db.ts";
+import {
+  consultationFinalizationService,
+  type ConsultationFinalizationTransaction,
+  type ServerDerivedUrgentAlert,
+} from "./consultation-finalization-service.ts";
 
-export async function finalizeConsultation(input: {
-  patientId: string;
-  consultationId: string;
-  clinicalReviewConfirmed: boolean;
-  unresolvedUrgentAlerts: readonly string[];
-  requestId?: string;
-}) {
-  const { user } = await requireAuthenticatedUser("consultation.finalize");
-
-  return prisma.$transaction(async (tx) => {
-    const consultation = await tx.consultation.findUnique({
-      where: { id: input.consultationId },
-      select: { id: true, patientId: true, status: true },
-    });
-    if (!consultation) throw new Error("Consulta não encontrada.");
-
-    assertConsultationCanFinalize({
-      selectedPatientId: input.patientId,
-      consultationPatientId: consultation.patientId,
-      selectedConsultationId: input.consultationId,
-      consultationId: consultation.id,
-      status: consultation.status,
-      clinicalReviewConfirmed: input.clinicalReviewConfirmed,
-      unresolvedUrgentAlerts: input.unresolvedUrgentAlerts,
-    });
-
-    const updated = await tx.consultation.updateMany({
-      where: { id: consultation.id, patientId: consultation.patientId, status: "IN_REVIEW" },
-      data: { status: "FINALIZED" },
-    });
-    if (updated.count !== 1) {
-      throw new Error("A consulta mudou durante a finalização; recarregue antes de tentar novamente.");
-    }
-
-    await tx.auditEvent.create({
-      data: {
-        userId: user.id,
-        entityType: "Consultation",
-        entityId: consultation.id,
-        action: "consultation.finalize",
-        requestId: input.requestId,
-        outcome: "success",
-      },
-    });
-
-    return { id: consultation.id, patientId: consultation.patientId, status: "FINALIZED" as const };
-  });
+function answersRecord(value: unknown): Record<string, unknown> | undefined {
+  if (!value || typeof value !== "object" || Array.isArray(value)) return undefined;
+  return value as Record<string, unknown>;
 }
+
+async function workflowContext(
+  tx: Parameters<Parameters<typeof prisma.$transaction>[0]>[0],
+  consultationId: string,
+) {
+  const consultation = await tx.consultation.findUnique({
+    where: { id: consultationId },
+    select: { id: true, patientId: true, status: true },
+  });
+  if (!consultation) return null;
+
+  const assessments = await tx.scaleAssessment.findMany({
+    where: {
+      consultationId: consultation.id,
+      patientId: consultation.patientId,
+    },
+    orderBy: [{ appliedAt: "asc" }, { id: "asc" }],
+    select: {
+      id: true,
+      scaleCode: true,
+      answers: true,
+      scoreNumeric: true,
+      scoreText: true,
+      classification: true,
+      clinicalColor: true,
+    },
+  });
+
+  // Reaplicações na mesma consulta não podem multiplicar alertas antigos.
+  // Mantemos apenas o registro efetivo mais recente de cada instrumento.
+  const latestByScale = new Map<string, (typeof assessments)[number]>();
+  for (const assessment of assessments) latestByScale.set(assessment.scaleCode, assessment);
+
+  const urgentAlerts: ServerDerivedUrgentAlert[] = [...latestByScale.values()]
+    .flatMap((assessment) => clinicalAlertsFor(assessment.scaleCode, {
+      answers: answersRecord(assessment.answers),
+      result: {
+        score: assessment.scoreNumeric === null ? null : Number(assessment.scoreNumeric),
+        scoreText: assessment.scoreText ?? (assessment.scoreNumeric === null ? "—" : String(assessment.scoreNumeric)),
+        cor: (assessment.clinicalColor ?? "cinza") as ClinicalColor,
+        classe: assessment.classification ?? "Sem classificação registrada",
+      },
+    }))
+    .filter((alert) => alert.severity === "urgent")
+    .map((alert) => ({ code: alert.code, message: alert.message }));
+
+  return {
+    id: consultation.id,
+    patientId: consultation.patientId,
+    status: consultation.status,
+    urgentAlerts,
+  };
+}
+
+const service = consultationFinalizationService({
+  authenticate: requireAuthenticatedUser,
+  transaction: async (operation) => prisma.$transaction(async (tx) => operation({
+    findWorkflowContext: (consultationId) => workflowContext(tx, consultationId),
+    transitionStatus: async ({ consultationId, patientId, from, to }) => {
+      const updated = await tx.consultation.updateMany({
+        where: { id: consultationId, patientId, status: from },
+        data: { status: to },
+      });
+      return updated.count === 1;
+    },
+    createAuditEvent: async (input) => {
+      await tx.auditEvent.create({ data: input });
+    },
+  } satisfies ConsultationFinalizationTransaction), { isolationLevel: "Serializable" }),
+});
+
+export const getConsultationWorkflowState = service.getWorkflowState;
+export const startConsultationReview = service.startReview;
+export const finalizeConsultation = service.finalize;
