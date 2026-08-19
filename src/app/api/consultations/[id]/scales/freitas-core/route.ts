@@ -2,16 +2,18 @@ import { NextResponse } from "next/server";
 import { CORE_FREITAS_SCALES, scoreCoreFreitasScale, type CoreFreitasScaleCode } from "@/domain/freitas-core-scales";
 import { VALIDATED_FREITAS_SCALES, scoreValidatedFreitasScale, type ValidatedScaleCode } from "@/domain/freitas-validated-scales";
 import { COGNITIVE_FREITAS_SCALES, scoreCognitiveFreitasScale, type CognitiveFreitasScaleCode } from "@/domain/freitas-cognitive-scales";
+import { PSYCHOSOCIAL_FREITAS_SCALES, scorePsychosocialFreitasScale, type PsychosocialFreitasScaleCode } from "@/domain/freitas-psychosocial-scales";
 import { requireAuthenticatedUser } from "@/server/auth/require-user";
 import { saveScaleAssessment } from "@/server/clinical/persistence";
 import { prisma } from "@/server/db";
 
-type ScaleCode = CoreFreitasScaleCode | ValidatedScaleCode | CognitiveFreitasScaleCode;
+type ScaleCode = CoreFreitasScaleCode | ValidatedScaleCode | CognitiveFreitasScaleCode | PsychosocialFreitasScaleCode;
 const CORE = new Set<CoreFreitasScaleCode>(CORE_FREITAS_SCALES.map((item) => item.code));
 const VALIDATED = new Set<ValidatedScaleCode>(VALIDATED_FREITAS_SCALES.map((item) => item.code));
 const COGNITIVE = new Set<CognitiveFreitasScaleCode>(COGNITIVE_FREITAS_SCALES.map((item) => item.code));
-const SUPPORTED = new Set<ScaleCode>([...CORE, ...VALIDATED, ...COGNITIVE]);
-const DEFINITIONS = [...CORE_FREITAS_SCALES, ...VALIDATED_FREITAS_SCALES, ...COGNITIVE_FREITAS_SCALES];
+const PSYCHOSOCIAL = new Set<PsychosocialFreitasScaleCode>(PSYCHOSOCIAL_FREITAS_SCALES.map((item) => item.code));
+const SUPPORTED = new Set<ScaleCode>([...CORE, ...VALIDATED, ...COGNITIVE, ...PSYCHOSOCIAL]);
+const DEFINITIONS = [...CORE_FREITAS_SCALES, ...VALIDATED_FREITAS_SCALES, ...COGNITIVE_FREITAS_SCALES, ...PSYCHOSOCIAL_FREITAS_SCALES];
 
 async function consultationContext(consultationId: string) {
   const consultation = await prisma.consultation.findUnique({
@@ -38,7 +40,8 @@ function parseBody(value: unknown): { scaleCode: ScaleCode; answers: Record<stri
 function score(scaleCode: ScaleCode, answers: Record<string, unknown>) {
   if (CORE.has(scaleCode as CoreFreitasScaleCode)) return scoreCoreFreitasScale(scaleCode as CoreFreitasScaleCode, answers);
   if (VALIDATED.has(scaleCode as ValidatedScaleCode)) return scoreValidatedFreitasScale(scaleCode as ValidatedScaleCode, answers);
-  return scoreCognitiveFreitasScale(scaleCode as CognitiveFreitasScaleCode, answers);
+  if (COGNITIVE.has(scaleCode as CognitiveFreitasScaleCode)) return scoreCognitiveFreitasScale(scaleCode as CognitiveFreitasScaleCode, answers);
+  return scorePsychosocialFreitasScale(scaleCode as PsychosocialFreitasScaleCode, answers);
 }
 
 function failure(error: unknown) {
