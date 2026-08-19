@@ -1,5 +1,6 @@
 import { notFound } from "next/navigation";
 import { ConsultationFinalizationPanel } from "@/components/consultations/consultation-finalization-panel";
+import { SoapEditor } from "@/components/consultations/soap-editor";
 import { AgaReportPreview } from "@/components/reports/aga-report-preview";
 import { OncogeriatricScales } from "@/components/scales/oncogeriatric-scales";
 import { buildConsultationContextViewModel } from "@/domain/consultation-context";
@@ -83,16 +84,17 @@ export default async function ConsultationPage({
         </a>
 
         <p className={styles.intro}>
-          Registre avaliações, acompanhe mudanças desde a AGA inicial e gere um relatório
-          compartilhável após revisão clínica.
+          Registre a evolução clínica primeiro; depois complemente problemas, medicamentos e avaliações geriátricas antes da revisão final.
         </p>
         <ol className="workflow-steps" aria-label="Etapas da consulta">
-          <li><span>1</span>Avaliar</li>
-          <li><span>2</span>Comparar</li>
+          <li><span>1</span>SOAP</li>
+          <li><span>2</span>Avaliar</li>
           <li><span>3</span>Revisar</li>
           <li><span>4</span>Compartilhar</li>
         </ol>
       </header>
+
+      <SoapEditor consultationId={id} />
 
       <OncogeriatricScales consultationId={id} />
 
