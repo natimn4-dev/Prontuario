@@ -61,3 +61,20 @@ test("limpeza preserva conteúdo clínico e remove apenas espaços redundantes",
   const [item] = validateMedicationPlan([{ ...items[0]!, medicationText: "  Losartana   50 mg  " }]);
   assert.equal(item?.medicationText, "Losartana 50 mg");
 });
+
+test("plano exige paciente identificado antes de renderizar", () => {
+  assert.throws(
+    () => renderMedicationPlanText("   ", items),
+    /vinculado a um paciente identificado/,
+  );
+});
+
+test("nome do paciente permanece em uma única linha no cabeçalho", () => {
+  assert.throws(
+    () => renderMedicationPlanText("Paciente Teste\nOutro contexto", items),
+    /Nome do paciente inválido/,
+  );
+
+  const text = renderMedicationPlanText("  Paciente   Teste  ", items);
+  assert.match(text, /^PLANO DE MEDICAMENTOS — Paciente Teste$/m);
+});
