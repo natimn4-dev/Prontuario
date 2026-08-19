@@ -18,7 +18,7 @@
 
 **Controles:**
 - paciente é derivado da consulta carregada no banco;
-- servidor não aceita `patientId` do navegador para criar escala/documento;
+- servidor não aceita `patientId` do navegador para criar escala/documento ou finalizar consulta;
 - medicamento precisa pertencer ao mesmo paciente da consulta;
 - testes de contexto clínico;
 - consulta finalizada é imutável.
@@ -67,8 +67,18 @@
 - restore testado;
 - backup antes de migrations relevantes.
 
-### 9. Alteração concorrente na finalização
-**Controle:** update atômico condicionado a `status=IN_REVIEW`; se outra operação mudar a consulta, a finalização falha.
+### 9. Alteração concorrente ou bypass na finalização
+**Risco:** o navegador tentar finalizar uma consulta com estado desatualizado, paciente divergente ou ocultando alertas urgentes existentes.
+
+**Controles:**
+- `patientId` é derivado da consulta no servidor e não é aceito no comando HTTP;
+- alertas urgentes atuais são recalculados no servidor a partir das avaliações da própria consulta;
+- reaplicações usam apenas o registro efetivo mais recente de cada instrumento;
+- o cliente pode apenas reconhecer explicitamente códigos de alertas que o servidor informou; códigos obsoletos/inventados não satisfazem alertas atuais ausentes da lista;
+- update atômico condicionado a `status=IN_REVIEW`; se outra operação mudar a consulta, a finalização falha;
+- confirmação de revisão clínica é obrigatória;
+- início de revisão e finalização exigem permissão `consultation.finalize`;
+- auditoria registra apenas ação/outcome/reasonCode operacional, sem texto clínico dos alertas.
 
 ### 10. Auditoria virando segundo prontuário
 **Controle:** auditoria registra ator, entidade, ação, outcome e códigos operacionais; não duplica texto clínico livre.
