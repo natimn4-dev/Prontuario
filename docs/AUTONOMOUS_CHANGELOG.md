@@ -80,3 +80,22 @@ Prioridade: **relatório final para família/cuidadores — clareza e consistên
 - nenhuma orientação clínica, regra de urgência, escore, interpretação ou intervenção foi modificada;
 - a normalização é usada apenas como chave de comparação e não altera o texto exibido ao paciente/família;
 - nenhuma salvaguarda de identidade ou persistência documental foi removida.
+
+## 2026-08-19 — Modelo estruturado para tabela de medicamentos
+
+Prioridade: **tabela de medicamentos — clareza, segurança de apresentação e preparação da UI**.
+
+### Alterações
+- criado `MedicationPlanRow`, um modelo explícito de uma linha por medicamento;
+- cada horário (`manhã`, `almoço`, `tarde`, `noite`, `ao deitar`, `se necessário`) passa a ser exposto como estado booleano independente no modelo de apresentação;
+- `buildMedicationPlanRows` reaproveita integralmente a validação existente antes de produzir as linhas;
+- `renderMedicationPlanText` passou a renderizar a partir desse modelo estruturado, preservando o conteúdo textual atual e a regra de manter frequência/horários fora do campo de nome e dose.
+
+### Testes adicionados
+- `tests/golden-master/medication-plan.test.ts` valida uma linha por medicamento, preservação de dose/via/uso contínuo e marcação independente dos horários, incluindo manhã + noite no mesmo item.
+
+### Limites preservados
+- nenhuma medicação, dose, via, frequência, horário ou instrução clínica é criada ou reinterpretada;
+- IDs repetidos continuam sendo rejeitados;
+- a regra que impede frequência/horário dentro de `medicationText` permanece ativa;
+- nenhuma salvaguarda documental ou de identidade foi removida.
