@@ -58,7 +58,7 @@
 - “sem dados registrados” quando necessário;
 - único botão “Copiar para prontuário”.
 
-**Estado atual (2026-08-19):** o renderer de domínio já produz S/O/A/P, exame físico, sinais vitais, antropometria, medicações em uso, problemas numerados e plano por problema sem inventar dados. A tela de consulta ainda não possui prévia/cópia SOAP. Embora `Consultation` tenha campos JSON `subjective`, `objective`, `assessment` e `plan`, ainda não existe um contrato persistido estável nem endpoint de edição que permita interpretar esses JSON com segurança. Próximo passo: definir e testar esse contrato antes de expor um único botão “Copiar para prontuário”.
+**Estado atual (2026-08-19):** o renderer de domínio já produz S/O/A/P, exame físico, sinais vitais, antropometria, medicações em uso, problemas numerados e plano por problema sem inventar dados. Foi definida a primeira fundação versionada e fail-closed para interpretar apenas `Consultation.subjective`, `Consultation.objective` e `Consultation.plan` nos campos que já possuem correspondência explícita no renderer. Avaliação continua derivada da lista longitudinal de problemas e medicações continuam na fonte estruturada própria, evitando duplicação clínica. O contrato ainda não está ligado à persistência nem à UI; antes disso é necessário inventariar JSON legado, definir migração/revisão, criar endpoint autenticado e testar isolamento por paciente. A tela de consulta ainda não possui prévia/cópia SOAP.
 
 ### P1-09 Relatório para família
 - vertical;
