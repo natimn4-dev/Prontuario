@@ -37,5 +37,69 @@ test("relatório familiar separa problemas clínicos e geriátricos", () => {
   const text = renderFamilyReportText(model);
   assert.match(text, /Problemas clínicos/);
   assert.match(text, /Problemas geriátricos/);
-  assert.match(text, /71 99992-1416/);
+  assert.match(text, /Quando entrar em contato: 71 99992-1416/);
+  assert.doesNotMatch(text, /Quando entrar em contato com o consultório/);
+});
+
+test("relatório familiar não repete sinais de atenção textualmente idênticos", () => {
+  const plan = emptyInterventionPlan();
+  plan.contato.push("Nova queda ou piora do equilíbrio.");
+  plan.urgencia.push("Procure atendimento em caso de perda de consciência.");
+
+  const model = buildFamilyReportModel({
+    patientName: "Paciente Teste",
+    problems,
+    plan,
+    attentionSigns: [
+      "Nova queda ou piora do equilíbrio.",
+      "Procure atendimento em caso de perda de consciência.",
+      "Nova queda ou piora do equilíbrio.",
+    ],
+  });
+
+  assert.deepEqual(model.attentionSigns, [
+    "Nova queda ou piora do equilíbrio.",
+    "Procure atendimento em caso de perda de consciência.",
+  ]);
+  const text = renderFamilyReportText(model);
+  assert.equal(text.match(/Nova queda ou piora do equilíbrio\./g)?.length, 1);
+  assert.equal(text.match(/Procure atendimento em caso de perda de consciência\./g)?.length, 1);
+});
+
+test("deduplicação ignora apenas caixa e espaços e preserva a primeira redação", () => {
+  const plan = emptyInterventionPlan();
+  plan.contato.push("nova   queda ou piora do equilíbrio.");
+  plan.urgencia.push("PROCURE ATENDIMENTO EM CASO DE PERDA DE CONSCIÊNCIA.");
+
+  const model = buildFamilyReportModel({
+    patientName: "Paciente Teste",
+    problems,
+    plan,
+    attentionSigns: [
+      "Nova queda ou piora do equilíbrio.",
+      "Procure atendimento em caso de perda de consciência.",
+    ],
+  });
+
+  assert.deepEqual(model.attentionSigns, [
+    "Nova queda ou piora do equilíbrio.",
+    "Procure atendimento em caso de perda de consciência.",
+  ]);
+});
+
+test("textos clinicamente diferentes permanecem separados", () => {
+  const plan = emptyInterventionPlan();
+  plan.contato.push("Nova queda.");
+  plan.urgencia.push("Nova queda com perda de consciência.");
+
+  const model = buildFamilyReportModel({
+    patientName: "Paciente Teste",
+    problems,
+    plan,
+  });
+
+  assert.deepEqual(model.attentionSigns, [
+    "Nova queda.",
+    "Nova queda com perda de consciência.",
+  ]);
 });
