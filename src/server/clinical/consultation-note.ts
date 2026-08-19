@@ -9,34 +9,12 @@ import {
   problemsAsOf,
   type ProblemTimelineRecord,
 } from "../../domain/as-of-consultation.ts";
-import type { ClinicalProblem } from "../../domain/problems.ts";
+import {
+  ConsultationNoteError,
+  type ConsultationNoteView,
+} from "../../domain/consultation-note-view.ts";
 import { requireAuthenticatedUser } from "../auth/require-user.ts";
 import { prisma } from "../db.ts";
-
-export type ConsultationNoteErrorCode =
-  | "CONSULTATION_NOT_FOUND"
-  | "CONSULTATION_FINALIZED"
-  | "INCOMPATIBLE_PERSISTED_NOTE"
-  | "UNSUPPORTED_ASSESSMENT_JSON"
-  | "UNKNOWN_PROBLEM"
-  | "CONSULTATION_CHANGED";
-
-export class ConsultationNoteError extends Error {
-  readonly code: ConsultationNoteErrorCode;
-  constructor(code: ConsultationNoteErrorCode, message: string) {
-    super(message);
-    this.name = "ConsultationNoteError";
-    this.code = code;
-  }
-}
-
-export interface ConsultationNoteView {
-  consultationId: string;
-  consultationStatus: "DRAFT" | "IN_REVIEW" | "FINALIZED";
-  updatedAt: string;
-  fields: SoapDraftFields;
-  problems: Array<Pick<ClinicalProblem, "id" | "type" | "status" | "title">>;
-}
 
 async function noteContext(tx: Prisma.TransactionClient, consultationId: string) {
   const consultation = await tx.consultation.findUnique({
