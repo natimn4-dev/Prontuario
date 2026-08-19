@@ -80,7 +80,7 @@
 - instrução;
 - fácil leitura por cuidador.
 
-**Estado atual (2026-08-19):** o editor mantém nome/dose separados dos horários estruturados e há uma tabela reutilizável orientada ao cuidador com medicamento, dose, via, marcação visual/textual dos momentos, uso contínuo e observações, incluindo layout responsivo e impressão. A tabela está exercitada apenas com dados sintéticos na demonstração. O domínio agora possui um corte temporal conservador de `MedicationRegimen` por horizonte de consulta, com falha fechada para mistura de pacientes; ainda falta definir, com dados históricos explícitos, a semântica de status ativo/suspenso antes de ligar a tabela aos snapshots reais de `MEDICATION_PLAN`.
+**Estado atual (2026-08-19):** o editor mantém nome/dose separados dos horários estruturados e há uma tabela reutilizável orientada ao cuidador com medicamento, dose, via, marcação visual/textual dos momentos, uso contínuo e observações, incluindo layout responsivo e impressão. Texto e tabela agora compartilham um único `MedicationPlanViewModel` validado no domínio, com uma linha por medicamento e estado booleano independente para cada horário; o cabeçalho também falha fechado se não houver paciente identificado ou se o nome recebido tentar ocupar múltiplas linhas. A tabela continua exercitada apenas com dados sintéticos na demonstração. O domínio possui um corte temporal conservador de `MedicationRegimen` por horizonte de consulta, com falha fechada para mistura de pacientes; ainda falta definir, com dados históricos explícitos, a semântica de status ativo/suspenso antes de ligar a tabela aos snapshots reais de `MEDICATION_PLAN`.
 
 ## P1 — Evolução
 ### P1-11 Dashboard “O que mudou?”
