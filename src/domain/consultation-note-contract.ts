@@ -38,6 +38,12 @@ export interface SoapDraftFields {
   planByProblem?: Readonly<Record<string, readonly string[]>>;
 }
 
+export interface SerializedConsultationNoteJson {
+  subjective: SubjectiveNoteV1;
+  objective: ObjectiveNoteV1;
+  plan: PlanNoteV1;
+}
+
 function asRecord(value: unknown, label: string): JsonRecord {
   if (!value || typeof value !== "object" || Array.isArray(value)) {
     throw new Error(`${label} deve ser um objeto JSON versionado.`);
@@ -69,6 +75,11 @@ function optionalString(record: JsonRecord, key: string, label: string): string 
     throw new Error(`${label}.${key} deve ser texto.`);
   }
   return value;
+}
+
+function normalizedOptionalText(value: string | undefined): string | undefined {
+  const normalized = value?.trim();
+  return normalized || undefined;
 }
 
 export function parseSubjectiveNote(value: unknown): SubjectiveNoteV1 | undefined {
@@ -158,5 +169,46 @@ export function consultationNoteJsonToSoapDraft(
     vitalSigns: objective?.vitalSigns,
     anthropometry: objective?.anthropometry,
     planByProblem: plan?.byProblem,
+  };
+}
+
+/**
+ * Serializa apenas o contrato v1 conhecido. O chamador nunca envia `assessment`:
+ * avaliação clínica continua derivada da lista longitudinal de problemas.
+ */
+export function soapDraftToConsultationNoteJson(
+  input: SoapDraftFields,
+): SerializedConsultationNoteJson {
+  const subjectiveText = normalizedOptionalText(input.subjective);
+  const physicalExam = normalizedOptionalText(input.physicalExam);
+  const vitalSigns = normalizedOptionalText(input.vitalSigns);
+  const anthropometry = normalizedOptionalText(input.anthropometry);
+  const byProblem: Record<string, readonly string[]> = {};
+
+  for (const [problemId, actions] of Object.entries(input.planByProblem ?? {})) {
+    const normalizedId = problemId.trim();
+    if (!normalizedId) throw new Error("Plano contém problemId vazio.");
+    const normalizedActions = actions.map((action) => action.trim()).filter(Boolean);
+    if (normalizedActions.length > 0) byProblem[normalizedId] = normalizedActions;
+  }
+
+  return {
+    subjective: {
+      schemaVersion: CONSULTATION_NOTE_SCHEMA_VERSION,
+      kind: "subjective",
+      ...(subjectiveText ? { text: subjectiveText } : {}),
+    },
+    objective: {
+      schemaVersion: CONSULTATION_NOTE_SCHEMA_VERSION,
+      kind: "objective",
+      ...(physicalExam ? { physicalExam } : {}),
+      ...(vitalSigns ? { vitalSigns } : {}),
+      ...(anthropometry ? { anthropometry } : {}),
+    },
+    plan: {
+      schemaVersion: CONSULTATION_NOTE_SCHEMA_VERSION,
+      kind: "plan",
+      ...(Object.keys(byProblem).length > 0 ? { byProblem } : {}),
+    },
   };
 }
