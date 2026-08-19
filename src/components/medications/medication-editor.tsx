@@ -1,5 +1,7 @@
 "use client";
 
+import { useId } from "react";
+
 import {
   MEDICATION_MOMENTS,
   MEDICATION_MOMENT_LABELS,
@@ -20,6 +22,10 @@ export function MedicationEditor(props: {
   value: MedicationEditorValue;
   onChange: (value: MedicationEditorValue) => void;
 }) {
+  const medicationTextId = useId();
+  const medicationTextHelpId = `${medicationTextId}-help`;
+  const medicationTextErrorId = `${medicationTextId}-error`;
+
   let textError = "";
   try {
     if (props.value.medicationText) assertMedicationTextContainsNoSchedule(props.value.medicationText);
@@ -34,19 +40,31 @@ export function MedicationEditor(props: {
     props.onChange({ ...props.value, moments });
   }
 
+  const medicationTextDescription = textError
+    ? `${medicationTextHelpId} ${medicationTextErrorId}`
+    : medicationTextHelpId;
+
   return (
     <fieldset className="medication-editor">
       <legend>Medicamento</legend>
-      <label>
-        Nome + dose/apresentação
-        <input
-          value={props.value.medicationText}
-          placeholder="Losartana 50 mg"
-          onChange={(event) => props.onChange({ ...props.value, medicationText: event.target.value })}
-          aria-invalid={Boolean(textError)}
-        />
-      </label>
-      {textError ? <p className="field-error" role="alert">{textError}</p> : null}
+      <label htmlFor={medicationTextId}>Nome + dose/apresentação</label>
+      <p id={medicationTextHelpId} className="muted">
+        Registre aqui apenas o medicamento e a dose/apresentação, por exemplo “Losartana 50 mg”.
+        Selecione os horários separadamente abaixo.
+      </p>
+      <input
+        id={medicationTextId}
+        value={props.value.medicationText}
+        placeholder="Losartana 50 mg"
+        onChange={(event) => props.onChange({ ...props.value, medicationText: event.target.value })}
+        aria-invalid={Boolean(textError)}
+        aria-describedby={medicationTextDescription}
+      />
+      {textError ? (
+        <p id={medicationTextErrorId} className="field-error" role="alert">
+          {textError}
+        </p>
+      ) : null}
       <div className="compact-fields">
         <label>Dose em uso<input value={props.value.doseInstruction} onChange={(event) => props.onChange({ ...props.value, doseInstruction: event.target.value })} /></label>
         <label>Via<input value={props.value.route} onChange={(event) => props.onChange({ ...props.value, route: event.target.value })} /></label>
