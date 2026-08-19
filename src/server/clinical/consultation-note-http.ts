@@ -5,7 +5,7 @@ import {
 import {
   ConsultationNoteError,
   type ConsultationNoteView,
-} from "./consultation-note.ts";
+} from "../../domain/consultation-note-view.ts";
 import type { SoapDraftFields } from "../../domain/consultation-note-contract.ts";
 
 const OPERATIONAL_REQUEST_ID = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
@@ -124,9 +124,7 @@ function errorResponse(error: unknown): Response {
     return json({ code: "INVALID_REQUEST", message: error.message }, 400);
   }
   if (error instanceof ConsultationNoteError) {
-    const status = error.code === "CONSULTATION_NOT_FOUND"
-      ? 404
-      : 409;
+    const status = error.code === "CONSULTATION_NOT_FOUND" ? 404 : 409;
     return json({ code: error.code, message: error.message }, status);
   }
   if (error instanceof AuthenticationRequiredError) {
