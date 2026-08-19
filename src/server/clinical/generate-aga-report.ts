@@ -2,6 +2,7 @@ import type { Prisma } from "../../generated/prisma/client";
 import { buildAgaReportModel, renderAgaReportText } from "../../domain/aga-report";
 import { consultationHorizon, problemsAsOf } from "../../domain/as-of-consultation";
 import type { LongitudinalAssessment } from "../../domain/clinical-change-summary";
+import { assertDocumentContextIntegrity } from "../../domain/document-context-integrity";
 import { prisma } from "../db";
 import { requireAuthenticatedUser } from "../auth/require-user";
 import { createDocumentSnapshot } from "./persistence";
@@ -109,6 +110,14 @@ export async function generateAgaReport(input: {
         },
       }),
     ]);
+
+    assertDocumentContextIntegrity({
+      patientId: consultation.patientId,
+      consultationId: consultation.id,
+      consultationIds,
+      scaleAssessments,
+      problems,
+    });
 
     return { consultation, consultationIds, scaleAssessments, problems };
   }, { isolationLevel: "RepeatableRead" });
