@@ -41,11 +41,11 @@ const GERIATRIC_PRESETS = [
 function ProblemCard({
   problem,
   editable,
-  onUpdated,
+  onChangeStatus,
 }: {
   problem: Problem;
   editable: boolean;
-  onUpdated: (view: WorkspaceView) => void;
+  onChangeStatus: (problemId: string, newStatus: ProblemStatus) => Promise<void>;
 }) {
   const [nextStatus, setNextStatus] = useState<ProblemStatus>(problem.status);
   const [saving, setSaving] = useState(false);
@@ -58,14 +58,7 @@ function ProblemCard({
     setSaving(true);
     setError(null);
     try {
-      const response = await fetch(`./problems`, {
-        method: "POST",
-        headers: { "content-type": "application/json" },
-        body: JSON.stringify({ action: "status", problemId: problem.id, newStatus: nextStatus }),
-      });
-      const body = await response.json().catch(() => null) as (WorkspaceView & { message?: string }) | null;
-      if (!response.ok || !body) throw new Error(body?.message || "Não foi possível atualizar o problema.");
-      onUpdated(body);
+      await onChangeStatus(problem.id, nextStatus);
     } catch (cause) {
       setError(cause instanceof Error ? cause.message : "Não foi possível atualizar o problema.");
     } finally {
@@ -134,24 +127,34 @@ export function ProblemWorkspace({ consultationId }: { consultationId: string })
     window.dispatchEvent(new CustomEvent("clinical-problems-changed", { detail: { consultationId } }));
   }
 
+  async function requestUpdate(body: unknown): Promise<WorkspaceView> {
+    const response = await fetch(`/api/consultations/${consultationId}/problems`, {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify(body),
+    });
+    const parsed = await response.json().catch(() => null) as (WorkspaceView & { message?: string }) | null;
+    if (!response.ok || !parsed) throw new Error(parsed?.message || "Não foi possível atualizar a lista de problemas.");
+    return parsed;
+  }
+
+  async function changeStatus(problemId: string, newStatus: ProblemStatus) {
+    const next = await requestUpdate({ action: "status", problemId, newStatus });
+    applyView(next);
+  }
+
   async function create() {
     if (!editable || !title.trim() || saving) return;
     setSaving(true);
     setFeedback(null);
     try {
-      const response = await fetch(`/api/consultations/${consultationId}/problems`, {
-        method: "POST",
-        headers: { "content-type": "application/json" },
-        body: JSON.stringify({
-          action: "create",
-          type,
-          title: title.trim(),
-          description: description.trim() || undefined,
-        }),
+      const next = await requestUpdate({
+        action: "create",
+        type,
+        title: title.trim(),
+        description: description.trim() || undefined,
       });
-      const body = await response.json().catch(() => null) as (WorkspaceView & { message?: string }) | null;
-      if (!response.ok || !body) throw new Error(body?.message || "Não foi possível criar o problema.");
-      applyView(body);
+      applyView(next);
       setTitle("");
       setDescription("");
     } catch (cause) {
@@ -218,13 +221,13 @@ export function ProblemWorkspace({ consultationId }: { consultationId: string })
         <section>
           <h3>Problemas clínicos</h3>
           {clinical.length === 0 ? <p className={styles.empty}>Sem problemas clínicos registrados.</p> : clinical.map((problem) => (
-            <ProblemCard key={problem.id} problem={problem} editable={editable} onUpdated={applyView} />
+            <ProblemCard key={problem.id} problem={problem} editable={editable} onChangeStatus={changeStatus} />
           ))}
         </section>
         <section>
           <h3>Problemas geriátricos</h3>
           {geriatric.length === 0 ? <p className={styles.empty}>Sem problemas geriátricos registrados.</p> : geriatric.map((problem) => (
-            <ProblemCard key={problem.id} problem={problem} editable={editable} onUpdated={applyView} />
+            <ProblemCard key={problem.id} problem={problem} editable={editable} onChangeStatus={changeStatus} />
           ))}
         </section>
       </div>
