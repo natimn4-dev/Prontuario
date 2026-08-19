@@ -13,6 +13,24 @@ function bulletList(items: readonly string[]): string {
   return items.length > 0 ? items.map((item) => `- ${item}`).join("\n") : "- sem dados registrados";
 }
 
+function normalizedTextKey(value: string): string {
+  return value.normalize("NFKC").trim().replace(/\s+/g, " ").toLocaleLowerCase("pt-BR");
+}
+
+function uniqueTextInOrder(items: readonly string[]): string[] {
+  const seen = new Set<string>();
+  const unique: string[] = [];
+
+  for (const item of items) {
+    const key = normalizedTextKey(item);
+    if (seen.has(key)) continue;
+    seen.add(key);
+    unique.push(item);
+  }
+
+  return unique;
+}
+
 export interface SoapMedication {
   medicationText: string;
   doseInstruction?: string;
@@ -113,7 +131,11 @@ export function buildFamilyReportModel(input: FamilyReportInput): FamilyReportMo
     mediumTerm: [...input.plan.medio],
     caregiver: [...input.plan.cuidador],
     referrals: [...input.plan.encaminhamentos],
-    attentionSigns: [...(input.attentionSigns ?? []), ...input.plan.contato, ...input.plan.urgencia],
+    attentionSigns: uniqueTextInOrder([
+      ...(input.attentionSigns ?? []),
+      ...input.plan.contato,
+      ...input.plan.urgencia,
+    ]),
     contactPhone: input.contactPhone,
   };
 }
@@ -140,7 +162,7 @@ export function renderFamilyReportText(model: FamilyReportModel): string {
     section("Sinais de atenção", model.attentionSigns),
   ];
   if (model.contactPhone) {
-    blocks.push("", `Quando entrar em contato com o consultório: ${model.contactPhone}`);
+    blocks.push("", `Quando entrar em contato: ${model.contactPhone}`);
   }
   return blocks.join("\n");
 }
