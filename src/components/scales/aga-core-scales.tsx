@@ -9,7 +9,8 @@ type Choice = { value: number; label: string };
 type Question = { id: string; label: string; choices?: Choice[]; number?: { min: number; max: number; step: number; unit?: string; help?: string } };
 type Definition = { code: ScaleCode; version: string; name: string; dimension: string; instruction: string; sourceNote?: string; questions: Question[] };
 type Latest = { id: string; consultationId: string; scaleCode: ScaleCode; scaleVersion: string; scoreNumeric: number | null; scoreText?: string | null; classification?: string | null; interpretation?: string | null; appliedAt: string };
-type View = { consultationId: string; consultationStatus: "DRAFT" | "IN_REVIEW" | "FINALIZED"; definitions: Definition[]; latest: Latest[] };
+type LicensingRestriction = { code: string; name: string; reason: string };
+type View = { consultationId: string; consultationStatus: "DRAFT" | "IN_REVIEW" | "FINALIZED"; definitions: Definition[]; latest: Latest[]; licensingRestrictions?: LicensingRestriction[] };
 type Result = { score: number; scoreText: string; classification: string; interpretation: string };
 
 const VALIDATED_NAMES = new Set([
@@ -118,6 +119,12 @@ export function AgaCoreScales({ consultationId }: { consultationId: string }) {
       {latestByCode.get(definition.code) ? <p className={styles.previous}>Último registro conhecido: <strong>{latestByCode.get(definition.code)!.scoreText ?? latestByCode.get(definition.code)!.scoreNumeric ?? "sem escore"}</strong> · {latestByCode.get(definition.code)!.classification ?? "sem classificação"} · {formatDate(latestByCode.get(definition.code)!.appliedAt)}</p> : null}
       {SCREENING_CODES.has(definition.code) ? <p className={styles.clinicalNote}>Resultado de rastreio não estabelece diagnóstico por si só; integre o escore à avaliação clínica, funcional, sensorial, educacional e familiar pertinente.</p> : null}
     </div> : null}
+
+    {(view?.licensingRestrictions?.length ?? 0) > 0 ? <details className={styles.migration}>
+      <summary>Escalas validadas aguardando licença para uso eletrônico</summary>
+      <p>Os cálculos permanecem testados e versionados, mas o formulário eletrônico fica indisponível até confirmação documental da permissão/licença aplicável.</p>
+      <ul>{view!.licensingRestrictions!.map((item) => <li key={item.code}><strong>{item.name}</strong><span>Uso eletrônico bloqueado</span><small>{item.reason}</small></li>)}</ul>
+    </details> : null}
 
     <details className={styles.migration}>
       <summary>Escalas do apêndice ainda em validação de versão</summary>
