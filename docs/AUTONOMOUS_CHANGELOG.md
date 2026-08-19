@@ -63,3 +63,20 @@ Prioridade: **relatório final para família/cuidadores — legibilidade e ader�
 ### Limites preservados
 - nenhuma orientação clínica foi criada, removida ou reinterpretada;
 - nenhuma regra de contato, urgência ou persistência foi alterada.
+
+## 2026-08-19 — Deduplicação robusta de sinais de atenção
+
+Prioridade: **relatório final para família/cuidadores — clareza e consistência textual**.
+
+### Alterações
+- a deduplicação de `Sinais de atenção` passou a reconhecer como equivalentes textos que diferem apenas por caixa tipográfica, espaços repetidos ou forma Unicode compatível;
+- a primeira redação continua sendo preservada integralmente no relatório;
+- textos realmente diferentes continuam sendo mantidos, sem tentativa de equivalência semântica ou interpretação clínica.
+
+### Testes adicionados
+- `tests/golden-master/document-renderers.test.ts` agora cobre variações de maiúsculas/minúsculas e espaçamento provenientes de fontes distintas, garantindo uma única ocorrência e preservação da primeira redação.
+
+### Limites preservados
+- nenhuma orientação clínica, regra de urgência, escore, interpretação ou intervenção foi modificada;
+- a normalização é usada apenas como chave de comparação e não altera o texto exibido ao paciente/família;
+- nenhuma salvaguarda de identidade ou persistência documental foi removida.
