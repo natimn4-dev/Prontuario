@@ -1,7 +1,7 @@
 import {
   MEDICATION_MOMENTS,
   MEDICATION_MOMENT_LABELS,
-  validateMedicationPlan,
+  buildMedicationPlanViewModel,
   type MedicationPlanItem,
 } from "@/domain/medication-plan";
 import styles from "./medication-plan-table.module.css";
@@ -17,19 +17,19 @@ export function MedicationPlanTable({
   patientName: string;
   items: readonly MedicationPlanItem[];
 }) {
-  const medications = validateMedicationPlan(items);
+  const model = buildMedicationPlanViewModel(patientName, items);
 
   return (
     <section className={styles.card} aria-labelledby="medication-plan-title">
       <div className={`section-heading ${styles.heading}`}>
         <div>
           <p className="eyebrow">Plano de medicamentos</p>
-          <h2 id="medication-plan-title">Horários de {patientName}</h2>
+          <h2 id="medication-plan-title">Horários de {model.patientName}</h2>
         </div>
         <p className="muted">Use somente conforme a orientação médica registrada.</p>
       </div>
 
-      {medications.length === 0 ? (
+      {model.rows.length === 0 ? (
         <p className="muted">Nenhum medicamento registrado neste plano.</p>
       ) : (
         <div className={styles.wrap}>
@@ -46,16 +46,16 @@ export function MedicationPlanTable({
               </tr>
             </thead>
             <tbody>
-              {medications.map((item) => (
-                <tr key={item.id}>
+              {model.rows.map((row) => (
+                <tr key={row.id}>
                   <th scope="row">
-                    <strong>{item.medicationText}</strong>
-                    {item.continuous ? <span className={styles.continuous}>Uso contínuo</span> : null}
+                    <strong>{row.medicationText}</strong>
+                    {row.continuous ? <span className={styles.continuous}>Uso contínuo</span> : null}
                   </th>
-                  <td>{displayOptional(item.doseInstruction)}</td>
-                  <td>{displayOptional(item.route)}</td>
+                  <td>{displayOptional(row.doseInstruction)}</td>
+                  <td>{displayOptional(row.route)}</td>
                   {MEDICATION_MOMENTS.map((moment) => {
-                    const selected = item.moments.includes(moment);
+                    const selected = row.moments[moment];
                     return (
                       <td className={styles.moment} key={moment}>
                         <span
@@ -67,7 +67,7 @@ export function MedicationPlanTable({
                       </td>
                     );
                   })}
-                  <td>{displayOptional(item.instructions)}</td>
+                  <td>{displayOptional(row.instructions)}</td>
                 </tr>
               ))}
             </tbody>
