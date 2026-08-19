@@ -1,0 +1,43 @@
+name: Production Clinical Smoke
+
+on:
+  workflow_dispatch:
+  workflow_run:
+    workflows: ["CI"]
+    branches: [main]
+    types: [completed]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: production-clinical-smoke
+  cancel-in-progress: true
+
+jobs:
+  smoke:
+    if: github.event_name == 'workflow_dispatch' || github.event.workflow_run.conclusion == 'success'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    env:
+      APP_URL: https://prontuario.nataliamendesgeriatra.com
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Wait for deployment and verify clinical perimeter
+        shell: bash
+        run: |
+          set -uo pipefail
+          for attempt in $(seq 1 12); do
+            echo "Production smoke attempt ${attempt}/12"
+            if npm run release:clinical:smoke; then
+              exit 0
+            fi
+            if [ "$attempt" -lt 12 ]; then
+              sleep 30
+            fi
+          done
+          echo "Production did not satisfy the clinical smoke gate after 12 attempts." >&2
+          exit 1
