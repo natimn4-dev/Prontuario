@@ -1,12 +1,11 @@
 import type { Prisma } from "../../generated/prisma/client.ts";
-import { clinicalAlertsFor } from "../../domain/clinical-alerts.ts";
 import type { ClinicalColor } from "../../domain/clinical-engine.ts";
+import { urgentAlertsForCurrentConsultation } from "../../domain/consultation-urgent-alerts.ts";
 import { requireAuthenticatedUser } from "../auth/require-user.ts";
 import { prisma } from "../db.ts";
 import {
   consultationFinalizationService,
   type ConsultationFinalizationTransaction,
-  type ServerDerivedUrgentAlert,
 } from "./consultation-finalization-service.ts";
 
 function answersRecord(value: unknown): Record<string, unknown> | undefined {
@@ -29,7 +28,6 @@ async function workflowContext(
       consultationId: consultation.id,
       patientId: consultation.patientId,
     },
-    orderBy: [{ appliedAt: "asc" }, { id: "asc" }],
     select: {
       id: true,
       scaleCode: true,
@@ -38,26 +36,22 @@ async function workflowContext(
       scoreText: true,
       classification: true,
       clinicalColor: true,
+      appliedAt: true,
     },
   });
 
-  // Reaplicações na mesma consulta não podem multiplicar alertas antigos.
-  // Mantemos apenas o registro efetivo mais recente de cada instrumento.
-  const latestByScale = new Map<string, (typeof assessments)[number]>();
-  for (const assessment of assessments) latestByScale.set(assessment.scaleCode, assessment);
-
-  const urgentAlerts: ServerDerivedUrgentAlert[] = [...latestByScale.values()]
-    .flatMap((assessment) => clinicalAlertsFor(assessment.scaleCode, {
+  const urgentAlerts = urgentAlertsForCurrentConsultation(
+    assessments.map((assessment) => ({
+      id: assessment.id,
+      scaleCode: assessment.scaleCode,
       answers: answersRecord(assessment.answers),
-      result: {
-        score: assessment.scoreNumeric === null ? null : Number(assessment.scoreNumeric),
-        scoreText: assessment.scoreText ?? (assessment.scoreNumeric === null ? "—" : String(assessment.scoreNumeric)),
-        cor: (assessment.clinicalColor ?? "cinza") as ClinicalColor,
-        classe: assessment.classification ?? "Sem classificação registrada",
-      },
-    }))
-    .filter((alert) => alert.severity === "urgent")
-    .map((alert) => ({ code: alert.code, message: alert.message }));
+      score: assessment.scoreNumeric === null ? null : Number(assessment.scoreNumeric),
+      scoreText: assessment.scoreText ?? undefined,
+      classification: assessment.classification ?? undefined,
+      color: (assessment.clinicalColor ?? undefined) as ClinicalColor | undefined,
+      appliedAt: assessment.appliedAt,
+    })),
+  );
 
   return {
     id: consultation.id,
