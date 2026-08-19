@@ -109,3 +109,13 @@ export function findDuplicateCandidates(input: {
     }];
   });
 }
+
+/**
+ * Mantém uma única política de precedência para conflitos de identidade.
+ * Identificador forte sempre prevalece sobre coincidências por nome/data.
+ */
+export function preferredDuplicateCandidate(
+  candidates: readonly DuplicateCandidate[],
+): DuplicateCandidate | undefined {
+  return candidates.find((candidate) => candidate.reason === "strong-identifier") ?? candidates[0];
+}
