@@ -19,7 +19,7 @@ export type CoreScaleResult = {
   scoreText: string;
   classification: string;
   interpretation: string;
-  clinicalColor: "green" | "yellow" | "red";
+  clinicalColor?: "green" | "yellow" | "red";
 };
 
 const binary = (independentLabel: string, dependentLabel: string): readonly ScaleChoice[] => [
@@ -43,26 +43,48 @@ export const KATZ_FREITAS: CoreScaleDefinition = {
   ],
 };
 
-const lawtonChoices: readonly ScaleChoice[] = [
-  { value: 3, label: "Capaz sem ajuda" },
-  { value: 2, label: "Capaz com ajuda/limitação parcial" },
-  { value: 1, label: "Incapaz" },
-];
-
 export const LAWTON_FREITAS: CoreScaleDefinition = {
   code: "lawton",
   version: LAWTON_FREITAS_VERSION,
   name: "AIVD — Lawton (Freitas/Py)",
   dimension: "funcionalidade",
-  instruction: "Pontue o que a pessoa efetivamente faz. Cada item recebe 1, 2 ou 3 pontos; total de 7 a 21, com maior pontuação indicando maior independência.",
+  instruction: "Pontue o desempenho descrito em cada atividade. Cada item recebe 1, 2 ou 3 pontos; total de 7 a 21, com maior pontuação indicando maior independência.",
   questions: [
-    { id: "phone", label: "Uso do telefone", choices: lawtonChoices },
-    { id: "travel", label: "Viagens/transporte", choices: lawtonChoices },
-    { id: "shopping", label: "Compras", choices: lawtonChoices },
-    { id: "meals", label: "Preparo de refeições", choices: lawtonChoices },
-    { id: "housework", label: "Trabalho doméstico", choices: lawtonChoices },
-    { id: "medications", label: "Medicações", choices: lawtonChoices },
-    { id: "money", label: "Dinheiro/finanças", choices: lawtonChoices },
+    { id: "phone", label: "Uso do telefone", choices: [
+      { value: 3, label: "Vê os números, disca, recebe e faz ligações sem ajuda" },
+      { value: 2, label: "Responde ao telefone, mas necessita aparelho especial ou ajuda para localizar/discar números" },
+      { value: 1, label: "Completamente incapaz de usar o telefone" },
+    ] },
+    { id: "travel", label: "Viagens/transporte", choices: [
+      { value: 3, label: "Dirige o próprio carro ou viaja sozinho de ônibus ou táxi" },
+      { value: 2, label: "Viaja exclusivamente acompanhado" },
+      { value: 1, label: "Completamente incapaz de viajar" },
+    ] },
+    { id: "shopping", label: "Compras", choices: [
+      { value: 3, label: "Faz compras se o transporte for fornecido" },
+      { value: 2, label: "Faz compras exclusivamente acompanhado" },
+      { value: 1, label: "Completamente incapaz de fazer compras" },
+    ] },
+    { id: "meals", label: "Preparo de refeições", choices: [
+      { value: 3, label: "Planeja e cozinha refeições completas" },
+      { value: 2, label: "Prepara pequenas refeições, mas não refeições completas sozinho" },
+      { value: 1, label: "Completamente incapaz de preparar qualquer refeição" },
+    ] },
+    { id: "housework", label: "Trabalho doméstico", choices: [
+      { value: 3, label: "Realiza trabalho doméstico pesado" },
+      { value: 2, label: "Realiza trabalho leve, mas necessita ajuda nas tarefas pesadas" },
+      { value: 1, label: "Completamente incapaz de realizar trabalho doméstico" },
+    ] },
+    { id: "medications", label: "Medicações", choices: [
+      { value: 3, label: "Toma os medicamentos na dose certa e na hora certa" },
+      { value: 2, label: "Toma os medicamentos com lembretes ou quando outra pessoa os prepara" },
+      { value: 1, label: "Completamente incapaz de tomar os medicamentos sozinho" },
+    ] },
+    { id: "money", label: "Dinheiro/finanças", choices: [
+      { value: 3, label: "Administra compras, cheques e pagamento de contas" },
+      { value: 2, label: "Administra compras diárias, mas necessita ajuda com cheques e contas" },
+      { value: 1, label: "Completamente incapaz de administrar dinheiro" },
+    ] },
   ],
 };
 
@@ -148,7 +170,6 @@ export function scoreCoreFreitasScale(code: CoreFreitasScaleCode, rawAnswers: Re
       scoreText: `${score}/6`,
       classification: score === 6 ? "Independente nas 6 ABVD" : score === 0 ? "Dependente nas 6 ABVD" : `Dependência em ${dependent} de 6 ABVD`,
       interpretation: score === 6 ? "Independência registrada em todas as seis funções." : `${dependent} função(ões) com dependência registrada; revisar cada item individualmente.`,
-      clinicalColor: score === 6 ? "green" : "yellow",
     } };
   }
 
@@ -158,7 +179,6 @@ export function scoreCoreFreitasScale(code: CoreFreitasScaleCode, rawAnswers: Re
       scoreText: `${score}/21`,
       classification: score === 21 ? "Independente nas 7 AIVD" : score === 7 ? "Dependente nas 7 AIVD" : "Necessita apoio em uma ou mais AIVD",
       interpretation: "Maior pontuação representa maior independência; revisar os sete itens para localizar as necessidades de ajuda.",
-      clinicalColor: score === 21 ? "green" : "yellow",
     } };
   }
 
