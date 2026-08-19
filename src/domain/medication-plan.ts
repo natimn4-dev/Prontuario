@@ -66,6 +66,19 @@ export function cleanMedicationText(value: string): string {
   return value.trim().replace(/\s+/g, " ");
 }
 
+function normalizePatientDisplayName(value: string): string {
+  if (/\r|\n/.test(value)) {
+    throw new Error("Nome do paciente inválido para exibição no plano de medicamentos.");
+  }
+
+  const patientName = value.trim().replace(/\s+/g, " ");
+  if (!patientName) {
+    throw new Error("O plano de medicamentos precisa estar vinculado a um paciente identificado.");
+  }
+
+  return patientName;
+}
+
 export function assertMedicationTextContainsNoSchedule(value: string): void {
   const normalized = normalizedForSemanticValidation(value);
   if (FREQUENCY_OR_SCHEDULE_PATTERNS.some((pattern) => pattern.test(normalized))) {
@@ -127,8 +140,9 @@ export function renderMedicationPlanText(
   patientName: string,
   items: readonly MedicationPlanItem[],
 ): string {
+  const displayPatientName = normalizePatientDisplayName(patientName);
   const rows = buildMedicationPlanRows(items);
-  const lines = [`PLANO DE MEDICAMENTOS — ${patientName}`];
+  const lines = [`PLANO DE MEDICAMENTOS — ${displayPatientName}`];
 
   for (const row of rows) {
     const details = [row.doseInstruction, row.route, row.continuous ? "uso contínuo" : undefined]
