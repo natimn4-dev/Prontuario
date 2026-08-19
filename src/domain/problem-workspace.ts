@@ -1,4 +1,5 @@
 import type { ProblemStatus, ProblemType } from "./problems.ts";
+export type { ProblemStatus, ProblemType } from "./problems.ts";
 
 export type ProblemWorkspaceErrorCode =
   | "CONSULTATION_NOT_FOUND"
