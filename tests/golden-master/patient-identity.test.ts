@@ -6,6 +6,7 @@ import {
   normalizePatientIdentifier,
   normalizePersonName,
   patientIdentityFingerprint,
+  preferredDuplicateCandidate,
 } from "../../src/domain/patient-identity.ts";
 
 test("nome é normalizado por espaços, caixa e acentuação", () => {
@@ -40,6 +41,18 @@ test("identificador forte igual bloqueia mesmo com nome diferente", () => {
   });
   assert.equal(candidates[0]?.reason, "strong-identifier");
   assert.equal(normalizePatientIdentifier("CPF", "123.456.789-00"), "12345678900");
+});
+
+test("identificador forte prevalece quando existem múltiplos candidatos de duplicidade", () => {
+  const preferred = preferredDuplicateCandidate([
+    { patientId: "nome-data", reason: "same-name-and-birth-date", blocksAutomaticCreation: true },
+    { patientId: "identificador", reason: "strong-identifier", blocksAutomaticCreation: true },
+  ]);
+  assert.deepEqual(preferred, {
+    patientId: "identificador",
+    reason: "strong-identifier",
+    blocksAutomaticCreation: true,
+  });
 });
 
 test("fingerprint é determinístico e não confunde datas diferentes", () => {
