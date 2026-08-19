@@ -4,6 +4,7 @@ import { SoapEditor } from "@/components/consultations/soap-editor";
 import { MedicationWorkspace } from "@/components/medications/medication-workspace";
 import { ProblemWorkspace } from "@/components/problems/problem-workspace";
 import { AgaReportPreview } from "@/components/reports/aga-report-preview";
+import { AgaCoreScales } from "@/components/scales/aga-core-scales";
 import { OncogeriatricScales } from "@/components/scales/oncogeriatric-scales";
 import { buildConsultationContextViewModel } from "@/domain/consultation-context";
 import { requireAuthenticatedUser } from "@/server/auth/require-user";
@@ -34,6 +35,7 @@ export default async function ConsultationPage({ params }: { params: Promise<{ i
     <ProblemWorkspace consultationId={id} />
     <MedicationWorkspace consultationId={id} patientName={context.patientName} />
     <SoapEditor consultationId={id} />
+    <AgaCoreScales consultationId={id} />
     <OncogeriatricScales consultationId={id} />
     <AgaReportPreview consultationId={id} />
     <ConsultationFinalizationPanel consultationId={id} />
