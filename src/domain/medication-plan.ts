@@ -16,6 +16,16 @@ export interface MedicationPlanItem {
   continuous?: boolean;
 }
 
+export interface MedicationPlanRow {
+  id: string;
+  medicationText: string;
+  doseInstruction?: string;
+  route?: string;
+  instructions?: string;
+  continuous: boolean;
+  moments: Readonly<Record<MedicationMoment, boolean>>;
+}
+
 export const MEDICATION_MOMENTS: readonly MedicationMoment[] = [
   "manha",
   "almoco",
@@ -97,24 +107,40 @@ export function validateMedicationPlan(
   });
 }
 
+export function buildMedicationPlanRows(
+  items: readonly MedicationPlanItem[],
+): MedicationPlanRow[] {
+  return validateMedicationPlan(items).map((item) => ({
+    id: item.id,
+    medicationText: item.medicationText,
+    doseInstruction: item.doseInstruction,
+    route: item.route,
+    instructions: item.instructions,
+    continuous: item.continuous === true,
+    moments: Object.fromEntries(
+      MEDICATION_MOMENTS.map((moment) => [moment, item.moments.includes(moment)]),
+    ) as Record<MedicationMoment, boolean>,
+  }));
+}
+
 export function renderMedicationPlanText(
   patientName: string,
   items: readonly MedicationPlanItem[],
 ): string {
-  const validItems = validateMedicationPlan(items);
+  const rows = buildMedicationPlanRows(items);
   const lines = [`PLANO DE MEDICAMENTOS — ${patientName}`];
 
-  for (const item of validItems) {
-    const details = [item.doseInstruction, item.route, item.continuous ? "uso contínuo" : undefined]
+  for (const row of rows) {
+    const details = [row.doseInstruction, row.route, row.continuous ? "uso contínuo" : undefined]
       .filter(Boolean)
       .join(" · ");
-    lines.push("", `- ${item.medicationText}${details ? ` — ${details}` : ""}`);
+    lines.push("", `- ${row.medicationText}${details ? ` — ${details}` : ""}`);
     lines.push(
       MEDICATION_MOMENTS
-        .map((moment) => `${item.moments.includes(moment) ? "[x]" : "[ ]"} ${MEDICATION_MOMENT_LABELS[moment]}`)
+        .map((moment) => `${row.moments[moment] ? "[x]" : "[ ]"} ${MEDICATION_MOMENT_LABELS[moment]}`)
         .join("  "),
     );
-    if (item.instructions) lines.push(`  ${item.instructions}`);
+    if (row.instructions) lines.push(`  ${row.instructions}`);
   }
 
   return lines.join("\n");
