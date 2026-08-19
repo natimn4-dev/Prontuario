@@ -1,7 +1,7 @@
 export const PRIMARY_SCALE_SOURCE_ID = "freitas-py-apendice" as const;
 export const PRIMARY_SCALE_SOURCE_LABEL =
   "Freitas e Py — Apêndice: Instrumentos de Avaliação" as const;
-export const PRIMARY_SCALE_SOURCE_POLICY_VERSION = "2026-08-15" as const;
+export const PRIMARY_SCALE_SOURCE_POLICY_VERSION = "2026-08-19" as const;
 
 export type PrimarySourceCoverage =
   | "defines-instrument"
@@ -51,6 +51,12 @@ export const SCALE_SOURCE_POLICY: Readonly<Record<string, ScaleSourcePolicy>> = 
     migrationStatus: "migration-required",
     note: "O PDF apresenta versão de 10 itens com respostas A-F. Não reutilizar silenciosamente a versão legada de 11 itens nem inventar transformação numérica/corte.",
   },
+  pfeffer10: {
+    code: "pfeffer10",
+    coverage: "defines-instrument",
+    migrationStatus: "adopted",
+    note: "Versão Freitas/Py de 10 itens já implementada com código e versão próprios; não converter nem reclassificar avaliações legadas de Pfeffer.",
+  },
   gds15: {
     code: "gds15",
     coverage: "defines-instrument",
@@ -63,17 +69,35 @@ export const SCALE_SOURCE_POLICY: Readonly<Record<string, ScaleSourcePolicy>> = 
     migrationStatus: "review-required",
     note: "O PDF define o formulário/itens do MEEM; pontos de corte por escolaridade exigem fonte complementar/versionada quando não definidos no apêndice.",
   },
+  meem_freitas: {
+    code: "meem_freitas",
+    coverage: "defines-form-only",
+    migrationStatus: "adopted",
+    note: "Formulário Freitas/Py implementado com versão própria; referências educacionais brasileiras suplementares permanecem identificadas e não são tratadas como pontos diagnósticos.",
+  },
   moca: {
     code: "moca",
     coverage: "defines-instrument",
     migrationStatus: "migration-required",
     note: "A versão apresentada no PDF deve ser tratada como versão explícita própria; não substituir a versão histórica já registrada.",
   },
+  moca_br_freitas: {
+    code: "moca_br_freitas",
+    coverage: "defines-instrument",
+    migrationStatus: "adopted",
+    note: "Versão brasileira reproduzida no Freitas/Py implementada com código próprio; referências brasileiras suplementares são versionadas e o resultado permanece de rastreio.",
+  },
   sppb: {
     code: "sppb",
     coverage: "defines-instrument",
     migrationStatus: "migration-required",
     note: "O PDF documenta componentes e pontuação por desempenho. A nova versão deve preservar medidas brutas e subescores antes do total.",
+  },
+  sppb_freitas: {
+    code: "sppb_freitas",
+    coverage: "defines-instrument",
+    migrationStatus: "adopted",
+    note: "Versão Freitas/Py implementada separadamente, preservando medidas brutas, subescores e percurso documentado; não reclassificar o SPPB legado.",
   },
   mna_sf: {
     code: "mna_sf",
@@ -84,8 +108,8 @@ export const SCALE_SOURCE_POLICY: Readonly<Record<string, ScaleSourcePolicy>> = 
   mna_full: {
     code: "mna_full",
     coverage: "defines-instrument",
-    migrationStatus: "migration-required",
-    note: "O PDF define triagem A-F e avaliação global G-R. A ambiguidade documental de IMC exatamente 23 deve permanecer sem inferência automática até revisão clínica.",
+    migrationStatus: "adopted",
+    note: "O PDF define triagem A-F e avaliação global G-R. A MNA completa foi implementada com versão própria e permanece separada da MNA-SF histórica.",
   },
   apgar_familiar: {
     code: "apgar_familiar",
@@ -97,19 +121,43 @@ export const SCALE_SOURCE_POLICY: Readonly<Record<string, ScaleSourcePolicy>> = 
     code: "minicog",
     coverage: "defines-instrument",
     migrationStatus: "migration-required",
-    note: "Instrumento presente no PDF e ainda não catalogado como versão clínica aplicável na main atual.",
+    note: "Código de inventário histórico. Novas aplicações usam a versão explícita `minicog_freitas`; não criar equivalência silenciosa entre códigos.",
+  },
+  minicog_freitas: {
+    code: "minicog_freitas",
+    coverage: "defines-instrument",
+    migrationStatus: "adopted",
+    note: "Mini-Cog do fluxo Freitas/Py implementado com código e versão próprios; o algoritmo de pontuação complementar permanece explicitamente documentado.",
+  },
+  clock_shulman: {
+    code: "clock_shulman",
+    coverage: "defines-form-only",
+    migrationStatus: "adopted",
+    note: "O Freitas/Py fornece a máscara de aplicação; a classificação Shulman 0-5 usa fonte brasileira suplementar versionada e permanece separada do relógio do Mini-Cog e do MoCA.",
   },
   poma: {
     code: "poma",
     coverage: "defines-instrument",
     migrationStatus: "migration-required",
-    note: "O PDF documenta avaliação de equilíbrio e marcha orientada pelo desempenho; requer implementação versionada própria.",
+    note: "O PDF documenta avaliação de equilíbrio e marcha orientada pelo desempenho; a versão histórica não deve ser confundida com a versão Freitas/Py de 57 pontos.",
+  },
+  poma_freitas: {
+    code: "poma_freitas",
+    coverage: "defines-instrument",
+    migrationStatus: "adopted",
+    note: "Versão Freitas/Py de 57 pontos implementada com código próprio; não aplicar cortes da versão Tinetti de 28 pontos.",
   },
   iqcode_br: {
     code: "iqcode_br",
     coverage: "defines-instrument",
     migrationStatus: "migration-required",
-    note: "IQCODE-Br presente no PDF; requer definição versionada antes de aplicação automatizada.",
+    note: "Código de inventário histórico. Novas aplicações usam `iqcode_br_26` com versão explícita e referências brasileiras complementares.",
+  },
+  iqcode_br_26: {
+    code: "iqcode_br_26",
+    coverage: "defines-instrument",
+    migrationStatus: "adopted",
+    note: "IQCODE-Br de 26 itens do Freitas/Py implementado com versão própria; referências brasileiras complementares são mantidas como apoio de rastreio, não como diagnóstico isolado.",
   },
   cesd: {
     code: "cesd",
