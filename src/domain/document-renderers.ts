@@ -13,8 +13,22 @@ function bulletList(items: readonly string[]): string {
   return items.length > 0 ? items.map((item) => `- ${item}`).join("\n") : "- sem dados registrados";
 }
 
+function normalizedTextKey(value: string): string {
+  return value.normalize("NFKC").trim().replace(/\s+/g, " ").toLocaleLowerCase("pt-BR");
+}
+
 function uniqueInOrder(items: readonly string[]): string[] {
-  return [...new Set(items)];
+  const seen = new Set<string>();
+  const unique: string[] = [];
+
+  for (const item of items) {
+    const key = normalizedTextKey(item);
+    if (seen.has(key)) continue;
+    seen.add(key);
+    unique.push(item);
+  }
+
+  return unique;
 }
 
 export interface SoapMedication {
