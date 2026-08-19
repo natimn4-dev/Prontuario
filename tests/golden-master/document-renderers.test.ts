@@ -37,7 +37,8 @@ test("relatório familiar separa problemas clínicos e geriátricos", () => {
   const text = renderFamilyReportText(model);
   assert.match(text, /Problemas clínicos/);
   assert.match(text, /Problemas geriátricos/);
-  assert.match(text, /71 99992-1416/);
+  assert.match(text, /Quando entrar em contato: 71 99992-1416/);
+  assert.doesNotMatch(text, /Quando entrar em contato com o consultório/);
 });
 
 test("relatório familiar não repete sinais de atenção idênticos", () => {
