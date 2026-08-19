@@ -1,0 +1,81 @@
+import test from "node:test";
+import assert from "node:assert/strict";
+import { assertDocumentContextIntegrity } from "../../src/domain/document-context-integrity.ts";
+
+const base = {
+  patientId: "patient-1",
+  consultationId: "consultation-2",
+  consultationIds: ["consultation-1", "consultation-2"],
+  scaleAssessments: [
+    { patientId: "patient-1", consultationId: "consultation-1" },
+    { patientId: "patient-1", consultationId: "consultation-2" },
+  ],
+  problems: [
+    {
+      id: "problem-1",
+      patientId: "patient-1",
+      originConsultationId: "consultation-1",
+      events: [
+        {
+          problemId: "problem-1",
+          patientId: "patient-1",
+          consultationId: "consultation-2",
+        },
+      ],
+    },
+  ],
+} as const;
+
+test("aceita documento quando todos os dados pertencem ao mesmo paciente e horizonte", () => {
+  assert.doesNotThrow(() => assertDocumentContextIntegrity(base));
+});
+
+test("falha fechado quando escala pertence a outro paciente", () => {
+  assert.throws(
+    () => assertDocumentContextIntegrity({
+      ...base,
+      scaleAssessments: [{ patientId: "patient-2", consultationId: "consultation-2" }],
+    }),
+    /escala pertence a paciente diferente/,
+  );
+});
+
+test("falha fechado quando evento de problema cruza paciente", () => {
+  assert.throws(
+    () => assertDocumentContextIntegrity({
+      ...base,
+      problems: [{
+        ...base.problems[0],
+        events: [{
+          problemId: "problem-1",
+          patientId: "patient-2",
+          consultationId: "consultation-2",
+        }],
+      }],
+    }),
+    /evento de problema pertence a paciente diferente/,
+  );
+});
+
+test("falha fechado quando consulta-alvo não pertence ao horizonte", () => {
+  assert.throws(
+    () => assertDocumentContextIntegrity({
+      ...base,
+      consultationIds: ["consultation-1"],
+    }),
+    /consulta-alvo fora do horizonte longitudinal/,
+  );
+});
+
+test("falha fechado quando problema aponta para consulta fora do horizonte", () => {
+  assert.throws(
+    () => assertDocumentContextIntegrity({
+      ...base,
+      problems: [{
+        ...base.problems[0],
+        originConsultationId: "consultation-3",
+      }],
+    }),
+    /problema nasceu fora do horizonte da consulta/,
+  );
+});
