@@ -2,6 +2,7 @@
 
 import { useMemo, useState } from "react";
 import type { AgaReportModel, AgaScaleReportSection, AgaScaleTrend } from "@/domain/aga-report";
+import { buildChangeSummaryDashboard } from "@/domain/change-summary-dashboard";
 import { ProblemColumns } from "@/components/problems/problem-columns";
 
 interface GeneratedReportResponse {
@@ -145,6 +146,11 @@ export function AgaReportPreview({ consultationId }: { consultationId: string })
       }));
   }, [generated]);
 
+  const dashboardCards = useMemo(
+    () => generated ? buildChangeSummaryDashboard(generated.report.changeSummary) : [],
+    [generated],
+  );
+
   async function generate() {
     setLoading(true);
     setError("");
@@ -253,10 +259,17 @@ export function AgaReportPreview({ consultationId }: { consultationId: string })
               </div>
 
               <div className="report-metrics" aria-label="Resumo de tendências">
-                <article><strong>{generated.report.changeSummary.counts.unfavorable}</strong><span>Tendências desfavoráveis</span></article>
-                <article><strong>{generated.report.changeSummary.counts.favorable}</strong><span>Tendências favoráveis</span></article>
-                <article><strong>{generated.report.changeSummary.counts.stable}</strong><span>Estáveis</span></article>
-                <article><strong>{generated.report.changeSummary.counts.urgentAlerts}</strong><span>Alertas urgentes</span></article>
+                {dashboardCards.map((card) => (
+                  <article
+                    key={card.key}
+                    data-tone={card.tone}
+                    title={card.explanation}
+                    aria-label={`${card.label}: ${card.value}`}
+                  >
+                    <strong>{card.value}</strong>
+                    <span>{card.label}</span>
+                  </article>
+                ))}
               </div>
 
               {generated.report.changeSummary.narrative.length > 0 ? (
