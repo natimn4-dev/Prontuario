@@ -14,7 +14,7 @@
 - erro de gravação é visível;
 - finalização gera estado imutável/versionado.
 
-**Estado atual (2026-08-19):** a fundação de workflow da consulta passa a expor leitura do estado, início de revisão e finalização por endpoint autenticado. A finalização não aceita `patientId` nem lista de alertas urgentes do navegador: paciente e alertas atuais são derivados no servidor, e a transição `IN_REVIEW → FINALIZED` é atômica. Alertas urgentes precisam ser reconhecidos explicitamente pelos códigos atuais fornecidos pelo servidor; códigos obsoletos ou inventados não liberam o gate. A interface de finalização ainda deve ser conectada em incremento separado após validação do backend.
+**Estado atual (2026-08-19):** o workflow autenticado da consulta expõe leitura de estado, início de revisão e finalização, e a interface já está conectada aos estados Rascunho / Em revisão / Finalizada. A finalização não aceita `patientId` nem lista de alertas urgentes do navegador: paciente e alertas atuais são derivados no servidor, a revisão clínica final é obrigatória e a transição `IN_REVIEW → FINALIZED` é atômica. Alertas urgentes precisam ser reconhecidos explicitamente pelos códigos atuais fornecidos pelo servidor; códigos obsoletos ou inventados não liberam o gate. O versionamento de `DocumentSnapshot` ocorre em transação `Serializable`, relê paciente/status da consulta dentro da mesma transação e repete a operação completa, no máximo três vezes, quando Prisma sinaliza colisão de versão (`P2002`) ou conflito/deadlock serializável (`P2034`). Erros não reconhecidos continuam sendo propagados imediatamente.
 
 ### P0-03 Autenticação e autorização
 **Aceite**
