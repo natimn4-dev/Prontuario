@@ -1,8 +1,10 @@
 import { notFound } from "next/navigation";
 import { ConsultationFinalizationPanel } from "@/components/consultations/consultation-finalization-panel";
+import { MedicationStatusPanel } from "@/components/medications/medication-status-panel";
 import { AgaReportPreview } from "@/components/reports/aga-report-preview";
 import { OncogeriatricScales } from "@/components/scales/oncogeriatric-scales";
 import { buildConsultationContextViewModel } from "@/domain/consultation-context";
+import { buildMedicationStatusControlItems } from "@/domain/medication-status-presentation";
 import { requireAuthenticatedUser } from "@/server/auth/require-user";
 import { prisma } from "@/server/db";
 import styles from "./page.module.css";
@@ -27,6 +29,18 @@ export default async function ConsultationPage({
           fullName: true,
           birthDate: true,
           needsIdentityReview: true,
+          medications: {
+            select: {
+              id: true,
+              name: true,
+              presentation: true,
+              status: true,
+            },
+            orderBy: [
+              { name: "asc" },
+              { id: "asc" },
+            ],
+          },
         },
       },
     },
@@ -41,6 +55,7 @@ export default async function ConsultationPage({
     occurredAt: consultation.occurredAt,
     patient: consultation.patient,
   });
+  const medicationStatusItems = buildMedicationStatusControlItems(consultation.patient.medications);
 
   return (
     <main className="shell consultation-shell">
@@ -93,6 +108,12 @@ export default async function ConsultationPage({
           <li><span>4</span>Compartilhar</li>
         </ol>
       </header>
+
+      <MedicationStatusPanel
+        consultationId={id}
+        consultationFinalized={consultation.status === "FINALIZED"}
+        medications={medicationStatusItems}
+      />
 
       <OncogeriatricScales consultationId={id} />
 
