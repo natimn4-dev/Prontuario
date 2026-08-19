@@ -1,4 +1,4 @@
-export {};
+import { CLINICAL_RELEASE_ID } from "../src/domain/clinical-release.ts";
 
 function blocked(message: string): never {
   console.error("CLINICAL_RELEASE=BLOCKED");
@@ -28,8 +28,11 @@ const base = productionBaseUrl();
 try {
   const health = await request(base, "/api/health", "follow");
   if (health.status !== 200) blocked(`/api/health respondeu HTTP ${health.status}.`);
-  const healthBody = await health.json().catch(() => null) as { status?: string; database?: string } | null;
+  const healthBody = await health.json().catch(() => null) as { status?: string; database?: string; releaseId?: string } | null;
   if (healthBody?.status !== "ok" || healthBody.database !== "ok") blocked("/api/health não confirmou aplicação e banco em estado ok.");
+  if (healthBody.releaseId !== CLINICAL_RELEASE_ID) {
+    blocked(`/api/health está saudável, mas executa release diferente da esperada (${healthBody.releaseId ?? "sem releaseId"}).`);
+  }
 
   const login = await request(base, "/login", "follow");
   if (login.status !== 200) blocked(`/login respondeu HTTP ${login.status}.`);
@@ -48,6 +51,7 @@ try {
 
 console.log("CLINICAL_RELEASE=SMOKE_OK");
 console.log(`- HTTPS acessível: ${base.origin}`);
+console.log(`- release confirmada: ${CLINICAL_RELEASE_ID}`);
 console.log("- /api/health confirmou banco ok");
 console.log("- /login acessível");
 console.log("- rotas clínicas não estão abertas anonimamente");
