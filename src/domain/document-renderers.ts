@@ -144,7 +144,7 @@ export function renderFamilyReportText(model: FamilyReportModel): string {
     section("Sinais de atenção", model.attentionSigns),
   ];
   if (model.contactPhone) {
-    blocks.push("", `Quando entrar em contato com o consultório: ${model.contactPhone}`);
+    blocks.push("", `Quando entrar em contato: ${model.contactPhone}`);
   }
   return blocks.join("\n");
 }
