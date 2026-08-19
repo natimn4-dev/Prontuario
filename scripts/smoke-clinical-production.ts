@@ -1,3 +1,5 @@
+export {};
+
 function blocked(message: string): never {
   console.error("CLINICAL_RELEASE=BLOCKED");
   console.error(`- ${message}`);
