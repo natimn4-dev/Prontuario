@@ -15,8 +15,12 @@ type Result = { score: number; scoreText: string; classification: string; interp
 const VALIDATED_NAMES = new Set([
   "MNA completa", "Pfeffer — 10 itens", "SPPB", "POMA",
   "Mini-Cog", "MEEM", "Desenho do relógio", "MoCA — versão experimental brasileira", "IQCODE-Br",
+  "CES-D", "MOS-SSS", "APGAR familiar", "Zarit — 22 itens",
 ]);
-const SCREENING_CODES = new Set(["gds15", "pfeffer10", "minicog_freitas", "clock_shulman", "moca_br_freitas", "iqcode_br_26"]);
+const SCREENING_CODES = new Set([
+  "gds15", "pfeffer10", "minicog_freitas", "clock_shulman", "moca_br_freitas", "iqcode_br_26",
+  "cesd_br_elderly", "family_apgar_br_elderly",
+]);
 
 function formatDate(value: string) {
   return new Intl.DateTimeFormat("pt-BR", { dateStyle: "short", timeStyle: "short" }).format(new Date(value));
@@ -112,7 +116,7 @@ export function AgaCoreScales({ consultationId }: { consultationId: string }) {
       {!readOnly ? <div className={styles.actions}><span>{Object.keys(answers).length}/{definition.questions.length} itens respondidos</span><button type="button" onClick={submit} disabled={!complete || saving}>{saving ? "Salvando…" : "Calcular e salvar"}</button></div> : null}
       {result ? <div className={styles.result} role="status"><strong>{result.scoreText} — {result.classification}</strong><span>{result.interpretation}</span></div> : null}
       {latestByCode.get(definition.code) ? <p className={styles.previous}>Último registro conhecido: <strong>{latestByCode.get(definition.code)!.scoreText ?? latestByCode.get(definition.code)!.scoreNumeric ?? "sem escore"}</strong> · {latestByCode.get(definition.code)!.classification ?? "sem classificação"} · {formatDate(latestByCode.get(definition.code)!.appliedAt)}</p> : null}
-      {SCREENING_CODES.has(definition.code) ? <p className={styles.clinicalNote}>Resultado de rastreio não estabelece diagnóstico por si só; integre o escore à avaliação clínica, funcional, sensorial e educacional.</p> : null}
+      {SCREENING_CODES.has(definition.code) ? <p className={styles.clinicalNote}>Resultado de rastreio não estabelece diagnóstico por si só; integre o escore à avaliação clínica, funcional, sensorial, educacional e familiar pertinente.</p> : null}
     </div> : null}
 
     <details className={styles.migration}>
