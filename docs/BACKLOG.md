@@ -76,6 +76,8 @@
 - instrução;
 - fácil leitura por cuidador.
 
+**Estado atual (2026-08-19):** o editor mantém nome/dose separados dos horários estruturados e há uma tabela reutilizável orientada ao cuidador com medicamento, dose, via, marcação visual/textual dos momentos, uso contínuo e observações, incluindo layout responsivo e impressão. A tabela está exercitada apenas com dados sintéticos na demonstração. A integração com dados persistidos da consulta permanece pendente até existir uma projeção temporal de medicamentos que evite usar estado futuro ao regenerar documentos históricos.
+
 ## P1 — Evolução
 ### P1-11 Dashboard “O que mudou?”
 ### P1-12 Gráficos de escalas
