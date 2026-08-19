@@ -1,3 +1,4 @@
+import type { Prisma } from "../../generated/prisma/client.ts";
 import { clinicalAlertsFor } from "../../domain/clinical-alerts.ts";
 import type { ClinicalColor } from "../../domain/clinical-engine.ts";
 import { requireAuthenticatedUser } from "../auth/require-user.ts";
@@ -14,7 +15,7 @@ function answersRecord(value: unknown): Record<string, unknown> | undefined {
 }
 
 async function workflowContext(
-  tx: Parameters<Parameters<typeof prisma.$transaction>[0]>[0],
+  tx: Prisma.TransactionClient,
   consultationId: string,
 ) {
   const consultation = await tx.consultation.findUnique({
