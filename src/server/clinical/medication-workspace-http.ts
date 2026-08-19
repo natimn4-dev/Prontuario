@@ -3,8 +3,10 @@ import {
   AuthenticationRequiredError,
 } from "../auth/access-errors.ts";
 import { MEDICATION_MOMENTS, type MedicationMoment } from "../../domain/medication-plan.ts";
-import type { MedicationWorkspaceView } from "../../domain/medication-workspace.ts";
-import { MedicationWorkspaceError } from "./medication-workspace.ts";
+import {
+  MedicationWorkspaceError,
+  type MedicationWorkspaceView,
+} from "../../domain/medication-workspace.ts";
 
 const OPERATIONAL_REQUEST_ID = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 const MOMENTS = new Set<string>(MEDICATION_MOMENTS);
@@ -14,13 +16,7 @@ export class MedicationWorkspaceRequestError extends Error {
   constructor(message: string) { super(message); this.name = "MedicationWorkspaceRequestError"; }
 }
 
-type RegimenFields = {
-  doseInstruction?: string;
-  route?: string;
-  moments: MedicationMoment[];
-  continuous?: boolean;
-  instructions?: string;
-};
+type RegimenFields = { doseInstruction?: string; route?: string; moments: MedicationMoment[]; continuous?: boolean; instructions?: string };
 type CreateCommand = RegimenFields & { action: "create"; name: string; presentation?: string };
 type RegimenCommand = RegimenFields & { action: "regimen"; medicationId: string };
 export type MedicationWorkspaceCommand = CreateCommand | RegimenCommand;
@@ -56,13 +52,7 @@ function regimenFields(record: Record<string, unknown>): RegimenFields {
   });
   if (new Set(moments).size !== moments.length) throw new MedicationWorkspaceRequestError("Horários duplicados não são permitidos.");
   if (record.continuous !== undefined && typeof record.continuous !== "boolean") throw new MedicationWorkspaceRequestError("Indicador de uso contínuo inválido.");
-  return {
-    doseInstruction: optionalText(record.doseInstruction, "Dose em uso"),
-    route: optionalText(record.route, "Via"),
-    moments,
-    continuous: record.continuous as boolean | undefined,
-    instructions: optionalText(record.instructions, "Observações"),
-  };
+  return { doseInstruction: optionalText(record.doseInstruction, "Dose em uso"), route: optionalText(record.route, "Via"), moments, continuous: record.continuous as boolean | undefined, instructions: optionalText(record.instructions, "Observações") };
 }
 
 export function parseMedicationWorkspaceCommand(body: unknown): MedicationWorkspaceCommand {
@@ -70,28 +60,16 @@ export function parseMedicationWorkspaceCommand(body: unknown): MedicationWorksp
   const common = ["action", "doseInstruction", "route", "moments", "continuous", "instructions"];
   if (record.action === "create") {
     assertOnlyKeys(record, [...common, "name", "presentation"]);
-    return {
-      action: "create",
-      name: requiredText(record.name, "Nome do medicamento"),
-      presentation: optionalText(record.presentation, "Dose/apresentação"),
-      ...regimenFields(record),
-    };
+    return { action: "create", name: requiredText(record.name, "Nome do medicamento"), presentation: optionalText(record.presentation, "Dose/apresentação"), ...regimenFields(record) };
   }
   if (record.action === "regimen") {
     assertOnlyKeys(record, [...common, "medicationId"]);
-    return {
-      action: "regimen",
-      medicationId: requiredText(record.medicationId, "Identificador do medicamento", 191),
-      ...regimenFields(record),
-    };
+    return { action: "regimen", medicationId: requiredText(record.medicationId, "Identificador do medicamento", 191), ...regimenFields(record) };
   }
   throw new MedicationWorkspaceRequestError("Ação de medicação inválida.");
 }
 
-function requestId(request: Request): string | undefined {
-  const value = request.headers.get("x-request-id");
-  return value && OPERATIONAL_REQUEST_ID.test(value) ? value : undefined;
-}
+function requestId(request: Request): string | undefined { const value = request.headers.get("x-request-id"); return value && OPERATIONAL_REQUEST_ID.test(value) ? value : undefined; }
 function json(body: unknown, status: number) { return Response.json(body, { status }); }
 function errorResponse(error: unknown): Response {
   if (error instanceof MedicationWorkspaceRequestError) return json({ code: "INVALID_REQUEST", message: error.message }, 400);
@@ -103,15 +81,11 @@ function errorResponse(error: unknown): Response {
 
 export function medicationWorkspaceHttpHandlers(operations: Operations) {
   return {
-    GET: async (_request: Request, consultationId: string): Promise<Response> => {
-      try { return json(await operations.getMedicationWorkspace(consultationId), 200); } catch (error) { return errorResponse(error); }
-    },
+    GET: async (_request: Request, consultationId: string): Promise<Response> => { try { return json(await operations.getMedicationWorkspace(consultationId), 200); } catch (error) { return errorResponse(error); } },
     POST: async (request: Request, consultationId: string): Promise<Response> => {
       try {
-        let raw: unknown;
-        try { raw = await request.json(); } catch { throw new MedicationWorkspaceRequestError("Requisição inválida."); }
-        const command = parseMedicationWorkspaceCommand(raw);
-        const operationalRequestId = requestId(request);
+        let raw: unknown; try { raw = await request.json(); } catch { throw new MedicationWorkspaceRequestError("Requisição inválida."); }
+        const command = parseMedicationWorkspaceCommand(raw); const operationalRequestId = requestId(request);
         const view = command.action === "create"
           ? await operations.createMedicationWithRegimen({ consultationId, name: command.name, presentation: command.presentation, doseInstruction: command.doseInstruction, route: command.route, moments: command.moments, continuous: command.continuous, instructions: command.instructions, requestId: operationalRequestId })
           : await operations.addMedicationRegimen({ consultationId, medicationId: command.medicationId, doseInstruction: command.doseInstruction, route: command.route, moments: command.moments, continuous: command.continuous, instructions: command.instructions, requestId: operationalRequestId });
