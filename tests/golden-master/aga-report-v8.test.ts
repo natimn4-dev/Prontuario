@@ -27,6 +27,18 @@ test("v8 expõe resumo longitudinal, tendência e plano consolidado sem mudar re
       },
       {
         patientId: "p1",
+        consultationId: "middle",
+        scaleCode: "sarcf",
+        scaleVersion: "1.0",
+        score: 4,
+        scoreText: "4",
+        classification: "Rastreio limítrofe",
+        color: "amarelo",
+        answers: { sf1: 1 },
+        appliedAt: "2026-04-01",
+      },
+      {
+        patientId: "p1",
         consultationId: "current",
         scaleCode: "sarcf",
         scaleVersion: "1.0",
@@ -44,6 +56,14 @@ test("v8 expõe resumo longitudinal, tendência e plano consolidado sem mudar re
   assert.equal(report.assessedScales[0]?.evolution.trend, "unfavorable");
   assert.equal(report.changeSummary.counts.unfavorable, 1);
   assert.ok(report.carePlan.now.length > 0);
+  assert.deepEqual(
+    report.assessedScales[0]?.chartSeries.points.map((point) => [point.consultationId, point.score]),
+    [["baseline", 3], ["middle", 4], ["current", 5]],
+  );
+  assert.deepEqual(
+    report.assessedScales[0]?.chartSeries.segments.map((segment) => segment.drawable),
+    [true, true],
+  );
   const text = renderAgaReportText(report);
   assert.match(text, /RESUMO LONGITUDINAL/);
   assert.match(text, /Dado coletado nesta consulta: sf1=2/);
@@ -95,10 +115,13 @@ test("v8 identifica versões incompatíveis em cada ponto da trajetória", () =>
     ],
   });
 
-  const evolution = report.assessedScales[0]!.evolution;
+  const section = report.assessedScales[0]!;
+  const evolution = section.evolution;
   assert.equal(evolution.trend, "not-comparable");
   assert.equal(evolution.baselineVersion, "1.0");
   assert.equal(evolution.previousVersion, "1.0");
   assert.equal(evolution.currentVersion, "2.0");
+  assert.equal(section.chartSeries.hasMultipleVersions, true);
+  assert.equal(section.chartSeries.segments[0]?.drawable, false);
   assert.match(renderAgaReportText(report), /baseline 3 \(v1\.0\).*atual 5 \(v2\.0\).*Não comparável/);
 });
