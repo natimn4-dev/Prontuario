@@ -1,8 +1,9 @@
-﻿import { prisma } from "../db";
+import { prisma } from "../db";
 import { requireAuthenticatedUser } from "../auth/require-user";
 import type { Prisma } from "../../generated/prisma/client";
 import type { MedicationMoment as DatabaseMedicationMoment } from "../../generated/prisma/enums";
 import { validateMedicationPlanItem, type MedicationMoment } from "../../domain/medication-plan";
+import { withDocumentSnapshotWriteRetry } from "../../domain/document-snapshot-versioning";
 
 const MOMENT_TO_DATABASE: Readonly<Record<MedicationMoment, DatabaseMedicationMoment>> = {
   manha: "MORNING",
@@ -138,47 +139,52 @@ export async function createDocumentSnapshot(input: {
 }) {
   const { user } = await requireAuthenticatedUser("document.generate");
 
-  const consultation = await consultationContext(input.consultationId);
+  return withDocumentSnapshotWriteRetry(() =>
+    prisma.$transaction(async (tx) => {
+      const consultation = await tx.consultation.findUnique({
+        where: { id: input.consultationId },
+        select: { id: true, patientId: true, status: true },
+      });
 
-  for (let attempt = 0; attempt < 3; attempt += 1) {
-    try {
-      return await prisma.$transaction(async (tx) => {
-        const latest = await tx.documentSnapshot.findFirst({
-          where: { consultationId: consultation.id, type: input.type },
-          orderBy: { version: "desc" },
-          select: { version: true },
-        });
+      if (!consultation) {
+        throw new Error("Consulta não encontrada.");
+      }
 
-        const snapshot = await tx.documentSnapshot.create({
-          data: {
-            patientId: consultation.patientId,
-            consultationId: consultation.id,
-            type: input.type,
-            version: (latest?.version ?? 0) + 1,
-            content: input.content,
-            contentSchemaVersion: input.contentSchemaVersion ?? "1.0",
-            sourceConsultationStatus: consultation.status,
-            generatedById: user.id,
-          },
-        });
+      const latest = await tx.documentSnapshot.findFirst({
+        where: {
+          consultationId: consultation.id,
+          patientId: consultation.patientId,
+          type: input.type,
+        },
+        orderBy: { version: "desc" },
+        select: { version: true },
+      });
 
-        await tx.auditEvent.create({
-          data: {
-            userId: user.id,
-            entityType: "DocumentSnapshot",
-            entityId: snapshot.id,
-            action: "document.generate",
-            requestId: input.requestId,
-            outcome: "success",
-            reasonCode: consultation.status === "FINALIZED" ? "finalized-context" : "draft-context",
-          },
-        });
-        return snapshot;
-      }, { isolationLevel: "Serializable" });
-    } catch (error) {
-      const uniqueRace = Boolean(error && typeof error === "object" && "code" in error && error.code === "P2002");
-      if (!uniqueRace || attempt === 2) throw error;
-    }
-  }
-  throw new Error("Não foi possível versionar o documento após tentativas concorrentes.");
+      const snapshot = await tx.documentSnapshot.create({
+        data: {
+          patientId: consultation.patientId,
+          consultationId: consultation.id,
+          type: input.type,
+          version: (latest?.version ?? 0) + 1,
+          content: input.content,
+          contentSchemaVersion: input.contentSchemaVersion ?? "1.0",
+          sourceConsultationStatus: consultation.status,
+          generatedById: user.id,
+        },
+      });
+
+      await tx.auditEvent.create({
+        data: {
+          userId: user.id,
+          entityType: "DocumentSnapshot",
+          entityId: snapshot.id,
+          action: "document.generate",
+          requestId: input.requestId,
+          outcome: "success",
+          reasonCode: consultation.status === "FINALIZED" ? "finalized-context" : "draft-context",
+        },
+      });
+      return snapshot;
+    }, { isolationLevel: "Serializable" }),
+  );
 }
