@@ -1,6 +1,11 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { assessmentsAsOf, consultationHorizon, problemsAsOf } from "../../src/domain/as-of-consultation.ts";
+import {
+  assessmentsAsOf,
+  consultationHorizon,
+  medicationRegimensAsOf,
+  problemsAsOf,
+} from "../../src/domain/as-of-consultation.ts";
 import { buildAgaReportModel } from "../../src/domain/aga-report.ts";
 
 const consultations = [
@@ -14,6 +19,12 @@ const assessments = [
   { patientId: "p1", consultationId: "consultation-a", scaleCode: "barthel", scaleVersion: "1.0", score: 20, appliedAt: "2026-03-01" },
   { patientId: "p1", consultationId: "consultation-b", scaleCode: "barthel", scaleVersion: "1.0", score: 25, appliedAt: "2026-06-01T09:00:00Z" },
   { patientId: "p1", consultationId: "consultation-b", scaleCode: "barthel", scaleVersion: "1.0", score: 30, appliedAt: "2026-06-01T10:00:00Z" },
+];
+
+const medicationRegimens = [
+  { id: "regimen-baseline", medicationId: "med-1", patientId: "p1", consultationId: "baseline", dose: "50 mg" },
+  { id: "regimen-a", medicationId: "med-1", patientId: "p1", consultationId: "consultation-a", dose: "25 mg" },
+  { id: "regimen-b", medicationId: "med-2", patientId: "p1", consultationId: "consultation-b", dose: "10 mg" },
 ];
 
 const problems = [
@@ -78,10 +89,28 @@ test("regenerar A depois de B existir não retroage avaliações, problemas ou s
   assert.ok(!report.assessedScales.some((scale) => scale.evolution.current === 30));
 });
 
+test("regimes de medicamentos respeitam o mesmo horizonte da consulta", () => {
+  const horizon = consultationHorizon({ patientId: "p1", targetConsultationId: "consultation-a", consultations });
+  const projected = medicationRegimensAsOf({
+    patientId: "p1",
+    consultationIds: horizon.map((item) => item.id),
+    regimens: medicationRegimens,
+  });
+
+  assert.deepEqual(projected.map((item) => item.id), ["regimen-baseline", "regimen-a"]);
+  assert.ok(!projected.some((item) => item.consultationId === "consultation-b"));
+});
+
 test("corte temporal falha fechado ao receber dados de outro paciente", () => {
   assert.throws(() => assessmentsAsOf({
     patientId: "p1",
     consultationIds: ["baseline"],
     assessments: [{ ...assessments[0]!, patientId: "p2" }],
+  }), /pacientes diferentes/);
+
+  assert.throws(() => medicationRegimensAsOf({
+    patientId: "p1",
+    consultationIds: ["baseline"],
+    regimens: [{ ...medicationRegimens[0]!, patientId: "p2" }],
   }), /pacientes diferentes/);
 });
