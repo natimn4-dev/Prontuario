@@ -59,9 +59,27 @@ Essa separação reduz duplicação de estado clínico e risco de divergência e
 
 Qualquer JSON que não corresponda explicitamente ao contrato suportado deve ser tratado como **não interpretável automaticamente**. Não fazer coerção silenciosa, completar campos, assumir versões nem converter conteúdo ambíguo sem uma migração deliberada e testada.
 
+### Inventário seguro antes da ativação
+
+O repositório possui a auditoria operacional:
+
+```bash
+npm run audit:soap-json
+```
+
+Ela exige `DATABASE_URL`, faz somente leitura e percorre as consultas em lotes. O resultado contém exclusivamente contagens agregadas:
+
+- seção vazia;
+- seção compatível com o contrato v1;
+- seção incompatível;
+- presença de `Consultation.assessment`, que permanece não suportado no contrato v1;
+- indicador `safeToEnableV1ReadPath`.
+
+A auditoria **não emite nomes, patientId, consultationId ou texto clínico**. O conteúdo é lido apenas para validação estrutural e descartado após classificação. Qualquer seção incompatível, ou qualquer conteúdo em `assessment`, mantém `safeToEnableV1ReadPath=false` até revisão/migração explícita.
+
 Antes de ligar este contrato à persistência real, deve-se:
 
-1. inventariar formatos eventualmente já gravados nos campos JSON;
+1. executar o inventário de formatos na base do ambiente alvo;
 2. definir estratégia de migração/revisão para registros incompatíveis;
 3. criar endpoint autenticado que derive `patientId` da consulta e recuse alteração de consulta finalizada;
 4. adicionar testes de integração de isolamento entre pacientes e de concorrência quando aplicável;
@@ -69,6 +87,9 @@ Antes de ligar este contrato à persistência real, deve-se:
 
 ## Implementação
 
-- domínio: `src/domain/consultation-note-contract.ts`
-- testes: `tests/golden-master/consultation-note-contract.test.ts`
+- contrato: `src/domain/consultation-note-contract.ts`
+- inventário estrutural: `src/domain/consultation-note-inventory.ts`
+- executor operacional: `scripts/audit-consultation-note-json.ts`
+- testes do contrato: `tests/golden-master/consultation-note-contract.test.ts`
+- testes do inventário: `tests/golden-master/consultation-note-inventory.test.ts`
 - renderer existente: `src/domain/document-renderers.ts`
