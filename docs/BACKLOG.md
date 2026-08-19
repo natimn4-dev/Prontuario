@@ -82,7 +82,7 @@
 - instrução;
 - fácil leitura por cuidador.
 
-**Estado atual (2026-08-19):** o editor mantém nome/dose separados dos horários estruturados e há uma tabela reutilizável orientada ao cuidador com medicamento, dose, via, marcação visual/textual dos momentos, uso contínuo e observações, incluindo layout responsivo e impressão. Texto e tabela compartilham um único `MedicationPlanViewModel` validado no domínio. O histórico de status usa apenas eventos explícitos `ACTIVE` / `SUSPENDED` / `FINISHED`, persistidos em `MedicationStatusEvent` com chaves compostas paciente/medicamento/consulta e sem backfill do estado atual. A escrita prospectiva deriva paciente da consulta, bloqueia consulta finalizada ou anterior, verifica coerência do último evento e usa compare-and-set em transação `Serializable`. A fronteira HTTP `POST /api/consultations/[id]/medications/status` aceita exclusivamente `medicationId` + `newStatus`; consulta/paciente/status anterior permanecem server-owned e campos extras são rejeitados. Ainda falta conectar controles de UI que exibam o contexto e exijam ação clínica explícita, e depois integrar a projeção histórica revisada aos snapshots reais de `MEDICATION_PLAN`.
+**Estado atual (2026-08-19):** o editor mantém nome/dose separados dos horários estruturados e há uma tabela reutilizável orientada ao cuidador com medicamento, dose, via, marcação visual/textual dos momentos, uso contínuo e observações, incluindo layout responsivo e impressão. Texto e tabela compartilham um único `MedicationPlanViewModel` validado no domínio. O histórico de status usa apenas eventos explícitos `ACTIVE` / `SUSPENDED` / `FINISHED`, persistidos em `MedicationStatusEvent` com chaves compostas paciente/medicamento/consulta e sem backfill do estado atual. A escrita prospectiva deriva paciente da consulta, bloqueia consulta finalizada ou anterior, verifica coerência do último evento e usa compare-and-set em transação `Serializable`. A fronteira HTTP `POST /api/consultations/[id]/medications/status` aceita exclusivamente `medicationId` + `newStatus`; consulta/paciente/status anterior permanecem server-owned e campos extras são rejeitados. A consulta agora exibe o status atual derivado do servidor e exige seleção explícita, confirmação clínica e clique final antes de registrar qualquer mudança; consultas finalizadas mantêm os controles bloqueados e nenhum status é inferido automaticamente. Ainda falta integrar a projeção histórica revisada aos snapshots reais de `MEDICATION_PLAN`.
 
 ## P1 — Evolução
 ### P1-11 Dashboard “O que mudou?”
@@ -102,4 +102,4 @@
 - personalização visual;
 - relatórios adicionais;
 - melhorias de impressão;
-- exportações administrativas.
+- exportações administrativas;
