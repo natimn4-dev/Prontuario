@@ -1,0 +1,74 @@
+.panel {
+  margin: 1.5rem 0;
+  padding: 1.25rem;
+  border: 1px solid var(--border, #d7dce2);
+  border-radius: 1rem;
+  background: var(--surface, #fff);
+}
+
+.header {
+  display: grid;
+  gap: 0.35rem;
+  margin-bottom: 1rem;
+}
+
+.header h2,
+.header p {
+  margin: 0;
+}
+
+.list {
+  display: grid;
+  gap: 0.9rem;
+}
+
+.item {
+  display: grid;
+  gap: 0.75rem;
+  padding: 1rem;
+  border: 1px solid var(--border, #d7dce2);
+  border-radius: 0.8rem;
+}
+
+.itemHeader {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 0.5rem 1rem;
+}
+
+.status {
+  font-weight: 700;
+}
+
+.controls {
+  display: grid;
+  gap: 0.65rem;
+  max-width: 34rem;
+}
+
+.controls select,
+.controls button {
+  min-height: 2.75rem;
+}
+
+.confirmation {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.55rem;
+}
+
+.confirmation input {
+  margin-top: 0.2rem;
+}
+
+.feedback {
+  margin: 0;
+  font-weight: 600;
+}
+
+.muted {
+  margin: 0;
+  color: var(--muted-foreground, #5d6670);
+}
