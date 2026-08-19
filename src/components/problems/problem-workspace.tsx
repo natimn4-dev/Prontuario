@@ -1,0 +1,233 @@
+"use client";
+
+import { useEffect, useMemo, useState } from "react";
+import styles from "./problem-workspace.module.css";
+
+type ProblemStatus = "ACTIVE" | "STABLE" | "MONITORING" | "RESOLVED";
+type ProblemType = "CLINICAL" | "GERIATRIC";
+
+type Problem = {
+  id: string;
+  type: ProblemType;
+  status: ProblemStatus;
+  title: string;
+  description?: string;
+};
+
+type WorkspaceView = {
+  consultationId: string;
+  consultationStatus: "DRAFT" | "IN_REVIEW" | "FINALIZED";
+  isLatestConsultation: boolean;
+  problems: Problem[];
+};
+
+const STATUS_LABELS: Record<ProblemStatus, string> = {
+  ACTIVE: "Ativo",
+  STABLE: "Estável",
+  MONITORING: "Em acompanhamento",
+  RESOLVED: "Resolvido",
+};
+
+const GERIATRIC_PRESETS = [
+  "Incapacidade cognitiva",
+  "Instabilidade postural",
+  "Imobilidade",
+  "Incontinência esfincteriana",
+  "Iatrogenia",
+  "Insuficiência familiar",
+  "Incapacidade comunicativa",
+] as const;
+
+function ProblemCard({
+  problem,
+  editable,
+  onUpdated,
+}: {
+  problem: Problem;
+  editable: boolean;
+  onUpdated: (view: WorkspaceView) => void;
+}) {
+  const [nextStatus, setNextStatus] = useState<ProblemStatus>(problem.status);
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => setNextStatus(problem.status), [problem.status]);
+
+  async function updateStatus() {
+    if (!editable || saving || nextStatus === problem.status) return;
+    setSaving(true);
+    setError(null);
+    try {
+      const response = await fetch(`./problems`, {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ action: "status", problemId: problem.id, newStatus: nextStatus }),
+      });
+      const body = await response.json().catch(() => null) as (WorkspaceView & { message?: string }) | null;
+      if (!response.ok || !body) throw new Error(body?.message || "Não foi possível atualizar o problema.");
+      onUpdated(body);
+    } catch (cause) {
+      setError(cause instanceof Error ? cause.message : "Não foi possível atualizar o problema.");
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  return (
+    <article className={styles.problem} data-resolved={problem.status === "RESOLVED"}>
+      <div className={styles.problemHeading}>
+        <strong>{problem.title}</strong>
+        <span>{STATUS_LABELS[problem.status]}</span>
+      </div>
+      {problem.description ? <p>{problem.description}</p> : null}
+      {editable ? (
+        <div className={styles.statusControls}>
+          <label>
+            Status
+            <select value={nextStatus} onChange={(event) => setNextStatus(event.target.value as ProblemStatus)}>
+              {Object.entries(STATUS_LABELS).map(([value, label]) => <option key={value} value={value}>{label}</option>)}
+            </select>
+          </label>
+          <button type="button" onClick={updateStatus} disabled={saving || nextStatus === problem.status}>
+            {saving ? "Salvando…" : "Atualizar status"}
+          </button>
+        </div>
+      ) : null}
+      {error ? <p className={styles.error} role="alert">{error}</p> : null}
+    </article>
+  );
+}
+
+export function ProblemWorkspace({ consultationId }: { consultationId: string }) {
+  const [view, setView] = useState<WorkspaceView | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [type, setType] = useState<ProblemType>("CLINICAL");
+  const [title, setTitle] = useState("");
+  const [description, setDescription] = useState("");
+  const [saving, setSaving] = useState(false);
+  const [feedback, setFeedback] = useState<string | null>(null);
+
+  async function load() {
+    setLoading(true);
+    setFeedback(null);
+    try {
+      const response = await fetch(`/api/consultations/${consultationId}/problems`, { cache: "no-store" });
+      const body = await response.json().catch(() => null) as (WorkspaceView & { message?: string }) | null;
+      if (!response.ok || !body) throw new Error(body?.message || "Não foi possível carregar os problemas.");
+      setView(body);
+    } catch (cause) {
+      setFeedback(cause instanceof Error ? cause.message : "Não foi possível carregar os problemas.");
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  useEffect(() => { void load(); }, [consultationId]);
+
+  const editable = Boolean(view && view.consultationStatus !== "FINALIZED" && view.isLatestConsultation);
+  const clinical = useMemo(() => (view?.problems ?? []).filter((problem) => problem.type === "CLINICAL"), [view]);
+  const geriatric = useMemo(() => (view?.problems ?? []).filter((problem) => problem.type === "GERIATRIC"), [view]);
+
+  function applyView(next: WorkspaceView) {
+    setView(next);
+    setFeedback(null);
+    window.dispatchEvent(new CustomEvent("clinical-problems-changed", { detail: { consultationId } }));
+  }
+
+  async function create() {
+    if (!editable || !title.trim() || saving) return;
+    setSaving(true);
+    setFeedback(null);
+    try {
+      const response = await fetch(`/api/consultations/${consultationId}/problems`, {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({
+          action: "create",
+          type,
+          title: title.trim(),
+          description: description.trim() || undefined,
+        }),
+      });
+      const body = await response.json().catch(() => null) as (WorkspaceView & { message?: string }) | null;
+      if (!response.ok || !body) throw new Error(body?.message || "Não foi possível criar o problema.");
+      applyView(body);
+      setTitle("");
+      setDescription("");
+    } catch (cause) {
+      setFeedback(cause instanceof Error ? cause.message : "Não foi possível criar o problema.");
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  if (loading) return <section className={styles.card}><p>Carregando lista de problemas…</p></section>;
+  if (!view) return <section className={styles.card}><p role="alert">{feedback ?? "Lista de problemas indisponível."}</p></section>;
+
+  return (
+    <section className={styles.card} aria-labelledby="problem-workspace-title">
+      <div className={styles.heading}>
+        <div>
+          <p className="eyebrow">Linha de cuidado</p>
+          <h2 id="problem-workspace-title">Lista longitudinal de problemas</h2>
+          <p>Problemas resolvidos permanecem no histórico. Sugestões de escalas só entram aqui após confirmação médica.</p>
+        </div>
+      </div>
+
+      {!view.isLatestConsultation ? (
+        <p className={styles.notice} role="status">Consulta histórica: lista exibida no estado daquele momento; alterações retrospectivas estão bloqueadas.</p>
+      ) : null}
+      {view.consultationStatus === "FINALIZED" ? (
+        <p className={styles.notice} role="status">Consulta finalizada: lista em modo somente leitura.</p>
+      ) : null}
+      {feedback ? <p className={styles.error} role="alert">{feedback}</p> : null}
+
+      {editable ? (
+        <div className={styles.creator}>
+          <div className={styles.creatorFields}>
+            <label>
+              Tipo
+              <select value={type} onChange={(event) => setType(event.target.value as ProblemType)}>
+                <option value="CLINICAL">Problema clínico</option>
+                <option value="GERIATRIC">Problema geriátrico</option>
+              </select>
+            </label>
+            <label className={styles.titleField}>
+              Problema
+              <input value={title} onChange={(event) => setTitle(event.target.value)} placeholder="Ex.: Hipertensão arterial" maxLength={500} />
+            </label>
+            <label className={styles.descriptionField}>
+              Contexto opcional
+              <input value={description} onChange={(event) => setDescription(event.target.value)} placeholder="Observação breve, sem duplicar a HDA" />
+            </label>
+            <button type="button" onClick={create} disabled={!title.trim() || saving}>{saving ? "Adicionando…" : "Adicionar problema"}</button>
+          </div>
+
+          <div className={styles.presets} aria-label="Atalhos para problemas geriátricos">
+            <span>I’s geriátricos — atalhos de preenchimento:</span>
+            {GERIATRIC_PRESETS.map((preset) => (
+              <button key={preset} type="button" onClick={() => { setType("GERIATRIC"); setTitle(preset); }}>
+                {preset}
+              </button>
+            ))}
+          </div>
+        </div>
+      ) : null}
+
+      <div className={styles.columns}>
+        <section>
+          <h3>Problemas clínicos</h3>
+          {clinical.length === 0 ? <p className={styles.empty}>Sem problemas clínicos registrados.</p> : clinical.map((problem) => (
+            <ProblemCard key={problem.id} problem={problem} editable={editable} onUpdated={applyView} />
+          ))}
+        </section>
+        <section>
+          <h3>Problemas geriátricos</h3>
+          {geriatric.length === 0 ? <p className={styles.empty}>Sem problemas geriátricos registrados.</p> : geriatric.map((problem) => (
+            <ProblemCard key={problem.id} problem={problem} editable={editable} onUpdated={applyView} />
+          ))}
+        </section>
+      </div>
+    </section>
+  );
+}
