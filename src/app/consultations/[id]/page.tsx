@@ -1,3 +1,4 @@
+import { ConsultationFinalizationPanel } from "@/components/consultations/consultation-finalization-panel";
 import { AgaReportPreview } from "@/components/reports/aga-report-preview";
 import { OncogeriatricScales } from "@/components/scales/oncogeriatric-scales";
 
@@ -28,14 +29,7 @@ export default async function ConsultationPage({
 
       <AgaReportPreview consultationId={id} />
 
-      <section className="finalization-panel no-print">
-        <p className="eyebrow">Governança clínica</p>
-        <h2>Finalizar consulta</h2>
-        <p>
-          Finalização, geração de snapshot e compartilhamento do relatório são ações distintas.
-          Alertas urgentes e conteúdo clínico devem ser revisados antes do encerramento.
-        </p>
-      </section>
+      <ConsultationFinalizationPanel consultationId={id} />
     </main>
   );
 }
