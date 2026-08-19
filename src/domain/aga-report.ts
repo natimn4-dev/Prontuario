@@ -2,6 +2,7 @@ import { buildClinicalChangeSummary, type LongitudinalAssessment } from "./clini
 import { proposeProblemsFromAssessments } from "./problem-proposals.ts";
 import { splitProblems, type ClinicalProblem } from "./problems.ts";
 import { SCALE_CATALOG, scaleCatalogEntry } from "./scale-catalog.ts";
+import { buildScaleChartSeries, type ScaleChartSeries } from "./scale-chart-series.ts";
 
 export type AgaReportConsultationStatus = "DRAFT" | "IN_REVIEW" | "FINALIZED";
 export type AgaScaleTrend =
@@ -54,6 +55,7 @@ export interface AgaScaleReportSection {
     vsPrevious: string;
     vsBaseline: string;
   };
+  chartSeries: ScaleChartSeries;
   source: {
     status: string;
     citation?: string;
@@ -164,6 +166,9 @@ export function buildAgaReportModel(input: {
           const displayed = displayCollectedValue(value);
           return displayed === null ? [] : [{ field, value: displayed }];
         });
+      const chartSeries = buildScaleChartSeries(
+        input.longitudinalAssessments.filter((assessment) => assessment.scaleCode === card.scaleId),
+      );
 
       return {
         code: card.scaleId,
@@ -201,6 +206,7 @@ export function buildAgaReportModel(input: {
           vsPrevious: card.trendLabel,
           vsBaseline: card.vsBaseline.trend,
         },
+        chartSeries,
         source: {
           status: definition.sourceStatus,
           citation: definition.source,
