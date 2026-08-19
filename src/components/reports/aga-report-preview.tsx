@@ -4,6 +4,7 @@ import { useMemo, useState } from "react";
 import type { AgaReportModel, AgaScaleReportSection, AgaScaleTrend } from "@/domain/aga-report";
 import { buildChangeSummaryDashboard } from "@/domain/change-summary-dashboard";
 import { ProblemColumns } from "@/components/problems/problem-columns";
+import { ScaleHistoryChart } from "@/components/reports/scale-history-chart";
 
 interface GeneratedReportResponse {
   report: AgaReportModel;
@@ -317,6 +318,9 @@ export function AgaReportPreview({ consultationId }: { consultationId: string })
                       <span>{group.scales.length} avaliação(ões)</span>
                     </header>
                     <ScaleTable scales={group.scales} />
+                    {group.scales.map((scale) => (
+                      <ScaleHistoryChart key={`chart-${scale.code}-${scale.version}`} scale={scale} />
+                    ))}
                   </section>
                 )) : <p className="muted">Não avaliado nesta consulta.</p>}
               </div>
