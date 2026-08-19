@@ -99,3 +99,21 @@ Prioridade: **tabela de medicamentos — clareza, segurança de apresentação e
 - IDs repetidos continuam sendo rejeitados;
 - a regra que impede frequência/horário dentro de `medicationText` permanece ativa;
 - nenhuma salvaguarda documental ou de identidade foi removida.
+
+## 2026-08-19 — Identidade explícita no plano de medicamentos
+
+Prioridade: **P0 — segurança/identidade do paciente em documento entregue à família**.
+
+### Alterações
+- `renderMedicationPlanText` agora exige um nome de paciente não vazio antes de montar o documento;
+- nomes com quebra de linha são rejeitados para impedir cabeçalhos ambíguos ou injeção acidental de outro contexto documental;
+- espaços redundantes no nome são normalizados apenas para apresentação, mantendo o conteúdo nominal informado;
+- a validação acontece antes da construção do texto final e falha fechado quando a identidade exibida não é segura.
+
+### Testes adicionados
+- `tests/golden-master/medication-plan.test.ts` cobre ausência de identificação, tentativa de nome multilinha e normalização segura de espaços no cabeçalho.
+
+### Limites preservados
+- nenhuma medicação, dose, via, frequência, horário ou instrução clínica foi alterada;
+- nenhuma inferência sobre identidade é feita: o renderer apenas exige que a identificação recebida seja válida para exibição;
+- nenhuma salvaguarda documental ou de persistência foi removida.
