@@ -85,7 +85,7 @@
 
 ### P1-12 Gráficos de escalas
 
-**Estado atual (2026-08-19):** criada a fundação de domínio para séries gráficas longitudinais. A projeção ordena consultas cronologicamente, consolida reaplicações na mesma consulta no ponto efetivo mais recente, preserva baseline e mantém scores registrados sem recalculá-los. Trechos com mudança de versão ou score ausente são marcados como não desenháveis, evitando sugerir comparação clínica inválida. O relatório agora inclui uma primeira visualização acessível e neutra de baseline, consulta anterior e consulta atual/último registro, com SVG rotulado, alternativa tabular e mensagem textual de tendência já produzida pelo domínio. O gráfico não usa cor para inferir melhora/piora e não recalcula regras clínicas. Ainda falta substituir essa visão resumida pela série histórica completa já preparada no domínio.
+**Estado atual (2026-08-19):** a fundação de domínio para séries gráficas longitudinais está integrada ao modelo do relatório. A visualização passa a receber a série histórica completa, ordenada e consolidada pelo domínio, em vez de reconstruir apenas baseline/anterior/atual no React. O SVG e a tabela textual exibem todos os registros disponíveis; linhas são desenhadas somente nos segmentos explicitamente marcados como comparáveis pelo domínio, preservando lacunas quando há mudança de versão ou score ausente. O gráfico não recalcula score, classificação ou direção clínica e não usa cor como único indicador. Permanecem como refinamentos futuros a seleção de janela temporal e estratégias de densidade para históricos muito longos.
 
 ### P1-13 Comparação consulta anterior × baseline
 
