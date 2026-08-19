@@ -138,13 +138,24 @@ export async function createDocumentSnapshot(input: {
 }) {
   const { user } = await requireAuthenticatedUser("document.generate");
 
-  const consultation = await consultationContext(input.consultationId);
-
   for (let attempt = 0; attempt < 3; attempt += 1) {
     try {
       return await prisma.$transaction(async (tx) => {
+        const consultation = await tx.consultation.findUnique({
+          where: { id: input.consultationId },
+          select: { id: true, patientId: true, status: true },
+        });
+
+        if (!consultation) {
+          throw new Error("Consulta não encontrada.");
+        }
+
         const latest = await tx.documentSnapshot.findFirst({
-          where: { consultationId: consultation.id, type: input.type },
+          where: {
+            consultationId: consultation.id,
+            patientId: consultation.patientId,
+            type: input.type,
+          },
           orderBy: { version: "desc" },
           select: { version: true },
         });
