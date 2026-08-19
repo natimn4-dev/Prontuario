@@ -1,10 +1,15 @@
 import { NextResponse } from "next/server";
 import { CORE_FREITAS_SCALES, scoreCoreFreitasScale, type CoreFreitasScaleCode } from "@/domain/freitas-core-scales";
+import { VALIDATED_FREITAS_SCALES, scoreValidatedFreitasScale, type ValidatedScaleCode } from "@/domain/freitas-validated-scales";
 import { requireAuthenticatedUser } from "@/server/auth/require-user";
 import { saveScaleAssessment } from "@/server/clinical/persistence";
 import { prisma } from "@/server/db";
 
-const SUPPORTED = new Set<CoreFreitasScaleCode>(["katz", "lawton", "gds15"]);
+type ScaleCode = CoreFreitasScaleCode | ValidatedScaleCode;
+const CORE = new Set<CoreFreitasScaleCode>(["katz", "lawton", "gds15"]);
+const VALIDATED = new Set<ValidatedScaleCode>(["mna_full", "pfeffer10", "sppb_freitas", "poma_freitas"]);
+const SUPPORTED = new Set<ScaleCode>([...CORE, ...VALIDATED]);
+const DEFINITIONS = [...CORE_FREITAS_SCALES, ...VALIDATED_FREITAS_SCALES];
 
 async function consultationContext(consultationId: string) {
   const consultation = await prisma.consultation.findUnique({
@@ -20,12 +25,17 @@ function asRecord(value: unknown): Record<string, unknown> {
   return value as Record<string, unknown>;
 }
 
-function parseBody(value: unknown): { scaleCode: CoreFreitasScaleCode; answers: Record<string, unknown> } {
+function parseBody(value: unknown): { scaleCode: ScaleCode; answers: Record<string, unknown> } {
   const body = asRecord(value);
   const keys = Object.keys(body);
   if (keys.some((key) => key !== "scaleCode" && key !== "answers")) throw new Error("INVALID_REQUEST");
-  if (typeof body.scaleCode !== "string" || !SUPPORTED.has(body.scaleCode as CoreFreitasScaleCode)) throw new Error("UNSUPPORTED_SCALE");
-  return { scaleCode: body.scaleCode as CoreFreitasScaleCode, answers: asRecord(body.answers) };
+  if (typeof body.scaleCode !== "string" || !SUPPORTED.has(body.scaleCode as ScaleCode)) throw new Error("UNSUPPORTED_SCALE");
+  return { scaleCode: body.scaleCode as ScaleCode, answers: asRecord(body.answers) };
+}
+
+function score(scaleCode: ScaleCode, answers: Record<string, unknown>) {
+  if (CORE.has(scaleCode as CoreFreitasScaleCode)) return scoreCoreFreitasScale(scaleCode as CoreFreitasScaleCode, answers);
+  return scoreValidatedFreitasScale(scaleCode as ValidatedScaleCode, answers);
 }
 
 function failure(error: unknown) {
@@ -50,7 +60,7 @@ export async function GET(_request: Request, context: { params: Promise<{ id: st
     return NextResponse.json({
       consultationId: id,
       consultationStatus: consultation.status,
-      definitions: CORE_FREITAS_SCALES,
+      definitions: DEFINITIONS,
       latest: codes.map((scaleCode) => {
         const item = assessments.find((assessment) => assessment.scaleCode === scaleCode);
         return item ? { ...item, scoreNumeric: item.scoreNumeric === null ? null : Number(item.scoreNumeric) } : null;
@@ -68,7 +78,7 @@ export async function POST(request: Request, context: { params: Promise<{ id: st
     const consultation = await consultationContext(id);
     if (consultation.status === "FINALIZED") return NextResponse.json({ code: "CONSULTATION_FINALIZED", message: "Consulta finalizada não aceita nova avaliação." }, { status: 409 });
     const { scaleCode, answers } = parseBody(await request.json());
-    const scored = scoreCoreFreitasScale(scaleCode, answers);
+    const scored = score(scaleCode, answers);
     const assessment = await saveScaleAssessment({
       consultationId: id,
       scaleCode,
