@@ -1,4 +1,4 @@
-import type { MedicationLifecycleStatus } from "./medication-status-history";
+import type { MedicationLifecycleStatus } from "./medication-status-history.ts";
 
 export const MEDICATION_STATUS_LABELS: Readonly<Record<MedicationLifecycleStatus, string>> = {
   ACTIVE: "Em uso",
