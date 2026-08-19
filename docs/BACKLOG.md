@@ -84,6 +84,9 @@
 **Estado atual (2026-08-19):** o domínio longitudinal produz headline, narrativa e contagens de tendência, e a camada de apresentação testada agora está conectada ao dashboard visual do relatório. A interface renderiza os seis estados do view model — desfavorável, favorável, estável, não comparável, dados insuficientes e alertas urgentes — sem recalcular regras no React. “Não comparável” e “dados insuficientes” permanecem neutros e não são apresentados como estabilidade.
 
 ### P1-12 Gráficos de escalas
+
+**Estado atual (2026-08-19):** criada a fundação de domínio para séries gráficas longitudinais. A projeção ordena consultas cronologicamente, consolida reaplicações na mesma consulta no ponto efetivo mais recente, preserva baseline e mantém scores registrados sem recalculá-los. Trechos com mudança de versão ou score ausente são marcados como não desenháveis, evitando sugerir comparação clínica inválida. Ainda falta conectar esse view model a um componente gráfico acessível e ao fluxo real da consulta.
+
 ### P1-13 Comparação consulta anterior × baseline
 
 ## P2 — Refinamentos
