@@ -43,20 +43,15 @@ const DIMENSION_ORDER = [
 ];
 
 const TREND_LABEL: Record<AgaScaleTrend, string> = {
-  favorable: "Favorável",
-  unfavorable: "Desfavorável",
-  stable: "Estável",
+  favorable: "Tendência numérica favorável",
+  unfavorable: "Tendência numérica desfavorável",
+  stable: "Estável numericamente",
   "not-comparable": "Não comparável",
   "insufficient-data": "Dados insuficientes",
 };
 
 function displayResult(scale: AgaScaleReportSection): string {
   return scale.result.scoreText ?? (scale.result.score === null ? "—" : String(scale.result.score));
-}
-
-function displayPoint(value: number | null, version: string | null): string {
-  const score = value === null ? "—" : String(value);
-  return version ? `${score} (v${version})` : score;
 }
 
 function displayAssessmentDate(value: string): string {
@@ -76,13 +71,13 @@ function CareList({ title, items }: { title: string; items: readonly string[] })
 function ScaleTable({ scales }: { scales: AgaScaleReportSection[] }) {
   return (
     <div className="clinical-table-wrap">
-      <table className="clinical-table">
+      <table className="clinical-table" aria-label="Resultados das avaliações geriátricas">
         <thead>
           <tr>
-            <th scope="col">Instrumento</th>
+            <th scope="col">Avaliação</th>
             <th scope="col">Resultado</th>
-            <th scope="col">Trajetória</th>
-            <th scope="col">Interpretação registrada</th>
+            <th scope="col">Evolução</th>
+            <th scope="col">O que significa</th>
           </tr>
         </thead>
         <tbody>
@@ -90,7 +85,6 @@ function ScaleTable({ scales }: { scales: AgaScaleReportSection[] }) {
             <tr key={`${scale.code}-${scale.version}`}>
               <th scope="row">
                 <span className="scale-name">{scale.name}</span>
-                <span className="scale-version">{scale.code} · v{scale.version}</span>
               </th>
               <td>
                 <strong>{displayResult(scale)}</strong>
@@ -101,17 +95,17 @@ function ScaleTable({ scales }: { scales: AgaScaleReportSection[] }) {
                     : "Último valor conhecido — não avaliado nesta consulta"}
                 </span>
                 {!scale.assessedInTargetConsultation ? (
-                  <span>Consulta {scale.lastKnown.consultationId} · {displayAssessmentDate(scale.lastKnown.appliedAt)}</span>
+                  <span>Última avaliação em {displayAssessmentDate(scale.lastKnown.appliedAt)}</span>
                 ) : null}
               </td>
               <td>
+                <span className="scale-assessment-status">Desde a última avaliação</span>
                 <span className={`trend-badge trend-${scale.evolution.trend}`}>
                   {TREND_LABEL[scale.evolution.trend]}
                 </span>
-                <span className="trajectory">
-                  baseline {displayPoint(scale.evolution.baseline, scale.evolution.baselineVersion)} → anterior {displayPoint(scale.evolution.previous, scale.evolution.previousVersion)} → {scale.assessedInTargetConsultation
-                    ? `atual ${displayPoint(scale.evolution.current, scale.evolution.currentVersion)}`
-                    : `último conhecido ${displayPoint(scale.lastKnown.score, scale.lastKnown.version)}`}
+                <span className="scale-assessment-status">Desde a AGA inicial</span>
+                <span className={`trend-badge trend-${scale.evolution.vsBaseline}`}>
+                  {TREND_LABEL[scale.evolution.vsBaseline]}
                 </span>
               </td>
               <td>{scale.interpretation ?? "Sem interpretação registrada"}</td>
