@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import test from "node:test";
 import {
   assertMedicationTextContainsNoSchedule,
+  buildMedicationPlanRows,
   renderMedicationPlanText,
   validateMedicationPlan,
 } from "../../src/domain/medication-plan.ts";
@@ -17,6 +18,20 @@ test("um medicamento suporta múltiplos horários sem duplicar sua linha", () =>
   assert.equal(text.match(/Losartana 50 mg/g)?.length, 1);
   assert.match(text, /\[x\] Manhã/);
   assert.match(text, /\[x\] Noite/);
+});
+
+test("modelo estruturado mantém uma linha por medicamento e horários independentes", () => {
+  const rows = buildMedicationPlanRows(items);
+
+  assert.equal(rows.length, 3);
+  assert.equal(rows[0]?.medicationText, "Losartana 50 mg");
+  assert.equal(rows[0]?.doseInstruction, "1 comprimido");
+  assert.equal(rows[0]?.route, "VO");
+  assert.equal(rows[0]?.continuous, true);
+  assert.equal(rows[0]?.moments.manha, true);
+  assert.equal(rows[0]?.moments.noite, true);
+  assert.equal(rows[0]?.moments.almoco, false);
+  assert.equal(rows[2]?.moments.se_necessario, true);
 });
 
 test("plano textual preserva instruções, via, dose e uso contínuo", () => {
