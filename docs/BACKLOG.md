@@ -70,7 +70,7 @@
 - sinais de atenção;
 - impressão A4.
 
-**Estado atual (2026-08-19):** estrutura A4 vertical, separação clínico/geriátrico, revisão clínica antes do compartilhamento e apêndice técnico opcional estão implementados. A tabela principal destinada a família/cuidadores mostra nome da avaliação, resultado/classificação, evolução desde a última avaliação, evolução desde a AGA inicial e interpretação registrada. Código/versão, identificador interno de consulta e trajetória numérica técnica não aparecem mais nessa tabela; a rastreabilidade técnica permanece no apêndice e no snapshot.
+**Estado atual (2026-08-19):** estrutura A4 vertical, separação clínico/geriátrico, revisão clínica antes do compartilhamento e apêndice técnico opcional estão implementados. A tabela principal destinada a família/cuidadores mostra nome da avaliação, resultado/classificação, evolução desde a última avaliação, evolução desde a AGA inicial e interpretação registrada. Código/versão, identificador interno de consulta e trajetória numérica técnica não aparecem mais nessa tabela; a rastreabilidade técnica permanece no apêndice e no snapshot. O renderer textual também elimina repetições de sinais de atenção quando o mesmo texto chega por fontes diferentes, considerando apenas variações de caixa, espaços e forma Unicode e preservando integralmente a primeira redação; textos realmente diferentes não são consolidados. O rótulo de contato foi simplificado para “Quando entrar em contato”.
 
 ### P1-10 Tabela de medicamentos
 - nome/apresentação;
