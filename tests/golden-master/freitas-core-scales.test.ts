@@ -86,5 +86,5 @@ test("inventário mantém versões não liberadas explicitamente fora do formul�
   assert.ok(FREITAS_SCALE_MIGRATION_INVENTORY.some((item) => item.name === "MNA completa" && item.status === "migration-required"));
   assert.ok(FREITAS_SCALE_MIGRATION_INVENTORY.some((item) => item.name === "Pfeffer — 10 itens" && item.status === "migration-required"));
   assert.ok(FREITAS_SCALE_MIGRATION_INVENTORY.some((item) => item.name.startsWith("MoCA") && item.status === "migration-required"));
-  assert.ok(!CORE_FREITAS_SCALES.some((item) => item.code === "mna_sf"));
+  assert.deepEqual(CORE_FREITAS_SCALES.map((item) => item.code), ["katz", "lawton", "gds15"]);
 });
