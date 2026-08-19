@@ -4,12 +4,15 @@ import { useEffect, useMemo, useState } from "react";
 import { FREITAS_SCALE_MIGRATION_INVENTORY } from "@/domain/freitas-core-scales";
 import styles from "./aga-core-scales.module.css";
 
-type ScaleCode = "katz" | "lawton" | "gds15";
+type ScaleCode = string;
 type Choice = { value: number; label: string };
-type Definition = { code: ScaleCode; version: string; name: string; dimension: string; instruction: string; questions: { id: string; label: string; choices: Choice[] }[] };
+type Question = { id: string; label: string; choices?: Choice[]; number?: { min: number; max: number; step: number; unit?: string; help?: string } };
+type Definition = { code: ScaleCode; version: string; name: string; dimension: string; instruction: string; sourceNote?: string; questions: Question[] };
 type Latest = { id: string; consultationId: string; scaleCode: ScaleCode; scaleVersion: string; scoreNumeric: number | null; scoreText?: string | null; classification?: string | null; interpretation?: string | null; appliedAt: string };
 type View = { consultationId: string; consultationStatus: "DRAFT" | "IN_REVIEW" | "FINALIZED"; definitions: Definition[]; latest: Latest[] };
 type Result = { score: number; scoreText: string; classification: string; interpretation: string };
+
+const VALIDATED_NAMES = new Set(["MNA completa", "Pfeffer — 10 itens", "SPPB", "POMA"]);
 
 function formatDate(value: string) {
   return new Intl.DateTimeFormat("pt-BR", { dateStyle: "short", timeStyle: "short" }).format(new Date(value));
@@ -64,9 +67,20 @@ export function AgaCoreScales({ consultationId }: { consultationId: string }) {
     } finally { setSaving(false); }
   }
 
+  function setNumeric(questionId: string, value: string) {
+    setAnswers((current) => {
+      if (value === "") {
+        const next = { ...current };
+        delete next[questionId];
+        return next;
+      }
+      return { ...current, [questionId]: Number(value) };
+    });
+  }
+
   return <section className={styles.card} aria-labelledby="aga-core-scales-title">
     <div className={styles.heading}>
-      <div><p className="eyebrow">Avaliação Geriátrica Ampla</p><h2 id="aga-core-scales-title">Escalas clínicas</h2><p>Versões Freitas/Py liberadas para nova aplicação. Uma escala por vez, com cálculo somente no servidor.</p></div>
+      <div><p className="eyebrow">Avaliação Geriátrica Ampla</p><h2 id="aga-core-scales-title">Escalas clínicas</h2><p>Versões governadas por fonte, com cálculo no servidor e histórico preservado por versão.</p></div>
       <span className={styles.source}>Fonte principal: Freitas/Py</span>
     </div>
 
@@ -83,23 +97,24 @@ export function AgaCoreScales({ consultationId }: { consultationId: string }) {
     </div>
 
     {!view ? <p>Carregando escalas…</p> : definition ? <div className={styles.workspace}>
-      <header><h3>{definition.name}</h3><p>{definition.instruction}</p><small>Versão: {definition.version}</small></header>
+      <header><h3>{definition.name}</h3><p>{definition.instruction}</p><small>Versão: {definition.version}</small>{definition.sourceNote ? <small>Rastreabilidade: {definition.sourceNote}</small> : null}</header>
       <div className={styles.questions}>
         {definition.questions.map((question, index) => <fieldset key={question.id} className={styles.question} disabled={readOnly || saving}>
           <legend><span>{index + 1}</span>{question.label}</legend>
-          <div className={styles.choices}>{question.choices.map((choice) => <label key={`${question.id}-${choice.value}`}><input type="radio" name={`${definition.code}-${question.id}`} checked={answers[question.id] === choice.value} onChange={() => setAnswers((current) => ({ ...current, [question.id]: choice.value }))} />{choice.label}</label>)}</div>
+          {question.choices ? <div className={styles.choices}>{question.choices.map((choice) => <label key={`${question.id}-${choice.value}-${choice.label}`}><input type="radio" name={`${definition.code}-${question.id}`} checked={answers[question.id] === choice.value} onChange={() => setAnswers((current) => ({ ...current, [question.id]: choice.value }))} />{choice.label}</label>)}</div> : null}
+          {question.number ? <label className={styles.numericInput}><span>Valor {question.number.unit ? `(${question.number.unit})` : ""}</span><input type="number" min={question.number.min} max={question.number.max} step={question.number.step} value={answers[question.id] ?? ""} onChange={(event) => setNumeric(question.id, event.target.value)} />{question.number.help ? <small>{question.number.help}</small> : null}</label> : null}
         </fieldset>)}
       </div>
       {!readOnly ? <div className={styles.actions}><span>{Object.keys(answers).length}/{definition.questions.length} itens respondidos</span><button type="button" onClick={submit} disabled={!complete || saving}>{saving ? "Salvando…" : "Calcular e salvar"}</button></div> : null}
       {result ? <div className={styles.result} role="status"><strong>{result.scoreText} — {result.classification}</strong><span>{result.interpretation}</span></div> : null}
       {latestByCode.get(definition.code) ? <p className={styles.previous}>Último registro conhecido: <strong>{latestByCode.get(definition.code)!.scoreText ?? latestByCode.get(definition.code)!.scoreNumeric ?? "sem escore"}</strong> · {latestByCode.get(definition.code)!.classification ?? "sem classificação"} · {formatDate(latestByCode.get(definition.code)!.appliedAt)}</p> : null}
-      {definition.code === "gds15" ? <p className={styles.clinicalNote}>GDS-15 é rastreio. Resultado positivo não confirma diagnóstico; avalie clinicamente humor, risco e contexto.</p> : null}
+      {["gds15","pfeffer10"].includes(definition.code) ? <p className={styles.clinicalNote}>Resultado de rastreio não estabelece diagnóstico por si só; integre o escore à avaliação clínica e funcional.</p> : null}
     </div> : null}
 
     <details className={styles.migration}>
-      <summary>Demais escalas do apêndice Freitas/Py — estado de migração</summary>
-      <p>Estas escalas permanecem visíveis para planejamento, mas não são aplicadas automaticamente até que versão, formulário e regra de cálculo estejam clinicamente validados.</p>
-      <ul>{FREITAS_SCALE_MIGRATION_INVENTORY.map((item) => <li key={item.name}><strong>{item.name}</strong><span>{item.status === "migration-required" ? "Migração versionada necessária" : "Revisão clínica necessária"}</span><small>{item.note}</small></li>)}</ul>
+      <summary>Escalas do apêndice ainda em validação de versão</summary>
+      <p>Somente instrumentos que ainda não possuem regra versionada validada permanecem nesta lista.</p>
+      <ul>{FREITAS_SCALE_MIGRATION_INVENTORY.filter((item) => !VALIDATED_NAMES.has(item.name)).map((item) => <li key={item.name}><strong>{item.name}</strong><span>{item.status === "migration-required" ? "Migração versionada necessária" : "Revisão clínica necessária"}</span><small>{item.note}</small></li>)}</ul>
     </details>
   </section>;
 }
