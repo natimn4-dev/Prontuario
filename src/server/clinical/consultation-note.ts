@@ -118,6 +118,10 @@ function publicView(context: Awaited<ReturnType<typeof noteContext>>): Consultat
   };
 }
 
+function prismaJson(value: unknown): Prisma.InputJsonValue {
+  return value as Prisma.InputJsonValue;
+}
+
 export async function getConsultationNote(consultationId: string): Promise<ConsultationNoteView> {
   await requireAuthenticatedUser("patient.read");
   return prisma.$transaction(async (tx) => publicView(await noteContext(tx, consultationId)));
@@ -160,9 +164,9 @@ export async function saveConsultationNote(input: {
         updatedAt: expectedUpdatedAt,
       },
       data: {
-        subjective: serialized.subjective as Prisma.InputJsonValue,
-        objective: serialized.objective as Prisma.InputJsonValue,
-        plan: serialized.plan as Prisma.InputJsonValue,
+        subjective: prismaJson(serialized.subjective),
+        objective: prismaJson(serialized.objective),
+        plan: prismaJson(serialized.plan),
       },
     });
 
