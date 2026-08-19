@@ -3,6 +3,7 @@ import { requireAuthenticatedUser } from "../auth/require-user";
 import type { Prisma } from "../../generated/prisma/client";
 import type { MedicationMoment as DatabaseMedicationMoment } from "../../generated/prisma/enums";
 import { validateMedicationPlanItem, type MedicationMoment } from "../../domain/medication-plan";
+import { isRetryableDocumentSnapshotWriteError } from "../../domain/document-snapshot-versioning";
 
 const MOMENT_TO_DATABASE: Readonly<Record<MedicationMoment, DatabaseMedicationMoment>> = {
   manha: "MORNING",
@@ -187,8 +188,9 @@ export async function createDocumentSnapshot(input: {
         return snapshot;
       }, { isolationLevel: "Serializable" });
     } catch (error) {
-      const uniqueRace = Boolean(error && typeof error === "object" && "code" in error && error.code === "P2002");
-      if (!uniqueRace || attempt === 2) throw error;
+      if (!isRetryableDocumentSnapshotWriteError(error) || attempt === 2) {
+        throw error;
+      }
     }
   }
   throw new Error("Não foi possível versionar o documento após tentativas concorrentes.");
