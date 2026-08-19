@@ -14,6 +14,8 @@
 - erro de gravação é visível;
 - finalização gera estado imutável/versionado.
 
+**Estado atual (2026-08-19):** a fundação de workflow da consulta passa a expor leitura do estado, início de revisão e finalização por endpoint autenticado. A finalização não aceita `patientId` nem lista de alertas urgentes do navegador: paciente e alertas atuais são derivados no servidor, e a transição `IN_REVIEW → FINALIZED` é atômica. Alertas urgentes precisam ser reconhecidos explicitamente pelos códigos atuais fornecidos pelo servidor; códigos obsoletos ou inventados não liberam o gate. A interface de finalização ainda deve ser conectada em incremento separado após validação do backend.
+
 ### P0-03 Autenticação e autorização
 **Aceite**
 - somente usuário autenticado acessa prontuário;
