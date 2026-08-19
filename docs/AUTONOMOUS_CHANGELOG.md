@@ -48,3 +48,18 @@ Prioridade: **relatório final para família/cuidadores — clareza e redução 
 - nenhuma regra clínica, escore, interpretação ou intervenção foi alterada;
 - textos diferentes continuam sendo mantidos integralmente, mesmo quando semanticamente semelhantes;
 - nenhuma salvaguarda de geração ou persistência documental foi removida.
+
+## 2026-08-19 — Contato mais direto no relatório familiar
+
+Prioridade: **relatório final para família/cuidadores — legibilidade e aderência ao texto aprovado**.
+
+### Alterações
+- o rodapé do relatório passa de `Quando entrar em contato com o consultório:` para `Quando entrar em contato:`;
+- o telefone configurado permanece explícito imediatamente após o rótulo, sem alteração de origem ou conteúdo.
+
+### Testes adicionados
+- o golden master de renderização confirma o texto `Quando entrar em contato: 71 99992-1416` e protege contra regressão para a formulação anterior.
+
+### Limites preservados
+- nenhuma orientação clínica foi criada, removida ou reinterpretada;
+- nenhuma regra de contato, urgência ou persistência foi alterada.
