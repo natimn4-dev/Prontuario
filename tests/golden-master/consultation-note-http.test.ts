@@ -5,14 +5,14 @@ import {
   soapDraftToConsultationNoteJson,
 } from "../../src/domain/consultation-note-contract.ts";
 import {
+  ConsultationNoteError,
+  type ConsultationNoteView,
+} from "../../src/domain/consultation-note-view.ts";
+import {
   consultationNoteHttpHandlers,
   parseConsultationNoteUpdate,
   ConsultationNoteRequestError,
 } from "../../src/server/clinical/consultation-note-http.ts";
-import {
-  ConsultationNoteError,
-  type ConsultationNoteView,
-} from "../../src/server/clinical/consultation-note.ts";
 
 const view: ConsultationNoteView = {
   consultationId: "consultation-synthetic",
