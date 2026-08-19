@@ -12,6 +12,11 @@ export interface AssessmentTimelineRecord {
   consultationId: string;
 }
 
+export interface MedicationRegimenTimelineRecord {
+  patientId: string;
+  consultationId: string;
+}
+
 export interface ProblemStatusTimelineEvent {
   problemId: string;
   patientId: string;
@@ -66,6 +71,18 @@ export function assessmentsAsOf<T extends AssessmentTimelineRecord>(input: {
   }
   const eligible = new Set(input.consultationIds);
   return input.assessments.filter((item) => eligible.has(item.consultationId));
+}
+
+export function medicationRegimensAsOf<T extends MedicationRegimenTimelineRecord>(input: {
+  patientId: string;
+  consultationIds: readonly string[];
+  regimens: readonly T[];
+}): T[] {
+  if (input.regimens.some((item) => item.patientId !== input.patientId)) {
+    throw new Error("Regimes de medicamentos de pacientes diferentes não podem compor o mesmo plano histórico.");
+  }
+  const eligible = new Set(input.consultationIds);
+  return input.regimens.filter((item) => eligible.has(item.consultationId));
 }
 
 export function problemsAsOf(input: {
