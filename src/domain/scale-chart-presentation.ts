@@ -3,6 +3,7 @@ import type { ScaleChartSeries } from "./scale-chart-series.ts";
 export const DEFAULT_SCALE_CHART_DATE_LABEL_TARGET = 8;
 
 export interface ScaleChartPresentation {
+  hasHistory: boolean;
   canPlot: boolean;
   numericPointCount: number;
   totalPointCount: number;
@@ -24,9 +25,11 @@ export function buildScaleChartPresentation(
 
   const totalPointCount = series.points.length;
   const numericPointCount = series.points.filter((point) => point.score !== null).length;
+  const hasHistory = totalPointCount > 0;
 
-  if (totalPointCount === 0) {
+  if (!hasHistory) {
     return {
+      hasHistory,
       canPlot: false,
       numericPointCount,
       totalPointCount,
@@ -36,6 +39,7 @@ export function buildScaleChartPresentation(
 
   if (totalPointCount <= targetDateLabelCount) {
     return {
+      hasHistory,
       canPlot: numericPointCount >= 2,
       numericPointCount,
       totalPointCount,
@@ -54,6 +58,7 @@ export function buildScaleChartPresentation(
   });
 
   return {
+    hasHistory,
     canPlot: numericPointCount >= 2,
     numericPointCount,
     totalPointCount,
