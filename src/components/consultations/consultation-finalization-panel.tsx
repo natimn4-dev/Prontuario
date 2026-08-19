@@ -37,6 +37,12 @@ export function ConsultationFinalizationPanel({ consultationId }: { consultation
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
 
+  function applyWorkflowState(next: WorkflowState) {
+    setWorkflow(next);
+    setAcknowledgedCodes(new Set());
+    setClinicalReviewConfirmed(false);
+  }
+
   async function loadWorkflow() {
     const response = await fetch(`/api/consultations/${consultationId}/workflow`, {
       method: "GET",
@@ -46,7 +52,7 @@ export function ConsultationFinalizationPanel({ consultationId }: { consultation
     if (!response.ok) {
       throw new Error("message" in body && body.message ? body.message : "Não foi possível carregar o estado da consulta.");
     }
-    setWorkflow(body as WorkflowState);
+    applyWorkflowState(body as WorkflowState);
   }
 
   useEffect(() => {
@@ -63,7 +69,11 @@ export function ConsultationFinalizationPanel({ consultationId }: { consultation
         if (!response.ok) {
           throw new Error("message" in body && body.message ? body.message : "Não foi possível carregar o estado da consulta.");
         }
-        if (active) setWorkflow(body as WorkflowState);
+        if (active) {
+          setWorkflow(body as WorkflowState);
+          setAcknowledgedCodes(new Set());
+          setClinicalReviewConfirmed(false);
+        }
       } catch (caught) {
         if (active) setError(caught instanceof Error ? caught.message : "Não foi possível carregar o estado da consulta.");
       } finally {
@@ -86,9 +96,7 @@ export function ConsultationFinalizationPanel({ consultationId }: { consultation
       if (!response.ok) {
         throw new Error("message" in result && result.message ? result.message : "Não foi possível atualizar o estado da consulta.");
       }
-      setWorkflow(result as WorkflowState);
-      setAcknowledgedCodes(new Set());
-      setClinicalReviewConfirmed(false);
+      applyWorkflowState(result as WorkflowState);
       router.refresh();
     } catch (caught) {
       setError(caught instanceof Error ? caught.message : "Não foi possível atualizar o estado da consulta.");
