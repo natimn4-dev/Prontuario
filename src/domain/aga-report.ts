@@ -53,7 +53,7 @@ export interface AgaScaleReportSection {
     currentVersion: string | null;
     trend: AgaScaleTrend;
     vsPrevious: string;
-    vsBaseline: string;
+    vsBaseline: AgaScaleTrend;
   };
   chartSeries: ScaleChartSeries;
   source: {
