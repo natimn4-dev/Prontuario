@@ -1,33 +1,33 @@
 import type { AgaScaleReportSection } from "@/domain/aga-report";
 import styles from "./scale-history-chart.module.css";
 
-interface DisplayPoint {
-  key: "baseline" | "previous" | "current";
-  label: string;
-  score: number | null;
-}
-
-const WIDTH = 720;
 const HEIGHT = 220;
 const LEFT = 62;
 const RIGHT = 26;
 const TOP = 28;
-const BOTTOM = 46;
+const BOTTOM = 52;
+const MIN_WIDTH = 720;
+const POINT_SPACING = 112;
 
-function pointsFor(scale: AgaScaleReportSection): DisplayPoint[] {
-  return [
-    { key: "baseline", label: "AGA inicial", score: scale.evolution.baseline },
-    { key: "previous", label: "Consulta anterior", score: scale.evolution.previous },
-    {
-      key: "current",
-      label: scale.assessedInTargetConsultation ? "Consulta atual" : "Último registro",
-      score: scale.assessedInTargetConsultation ? scale.evolution.current : scale.lastKnown.score,
-    },
-  ];
+function displayDate(value: string): string {
+  return new Intl.DateTimeFormat("pt-BR", {
+    timeZone: "UTC",
+    day: "2-digit",
+    month: "2-digit",
+    year: "2-digit",
+  }).format(new Date(value));
 }
 
-function positionX(index: number, total: number): number {
-  const usable = WIDTH - LEFT - RIGHT;
+function pointLabel(point: AgaScaleReportSection["chartSeries"]["points"][number]): string {
+  return point.isBaseline ? `AGA inicial · ${displayDate(point.appliedAt)}` : displayDate(point.appliedAt);
+}
+
+function chartWidth(pointCount: number): number {
+  return Math.max(MIN_WIDTH, LEFT + RIGHT + Math.max(1, pointCount - 1) * POINT_SPACING);
+}
+
+function positionX(index: number, total: number, width: number): number {
+  const usable = width - LEFT - RIGHT;
   if (total <= 1) return LEFT + usable / 2;
   return LEFT + (usable * index) / (total - 1);
 }
@@ -39,39 +39,64 @@ function positionY(score: number, min: number, max: number): number {
 }
 
 export function ScaleHistoryChart({ scale }: { scale: AgaScaleReportSection }) {
-  const points = pointsFor(scale);
-  const numeric = points.filter((point): point is DisplayPoint & { score: number } => point.score !== null);
+  const points = scale.chartSeries.points;
+  const numeric = points.filter((point): point is typeof point & { score: number } => point.score !== null);
   if (numeric.length < 2) return null;
 
   const min = Math.min(...numeric.map((point) => point.score));
   const max = Math.max(...numeric.map((point) => point.score));
+  const width = chartWidth(points.length);
   const chartTitle = `Trajetória de ${scale.name}`;
-  const chartDescription = `Escores registrados em até três momentos: AGA inicial, consulta anterior e ${scale.assessedInTargetConsultation ? "consulta atual" : "último registro"}. O gráfico não define sozinho melhora ou piora clínica.`;
+  const chartDescription = `Série histórica com ${points.length} registro(s). Trechos incompatíveis ou sem dados suficientes são exibidos com uma interrupção, sem conexão visual.`;
+  const pointIndex = new Map(points.map((point, index) => [point.consultationId, index]));
 
   return (
     <figure className={styles.figure}>
       <figcaption className={styles.caption}>
         <strong>{chartTitle}</strong>
         <span>
-          Visualização dos escores registrados. A direção clínica depende da interpretação validada de cada instrumento.
+          Histórico dos escores registrados. Linhas aparecem somente entre pontos que o domínio considera comparáveis; interrupções são preservadas explicitamente.
         </span>
       </figcaption>
 
       <div className={styles.chartWrap}>
         <svg
           className={styles.chart}
-          viewBox={`0 0 ${WIDTH} ${HEIGHT}`}
+          viewBox={`0 0 ${width} ${HEIGHT}`}
+          width={width}
           role="img"
           aria-label={`${chartTitle}. ${chartDescription}`}
         >
-          <line x1={LEFT} y1={HEIGHT - BOTTOM} x2={WIDTH - RIGHT} y2={HEIGHT - BOTTOM} className={styles.axis} />
+          <line x1={LEFT} y1={HEIGHT - BOTTOM} x2={width - RIGHT} y2={HEIGHT - BOTTOM} className={styles.axis} />
+
+          {scale.chartSeries.segments.map((segment) => {
+            if (!segment.drawable) return null;
+            const fromIndex = pointIndex.get(segment.fromConsultationId);
+            const toIndex = pointIndex.get(segment.toConsultationId);
+            if (fromIndex === undefined || toIndex === undefined) return null;
+            const from = points[fromIndex];
+            const to = points[toIndex];
+            if (!from || !to || from.score === null || to.score === null) return null;
+            return (
+              <line
+                key={`${segment.fromConsultationId}-${segment.toConsultationId}`}
+                x1={positionX(fromIndex, points.length, width)}
+                y1={positionY(from.score, min, max)}
+                x2={positionX(toIndex, points.length, width)}
+                y2={positionY(to.score, min, max)}
+                className={styles.axis}
+                aria-hidden="true"
+              />
+            );
+          })}
+
           {points.map((point, index) => {
-            const x = positionX(index, points.length);
+            const x = positionX(index, points.length, width);
             const score = point.score;
             return (
-              <g key={point.key}>
+              <g key={`${point.consultationId}-${point.appliedAt}`}>
                 <line x1={x} y1={TOP} x2={x} y2={HEIGHT - BOTTOM} className={styles.guide} />
-                <text x={x} y={HEIGHT - 18} textAnchor="middle" className={styles.axisLabel}>{point.label}</text>
+                <text x={x} y={HEIGHT - 21} textAnchor="middle" className={styles.axisLabel}>{pointLabel(point)}</text>
                 {score === null ? (
                   <text x={x} y={TOP + 18} textAnchor="middle" className={styles.missing}>sem dado</text>
                 ) : (
@@ -94,23 +119,25 @@ export function ScaleHistoryChart({ scale }: { scale: AgaScaleReportSection }) {
       </div>
 
       <p className={styles.trendNote}>
-        Tendência registrada: <strong>{scale.evolution.vsPrevious}</strong>.
-        {scale.evolution.trend === "not-comparable" ? " Há diferença que impede comparação direta entre os registros." : ""}
-        {scale.evolution.trend === "insufficient-data" ? " Há dados insuficientes para comparação." : ""}
+        Tendência mais recente registrada: <strong>{scale.evolution.vsPrevious}</strong>.
+        {scale.chartSeries.hasMultipleVersions ? " O histórico contém versões diferentes do instrumento; os trechos incompatíveis permanecem desconectados." : ""}
+        {scale.evolution.trend === "insufficient-data" ? " Há dados insuficientes para a comparação mais recente." : ""}
       </p>
 
       <table className={styles.dataTable}>
         <caption>Alternativa textual ao gráfico de {scale.name}</caption>
         <thead>
           <tr>
+            <th scope="col">Data</th>
             <th scope="col">Momento</th>
             <th scope="col">Escore registrado</th>
           </tr>
         </thead>
         <tbody>
           {points.map((point) => (
-            <tr key={`row-${point.key}`}>
-              <th scope="row">{point.label}</th>
+            <tr key={`row-${point.consultationId}-${point.appliedAt}`}>
+              <td>{displayDate(point.appliedAt)}</td>
+              <th scope="row">{point.isBaseline ? "AGA inicial" : "Acompanhamento"}</th>
               <td>{point.score ?? "Sem dado registrado"}</td>
             </tr>
           ))}
