@@ -3,6 +3,7 @@ import { CORE_FREITAS_SCALES, scoreCoreFreitasScale, type CoreFreitasScaleCode }
 import { VALIDATED_FREITAS_SCALES, scoreValidatedFreitasScale, type ValidatedScaleCode } from "@/domain/freitas-validated-scales";
 import { COGNITIVE_FREITAS_SCALES, scoreCognitiveFreitasScale, type CognitiveFreitasScaleCode } from "@/domain/freitas-cognitive-scales";
 import { PSYCHOSOCIAL_FREITAS_SCALES, scorePsychosocialFreitasScale, type PsychosocialFreitasScaleCode } from "@/domain/freitas-psychosocial-scales";
+import { electronicScaleLicenseFlagsFromEnvironment, electronicScaleRestriction, isElectronicScaleLicensed, unconfirmedElectronicScaleRestrictions } from "@/domain/clinical-config/electronic-scale-license-policy";
 import { requireAuthenticatedUser } from "@/server/auth/require-user";
 import { saveScaleAssessment } from "@/server/clinical/persistence";
 import { prisma } from "@/server/db";
@@ -57,17 +58,20 @@ export async function GET(_request: Request, context: { params: Promise<{ id: st
     await requireAuthenticatedUser("patient.read");
     const { id } = await context.params;
     const consultation = await consultationContext(id);
-    const codes = [...SUPPORTED];
+    const licenseFlags = electronicScaleLicenseFlagsFromEnvironment(process.env);
+    const availableDefinitions = DEFINITIONS.filter((definition) => isElectronicScaleLicensed(definition.code, licenseFlags));
+    const availableCodes = availableDefinitions.map((definition) => definition.code as ScaleCode);
     const assessments = await prisma.scaleAssessment.findMany({
-      where: { patientId: consultation.patientId, scaleCode: { in: codes } },
+      where: { patientId: consultation.patientId, scaleCode: { in: availableCodes } },
       orderBy: [{ appliedAt: "desc" }, { id: "desc" }],
       select: { id: true, consultationId: true, scaleCode: true, scaleVersion: true, scoreNumeric: true, scoreText: true, classification: true, interpretation: true, appliedAt: true },
     });
     return NextResponse.json({
       consultationId: id,
       consultationStatus: consultation.status,
-      definitions: DEFINITIONS,
-      latest: codes.map((scaleCode) => {
+      definitions: availableDefinitions,
+      licensingRestrictions: unconfirmedElectronicScaleRestrictions(licenseFlags).map(({ code, name, reason }) => ({ code, name, reason })),
+      latest: availableCodes.map((scaleCode) => {
         const item = assessments.find((assessment) => assessment.scaleCode === scaleCode);
         return item ? { ...item, scoreNumeric: item.scoreNumeric === null ? null : Number(item.scoreNumeric) } : null;
       }).filter(Boolean),
@@ -84,6 +88,11 @@ export async function POST(request: Request, context: { params: Promise<{ id: st
     const consultation = await consultationContext(id);
     if (consultation.status === "FINALIZED") return NextResponse.json({ code: "CONSULTATION_FINALIZED", message: "Consulta finalizada não aceita nova avaliação." }, { status: 409 });
     const { scaleCode, answers } = parseBody(await request.json());
+    const licenseFlags = electronicScaleLicenseFlagsFromEnvironment(process.env);
+    const restriction = electronicScaleRestriction(scaleCode, licenseFlags);
+    if (restriction) {
+      return NextResponse.json({ code: "SCALE_LICENSE_REQUIRED", message: `${restriction.name}: uso eletrônico indisponível até confirmação de licença/permissão aplicável.` }, { status: 403 });
+    }
     const scored = score(scaleCode, answers);
     const assessment = await saveScaleAssessment({
       consultationId: id,
