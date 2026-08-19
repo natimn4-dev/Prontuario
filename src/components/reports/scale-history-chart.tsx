@@ -45,10 +45,10 @@ function positionY(score: number, min: number, max: number): number {
 }
 
 export function ScaleHistoryChart({ scale }: { scale: AgaScaleReportSection }) {
-  const points = scale.chartSeries.points;
-  if (points.length === 0) return null;
-
   const presentation = buildScaleChartPresentation(scale.chartSeries);
+  if (!presentation.hasHistory) return null;
+
+  const points = scale.chartSeries.points;
   const numeric = points.filter((point): point is typeof point & { score: number } => point.score !== null);
   const min = presentation.canPlot ? Math.min(...numeric.map((point) => point.score)) : 0;
   const max = presentation.canPlot ? Math.max(...numeric.map((point) => point.score)) : 0;
