@@ -8,7 +8,8 @@ Nenhum dado real de paciente deve entrar no sistema antes de **todos os P0** aba
 - [ ] banco MySQL de produção criado com usuário exclusivo e privilégio mínimo;
 - [ ] migration Prisma aplicada e registrada;
 - [ ] `prisma generate` executado na mesma versão do código;
-- [ ] `/api/health` responde `200` com banco saudável;
+- [ ] `/api/health` responde `200` com banco saudável e `releaseId` esperado;
+- [ ] `/api/health/assets` confirma CSS/JS presentes no build e entregues publicamente com HTTP `200`;
 - [ ] horário/timezone do servidor documentado e consistente.
 
 ## P0 — Autenticação
@@ -17,6 +18,9 @@ Nenhum dado real de paciente deve entrar no sistema antes de **todos os P0** aba
 - [ ] `BETTER_AUTH_SECRET` aleatório, >=32 caracteres e exclusivo de produção;
 - [ ] `AUTH_ALLOWED_EMAILS` contém somente profissionais autorizados;
 - [ ] `AUTH_BOOTSTRAP_ADMIN_EMAILS` contém o administrador inicial e é subconjunto da allowlist;
+- [ ] `/login` renderiza o fallback server-side para `/auth/google` mesmo sem JavaScript;
+- [ ] `/auth/google` inicia redirecionamento HTTPS para `accounts.google.com`;
+- [ ] usuário autorizado conclui login Google e acessa a área clínica;
 - [ ] usuário não autorizado foi testado e bloqueado;
 - [ ] usuário desativado perde acesso imediatamente;
 - [ ] último administrador não pode ser removido.
@@ -43,6 +47,7 @@ Nenhum dado real de paciente deve entrar no sistema antes de **todos os P0** aba
 - [ ] `npm test` verde;
 - [ ] `npm run typecheck` verde;
 - [ ] `npm run build` verde;
+- [ ] `npm run release:clinical:smoke` retorna `CLINICAL_RELEASE=SMOKE_OK` após o deploy da `main`;
 - [ ] smoke test em ambiente de homologação;
 - [ ] teste AGA inicial → consulta subsequente;
 - [ ] teste SOAP;
