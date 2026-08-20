@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/server/db";
 import { requireAuthenticatedUser } from "@/server/auth/require-user";
 import { saveScaleAssessment } from "@/server/clinical/persistence";
+import { scaleConsultationHorizonIds } from "@/domain/scale-consultation-horizon";
 import {
   CRASH_MNA_SF_VERSION,
   ECOG_VERSION,
@@ -19,16 +20,33 @@ async function consultationPatientId(consultationId: string) {
   return consultation.patientId;
 }
 
+async function consultationHorizonIds(patientId: string, targetConsultationId: string) {
+  const consultations = await prisma.consultation.findMany({
+    where: { patientId },
+    select: { id: true, patientId: true, occurredAt: true, createdAt: true },
+  });
+  return scaleConsultationHorizonIds({ patientId, targetConsultationId, consultations });
+}
+
+async function eligiblePrefillAssessments(consultationId: string) {
+  const patientId = await consultationPatientId(consultationId);
+  const consultationIds = await consultationHorizonIds(patientId, consultationId);
+  return prisma.scaleAssessment.findMany({
+    where: {
+      patientId,
+      consultationId: { in: consultationIds },
+      scaleCode: { in: ["meem", "mna_sf", "ecog"] },
+    },
+    orderBy: [{ appliedAt: "desc" }, { id: "desc" }],
+    select: { id: true, scaleCode: true, scaleVersion: true, scoreNumeric: true, appliedAt: true, consultationId: true },
+  });
+}
+
 export async function GET(_request: Request, context: { params: Promise<{ id: string }> }) {
   try {
     await requireAuthenticatedUser("consultation.write");
     const { id } = await context.params;
-    const patientId = await consultationPatientId(id);
-    const assessments = await prisma.scaleAssessment.findMany({
-      where: { patientId, scaleCode: { in: ["meem", "mna_sf", "ecog"] } },
-      orderBy: { appliedAt: "desc" },
-      select: { id: true, scaleCode: true, scaleVersion: true, scoreNumeric: true, appliedAt: true, consultationId: true },
-    });
+    const assessments = await eligiblePrefillAssessments(id);
     const serialize = (code: string) => {
       const assessment = assessments.find((item) => item.scaleCode === code);
       return assessment ? { assessmentId: assessment.id, scaleVersion: assessment.scaleVersion, score: assessment.scoreNumeric === null ? null : Number(assessment.scoreNumeric), appliedAt: assessment.appliedAt, consultationId: assessment.consultationId } : null;
@@ -56,12 +74,7 @@ function integerChoice(value: number, allowed: readonly number[], label: string)
 }
 
 async function matchingAutofillSources(consultationId: string, input: Pick<CrashMnaSfInput, "ecog" | "mmseScore" | "mnaSfScore">) {
-  const patientId = await consultationPatientId(consultationId);
-  const assessments = await prisma.scaleAssessment.findMany({
-    where: { patientId, scaleCode: { in: ["ecog", "meem", "mna_sf"] } },
-    orderBy: { appliedAt: "desc" },
-    select: { id: true, scaleCode: true, scaleVersion: true, scoreNumeric: true, appliedAt: true, consultationId: true },
-  });
+  const assessments = await eligiblePrefillAssessments(consultationId);
   const expected: Record<string, number> = { ecog: input.ecog, meem: input.mmseScore, mna_sf: input.mnaSfScore };
   return ["ecog", "meem", "mna_sf"].flatMap((scaleCode) => {
     const assessment = assessments.find((item) => item.scaleCode === scaleCode);
