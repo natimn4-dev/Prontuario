@@ -33,11 +33,30 @@ function parseBody(value: unknown): { scaleCode: ComplementaryScoreScaleCode; an
   return { scaleCode: body.scaleCode as ComplementaryScoreScaleCode, answers: asRecord(body.answers) };
 }
 
+function validateAgainstDefinition(scaleCode: ComplementaryScoreScaleCode, answers: Record<string, unknown>) {
+  const definition = COMPLEMENTARY_SCORE_SCALES.find((item) => item.code === scaleCode);
+  if (!definition) throw new Error("UNSUPPORTED_SCALE");
+  const allowedIds = new Set(definition.fields.map((field) => field.id));
+  if (Object.keys(answers).some((key) => !allowedIds.has(key))) throw new Error("Valor inválido: campo não permitido.");
+
+  for (const field of definition.fields) {
+    const value = answers[field.id];
+    if (field.number) {
+      if (typeof value !== "number" || !Number.isFinite(value) || value < field.number.min || value > field.number.max) {
+        throw new Error(`Valor inválido para ${field.id}.`);
+      }
+    }
+    if (field.choices) {
+      if (!field.choices.some((choice) => choice.value === value)) throw new Error(`Valor inválido para ${field.id}.`);
+    }
+  }
+}
+
 function failure(error: unknown) {
   const code = error instanceof Error ? error.message : "UNKNOWN";
   if (code === "CONSULTATION_NOT_FOUND") return NextResponse.json({ code, message: "Consulta não encontrada." }, { status: 404 });
   if (code === "INVALID_REQUEST" || code === "UNSUPPORTED_SCALE") return NextResponse.json({ code, message: "Requisição de escala complementar inválida." }, { status: 400 });
-  if (error instanceof Error && /Valor inválido|Escala complementar|interpretar/.test(error.message)) {
+  if (error instanceof Error && /Valor inválido|Escala complementar|interpretar|Escolaridade/.test(error.message)) {
     return NextResponse.json({ code: "INVALID_SCALE_ANSWERS", message: error.message }, { status: 400 });
   }
   return NextResponse.json({ code: "COMPLEMENTARY_SCALE_FAILED", message: "Não foi possível processar a escala complementar." }, { status: 500 });
@@ -89,6 +108,7 @@ export async function POST(request: Request, context: { params: Promise<{ id: st
     }
 
     const { scaleCode, answers } = parseBody(await request.json());
+    validateAgainstDefinition(scaleCode, answers);
     const scored = scoreComplementaryScale(scaleCode, answers);
     const assessment = await saveScaleAssessment({
       consultationId: id,
