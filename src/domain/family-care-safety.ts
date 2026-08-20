@@ -1,3 +1,4 @@
+import type { AgaReportModel } from "./aga-report";
 import type { InterventionPlan } from "./interventions";
 
 const EXPLICIT_SELF_MEDICATION_SAFETY = [
@@ -42,5 +43,35 @@ export function sanitizeFamilyCarePlan(plan: InterventionPlan): InterventionPlan
     encaminhamentos: filterFamilySafeCareItems(plan.encaminhamentos),
     contato: filterFamilySafeCareItems(plan.contato),
     urgencia: filterFamilySafeCareItems(plan.urgencia),
+  };
+}
+
+export function sanitizeFamilyNarrative(text: string | undefined): string | undefined {
+  if (!text?.trim()) return text;
+  const safeSentences = text
+    .split(/(?<=[.!?])\s+/)
+    .map((sentence) => sentence.trim())
+    .filter(Boolean)
+    .filter(isFamilySafeCareInstruction);
+  if (safeSentences.length > 0) return safeSentences.join(" ");
+  return "Resultado registrado. A interpretação deve ser discutida com a equipe assistencial considerando o contexto clínico e funcional.";
+}
+
+export function sanitizeFamilyReportModel(report: AgaReportModel): AgaReportModel {
+  return {
+    ...report,
+    assessedScales: report.assessedScales.map((scale) => ({
+      ...scale,
+      interpretation: sanitizeFamilyNarrative(scale.interpretation),
+      interventionSuggestions: scale.interventionSuggestions.filter((suggestion) => isFamilySafeCareInstruction(suggestion.text)),
+    })),
+    carePlan: {
+      now: filterFamilySafeCareItems(report.carePlan.now),
+      mediumTerm: filterFamilySafeCareItems(report.carePlan.mediumTerm),
+      caregiver: filterFamilySafeCareItems(report.carePlan.caregiver),
+      referrals: filterFamilySafeCareItems(report.carePlan.referrals),
+      contact: filterFamilySafeCareItems(report.carePlan.contact),
+      urgent: filterFamilySafeCareItems(report.carePlan.urgent),
+    },
   };
 }
