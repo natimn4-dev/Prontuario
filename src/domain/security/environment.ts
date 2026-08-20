@@ -21,6 +21,24 @@ function nonPlaceholder(value: string | undefined): boolean {
   return !/(trocar|change|example|your-|placeholder)/i.test(value);
 }
 
+function isLoopbackHostname(hostname: string): boolean {
+  const normalized = hostname.toLowerCase().replace(/^\[|\]$/g, "");
+  return normalized === "localhost" || normalized === "127.0.0.1" || normalized === "::1";
+}
+
+function validateAppUrl(value: string, production: boolean, errors: string[]): void {
+  try {
+    const url = new URL(value);
+    if (production && url.protocol !== "https:") errors.push("APP_URL deve usar HTTPS em produção.");
+    if (production && isLoopbackHostname(url.hostname)) errors.push("APP_URL não pode apontar para localhost/loopback em produção.");
+    if (url.username || url.password) errors.push("APP_URL não pode conter credenciais embutidas.");
+    if (url.search || url.hash) errors.push("APP_URL deve representar apenas a origem, sem query string ou fragmento.");
+    if (url.pathname !== "/") errors.push("APP_URL deve representar apenas a origem, sem caminho adicional.");
+  } catch {
+    errors.push("APP_URL inválida.");
+  }
+}
+
 export function validateProductionEnvironment(env: ProductionEnvironment): EnvironmentValidation {
   const errors: string[] = [];
   const production = env.nodeEnv === "production";
@@ -28,12 +46,7 @@ export function validateProductionEnvironment(env: ProductionEnvironment): Envir
   if (!env.appUrl) {
     errors.push("APP_URL é obrigatória.");
   } else {
-    try {
-      const url = new URL(env.appUrl);
-      if (production && url.protocol !== "https:") errors.push("APP_URL deve usar HTTPS em produção.");
-    } catch {
-      errors.push("APP_URL inválida.");
-    }
+    validateAppUrl(env.appUrl, production, errors);
   }
 
   if (!env.databaseUrl?.startsWith("mysql://")) {
@@ -43,7 +56,11 @@ export function validateProductionEnvironment(env: ProductionEnvironment): Envir
   if (!nonPlaceholder(env.betterAuthSecret) || (env.betterAuthSecret?.length ?? 0) < 32) {
     errors.push("BETTER_AUTH_SECRET deve ser não previsível e ter pelo menos 32 caracteres.");
   }
-  if (!nonPlaceholder(env.googleClientId)) errors.push("GOOGLE_CLIENT_ID é obrigatório.");
+  if (!nonPlaceholder(env.googleClientId)) {
+    errors.push("GOOGLE_CLIENT_ID é obrigatório.");
+  } else if (!env.googleClientId!.trim().endsWith(".apps.googleusercontent.com")) {
+    errors.push("GOOGLE_CLIENT_ID deve ter o formato de um OAuth Client ID do Google.");
+  }
   if (!nonPlaceholder(env.googleClientSecret)) errors.push("GOOGLE_CLIENT_SECRET é obrigatório.");
 
   const allowed = parseEmailSet(env.allowedEmails);
