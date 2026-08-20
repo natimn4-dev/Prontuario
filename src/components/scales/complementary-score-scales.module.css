@@ -1,0 +1,175 @@
+.card {
+  margin: 32px 0;
+  padding: 24px;
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  background: #fff;
+}
+
+.heading {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 24px;
+  margin-bottom: 18px;
+}
+
+.heading h2,
+.heading p {
+  margin-top: 0;
+}
+
+.source {
+  flex: 0 0 auto;
+  padding: 6px 10px;
+  border-radius: 999px;
+  background: var(--primary-soft);
+  color: var(--primary);
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.notice,
+.success,
+.error,
+.clinicalNote,
+.previous {
+  margin: 12px 0;
+  padding: 10px 12px;
+  border-radius: 10px;
+  line-height: 1.45;
+}
+
+.notice,
+.clinicalNote,
+.previous {
+  background: #f7f7f5;
+  color: var(--muted);
+}
+
+.success {
+  background: #eef8f2;
+}
+
+.error {
+  background: #fff0f0;
+}
+
+.selector {
+  display: grid;
+  gap: 6px;
+  max-width: 620px;
+  margin-bottom: 18px;
+  font-weight: 700;
+}
+
+.selector select,
+.field input,
+.field select {
+  width: 100%;
+  min-height: 42px;
+  padding: 9px 11px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: #fff;
+  color: inherit;
+  font: inherit;
+}
+
+.workspace {
+  padding: 20px;
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  background: #fcfcfb;
+}
+
+.workspace header h3 {
+  margin: 0 0 6px;
+}
+
+.workspace header p {
+  margin: 0 0 6px;
+  line-height: 1.5;
+}
+
+.workspace header small {
+  display: block;
+  color: var(--muted);
+  line-height: 1.45;
+}
+
+.fields {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 14px;
+  margin: 18px 0;
+}
+
+.field {
+  display: grid;
+  gap: 7px;
+  padding: 14px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: #fff;
+  font-weight: 700;
+}
+
+.field small {
+  color: var(--muted);
+  font-weight: 400;
+}
+
+.actions {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.actions button {
+  min-height: 42px;
+  padding: 9px 16px;
+  border: 0;
+  border-radius: 10px;
+  background: var(--primary);
+  color: #fff;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.actions button:disabled {
+  opacity: .5;
+  cursor: not-allowed;
+}
+
+.result {
+  display: grid;
+  gap: 5px;
+  margin-top: 16px;
+  padding: 14px;
+  border-radius: 12px;
+  background: var(--primary-soft);
+}
+
+@media (max-width: 760px) {
+  .card {
+    padding: 18px;
+  }
+
+  .heading,
+  .actions {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .source {
+    align-self: flex-start;
+  }
+}
+
+@media print {
+  .card {
+    display: none;
+  }
+}
