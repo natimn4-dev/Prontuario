@@ -1,5 +1,5 @@
-import type { AgaReportModel } from "./aga-report";
-import type { InterventionPlan } from "./interventions";
+import type { AgaReportModel } from "./aga-report.ts";
+import type { InterventionPlan } from "./interventions.ts";
 
 const EXPLICIT_SELF_MEDICATION_SAFETY = [
   /não\s+(?:suspender|interromper|iniciar|aumentar|reduzir|trocar|alterar).{0,60}(?:por conta própria|sem orientação)/i,
