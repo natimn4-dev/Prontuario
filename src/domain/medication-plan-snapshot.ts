@@ -13,10 +13,15 @@ export interface MedicationPlanSnapshotModel {
   }>;
 }
 
+type MedicationPlanSnapshotErrorCode = "HISTORICAL_STATUS_NOT_REVIEWED" | "CONSULTATION_CONTEXT_MISMATCH";
+
 export class MedicationPlanSnapshotError extends Error {
-  constructor(public readonly code: "HISTORICAL_STATUS_NOT_REVIEWED" | "CONSULTATION_CONTEXT_MISMATCH", message: string) {
+  readonly code: MedicationPlanSnapshotErrorCode;
+
+  constructor(code: MedicationPlanSnapshotErrorCode, message: string) {
     super(message);
     this.name = "MedicationPlanSnapshotError";
+    this.code = code;
   }
 }
 
