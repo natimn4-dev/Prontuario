@@ -1,3 +1,8 @@
+import {
+  normalizeVaccinationReview,
+  type VaccinationReview,
+} from "./vaccination-prevention.ts";
+
 export const CONSULTATION_NOTE_SCHEMA_VERSION = "1.0" as const;
 
 type ConsultationNoteSchemaVersion = typeof CONSULTATION_NOTE_SCHEMA_VERSION;
@@ -16,6 +21,7 @@ export interface ObjectiveNoteV1 {
   physicalExam?: string;
   vitalSigns?: string;
   anthropometry?: string;
+  vaccinationReview?: VaccinationReview;
 }
 
 export interface PlanNoteV1 {
@@ -35,6 +41,7 @@ export interface SoapDraftFields {
   physicalExam?: string;
   vitalSigns?: string;
   anthropometry?: string;
+  vaccinationReview?: VaccinationReview;
   planByProblem?: Readonly<Record<string, readonly string[]>>;
 }
 
@@ -82,6 +89,28 @@ function normalizedOptionalText(value: string | undefined): string | undefined {
   return normalized || undefined;
 }
 
+function parseVaccinationReview(value: unknown): VaccinationReview | undefined {
+  if (value === undefined || value === null) return undefined;
+  const record = asRecord(value, "objective.vaccinationReview");
+  assertOnlyKeys(record, ["status", "pendingVaccines"], "objective.vaccinationReview");
+  if (typeof record.status !== "string") {
+    throw new Error("objective.vaccinationReview.status deve ser texto.");
+  }
+  if (record.pendingVaccines !== undefined && !Array.isArray(record.pendingVaccines)) {
+    throw new Error("objective.vaccinationReview.pendingVaccines deve ser uma lista de textos.");
+  }
+  const pendingVaccines = (record.pendingVaccines ?? []).map((value, index) => {
+    if (typeof value !== "string") {
+      throw new Error(`objective.vaccinationReview.pendingVaccines[${index}] deve ser texto.`);
+    }
+    return value;
+  });
+  return normalizeVaccinationReview({
+    status: record.status as VaccinationReview["status"],
+    ...(pendingVaccines.length > 0 ? { pendingVaccines } : {}),
+  });
+}
+
 export function parseSubjectiveNote(value: unknown): SubjectiveNoteV1 | undefined {
   if (value === undefined || value === null) return undefined;
   const record = asRecord(value, "subjective");
@@ -99,7 +128,7 @@ export function parseObjectiveNote(value: unknown): ObjectiveNoteV1 | undefined 
   const record = asRecord(value, "objective");
   assertOnlyKeys(
     record,
-    ["schemaVersion", "kind", "physicalExam", "vitalSigns", "anthropometry"],
+    ["schemaVersion", "kind", "physicalExam", "vitalSigns", "anthropometry", "vaccinationReview"],
     "objective",
   );
   assertHeader(record, "objective", "objective");
@@ -109,6 +138,7 @@ export function parseObjectiveNote(value: unknown): ObjectiveNoteV1 | undefined 
     physicalExam: optionalString(record, "physicalExam", "objective"),
     vitalSigns: optionalString(record, "vitalSigns", "objective"),
     anthropometry: optionalString(record, "anthropometry", "objective"),
+    vaccinationReview: parseVaccinationReview(record.vaccinationReview),
   };
 }
 
@@ -168,6 +198,7 @@ export function consultationNoteJsonToSoapDraft(
     physicalExam: objective?.physicalExam,
     vitalSigns: objective?.vitalSigns,
     anthropometry: objective?.anthropometry,
+    vaccinationReview: objective?.vaccinationReview,
     planByProblem: plan?.byProblem,
   };
 }
@@ -183,6 +214,9 @@ export function soapDraftToConsultationNoteJson(
   const physicalExam = normalizedOptionalText(input.physicalExam);
   const vitalSigns = normalizedOptionalText(input.vitalSigns);
   const anthropometry = normalizedOptionalText(input.anthropometry);
+  const vaccinationReview = input.vaccinationReview
+    ? normalizeVaccinationReview(input.vaccinationReview)
+    : undefined;
   const byProblem: Record<string, readonly string[]> = {};
 
   for (const [problemId, actions] of Object.entries(input.planByProblem ?? {})) {
@@ -204,6 +238,7 @@ export function soapDraftToConsultationNoteJson(
       ...(physicalExam ? { physicalExam } : {}),
       ...(vitalSigns ? { vitalSigns } : {}),
       ...(anthropometry ? { anthropometry } : {}),
+      ...(vaccinationReview ? { vaccinationReview } : {}),
     },
     plan: {
       schemaVersion: CONSULTATION_NOTE_SCHEMA_VERSION,

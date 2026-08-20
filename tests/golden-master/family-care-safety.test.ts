@@ -52,3 +52,16 @@ test("family narrative falls back to a neutral explanation when every sentence i
   assert.match(text ?? "", /discutida com a equipe assistencial/i);
   assert.doesNotMatch(text ?? "", /vitamina d|dose do medicamento|losartana/i);
 });
+
+test("family safety blocks automatic vaccine administration while keeping carteira review", () => {
+  const safe = filterFamilySafeCareItems([
+    "Aplicar vacina contra influenza hoje.",
+    "Administrar vacina pneumocócica conforme esquema.",
+    "Receber vacina contra herpes-zóster.",
+    "Levar a carteira de vacinação para revisão com a equipe assistencial.",
+  ]);
+
+  assert.deepEqual(safe, [
+    "Levar a carteira de vacinação para revisão com a equipe assistencial.",
+  ]);
+});

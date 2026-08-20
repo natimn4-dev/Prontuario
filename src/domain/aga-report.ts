@@ -3,6 +3,11 @@ import { proposeProblemsFromAssessments } from "./problem-proposals.ts";
 import { splitProblems, type ClinicalProblem } from "./problems.ts";
 import { SCALE_CATALOG, scaleCatalogEntry } from "./scale-catalog.ts";
 import { buildScaleChartSeries, type ScaleChartSeries } from "./scale-chart-series.ts";
+import {
+  buildVaccinationPreventionSection,
+  type VaccinationPreventionSection,
+  type VaccinationReview,
+} from "./vaccination-prevention.ts";
 
 export type AgaReportConsultationStatus = "DRAFT" | "IN_REVIEW" | "FINALIZED";
 export type AgaScaleTrend =
@@ -64,7 +69,7 @@ export interface AgaScaleReportSection {
 }
 
 export interface AgaReportModel {
-  schemaVersion: "1.1";
+  schemaVersion: "1.2";
   patientId: string;
   consultationId: string;
   consultationStatus: AgaReportConsultationStatus;
@@ -87,6 +92,7 @@ export interface AgaReportModel {
       urgentAlerts: number;
     };
   };
+  vaccinationPrevention: VaccinationPreventionSection;
   carePlan: {
     now: string[];
     mediumTerm: string[];
@@ -123,6 +129,7 @@ export function buildAgaReportModel(input: {
   patientName: string;
   longitudinalAssessments: readonly LongitudinalAssessment[];
   longitudinalProblems: readonly ClinicalProblem[];
+  vaccinationReview?: VaccinationReview;
 }): AgaReportModel {
   if (!input.patientId || !input.consultationId) {
     throw new Error("Paciente e consulta são obrigatórios para gerar o relatório AGA.");
@@ -148,7 +155,7 @@ export function buildAgaReportModel(input: {
     .map((card) => card.scaleId));
 
   return {
-    schemaVersion: "1.1",
+    schemaVersion: "1.2",
     patientId: input.patientId,
     consultationId: input.consultationId,
     consultationStatus: input.consultationStatus,
@@ -224,6 +231,7 @@ export function buildAgaReportModel(input: {
       narrative: [...summary.narrative],
       counts: { ...summary.counts },
     },
+    vaccinationPrevention: buildVaccinationPreventionSection(input.vaccinationReview),
     carePlan: {
       now: [...summary.combinedPlan.agora],
       mediumTerm: [...summary.combinedPlan.medio],
@@ -263,6 +271,22 @@ export function renderAgaReportText(model: AgaReportModel): string {
     "",
     "PROBLEMAS GERIÁTRICOS",
     list(model.geriatricProblems.map((problem) => `${problem.title} [${problem.status}]`)),
+  );
+
+  const vaccinationItems = model.vaccinationPrevention.status === "PENDING"
+    ? model.vaccinationPrevention.pendingVaccines
+    : model.vaccinationPrevention.status === "UNKNOWN"
+      ? ["Não determinado porque o status vacinal é desconhecido."]
+      : ["Nenhuma pendência registrada nesta consulta."];
+  blocks.push(
+    "",
+    "VACINAS E PREVENÇÃO",
+    `Situação: ${model.vaccinationPrevention.statusLabel}`,
+    "Vacinas pendentes:",
+    list(vaccinationItems),
+    "Orientação:",
+    list(model.vaccinationPrevention.guidance),
+    "Esta seção não contém prescrição automática e permanece separada da tabela de medicamentos.",
   );
 
   for (const scale of model.assessedScales) {

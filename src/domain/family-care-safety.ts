@@ -26,6 +26,8 @@ const MEDICAL_CONDUCT_PATTERNS = [
   /\btrocar\s+(?:o\s+|a\s+|um\s+|uma\s+)?(?:medicamento|remédio)/i,
   /\biniciar\s+(?:tratamento\s+farmacol[oó]gico|medica(?:ção|cao|mento)|remédio|suplemento)/i,
   /\bsuspender\s+(?:o\s+|a\s+|um\s+|uma\s+)?(?:medicamento|remédio)/i,
+  /\b(?:aplicar|administrar|prescrever|tomar|receber)\b.{0,60}\bvacina\w*/i,
+  /\b(?:vacinar|imunizar)\b/i,
   /\binvestigar\s+causas?\s+(?:secundárias|reversíveis|clínicas|medicamentosas)/i,
   /\bconsiderar\s+(?:avaliação\s+de\s+massa\s+muscular|dxa|bioimpedância)/i,
 ];

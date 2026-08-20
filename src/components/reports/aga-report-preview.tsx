@@ -320,6 +320,45 @@ export function AgaReportPreview({ consultationId }: { consultationId: string })
               </div>
             </section>
 
+            <section
+              className="report-section vaccination-prevention-section"
+              aria-labelledby="vaccination-prevention-title"
+            >
+              <div className="section-title-row">
+                <div>
+                  <p className="eyebrow">Cuidado preventivo</p>
+                  <h2 id="vaccination-prevention-title">Vacinas e prevenção</h2>
+                </div>
+                <p className="vaccination-status">
+                  {generated.report.vaccinationPrevention.statusLabel}
+                </p>
+              </div>
+
+              {generated.report.vaccinationPrevention.status === "PENDING" ? (
+                <div className="vaccination-pending-list">
+                  <h3>Vacinas registradas como pendentes</h3>
+                  <ul>
+                    {generated.report.vaccinationPrevention.pendingVaccines.map((vaccine) => (
+                      <li key={vaccine}>{vaccine}</li>
+                    ))}
+                  </ul>
+                </div>
+              ) : generated.report.vaccinationPrevention.status === "UNKNOWN" ? (
+                <p className="muted">As pendências não podem ser determinadas sem revisar a carteira.</p>
+              ) : (
+                <p className="muted">Nenhuma vacina foi registrada como pendente nesta consulta.</p>
+              )}
+
+              <ul className="vaccination-guidance">
+                {generated.report.vaccinationPrevention.guidance.map((item) => (
+                  <li key={item}>{item}</li>
+                ))}
+              </ul>
+              <p className="review-note">
+                Esta seção é informativa, não gera prescrição automática e permanece separada da tabela de medicamentos.
+              </p>
+            </section>
+
             <section className="report-section care-plan-section">
               <div className="section-title-row">
                 <div>

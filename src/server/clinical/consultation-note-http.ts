@@ -7,12 +7,18 @@ import {
   type ConsultationNoteView,
 } from "../../domain/consultation-note-view.ts";
 import type { SoapDraftFields } from "../../domain/consultation-note-contract.ts";
+import {
+  normalizeVaccinationReview,
+  type VaccinationReview,
+} from "../../domain/vaccination-prevention.ts";
 
 const OPERATIONAL_REQUEST_ID = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 const MAX_FIELD_LENGTH = 30000;
 const MAX_PLAN_PROBLEMS = 100;
 const MAX_ACTIONS_PER_PROBLEM = 20;
 const MAX_ACTION_LENGTH = 5000;
+const MAX_PENDING_VACCINES = 30;
+const MAX_VACCINE_NAME_LENGTH = 200;
 
 export class ConsultationNoteRequestError extends Error {
   constructor(message: string) {
@@ -80,6 +86,39 @@ function parsePlan(value: unknown): Record<string, readonly string[]> | undefine
   return parsed;
 }
 
+function parseVaccinationReview(value: unknown): VaccinationReview | undefined {
+  if (value === undefined || value === null) return undefined;
+  const record = asRecord(value, "Revisão vacinal");
+  assertOnlyKeys(record, ["status", "pendingVaccines"], "Revisão vacinal");
+  if (typeof record.status !== "string" || !["UNKNOWN", "UP_TO_DATE", "PENDING"].includes(record.status)) {
+    throw new ConsultationNoteRequestError("Status da revisão vacinal inválido.");
+  }
+  if (record.pendingVaccines !== undefined && !Array.isArray(record.pendingVaccines)) {
+    throw new ConsultationNoteRequestError("Vacinas pendentes devem ser uma lista de textos.");
+  }
+  const pendingVaccines = record.pendingVaccines ?? [];
+  if (pendingVaccines.length > MAX_PENDING_VACCINES) {
+    throw new ConsultationNoteRequestError("Há vacinas pendentes demais para uma única atualização.");
+  }
+  const names = pendingVaccines.map((name) => {
+    if (typeof name !== "string" || name.length > MAX_VACCINE_NAME_LENGTH) {
+      throw new ConsultationNoteRequestError("Nome de vacina pendente inválido.");
+    }
+    return name;
+  });
+
+  try {
+    return normalizeVaccinationReview({
+      status: record.status as VaccinationReview["status"],
+      ...(names.length > 0 ? { pendingVaccines: names } : {}),
+    });
+  } catch (error) {
+    throw new ConsultationNoteRequestError(
+      error instanceof Error ? error.message : "Revisão vacinal inválida.",
+    );
+  }
+}
+
 export function parseConsultationNoteUpdate(body: unknown): {
   expectedUpdatedAt: string;
   fields: SoapDraftFields;
@@ -91,6 +130,7 @@ export function parseConsultationNoteUpdate(body: unknown): {
     "physicalExam",
     "vitalSigns",
     "anthropometry",
+    "vaccinationReview",
     "planByProblem",
   ], "Requisição");
 
@@ -105,6 +145,7 @@ export function parseConsultationNoteUpdate(body: unknown): {
       physicalExam: optionalText(record.physicalExam, "Exame físico"),
       vitalSigns: optionalText(record.vitalSigns, "Sinais vitais"),
       anthropometry: optionalText(record.anthropometry, "Antropometria"),
+      vaccinationReview: parseVaccinationReview(record.vaccinationReview),
       planByProblem: parsePlan(record.planByProblem),
     },
   };

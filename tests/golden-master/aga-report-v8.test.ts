@@ -52,7 +52,7 @@ test("v8 expõe resumo longitudinal, tendência e plano consolidado sem mudar re
     ],
   });
 
-  assert.equal(report.schemaVersion, "1.1");
+  assert.equal(report.schemaVersion, "1.2");
   assert.equal(report.assessedScales[0]?.evolution.trend, "unfavorable");
   assert.equal(report.assessedScales[0]?.evolution.vsBaseline, "unfavorable");
   assert.equal(report.changeSummary.counts.unfavorable, 1);

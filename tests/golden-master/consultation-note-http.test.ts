@@ -53,6 +53,7 @@ test("serialização SOAP v1 faz roundtrip sem criar assessment ou dados ausente
     physicalExam: "Exame sintético",
     vitalSigns: undefined,
     anthropometry: undefined,
+    vaccinationReview: undefined,
     planByProblem: { "problem-1": ["Ação sintética"] },
   });
   assert.equal("assessment" in serialized, false);
@@ -96,10 +97,36 @@ test("PUT deriva consultationId exclusivamente da rota e preserva controle de ve
       physicalExam: "Exame",
       vitalSigns: "PA sintética",
       anthropometry: "Peso sintético",
+      vaccinationReview: undefined,
       planByProblem: { "problem-1": ["Ação sintética"] },
     },
     requestId: undefined,
   });
+});
+
+test("fronteira SOAP aceita revisão vacinal estruturada e rejeita prescrição textual", () => {
+  const parsed = parseConsultationNoteUpdate({
+    expectedUpdatedAt: view.updatedAt,
+    vaccinationReview: {
+      status: "PENDING",
+      pendingVaccines: ["Influenza", "Pneumocócica"],
+    },
+  });
+  assert.deepEqual(parsed.fields.vaccinationReview, {
+    status: "PENDING",
+    pendingVaccines: ["Influenza", "Pneumocócica"],
+  });
+  assert.throws(
+    () => parseConsultationNoteUpdate({
+      expectedUpdatedAt: view.updatedAt,
+      vaccinationReview: {
+        status: "PENDING",
+        pendingVaccines: [],
+        prescription: "aplicar hoje",
+      },
+    }),
+    ConsultationNoteRequestError,
+  );
 });
 
 test("conflitos clínicos/concorrência retornam 409 sem expor infraestrutura", async () => {

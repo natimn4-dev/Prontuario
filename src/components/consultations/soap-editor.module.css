@@ -81,6 +81,31 @@
   font-weight: 700;
 }
 
+.soapSection fieldset {
+  margin: 16px 0 0;
+  padding: 12px;
+  border: 1px solid #d8cdd0;
+  border-radius: 10px;
+}
+
+.soapSection legend {
+  padding: 0 6px;
+  color: #5f4a4f;
+  font-size: 13px;
+  font-weight: 800;
+}
+
+.soapSection select {
+  min-height: 42px;
+  padding: 9px 11px;
+  border: 1px solid #cfc3c6;
+  border-radius: 9px;
+  background: #fff;
+  color: #2e2f30;
+  font: inherit;
+  font-weight: 400;
+}
+
 .soapSection textarea {
   width: 100%;
   resize: vertical;
@@ -95,6 +120,7 @@
 }
 
 .soapSection textarea:focus-visible,
+.soapSection select:focus-visible,
 .actions button:focus-visible {
   outline: 3px solid rgba(95, 74, 79, .24);
   outline-offset: 2px;

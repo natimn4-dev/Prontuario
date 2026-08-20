@@ -6,6 +6,7 @@ import {
   parseObjectiveNote,
   parsePlanNote,
   parseSubjectiveNote,
+  soapDraftToConsultationNoteJson,
 } from "../../src/domain/consultation-note-contract.ts";
 
 test("contrato SOAP v1 projeta apenas campos já suportados pelo renderer", () => {
@@ -36,6 +37,7 @@ test("contrato SOAP v1 projeta apenas campos já suportados pelo renderer", () =
     physicalExam: "Exame físico registrado.",
     vitalSigns: "Sinais vitais registrados.",
     anthropometry: "Antropometria registrada.",
+    vaccinationReview: undefined,
     planByProblem: {
       problema_1: ["Conduta registrada para o problema 1."],
     },
@@ -50,8 +52,41 @@ test("contrato SOAP v1 preserva ausência de dados sem inventar valores", () => 
       physicalExam: undefined,
       vitalSigns: undefined,
       anthropometry: undefined,
+      vaccinationReview: undefined,
       planByProblem: undefined,
     },
+  );
+});
+
+test("contrato SOAP persiste revisão vacinal estruturada sem transformar pendência em conduta", () => {
+  const draft = consultationNoteJsonToSoapDraft({
+    subjective: null,
+    objective: {
+      schemaVersion: CONSULTATION_NOTE_SCHEMA_VERSION,
+      kind: "objective",
+      vaccinationReview: {
+        status: "PENDING",
+        pendingVaccines: ["Influenza", "Pneumocócica"],
+      },
+    },
+    plan: null,
+  });
+
+  assert.deepEqual(draft.vaccinationReview, {
+    status: "PENDING",
+    pendingVaccines: ["Influenza", "Pneumocócica"],
+  });
+  assert.deepEqual(
+    soapDraftToConsultationNoteJson(draft).objective.vaccinationReview,
+    draft.vaccinationReview,
+  );
+  assert.throws(
+    () => parseObjectiveNote({
+      schemaVersion: CONSULTATION_NOTE_SCHEMA_VERSION,
+      kind: "objective",
+      vaccinationReview: { status: "PENDING", pendingVaccines: [] },
+    }),
+    /ao menos uma vacina/,
   );
 });
 

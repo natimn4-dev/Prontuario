@@ -41,6 +41,21 @@ test("relatório familiar separa problemas clínicos e geriátricos", () => {
   assert.doesNotMatch(text, /Quando entrar em contato com o consultório/);
 });
 
+test("relatório familiar apresenta vacinas antes das orientações sem misturar medicamentos", () => {
+  const model = buildFamilyReportModel({
+    patientName: "Paciente Teste",
+    problems,
+    plan: emptyInterventionPlan(),
+    vaccinationReview: { status: "PENDING", pendingVaccines: ["Influenza"] },
+  });
+  const text = renderFamilyReportText(model);
+
+  assert.match(text, /Vacinas e prevenção/);
+  assert.match(text, /Pendente: Influenza/);
+  assert.match(text, /separada da tabela de medicamentos/i);
+  assert.doesNotMatch(text, /mg|dose|aplicar|administrar/i);
+});
+
 test("relatório familiar não repete sinais de atenção textualmente idênticos", () => {
   const plan = emptyInterventionPlan();
   plan.contato.push("Nova queda ou piora do equilíbrio.");

@@ -12,6 +12,7 @@ import {
   type MedicationPlanItem,
 } from "./medication-plan.ts";
 import { buildAgaReportModel, renderAgaReportText } from "./aga-report.ts";
+import type { VaccinationReview } from "./vaccination-prevention.ts";
 
 export interface ConsultationOutputInput {
   patientId: string;
@@ -29,6 +30,7 @@ export interface ConsultationOutputInput {
   planByProblem?: Readonly<Record<string, readonly string[]>>;
   attentionSigns?: readonly string[];
   contactPhone?: string;
+  vaccinationReview?: VaccinationReview;
 }
 
 export interface ConsultationOutputs {
@@ -77,6 +79,7 @@ export function buildConsultationOutputs(
     plan: followUpContext.changeSummary.combinedPlan,
     attentionSigns: input.attentionSigns,
     contactPhone: input.contactPhone,
+    vaccinationReview: input.vaccinationReview,
   });
   const agaReportModel = buildAgaReportModel({
     patientId: input.patientId,
@@ -85,6 +88,7 @@ export function buildConsultationOutputs(
     patientName: input.patientName,
     longitudinalAssessments: input.longitudinalAssessments,
     longitudinalProblems: input.longitudinalProblems,
+    vaccinationReview: input.vaccinationReview,
   });
 
   return {

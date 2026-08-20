@@ -97,6 +97,34 @@ test("relatório pode ser gerado antes da finalização e mantém aviso", () => 
   assert.match(renderAgaReportText(report), /antes da finalização/);
 });
 
+test("relatório familiar mantém vacinas em seção própria sem prescrição automática", () => {
+  const report = buildAgaReportModel({
+    patientId: "p1", consultationId: "c1", consultationStatus: "IN_REVIEW", patientName: "Teste",
+    longitudinalProblems: [], longitudinalAssessments: [],
+    vaccinationReview: { status: "PENDING", pendingVaccines: ["Influenza", "Pneumocócica"] },
+  });
+  const text = renderAgaReportText(report);
+
+  assert.deepEqual(report.vaccinationPrevention.pendingVaccines, ["Influenza", "Pneumocócica"]);
+  assert.equal(report.vaccinationPrevention.automaticPrescription, false);
+  assert.match(text, /VACINAS E PREVENÇÃO/);
+  assert.match(text, /Influenza/);
+  assert.match(text, /Pneumocócica/);
+  assert.match(text, /não contém prescrição automática.*separada da tabela de medicamentos/i);
+  assert.doesNotMatch(text, /aplicar|administrar|prescrever.*vacina/i);
+});
+
+test("relatório familiar orienta revisão da carteira quando status é desconhecido", () => {
+  const report = buildAgaReportModel({
+    patientId: "p1", consultationId: "c1", consultationStatus: "IN_REVIEW", patientName: "Teste",
+    longitudinalProblems: [], longitudinalAssessments: [],
+  });
+
+  assert.equal(report.vaccinationPrevention.status, "UNKNOWN");
+  assert.match(renderAgaReportText(report), /status vacinal desconhecido/i);
+  assert.match(renderAgaReportText(report), /carteira de vacinação.*revisão/i);
+});
+
 test("relatório bloqueia mistura de pacientes", () => {
   assert.throws(() => buildAgaReportModel({
     patientId: "p1", consultationId: "c1", consultationStatus: "DRAFT", patientName: "Teste",

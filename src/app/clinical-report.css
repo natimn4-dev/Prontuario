@@ -412,6 +412,40 @@
 .trend-not-comparable,
 .trend-insufficient-data { background: #f4f2ec; color: #746a55; }
 
+.vaccination-prevention-section {
+  padding: 22px;
+  border: 1px solid var(--care-line);
+  border-left: 4px solid var(--care-accent);
+  border-radius: 14px;
+  background: #fffdf9;
+  break-inside: avoid;
+}
+
+.vaccination-status {
+  margin: 0;
+  padding: 6px 10px;
+  border-radius: 999px;
+  background: #f2eee8;
+  color: var(--care-accent-deep);
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.vaccination-pending-list h3 {
+  margin: 0 0 8px;
+  color: var(--care-accent-deep);
+  font-size: 15px;
+}
+
+.vaccination-pending-list ul,
+.vaccination-guidance {
+  display: grid;
+  gap: 7px;
+  margin: 0 0 14px;
+  padding-left: 20px;
+  line-height: 1.5;
+}
+
 .trajectory {
   font-size: 11px;
   line-height: 1.45;

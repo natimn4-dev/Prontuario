@@ -3,6 +3,11 @@ import { splitProblems } from "./problems.ts";
 import type { ClinicalChangeSummary } from "./clinical-change-summary.ts";
 import type { InterventionPlan } from "./interventions.ts";
 import { MEDICATION_MOMENT_LABELS, type MedicationMoment } from "./medication-plan.ts";
+import {
+  buildVaccinationPreventionSection,
+  type VaccinationPreventionSection,
+  type VaccinationReview,
+} from "./vaccination-prevention.ts";
 
 function clean(value: string | null | undefined): string {
   const text = value?.trim();
@@ -95,6 +100,7 @@ export interface FamilyReportInput {
   plan: InterventionPlan;
   attentionSigns?: readonly string[];
   contactPhone?: string;
+  vaccinationReview?: VaccinationReview;
 }
 
 export interface FamilyReportModel {
@@ -108,6 +114,7 @@ export interface FamilyReportModel {
   referrals: string[];
   attentionSigns: string[];
   contactPhone?: string;
+  vaccinationPrevention: VaccinationPreventionSection;
 }
 
 export function buildFamilyReportModel(input: FamilyReportInput): FamilyReportModel {
@@ -137,6 +144,7 @@ export function buildFamilyReportModel(input: FamilyReportInput): FamilyReportMo
       ...input.plan.urgencia,
     ]),
     contactPhone: input.contactPhone,
+    vaccinationPrevention: buildVaccinationPreventionSection(input.vaccinationReview),
   };
 }
 
@@ -148,6 +156,15 @@ export function renderFamilyReportText(model: FamilyReportModel): string {
     section("Problemas clínicos", model.clinicalProblems),
     "",
     section("Problemas geriátricos", model.geriatricProblems),
+    "",
+    section("Vacinas e prevenção", [
+      model.vaccinationPrevention.statusLabel,
+      ...(model.vaccinationPrevention.status === "PENDING"
+        ? model.vaccinationPrevention.pendingVaccines.map((vaccine) => `Pendente: ${vaccine}`)
+        : []),
+      ...model.vaccinationPrevention.guidance,
+      "Esta seção não contém prescrição automática e permanece separada da tabela de medicamentos.",
+    ]),
     "",
     section("Evolução desde a última avaliação", model.evolutionHighlights),
     "",

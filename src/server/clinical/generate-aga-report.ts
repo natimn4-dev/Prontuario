@@ -5,6 +5,8 @@ import type { LongitudinalAssessment } from "../../domain/clinical-change-summar
 import { assertDocumentContextIntegrity } from "../../domain/document-context-integrity";
 import { withDocumentSnapshotWriteRetry } from "../../domain/document-snapshot-versioning";
 import { sanitizeFamilyReportModel } from "../../domain/family-care-safety";
+import { parseObjectiveNote } from "../../domain/consultation-note-contract";
+import type { VaccinationReview } from "../../domain/vaccination-prevention";
 import { prisma } from "../db";
 import { requireAuthenticatedUser } from "../auth/require-user";
 import { createDocumentSnapshotInTransaction } from "./document-snapshot-transaction";
@@ -12,6 +14,14 @@ import { createDocumentSnapshotInTransaction } from "./document-snapshot-transac
 function answersRecord(value: unknown): Record<string, unknown> | undefined {
   if (!value || typeof value !== "object" || Array.isArray(value)) return undefined;
   return value as Record<string, unknown>;
+}
+
+function vaccinationReviewFromObjective(value: unknown): VaccinationReview | undefined {
+  try {
+    return parseObjectiveNote(value)?.vaccinationReview;
+  } catch {
+    return undefined;
+  }
 }
 
 export async function generateAgaReport(input: {
@@ -30,6 +40,7 @@ export async function generateAgaReport(input: {
           status: true,
           occurredAt: true,
           createdAt: true,
+          objective: true,
           patient: {
             select: {
               fullName: true,
@@ -156,6 +167,7 @@ export async function generateAgaReport(input: {
         patientName: consultation.patient.fullName,
         longitudinalAssessments: assessments,
         longitudinalProblems: problems,
+        vaccinationReview: vaccinationReviewFromObjective(consultation.objective),
       });
       const report = sanitizeFamilyReportModel(clinicalReport);
       const text = renderAgaReportText(report);
