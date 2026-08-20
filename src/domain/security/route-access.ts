@@ -19,6 +19,7 @@ export function isPublicRoute(pathname: string): boolean {
   return path === "/login"
     || path === "/api/health"
     || path === "/api/health/assets"
+    || path === "/api/health/auth"
     || path === "/api/auth"
     || path.startsWith("/api/auth/")
     || path === "/favicon.ico"
