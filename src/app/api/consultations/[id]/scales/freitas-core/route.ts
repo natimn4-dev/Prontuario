@@ -4,6 +4,7 @@ import { VALIDATED_FREITAS_SCALES, scoreValidatedFreitasScale, type ValidatedSca
 import { COGNITIVE_FREITAS_SCALES, scoreCognitiveFreitasScale, type CognitiveFreitasScaleCode } from "@/domain/freitas-cognitive-scales";
 import { PSYCHOSOCIAL_FREITAS_SCALES, scorePsychosocialFreitasScale, type PsychosocialFreitasScaleCode } from "@/domain/freitas-psychosocial-scales";
 import { electronicScaleLicenseFlagsFromEnvironment, electronicScaleRestriction, isElectronicScaleLicensed, unconfirmedElectronicScaleRestrictions } from "@/domain/clinical-config/electronic-scale-license-policy";
+import { scaleConsultationHorizonIds } from "@/domain/scale-consultation-horizon";
 import { requireAuthenticatedUser } from "@/server/auth/require-user";
 import { saveScaleAssessment } from "@/server/clinical/persistence";
 import { prisma } from "@/server/db";
@@ -23,6 +24,14 @@ async function consultationContext(consultationId: string) {
   });
   if (!consultation) throw new Error("CONSULTATION_NOT_FOUND");
   return consultation;
+}
+
+async function consultationHorizonIds(patientId: string, targetConsultationId: string) {
+  const consultations = await prisma.consultation.findMany({
+    where: { patientId },
+    select: { id: true, patientId: true, occurredAt: true, createdAt: true },
+  });
+  return scaleConsultationHorizonIds({ patientId, targetConsultationId, consultations });
 }
 
 function asRecord(value: unknown): Record<string, unknown> {
@@ -61,8 +70,13 @@ export async function GET(_request: Request, context: { params: Promise<{ id: st
     const licenseFlags = electronicScaleLicenseFlagsFromEnvironment(process.env);
     const availableDefinitions = DEFINITIONS.filter((definition) => isElectronicScaleLicensed(definition.code, licenseFlags));
     const availableCodes = availableDefinitions.map((definition) => definition.code as ScaleCode);
+    const consultationIds = await consultationHorizonIds(consultation.patientId, id);
     const assessments = await prisma.scaleAssessment.findMany({
-      where: { patientId: consultation.patientId, scaleCode: { in: availableCodes } },
+      where: {
+        patientId: consultation.patientId,
+        consultationId: { in: consultationIds },
+        scaleCode: { in: availableCodes },
+      },
       orderBy: [{ appliedAt: "desc" }, { id: "desc" }],
       select: { id: true, consultationId: true, scaleCode: true, scaleVersion: true, scoreNumeric: true, scoreText: true, classification: true, interpretation: true, appliedAt: true },
     });
