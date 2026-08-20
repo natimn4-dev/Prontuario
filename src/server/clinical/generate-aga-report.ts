@@ -3,6 +3,7 @@ import { buildAgaReportModel, renderAgaReportText } from "../../domain/aga-repor
 import { consultationHorizon, problemsAsOf } from "../../domain/as-of-consultation";
 import type { LongitudinalAssessment } from "../../domain/clinical-change-summary";
 import { assertDocumentContextIntegrity } from "../../domain/document-context-integrity";
+import { sanitizeFamilyReportModel } from "../../domain/family-care-safety";
 import { prisma } from "../db";
 import { requireAuthenticatedUser } from "../auth/require-user";
 import { createDocumentSnapshot } from "./persistence";
@@ -148,7 +149,7 @@ export async function generateAgaReport(input: {
     })),
   });
 
-  const report = buildAgaReportModel({
+  const clinicalReport = buildAgaReportModel({
     patientId: context.consultation.patientId,
     consultationId: context.consultation.id,
     consultationStatus: context.consultation.status,
@@ -156,6 +157,7 @@ export async function generateAgaReport(input: {
     longitudinalAssessments: assessments,
     longitudinalProblems: problems,
   });
+  const report = sanitizeFamilyReportModel(clinicalReport);
   const text = renderAgaReportText(report);
   const snapshot = await createDocumentSnapshot({
     consultationId: context.consultation.id,
