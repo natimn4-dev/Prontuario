@@ -30,3 +30,32 @@ test("administrador bootstrap precisa pertencer à allowlist", () => {
   assert.equal(result.ok, false);
   assert.ok(result.errors.some((e) => e.includes("fora da allowlist")));
 });
+
+test("produção rejeita APP_URL que não representa uma origem canônica", () => {
+  const cases = [
+    "https://prontuario.example.com/login",
+    "https://prontuario.example.com?source=hostinger",
+    "https://prontuario.example.com#login",
+    "https://user:pass@prontuario.example.com",
+  ];
+
+  for (const appUrl of cases) {
+    const result = validateProductionEnvironment({ ...safe, appUrl });
+    assert.equal(result.ok, false, appUrl);
+    assert.ok(result.errors.some((e) => e.includes("APP_URL")), appUrl);
+  }
+});
+
+test("produção rejeita APP_URL apontando para loopback", () => {
+  for (const appUrl of ["https://localhost:3000", "https://127.0.0.1:3000", "https://[::1]:3000"]) {
+    const result = validateProductionEnvironment({ ...safe, appUrl });
+    assert.equal(result.ok, false, appUrl);
+    assert.ok(result.errors.some((e) => e.includes("loopback")), appUrl);
+  }
+});
+
+test("GOOGLE_CLIENT_ID precisa ter formato do OAuth Client ID do Google", () => {
+  const result = validateProductionEnvironment({ ...safe, googleClientId: "identificador-invalido" });
+  assert.equal(result.ok, false);
+  assert.ok(result.errors.some((e) => e.includes("OAuth Client ID do Google")));
+});
