@@ -16,7 +16,7 @@ export interface EnvironmentValidation {
   errors: string[];
 }
 
-function nonPlaceholder(value: string | undefined): boolean {
+export function isNonPlaceholderConfigValue(value: string | undefined): boolean {
   if (!value?.trim()) return false;
   return !/(trocar|change|example|your-|placeholder)/i.test(value);
 }
@@ -24,6 +24,27 @@ function nonPlaceholder(value: string | undefined): boolean {
 function isLoopbackHostname(hostname: string): boolean {
   const normalized = hostname.toLowerCase().replace(/^\[|\]$/g, "");
   return normalized === "localhost" || normalized === "127.0.0.1" || normalized === "::1";
+}
+
+export function isCanonicalProductionAppUrl(value: string | undefined): boolean {
+  if (!value) return false;
+  try {
+    const url = new URL(value);
+    return url.protocol === "https:"
+      && !isLoopbackHostname(url.hostname)
+      && !url.username
+      && !url.password
+      && !url.search
+      && !url.hash
+      && url.pathname === "/";
+  } catch {
+    return false;
+  }
+}
+
+export function isGoogleOAuthClientId(value: string | undefined): boolean {
+  return isNonPlaceholderConfigValue(value)
+    && Boolean(value?.trim().endsWith(".apps.googleusercontent.com"));
 }
 
 function validateAppUrl(value: string, production: boolean, errors: string[]): void {
@@ -53,15 +74,15 @@ export function validateProductionEnvironment(env: ProductionEnvironment): Envir
     errors.push("DATABASE_URL deve usar mysql://.");
   }
 
-  if (!nonPlaceholder(env.betterAuthSecret) || (env.betterAuthSecret?.length ?? 0) < 32) {
+  if (!isNonPlaceholderConfigValue(env.betterAuthSecret) || (env.betterAuthSecret?.length ?? 0) < 32) {
     errors.push("BETTER_AUTH_SECRET deve ser não previsível e ter pelo menos 32 caracteres.");
   }
-  if (!nonPlaceholder(env.googleClientId)) {
+  if (!isNonPlaceholderConfigValue(env.googleClientId)) {
     errors.push("GOOGLE_CLIENT_ID é obrigatório.");
-  } else if (!env.googleClientId!.trim().endsWith(".apps.googleusercontent.com")) {
+  } else if (!isGoogleOAuthClientId(env.googleClientId)) {
     errors.push("GOOGLE_CLIENT_ID deve ter o formato de um OAuth Client ID do Google.");
   }
-  if (!nonPlaceholder(env.googleClientSecret)) errors.push("GOOGLE_CLIENT_SECRET é obrigatório.");
+  if (!isNonPlaceholderConfigValue(env.googleClientSecret)) errors.push("GOOGLE_CLIENT_SECRET é obrigatório.");
 
   const allowed = parseEmailSet(env.allowedEmails);
   const bootstrap = parseEmailSet(env.bootstrapAdminEmails);
