@@ -36,12 +36,33 @@ type Result = {
 
 type AnswerValue = number | string;
 
+const DIMENSION_LABELS: Record<string, string> = {
+  cognicao: "Cognição",
+  funcionalidade: "Funcionalidade",
+  humor: "Humor",
+  fragilidade: "Fragilidade",
+  mobilidade: "Mobilidade",
+  medicamentos: "Medicamentos",
+  nutricao: "Nutrição",
+  oncogeriatria: "Oncogeriatria",
+  prognostico: "Prognóstico",
+  sintomas: "Sintomas",
+};
+
 function formatDate(value: string) {
-  return new Intl.DateTimeFormat("pt-BR", { dateStyle: "short", timeStyle: "short" }).format(new Date(value));
+  return new Intl.DateTimeFormat("pt-BR", { dateStyle: "short" }).format(new Date(value));
 }
 
 function choiceValue(field: ComplementaryField, rawValue: string): AnswerValue | undefined {
   return field.choices?.find((choice) => String(choice.value) === rawValue)?.value;
+}
+
+function dimensionLabel(dimension: string) {
+  return DIMENSION_LABELS[dimension] ?? dimension;
+}
+
+function compactScaleName(name: string) {
+  return name.replace(" — registro rápido de pontuação", "").replace(" — registro de pontuação", "");
 }
 
 export function ComplementaryScoreScales({ consultationId }: { consultationId: string }) {
@@ -56,14 +77,14 @@ export function ComplementaryScoreScales({ consultationId }: { consultationId: s
     try {
       const response = await fetch(`/api/consultations/${consultationId}/scales/complementary`, { cache: "no-store" });
       const body = await response.json().catch(() => null) as (View & { message?: string }) | null;
-      if (!response.ok || !body) throw new Error(body?.message || "Não foi possível carregar as escalas complementares.");
+      if (!response.ok || !body) throw new Error(body?.message || "Não foi possível carregar as avaliações complementares.");
       setView(body);
       if (!body.definitions.some((item) => item.code === selected) && body.definitions[0]) {
         setSelected(body.definitions[0].code);
       }
       setFeedback(null);
     } catch (cause) {
-      setFeedback(cause instanceof Error ? cause.message : "Não foi possível carregar as escalas complementares.");
+      setFeedback(cause instanceof Error ? cause.message : "Não foi possível carregar as avaliações complementares.");
     }
   }
 
@@ -73,7 +94,17 @@ export function ComplementaryScoreScales({ consultationId }: { consultationId: s
   const definition = view?.definitions.find((item) => item.code === selected);
   const readOnly = view?.consultationStatus === "FINALIZED";
   const latestByCode = useMemo(() => new Map((view?.latest ?? []).map((item) => [item.scaleCode, item])), [view]);
+  const groupedDefinitions = useMemo(() => {
+    const groups = new Map<string, ComplementaryScoreScaleDefinition[]>();
+    for (const item of view?.definitions ?? []) {
+      const current = groups.get(item.dimension) ?? [];
+      current.push(item);
+      groups.set(item.dimension, current);
+    }
+    return [...groups.entries()].sort(([left], [right]) => dimensionLabel(left).localeCompare(dimensionLabel(right), "pt-BR"));
+  }, [view?.definitions]);
   const complete = Boolean(definition && definition.fields.every((field) => answers[field.id] !== undefined && answers[field.id] !== ""));
+  const latest = definition ? latestByCode.get(definition.code) : undefined;
 
   async function submit() {
     if (!definition || !complete || saving || readOnly) return;
@@ -87,14 +118,14 @@ export function ComplementaryScoreScales({ consultationId }: { consultationId: s
         body: JSON.stringify({ scaleCode: definition.code, answers }),
       });
       const body = await response.json().catch(() => null) as { result?: Result; message?: string } | null;
-      if (!response.ok || !body?.result) throw new Error(body?.message || "Não foi possível salvar a escala complementar.");
+      if (!response.ok || !body?.result) throw new Error(body?.message || "Não foi possível salvar o resultado.");
       setResult(body.result);
-      setFeedback("Avaliação complementar salva nesta consulta.");
+      setFeedback("Resultado salvo nesta consulta.");
       setAnswers({});
       await load();
       window.dispatchEvent(new CustomEvent("clinical-scales-changed", { detail: { consultationId } }));
     } catch (cause) {
-      setFeedback(cause instanceof Error ? cause.message : "Não foi possível salvar a escala complementar.");
+      setFeedback(cause instanceof Error ? cause.message : "Não foi possível salvar o resultado.");
     } finally {
       setSaving(false);
     }
@@ -105,44 +136,45 @@ export function ComplementaryScoreScales({ consultationId }: { consultationId: s
       <div className={styles.heading}>
         <div>
           <p className="eyebrow">Avaliação Geriátrica Ampla</p>
-          <h2 id="complementary-scales-title">Escalas complementares e registro rápido</h2>
-          <p>
-            Recupera instrumentos presentes nas primeiras versões sem duplicar os formulários Freitas/Py já migrados.
-            Registre aqui o escore de uma escala já aplicada quando o formulário completo não for necessário no fluxo.
-          </p>
+          <h2 id="complementary-scales-title">Avaliações complementares</h2>
+          <p>Registre de forma rápida o resultado de instrumentos já aplicados. A interpretação entra no histórico longitudinal do paciente.</p>
         </div>
-        <span className={styles.source}>Legado clínico versionado</span>
       </div>
 
-      {readOnly ? <p className={styles.notice}>Consulta finalizada: escalas em modo somente leitura.</p> : null}
-      {feedback ? <p className={feedback.includes("salva") ? styles.success : styles.error} role="status">{feedback}</p> : null}
+      {readOnly ? <p className={styles.notice}>Consulta finalizada: resultados disponíveis apenas para leitura.</p> : null}
+      {feedback ? <p className={feedback.includes("salvo") ? styles.success : styles.error} role="status">{feedback}</p> : null}
 
       {view ? (
         <>
           <label className={styles.selector}>
-            <span>Escolha a escala</span>
+            <span>Instrumento</span>
             <select value={selected} onChange={(event) => setSelected(event.target.value as ComplementaryScoreScaleCode)} disabled={saving}>
-              {view.definitions.map((item) => (
-                <option key={item.code} value={item.code}>{item.name}</option>
+              {groupedDefinitions.map(([dimension, items]) => (
+                <optgroup key={dimension} label={dimensionLabel(dimension)}>
+                  {items.map((item) => <option key={item.code} value={item.code}>{compactScaleName(item.name)}</option>)}
+                </optgroup>
               ))}
             </select>
           </label>
 
           {definition ? (
             <div className={styles.workspace}>
-              <header>
-                <h3>{definition.name}</h3>
-                <p>{definition.instruction}</p>
-                <small>Dimensão: {definition.dimension} · versão: {definition.version}</small>
-                <small>Rastreabilidade: {definition.sourceNote}</small>
+              <header className={styles.workspaceHeader}>
+                <div>
+                  <span className={styles.dimension}>{dimensionLabel(definition.dimension)}</span>
+                  <h3>{compactScaleName(definition.name)}</h3>
+                </div>
+                {latest ? <span className={styles.lastBadge}>Último: {latest.scoreText ?? latest.scoreNumeric ?? "—"}</span> : null}
               </header>
+
+              <p className={styles.instruction}>{definition.instruction}</p>
 
               <div className={styles.fields}>
                 {definition.fields.map((field) => (
                   <label key={field.id} className={styles.field}>
                     <span>{field.label}</span>
                     {field.number ? (
-                      <>
+                      <div className={styles.numberRow}>
                         <input
                           type="number"
                           min={field.number.min}
@@ -160,9 +192,8 @@ export function ComplementaryScoreScales({ consultationId }: { consultationId: s
                           }}
                           disabled={readOnly || saving}
                         />
-                        {field.number.unit ? <small>Unidade: {field.number.unit}</small> : null}
-                        {field.number.help ? <small>{field.number.help}</small> : null}
-                      </>
+                        {field.number.unit ? <span className={styles.unit}>{field.number.unit}</span> : null}
+                      </div>
                     ) : null}
                     {field.choices ? (
                       <select
@@ -184,42 +215,46 @@ export function ComplementaryScoreScales({ consultationId }: { consultationId: s
                         ))}
                       </select>
                     ) : null}
+                    {field.number?.help ? <small>{field.number.help}</small> : null}
                   </label>
                 ))}
               </div>
 
               {!readOnly ? (
                 <div className={styles.actions}>
-                  <span>{Object.keys(answers).length}/{definition.fields.length} campos preenchidos</span>
+                  <span>{complete ? "Pronto para salvar" : "Preencha os campos acima"}</span>
                   <button type="button" onClick={submit} disabled={!complete || saving}>
-                    {saving ? "Salvando…" : "Interpretar e salvar"}
+                    {saving ? "Salvando…" : "Salvar resultado"}
                   </button>
                 </div>
               ) : null}
 
               {result ? (
                 <div className={styles.result} role="status">
-                  <strong>{result.scoreText} — {result.classification}</strong>
+                  <span className={styles.resultLabel}>Interpretação</span>
+                  <strong>{result.scoreText} · {result.classification}</strong>
                   <span>{result.interpretation}</span>
                 </div>
               ) : null}
 
-              {latestByCode.get(definition.code) ? (
-                <p className={styles.previous}>
-                  Último registro conhecido: <strong>{latestByCode.get(definition.code)!.scoreText ?? latestByCode.get(definition.code)!.scoreNumeric ?? "sem escore"}</strong>
-                  {" · "}{latestByCode.get(definition.code)!.classification ?? "sem classificação"}
-                  {" · "}{formatDate(latestByCode.get(definition.code)!.appliedAt)}
-                </p>
+              {latest ? (
+                <div className={styles.previous}>
+                  <span>Último registro</span>
+                  <strong>{latest.scoreText ?? latest.scoreNumeric ?? "sem escore"}</strong>
+                  <span>{latest.classification ?? "resultado registrado"}</span>
+                  <time dateTime={latest.appliedAt}>{formatDate(latest.appliedAt)}</time>
+                </div>
               ) : null}
 
-              <p className={styles.clinicalNote}>
-                Escore isolado não substitui avaliação clínica. As interpretações alimentam histórico e relatório longitudinal,
-                mas qualquer conduta médica permanece sujeita à revisão profissional. O relatório do paciente/família deve conter apenas orientações práticas e seguras.
-              </p>
+              <details className={styles.details}>
+                <summary>Sobre a interpretação</summary>
+                <p>{definition.sourceNote}</p>
+                <p>O escore isolado não estabelece diagnóstico. Condutas médicas permanecem sujeitas à revisão profissional; o relatório destinado ao paciente e à família recebe apenas orientações práticas e seguras.</p>
+              </details>
             </div>
           ) : null}
         </>
-      ) : <p>Carregando escalas complementares…</p>}
+      ) : <p>Carregando avaliações…</p>}
     </section>
   );
 }
