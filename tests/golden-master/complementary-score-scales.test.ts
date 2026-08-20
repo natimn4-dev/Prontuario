@@ -57,10 +57,10 @@ test("mobility quick entries keep historical thresholds", () => {
   assert.match(scoreComplementaryScale("preensao", { score: 15, sex: "Feminino" }).result.classification, /reduzida/i);
 });
 
-test("FAST and PPS reject values outside their discrete versions", () => {
+test("FAST and PPS preserve discrete-version semantics", () => {
   assert.equal(scoreComplementaryScale("fast", { score: 7.6 }).result.score, 7.6);
   assert.equal(scoreComplementaryScale("pps", { score: 40 }).result.score, 40);
-  assert.throws(() => scoreComplementaryScale("fast", { score: 6.7 }), /interpretar|permitido|Valor/);
+  assert.match(scoreComplementaryScale("fast", { score: 6.7 }).result.classification, /não permitido/i);
 });
 
 test("medication-related scales never encode an automatic prescription", () => {
