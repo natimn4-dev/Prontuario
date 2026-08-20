@@ -4,7 +4,7 @@ import {
   scoreDiscreteNumeric,
   scoreNumeric,
   type ScaleResult,
-} from "./clinical-engine";
+} from "./clinical-engine.ts";
 import {
   BARTHEL,
   CHARLSON_RANGES,
@@ -28,11 +28,10 @@ import {
   PPS_ALLOWED_VALUES,
   PPS_RANGES,
   SARCF,
-  SPPB,
   STOPP_FALL,
   TEN_CS,
   VES13,
-} from "./clinical-config/legacy-core";
+} from "./clinical-config/legacy-core.ts";
 
 export type ComplementaryScoreScaleCode =
   | "moca"
