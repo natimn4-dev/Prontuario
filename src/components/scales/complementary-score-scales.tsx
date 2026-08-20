@@ -133,7 +133,7 @@ export function ComplementaryScoreScales({ consultationId }: { consultationId: s
         <div>
           <p className="eyebrow">Avaliação Geriátrica Ampla</p>
           <h2 id="complementary-scales-title">Avaliações complementares</h2>
-          <p>Registre de forma rápida o resultado de instrumentos já aplicados. A interpretação entra no histórico longitudinal da paciente.</p>
+          <p>Registre de forma rápida o resultado de instrumentos já aplicados. A interpretação entra no histórico longitudinal do paciente.</p>
         </div>
       </div>
 
