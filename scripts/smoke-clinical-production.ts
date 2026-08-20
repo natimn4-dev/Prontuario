@@ -1,4 +1,5 @@
 import { CLINICAL_RELEASE_ID } from "../src/domain/clinical-release.ts";
+import { validateGoogleOAuthBootstrap } from "../src/domain/oauth-bootstrap-smoke.ts";
 
 function blocked(message: string): never {
   console.error("CLINICAL_RELEASE=BLOCKED");
@@ -23,7 +24,7 @@ async function request(base: URL, path: string, redirect: RequestRedirect = "man
   return fetch(url, {
     method: "GET",
     redirect,
-    headers: { "user-agent": "prontuario-clinical-release-smoke/1.2" },
+    headers: { "user-agent": "prontuario-clinical-release-smoke/1.3" },
   });
 }
 
@@ -34,7 +35,7 @@ async function startGoogleOAuth(base: URL) {
     redirect: "manual",
     headers: {
       "content-type": "application/json",
-      "user-agent": "prontuario-clinical-release-smoke/1.2",
+      "user-agent": "prontuario-clinical-release-smoke/1.3",
     },
     body: JSON.stringify({
       provider: "google",
@@ -43,23 +44,25 @@ async function startGoogleOAuth(base: URL) {
     }),
   });
 
-  if (response.status !== 200) {
-    blocked(`/api/auth/sign-in/social não iniciou OAuth Google: HTTP ${response.status}.`);
-  }
-
   const body = await response.json().catch(() => null) as {
     redirect?: boolean;
     url?: string;
   } | null;
-  if (body?.redirect !== true || !body.url) {
-    blocked("/api/auth/sign-in/social não retornou URL de redirecionamento OAuth.");
-  }
 
-  let target: URL;
-  try { target = new URL(body.url); } catch { blocked("Better Auth retornou URL OAuth inválida."); }
-  if (target.protocol !== "https:" || target.hostname !== "accounts.google.com") {
-    blocked(`Better Auth não iniciou Google OAuth (${target.origin}).`);
-  }
+  const setCookies = typeof response.headers.getSetCookie === "function"
+    ? response.headers.getSetCookie()
+    : response.headers.get("set-cookie")
+      ? [response.headers.get("set-cookie") as string]
+      : [];
+
+  const check = validateGoogleOAuthBootstrap({
+    status: response.status,
+    redirect: body?.redirect,
+    url: body?.url,
+    setCookies,
+  });
+
+  if (!check.ok) blocked(check.reason);
 }
 
 const base = productionBaseUrl();
@@ -88,6 +91,11 @@ try {
     blocked(`Hostinger não está entregando assets estáticos corretamente (CSS ${assetsBody.publicDelivery?.cssStatus ?? "sem status"}; JS ${assetsBody.publicDelivery?.jsStatus ?? "sem status"}).`);
   }
 
+  const authHealth = await request(base, "/api/health/auth", "follow");
+  if (authHealth.status !== 200) blocked(`/api/health/auth respondeu HTTP ${authHealth.status}.`);
+  const authHealthBody = await authHealth.json().catch(() => null) as { status?: string } | null;
+  if (authHealthBody?.status !== "ready") blocked("/api/health/auth não confirmou prontidão estática do OAuth.");
+
   const login = await request(base, "/login", "follow");
   if (login.status !== 200) blocked(`/login respondeu HTTP ${login.status}.`);
   const loginHtml = await login.text();
@@ -113,7 +121,8 @@ console.log("CLINICAL_RELEASE=SMOKE_OK");
 console.log(`- HTTPS acessível: ${base.origin}`);
 console.log(`- release confirmada: ${CLINICAL_RELEASE_ID}`);
 console.log("- /api/health confirmou banco ok");
+console.log("- /api/health/auth confirmou prontidão estática do OAuth");
 console.log("- CSS e JavaScript do Next.js presentes e entregues com HTTP 200");
 console.log("- /login contém ação de autenticação Google");
-console.log("- endpoint canônico do Better Auth iniciou Google OAuth");
+console.log("- endpoint canônico do Better Auth iniciou Google OAuth com state e Set-Cookie");
 console.log("- rotas clínicas não estão abertas anonimamente");
