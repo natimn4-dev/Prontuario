@@ -31,11 +31,9 @@ export async function POST(
     return NextResponse.json(
       {
         code: "MEDICATION_PLAN_GENERATION_FAILED",
-        message: error instanceof Error
-          ? error.message
-          : "Não foi possível gerar o plano de medicamentos.",
+        message: "Não foi possível gerar o plano de medicamentos.",
       },
-      { status: 400 },
+      { status: 500 },
     );
   }
 }
