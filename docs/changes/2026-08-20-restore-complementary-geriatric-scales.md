@@ -8,7 +8,7 @@ Recuperar instrumentos que estavam disponíveis nas primeiras versões do aplica
 
 ## Escalas restauradas no fluxo
 
-O novo bloco **Escalas complementares e registro rápido** permite registrar o resultado de instrumentos já aplicados para:
+O bloco **Avaliações complementares** permite registrar de forma rápida o resultado de instrumentos já aplicados para:
 
 - MoCA — apenas pontuação;
 - MEEM — pontuação + escolaridade para contextualização;
@@ -34,6 +34,18 @@ O novo bloco **Escalas complementares e registro rápido** permite registrar o r
 - ESAS — total global.
 
 Katz, Lawton, GDS-15, Pfeffer 10 itens, SPPB, POMA, Mini-Cog, IQCODE-Br e demais versões já migradas em Freitas/Py não são duplicadas neste bloco.
+
+## Interface revisada após amostra clínica
+
+Antes de uma nova incorporação ao `main`, a interface foi revisada com foco no uso durante consulta. A proposta final da branch adota os seguintes ajustes:
+
+- remove da superfície principal termos como `legado`, `versionamento` e `rastreabilidade`;
+- organiza o seletor por dimensão clínica (cognição, funcionalidade, mobilidade, fragilidade, nutrição etc.);
+- reduz o fluxo a **instrumento → valor → salvar resultado → interpretação → último registro**;
+- mantém fonte, limites da interpretação e ressalva de segurança em um bloco recolhido **Sobre a interpretação**;
+- mostra o último escore conhecido sem criar uma segunda tela;
+- mantém o componente fora da impressão, evitando interferência no relatório familiar e no plano de medicamentos;
+- preserva adaptação responsiva para telas menores.
 
 ## MoCA e MEEM
 
