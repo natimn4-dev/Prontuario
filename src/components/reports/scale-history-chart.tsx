@@ -1,5 +1,9 @@
+"use client";
+
+import { useState } from "react";
 import type { AgaScaleReportSection } from "@/domain/aga-report";
 import { buildScaleChartPresentation } from "@/domain/scale-chart-presentation";
+import { selectScaleChartWindow, type ScaleChartWindow } from "@/domain/scale-chart-window";
 import styles from "./scale-history-chart.module.css";
 
 const HEIGHT = 220;
@@ -45,18 +49,22 @@ function positionY(score: number, min: number, max: number): number {
 }
 
 export function ScaleHistoryChart({ scale }: { scale: AgaScaleReportSection }) {
-  const presentation = buildScaleChartPresentation(scale.chartSeries);
+  const [window, setWindow] = useState<ScaleChartWindow>("all");
+  const fullSeries = scale.chartSeries;
+  const chartSeries = selectScaleChartWindow(fullSeries, window);
+  const presentation = buildScaleChartPresentation(chartSeries);
   if (!presentation.hasHistory) return null;
 
-  const points = scale.chartSeries.points;
+  const points = chartSeries.points;
   const numeric = points.filter((point): point is typeof point & { score: number } => point.score !== null);
   const min = presentation.canPlot ? Math.min(...numeric.map((point) => point.score)) : 0;
   const max = presentation.canPlot ? Math.max(...numeric.map((point) => point.score)) : 0;
   const width = chartWidth(points.length);
   const chartTitle = `Trajetória de ${scale.name}`;
-  const chartDescription = `Série histórica com ${points.length} registro(s). Trechos incompatíveis ou sem dados suficientes são exibidos com uma interrupção, sem conexão visual.`;
+  const chartDescription = `Janela visual com ${points.length} de ${fullSeries.points.length} registro(s). Trechos incompatíveis ou sem dados suficientes são exibidos com uma interrupção, sem conexão visual.`;
   const pointIndex = new Map(points.map((point, index) => [point.consultationId, index]));
   const visibleDateLabels = new Set(presentation.visibleDateLabelIndexes);
+  const canChooseWindow = fullSeries.points.length > 6;
 
   return (
     <figure className={styles.figure}>
@@ -66,6 +74,22 @@ export function ScaleHistoryChart({ scale }: { scale: AgaScaleReportSection }) {
           Histórico dos escores registrados. Linhas aparecem somente entre pontos que o domínio considera comparáveis; interrupções são preservadas explicitamente.
         </span>
       </figcaption>
+
+      {canChooseWindow ? (
+        <div className={styles.windowControl}>
+          <label htmlFor={`scale-window-${scale.code}`}>Período exibido no gráfico</label>
+          <select
+            id={`scale-window-${scale.code}`}
+            value={window}
+            onChange={(event) => setWindow(event.target.value as ScaleChartWindow)}
+          >
+            <option value="all">Todo o histórico</option>
+            <option value="last-12">Últimos 12 registros</option>
+            <option value="last-6">Últimos 6 registros</option>
+          </select>
+          <span>A tabela abaixo permanece completa, independentemente da janela escolhida.</span>
+        </div>
+      ) : null}
 
       {presentation.canPlot ? (
         <div
@@ -82,7 +106,7 @@ export function ScaleHistoryChart({ scale }: { scale: AgaScaleReportSection }) {
           >
             <line x1={LEFT} y1={HEIGHT - BOTTOM} x2={width - RIGHT} y2={HEIGHT - BOTTOM} className={styles.axis} />
 
-            {scale.chartSeries.segments.map((segment) => {
+            {chartSeries.segments.map((segment) => {
               if (!segment.drawable) return null;
               const fromIndex = pointIndex.get(segment.fromConsultationId);
               const toIndex = pointIndex.get(segment.toConsultationId);
@@ -134,13 +158,13 @@ export function ScaleHistoryChart({ scale }: { scale: AgaScaleReportSection }) {
         </div>
       ) : (
         <p className={styles.emptyState}>
-          Histórico registrado, mas ainda não há pelo menos dois escores numéricos para desenhar uma trajetória. Os registros permanecem disponíveis na tabela abaixo.
+          Histórico registrado, mas ainda não há pelo menos dois escores numéricos nesta janela para desenhar uma trajetória. Os registros permanecem disponíveis na tabela abaixo.
         </p>
       )}
 
       <p className={styles.trendNote}>
         Tendência mais recente registrada: <strong>{scale.evolution.vsPrevious}</strong>.
-        {scale.chartSeries.hasMultipleVersions ? " O histórico contém versões diferentes do instrumento; os trechos incompatíveis permanecem desconectados." : ""}
+        {fullSeries.hasMultipleVersions ? " O histórico contém versões diferentes do instrumento; os trechos incompatíveis permanecem desconectados." : ""}
         {scale.evolution.trend === "insufficient-data" ? " Há dados insuficientes para a comparação mais recente." : ""}
       </p>
 
@@ -154,7 +178,7 @@ export function ScaleHistoryChart({ scale }: { scale: AgaScaleReportSection }) {
           </tr>
         </thead>
         <tbody>
-          {points.map((point) => (
+          {fullSeries.points.map((point) => (
             <tr key={`row-${point.consultationId}-${point.appliedAt}`}>
               <td>{displayDate(point.appliedAt)}</td>
               <th scope="row">{point.isBaseline ? "AGA inicial" : "Acompanhamento"}</th>
