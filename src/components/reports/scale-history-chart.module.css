@@ -26,6 +26,46 @@
   line-height: 1.45;
 }
 
+.windowControl {
+  display: grid;
+  grid-template-columns: auto minmax(170px, 220px) 1fr;
+  gap: 8px 12px;
+  align-items: center;
+  margin: 0 0 12px;
+  padding: 10px 12px;
+  border: 1px solid var(--care-line);
+  border-radius: 8px;
+  background: #faf8f8;
+}
+
+.windowControl label {
+  color: var(--care-accent-deep);
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.windowControl select {
+  min-height: 38px;
+  width: 100%;
+  padding: 7px 10px;
+  border: 1px solid var(--care-line);
+  border-radius: 7px;
+  background: #fff;
+  color: inherit;
+  font: inherit;
+}
+
+.windowControl select:focus-visible {
+  outline: 2px solid var(--care-accent-deep);
+  outline-offset: 2px;
+}
+
+.windowControl span {
+  color: var(--care-muted);
+  font-size: 11px;
+  line-height: 1.4;
+}
+
 .chartWrap {
   width: 100%;
   overflow-x: auto;
@@ -129,10 +169,20 @@
   text-transform: uppercase;
 }
 
+@media (max-width: 720px) {
+  .windowControl {
+    grid-template-columns: 1fr;
+  }
+}
+
 @media print {
   .figure {
     margin: 4mm 0;
     padding: 3mm;
+  }
+
+  .windowControl {
+    display: none;
   }
 
   .chartWrap {
