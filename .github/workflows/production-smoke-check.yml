@@ -1,0 +1,23 @@
+name: Production Smoke Check
+
+on:
+  pull_request:
+    paths:
+      - ".github/workflows/production-smoke-check.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  smoke:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Smoke production clinical release
+        env:
+          APP_URL: https://prontuario.nataliamendesgeriatra.com
+        run: npm run release:clinical:smoke
