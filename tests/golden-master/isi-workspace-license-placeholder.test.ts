@@ -2,32 +2,26 @@ import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import test from "node:test";
 import { buildClinicalScaleOptions } from "../../src/domain/clinical-scale-workspace.ts";
+import { ISI_QUICK_DEFINITION } from "../../src/domain/isi.ts";
 
-test("license-gated ISI placeholder stays in the Sono domain and cannot be activated", () => {
-  const [isi] = buildClinicalScaleOptions([
-    {
-      source: "complementary",
-      code: "isi",
-      name: "ISI — Índice de Gravidade de Insônia",
-      dimension: "sono",
-      disabled: true,
-      statusNote: "Aguarda licença eletrônica e versão brasileira autorizada.",
-    },
-  ]);
+test("ISI score-only stays in the Sono domain and remains selectable", () => {
+  const [isi] = buildClinicalScaleOptions([{
+    source: "complementary",
+    code: ISI_QUICK_DEFINITION.code,
+    name: ISI_QUICK_DEFINITION.name,
+    dimension: ISI_QUICK_DEFINITION.dimension,
+  }]);
 
   assert.equal(isi?.domain, "Sono");
-  assert.equal(isi?.disabled, true);
-  assert.match(isi?.statusNote ?? "", /Aguarda licença eletrônica/);
+  assert.equal(isi?.disabled, false);
 });
 
-test("unified workspace renders the ISI restriction as a disabled checkbox", () => {
+test("unified workspace receives ISI from complementary definitions instead of a licensed-form placeholder", () => {
   const workspace = readFileSync("src/components/scales/clinical-scales-workspace.tsx", "utf8");
+  const route = readFileSync("src/app/api/consultations/[id]/scales/complementary/route.ts", "utf8");
 
-  assert.match(workspace, /restriction\.code === "isi"/);
-  assert.match(workspace, /dimension: "sono"/);
-  assert.match(workspace, /disabled: true/);
-  assert.match(workspace, /Aguarda licença eletrônica e versão brasileira autorizada/);
-  assert.match(workspace, /disabled=\{option\.disabled\}/);
-  assert.match(workspace, /if \(option\.disabled\) return/);
-  assert.match(workspace, /!option\.disabled && option\.appliedInCurrentConsultation/);
+  assert.match(route, /ISI_QUICK_DEFINITION/);
+  assert.match(route, /definitions: DEFINITIONS/);
+  assert.doesNotMatch(route, /SCALE_LICENSE_REQUIRED/);
+  assert.match(workspace, /complementaryView\?\.definitions/);
 });
