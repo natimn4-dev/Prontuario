@@ -111,24 +111,100 @@ test("último registro da mesma escala na consulta é o efetivo", () => {
   assert.equal(functionality.cells[0]?.assessments.length, 1);
 });
 
-test("gráfico bloqueia mistura de pacientes", () => {
+test("mudança comparável gera ponto de inflexão e associa somente marco clínico explicitamente informado", () => {
+  const history = buildCapacityDimensionHistory({
+    patientId: "p1",
+    consultations,
+    assessments: [
+      { patientId: "p1", consultationId: "c1", scaleCode: "lawton", clinicalColor: "verde", appliedAt: "2026-01-10" },
+      { patientId: "p1", consultationId: "c2", scaleCode: "lawton", clinicalColor: "vermelho", appliedAt: "2026-04-10" },
+    ],
+    milestones: [
+      {
+        patientId: "p1",
+        consultationId: "c2",
+        title: "AVC",
+        note: "Evento vascular registrado na evolução.",
+        recordedAt: "2026-04-10T11:00:00Z",
+        source: "problem-origin",
+      },
+    ],
+  });
+
+  assert.equal(history.inflectionPoints.length, 1);
+  assert.equal(history.inflectionPoints[0]?.dimensionCode, "funcionalidade");
+  assert.equal(history.inflectionPoints[0]?.fromStatus, "preserved");
+  assert.equal(history.inflectionPoints[0]?.toStatus, "altered");
+  assert.equal(history.inflectionPoints[0]?.direction, "worsened");
+  assert.equal(history.inflectionPoints[0]?.milestones[0]?.title, "AVC");
+  assert.equal(history.inflectionPoints[0]?.milestones[0]?.note, "Evento vascular registrado na evolução.");
+});
+
+test("inflexão sem evento documentado não inventa causa", () => {
+  const history = buildCapacityDimensionHistory({
+    patientId: "p1",
+    consultations,
+    assessments: [
+      { patientId: "p1", consultationId: "c1", scaleCode: "sarcf", clinicalColor: "verde", appliedAt: "2026-01-10" },
+      { patientId: "p1", consultationId: "c2", scaleCode: "sarcf", clinicalColor: "amarelo", appliedAt: "2026-04-10" },
+    ],
+  });
+
+  assert.equal(history.inflectionPoints.length, 1);
+  assert.equal(history.inflectionPoints[0]?.dimensionCode, "locomocao");
+  assert.deepEqual(history.inflectionPoints[0]?.milestones, []);
+});
+
+test("status registrado sem classificação e lacunas não criam transição artificial", () => {
+  const history = buildCapacityDimensionHistory({
+    patientId: "p1",
+    consultations,
+    assessments: [
+      { patientId: "p1", consultationId: "c1", scaleCode: "lawton", clinicalColor: "verde", appliedAt: "2026-01-10" },
+      { patientId: "p1", consultationId: "c2", scaleCode: "lawton", clinicalColor: "cinza", appliedAt: "2026-04-10" },
+      { patientId: "p1", consultationId: "c3", scaleCode: "lawton", clinicalColor: "verde", appliedAt: "2026-08-21" },
+    ],
+  });
+  assert.equal(history.inflectionPoints.length, 0);
+});
+
+test("gráfico bloqueia mistura de pacientes em avaliações e marcos", () => {
   assert.throws(() => buildCapacityDimensionHistory({
     patientId: "p1",
     assessments: [
       { patientId: "p2", consultationId: "c1", scaleCode: "lawton", clinicalColor: "verde", appliedAt: "2026-01-10" },
     ],
   }), /pacientes diferentes/);
+
+  assert.throws(() => buildCapacityDimensionHistory({
+    patientId: "p1",
+    assessments: [],
+    milestones: [{
+      patientId: "p2",
+      consultationId: "c1",
+      title: "Queda",
+      recordedAt: "2026-01-10",
+      source: "problem-event",
+    }],
+  }), /marcos clínicos/);
 });
 
-test("página do paciente e relatório final renderizam o mesmo gráfico longitudinal", () => {
+test("página do paciente e relatório final renderizam o mesmo gráfico em linha e preservam snapshot", () => {
   const patientPage = readFileSync("src/app/patients/[id]/page.tsx", "utf8");
   const report = readFileSync("src/components/reports/aga-report-preview.tsx", "utf8");
   const generator = readFileSync("src/server/clinical/generate-aga-report.ts", "utf8");
+  const chart = readFileSync("src/components/reports/capacity-dimension-history-chart.tsx", "utf8");
 
   assert.match(patientPage, /CapacityDimensionHistoryChart/);
   assert.match(patientPage, /includeTargetWhenEmpty: false/);
+  assert.match(patientPage, /milestones/);
   assert.match(report, /Capacidade intrínseca e funcional/);
   assert.match(report, /context="final-report"/);
   assert.match(generator, /includeTargetWhenEmpty: true/);
+  assert.match(generator, /milestones/);
   assert.match(generator, /content: \{ report, text \}/);
+  assert.match(chart, /<svg/);
+  assert.match(chart, /Pontos de inflexão observados/);
+  assert.doesNotMatch(chart, /<table/);
+  assert.match(chart, /não atribui causa/);
 });
