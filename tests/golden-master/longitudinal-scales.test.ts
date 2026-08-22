@@ -18,6 +18,21 @@ test("escala higher-worse classifica aumento como tendência desfavorável", () 
   assert.equal(compareScalePoints(a,b).trend, "unfavorable");
 });
 
+test("ISI usa direção higher-worse no histórico longitudinal", () => {
+  const improved = compareScalePoints(
+    { ...point(16,"2026-01-01"), scaleCode:"isi", scaleVersion:"ISI-7-scoring-2001-BR-validation-2011-v1" },
+    { ...point(10,"2026-02-01"), scaleCode:"isi", scaleVersion:"ISI-7-scoring-2001-BR-validation-2011-v1" },
+  );
+  const worsened = compareScalePoints(
+    { ...point(10,"2026-02-01"), scaleCode:"isi", scaleVersion:"ISI-7-scoring-2001-BR-validation-2011-v1" },
+    { ...point(16,"2026-03-01"), scaleCode:"isi", scaleVersion:"ISI-7-scoring-2001-BR-validation-2011-v1" },
+  );
+  assert.equal(improved.trend, "favorable");
+  assert.equal(improved.delta, -6);
+  assert.equal(worsened.trend, "unfavorable");
+  assert.equal(worsened.delta, 6);
+});
+
 test("versões diferentes nunca são comparadas silenciosamente", () => {
   const a = point(60,"2026-01-01");
   const b = { ...point(70,"2026-02-01"), scaleVersion:"2.0" };
