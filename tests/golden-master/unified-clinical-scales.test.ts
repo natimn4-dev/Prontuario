@@ -13,6 +13,7 @@ test("unified clinical scale workspace preserves the approved domain order", () 
     "Cognição",
     "Funcionalidade",
     "Capacidade psicológica e humor",
+    "Sono",
     "Locomoção e desempenho físico",
     "Fragilidade",
     "Vitalidade e nutrição",
@@ -36,8 +37,9 @@ test("workspace hides detailed MEEM/MoCA duplicates and preserves simplified ent
   assert.deepEqual(options.map((item) => item.code).sort(), ["meem", "moca"]);
 });
 
-test("workspace deduplicates codes and maps family, social, caregiver, vitality and prognosis correctly", () => {
+test("workspace deduplicates codes and maps sleep, family, social, caregiver, vitality and prognosis correctly", () => {
   const options = buildClinicalScaleOptions([
+    { source: "complementary", code: "isi", name: "ISI", dimension: "sono" },
     { source: "core", code: "family_apgar_br_elderly", name: "APGAR familiar", dimension: "familia" },
     { source: "core", code: "mos_sss_br_19", name: "MOS-SSS", dimension: "suporte_social" },
     { source: "core", code: "zarit_br_22", name: "Zarit", dimension: "sobrecarga_cuidador" },
@@ -47,6 +49,7 @@ test("workspace deduplicates codes and maps family, social, caregiver, vitality 
     { source: "complementary", code: "ecog", name: "ECOG duplicado", dimension: "oncogeriatria" },
   ]);
   const byCode = new Map(options.map((item) => [item.code, item.domain]));
+  assert.equal(byCode.get("isi"), "Sono");
   assert.equal(byCode.get("family_apgar_br_elderly"), "Família");
   assert.equal(byCode.get("mos_sss_br_19"), "Rede e suporte social");
   assert.equal(byCode.get("zarit_br_22"), "Sobrecarga do cuidador");
@@ -72,6 +75,7 @@ test("all approved dimension labels resolve explicitly", () => {
     ["cognicao", "Cognição"],
     ["funcionalidade", "Funcionalidade"],
     ["humor", "Capacidade psicológica e humor"],
+    ["sono", "Sono"],
     ["mobilidade", "Locomoção e desempenho físico"],
     ["fragilidade", "Fragilidade"],
     ["nutricao", "Vitalidade e nutrição"],
