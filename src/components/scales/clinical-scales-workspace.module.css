@@ -116,21 +116,45 @@
 }
 
 .selectedBar {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 8px;
+  display: grid;
+  gap: 10px;
   margin: 18px 0 0;
   padding: 12px;
   border-radius: 12px;
   background: #f7f3f4;
 }
 
-.selectedBar > span {
-  margin-right: 2px;
+.selectedHeading {
   color: #66575b;
   font-size: 12px;
   font-weight: 800;
+}
+
+.selectedDomainList {
+  display: grid;
+  gap: 9px;
+}
+
+.selectedDomain {
+  display: grid;
+  grid-template-columns: minmax(140px, 210px) minmax(0, 1fr);
+  gap: 10px 12px;
+  align-items: start;
+  padding-top: 9px;
+  border-top: 1px solid #e6dcdf;
+}
+
+.selectedDomain > strong {
+  padding-top: 8px;
+  color: #5b484e;
+  font-size: 11px;
+  line-height: 1.35;
+}
+
+.selectedChips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
 }
 
 .selectedBar button {
@@ -422,6 +446,15 @@
 
   .domainGrid {
     grid-template-columns: 1fr;
+  }
+
+  .selectedDomain {
+    grid-template-columns: 1fr;
+    gap: 5px;
+  }
+
+  .selectedDomain > strong {
+    padding-top: 0;
   }
 
   .actions button {
