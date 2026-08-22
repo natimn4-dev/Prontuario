@@ -25,6 +25,7 @@ const PROBLEM_RULES: readonly ProblemRule[] = [
   { key: "abvd-dependence", type: "GERIATRIC", title: "Dependência para atividades básicas de vida diária", scales: ["katz", "barthel"] },
   { key: "aivd-dependence", type: "GERIATRIC", title: "Dependência para atividades instrumentais de vida diária", scales: ["lawton", "pfeffer"] },
   { key: "depressive-symptoms", type: "GERIATRIC", title: "Sintomas depressivos", scales: ["gds15", "cornell"] },
+  { key: "sleep-insomnia-symptoms", type: "CLINICAL", title: "Sintomas de insônia / alteração do sono", scales: ["isi"] },
   { key: "frailty", type: "GERIATRIC", title: "Fragilidade / vulnerabilidade geriátrica", scales: ["frail_br", "ves13", "g8"] },
   { key: "oncologic-performance", type: "GERIATRIC", title: "Desempenho funcional oncológico reduzido", scales: ["ecog"] },
   { key: "chemotherapy-toxicity", type: "CLINICAL", title: "Risco de toxicidade grave por quimioterapia — adaptação local", scales: ["crash_mna_sf"] },
