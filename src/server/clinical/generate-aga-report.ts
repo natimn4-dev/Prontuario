@@ -1,6 +1,7 @@
 import type { Prisma } from "../../generated/prisma/client";
 import { buildAgaReportModel, renderAgaReportText } from "../../domain/aga-report";
 import { consultationHorizon, problemsAsOf } from "../../domain/as-of-consultation";
+import { buildCapacityDimensionHistory } from "../../domain/capacity-dimension-history";
 import type { LongitudinalAssessment } from "../../domain/clinical-change-summary";
 import { assertDocumentContextIntegrity } from "../../domain/document-context-integrity";
 import { withDocumentSnapshotWriteRetry } from "../../domain/document-snapshot-versioning";
@@ -198,7 +199,23 @@ export async function generateAgaReport(input: {
         vaccinationReview: vaccinationReviewFromObjective(consultation.objective),
         medicationPlan,
       });
-      const report = sanitizeFamilyReportModel(clinicalReport);
+      const safeReport = sanitizeFamilyReportModel(clinicalReport);
+      const capacityHistory = buildCapacityDimensionHistory({
+        patientId: consultation.patientId,
+        consultations: horizon,
+        assessments: assessments.map((assessment) => ({
+          patientId: assessment.patientId,
+          consultationId: assessment.consultationId,
+          scaleCode: assessment.scaleCode,
+          clinicalColor: assessment.color ?? null,
+          appliedAt: assessment.appliedAt,
+          consultationOccurredAt: assessment.consultationOccurredAt,
+          consultationCreatedAt: assessment.consultationCreatedAt,
+        })),
+        targetConsultationId: consultation.id,
+        includeTargetWhenEmpty: true,
+      });
+      const report = { ...safeReport, capacityHistory };
       const text = renderAgaReportText(report);
       const snapshot = await createDocumentSnapshotInTransaction(tx, {
         consultationId: consultation.id,
