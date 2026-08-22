@@ -214,6 +214,7 @@ export function ClinicalScalesWorkspace({ consultationId }: { consultationId: st
   ]), [coreView, complementaryView, appliedCodes]);
   const groups = useMemo(() => groupClinicalScaleOptions(options), [options]);
   const selectedOptions = useMemo(() => options.filter((option) => selectedKeys.has(option.key)), [options, selectedKeys]);
+  const selectedGroups = useMemo(() => groupClinicalScaleOptions(selectedOptions), [selectedOptions]);
   const activeOption = useMemo(() => options.find((option) => option.key === activeKey) ?? null, [options, activeKey]);
   const currentAssessment = activeOption ? statusView?.latest.find((item) => item.scaleCode === activeOption.code) ?? null : null;
   const finalized = statusView?.consultationStatus === "FINALIZED";
@@ -404,7 +405,17 @@ export function ClinicalScalesWorkspace({ consultationId }: { consultationId: st
       {groups.map((group) => <fieldset className={styles.domainBox} key={group.domain}><legend>{group.domain}</legend>{group.options.map((option) => <label className={styles.checkRow} key={option.key}><input type="checkbox" checked={selectedKeys.has(option.key)} disabled={option.disabled} onChange={(event) => toggleScale(option, event.target.checked)} /><span>{option.name}{option.statusNote ? ` — ${option.statusNote}` : ""}</span>{option.appliedInCurrentConsultation ? <strong>Aplicada</strong> : null}</label>)}</fieldset>)}
     </div>
 
-    {selectedOptions.length ? <div className={styles.selectedBar} aria-label="Escalas selecionadas"><span>Em preenchimento:</span>{selectedOptions.map((option) => <button type="button" key={option.key} className={activeKey === option.key ? styles.activeTab : ""} aria-pressed={activeKey === option.key} onClick={() => setActiveKey(option.key)}>{option.name}{option.appliedInCurrentConsultation ? " ✓" : ""}</button>)}</div> : <p className={styles.empty}>Marque uma ou mais escalas acima para abrir o preenchimento aqui.</p>}
+    {selectedGroups.length ? <div className={styles.selectedBar} aria-label="Escalas selecionadas agrupadas por domínio">
+      <span className={styles.selectedHeading}>Em preenchimento nesta consulta:</span>
+      <div className={styles.selectedDomainList}>
+        {selectedGroups.map((group) => <section className={styles.selectedDomain} key={group.domain} aria-label={group.domain}>
+          <strong>{group.domain}</strong>
+          <div className={styles.selectedChips}>
+            {group.options.map((option) => <button type="button" key={option.key} className={activeKey === option.key ? styles.activeTab : ""} aria-pressed={activeKey === option.key} onClick={() => setActiveKey(option.key)}>{option.name}{option.appliedInCurrentConsultation ? " ✓" : ""}</button>)}
+          </div>
+        </section>)}
+      </div>
+    </div> : <p className={styles.empty}>Marque uma ou mais escalas acima para abrir o preenchimento aqui.</p>}
 
     {activeOption ? <article className={styles.workspace}>
       <header className={styles.workspaceHeader}><div><span>{activeOption.domain}</span><h3>{activeOption.name}</h3></div>{currentAssessment ? <div className={styles.appliedBadge}><strong>Aplicada nesta consulta</strong><span>{currentAssessment.scoreText ?? currentAssessment.scoreNumeric ?? "resultado registrado"}</span></div> : null}</header>
