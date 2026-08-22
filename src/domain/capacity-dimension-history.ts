@@ -16,6 +16,11 @@ export type CapacityDimensionStatus =
   | "attention"
   | "altered";
 
+export type CapacityComparableStatus = Extract<
+  CapacityDimensionStatus,
+  "preserved" | "attention" | "altered"
+>;
+
 export interface CapacityTimelineConsultation {
   id: string;
   patientId: string;
@@ -31,6 +36,20 @@ export interface CapacityTimelineAssessment {
   appliedAt: Date | string;
   consultationOccurredAt?: Date | string;
   consultationCreatedAt?: Date | string;
+}
+
+/**
+ * Marco clínico explicitamente documentado. O gráfico pode associá-lo
+ * temporalmente a uma inflexão, mas nunca o transforma automaticamente em
+ * causa da mudança funcional/intrínseca.
+ */
+export interface CapacityTimelineMilestone {
+  patientId: string;
+  consultationId: string;
+  title: string;
+  note?: string | null;
+  recordedAt: Date | string;
+  source: "problem-origin" | "problem-event";
 }
 
 export interface CapacityDimensionCellAssessment {
@@ -52,6 +71,22 @@ export interface CapacityDimensionRow {
   cells: CapacityDimensionCell[];
 }
 
+export interface CapacityInflectionPoint {
+  consultationId: string;
+  occurredAt: string;
+  dimensionCode: CapacityDimensionCode;
+  dimensionLabel: string;
+  previousConsultationId: string;
+  fromStatus: CapacityComparableStatus;
+  toStatus: CapacityComparableStatus;
+  direction: "worsened" | "improved";
+  milestones: Array<{
+    title: string;
+    note?: string;
+    source: CapacityTimelineMilestone["source"];
+  }>;
+}
+
 export interface CapacityDimensionHistory {
   patientId: string;
   frameworkLabel: string;
@@ -61,6 +96,7 @@ export interface CapacityDimensionHistory {
     isTarget: boolean;
   }>;
   dimensions: CapacityDimensionRow[];
+  inflectionPoints: CapacityInflectionPoint[];
   hasAssessmentData: boolean;
 }
 
@@ -146,6 +182,16 @@ function statusFromAssessments(assessments: CapacityDimensionCellAssessment[]): 
   return "recorded";
 }
 
+function isComparableStatus(status: CapacityDimensionStatus): status is CapacityComparableStatus {
+  return status === "preserved" || status === "attention" || status === "altered";
+}
+
+function comparableRank(status: CapacityComparableStatus): number {
+  if (status === "preserved") return 3;
+  if (status === "attention") return 2;
+  return 1;
+}
+
 function effectiveAssessments(assessments: readonly CapacityTimelineAssessment[]): CapacityTimelineAssessment[] {
   const latest = new Map<string, CapacityTimelineAssessment>();
   for (const assessment of assessments) {
@@ -179,10 +225,75 @@ function derivedConsultations(
   return [...byId.values()];
 }
 
+function normalizedMilestones(
+  milestones: readonly CapacityTimelineMilestone[],
+): Map<string, CapacityTimelineMilestone[]> {
+  const byConsultation = new Map<string, CapacityTimelineMilestone[]>();
+  const seen = new Set<string>();
+  for (const milestone of [...milestones].sort((left, right) => timestamp(left.recordedAt) - timestamp(right.recordedAt))) {
+    const title = milestone.title.trim();
+    const note = milestone.note?.trim() || undefined;
+    if (!title) continue;
+    const key = `${milestone.consultationId}:${title.toLocaleLowerCase("pt-BR")}:${note?.toLocaleLowerCase("pt-BR") ?? ""}`;
+    if (seen.has(key)) continue;
+    seen.add(key);
+    const current = byConsultation.get(milestone.consultationId) ?? [];
+    current.push({ ...milestone, title, note });
+    byConsultation.set(milestone.consultationId, current);
+  }
+  return byConsultation;
+}
+
+function buildInflectionPoints(
+  consultations: CapacityDimensionHistory["consultations"],
+  dimensions: CapacityDimensionRow[],
+  milestones: readonly CapacityTimelineMilestone[],
+): CapacityInflectionPoint[] {
+  const milestoneByConsultation = normalizedMilestones(milestones);
+  const consultationById = new Map(consultations.map((item) => [item.id, item]));
+  const points: CapacityInflectionPoint[] = [];
+
+  for (const dimension of dimensions) {
+    let previous: { consultationId: string; status: CapacityComparableStatus } | undefined;
+    for (const cell of dimension.cells) {
+      if (!isComparableStatus(cell.status)) continue;
+      if (previous && previous.status !== cell.status) {
+        const currentRank = comparableRank(cell.status);
+        const previousRank = comparableRank(previous.status);
+        const consultation = consultationById.get(cell.consultationId);
+        if (consultation) {
+          points.push({
+            consultationId: cell.consultationId,
+            occurredAt: consultation.occurredAt,
+            dimensionCode: dimension.code,
+            dimensionLabel: dimension.label,
+            previousConsultationId: previous.consultationId,
+            fromStatus: previous.status,
+            toStatus: cell.status,
+            direction: currentRank < previousRank ? "worsened" : "improved",
+            milestones: (milestoneByConsultation.get(cell.consultationId) ?? []).slice(0, 3).map((item) => ({
+              title: item.title,
+              note: item.note || undefined,
+              source: item.source,
+            })),
+          });
+        }
+      }
+      previous = { consultationId: cell.consultationId, status: cell.status };
+    }
+  }
+
+  return points.sort((left, right) =>
+    timestamp(left.occurredAt) - timestamp(right.occurredAt)
+    || CAPACITY_DIMENSIONS.findIndex((item) => item.code === left.dimensionCode)
+      - CAPACITY_DIMENSIONS.findIndex((item) => item.code === right.dimensionCode));
+}
+
 export function buildCapacityDimensionHistory(input: {
   patientId: string;
   assessments: readonly CapacityTimelineAssessment[];
   consultations?: readonly CapacityTimelineConsultation[];
+  milestones?: readonly CapacityTimelineMilestone[];
   targetConsultationId?: string;
   includeTargetWhenEmpty?: boolean;
 }): CapacityDimensionHistory {
@@ -191,6 +302,9 @@ export function buildCapacityDimensionHistory(input: {
   }
   if (input.consultations?.some((item) => item.patientId !== input.patientId)) {
     throw new Error("Gráfico de capacidade não pode misturar consultas de pacientes diferentes.");
+  }
+  if (input.milestones?.some((item) => item.patientId !== input.patientId)) {
+    throw new Error("Gráfico de capacidade não pode misturar marcos clínicos de pacientes diferentes.");
   }
 
   const effective = effectiveAssessments(input.assessments);
@@ -238,11 +352,18 @@ export function buildCapacityDimensionHistory(input: {
     }),
   }));
 
+  const inflectionPoints = buildInflectionPoints(
+    consultations,
+    dimensions,
+    input.milestones ?? [],
+  );
+
   return {
     patientId: input.patientId,
     frameworkLabel: "Capacidade funcional + capacidade intrínseca (OMS: locomoção, cognição, capacidade psicológica, vitalidade e sensorial)",
     consultations,
     dimensions,
+    inflectionPoints,
     hasAssessmentData: effective.length > 0,
   };
 }
