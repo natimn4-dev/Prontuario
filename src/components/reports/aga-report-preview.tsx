@@ -2,13 +2,15 @@
 
 import { useEffect, useMemo, useState } from "react";
 import type { AgaReportModel, AgaScaleReportSection, AgaScaleTrend } from "@/domain/aga-report";
+import type { CapacityDimensionHistory } from "@/domain/capacity-dimension-history";
 import { buildChangeSummaryDashboard } from "@/domain/change-summary-dashboard";
 import { ProblemColumns } from "@/components/problems/problem-columns";
+import { CapacityDimensionHistoryChart } from "@/components/reports/capacity-dimension-history-chart";
 import { ScaleHistoryChart } from "@/components/reports/scale-history-chart";
 import { MEDICATION_MOMENTS, MEDICATION_MOMENT_LABELS } from "@/domain/medication-plan";
 
 interface GeneratedReportResponse {
-  report: AgaReportModel;
+  report: AgaReportModel & { capacityHistory: CapacityDimensionHistory };
   text: string;
   snapshot: { id: string; version: number };
 }
@@ -314,6 +316,14 @@ export function AgaReportPreview({ consultationId }: { consultationId: string })
                 <p className="muted">Inclui problemas ativos e históricos preservados.</p>
               </div>
               <ProblemColumns problems={[...generated.report.clinicalProblems, ...generated.report.geriatricProblems]} />
+            </section>
+
+            <section className="report-section" aria-labelledby="capacity-dimension-report-title">
+              <div className="section-title-row">
+                <div><p className="eyebrow">Trajetória funcional</p><h2 id="capacity-dimension-report-title">Capacidade intrínseca e funcional</h2></div>
+                <p className="muted">Consulta atual + histórico anterior, sem criar escore composto entre instrumentos diferentes.</p>
+              </div>
+              <CapacityDimensionHistoryChart history={generated.report.capacityHistory} context="final-report" />
             </section>
 
             <section className="report-section">
