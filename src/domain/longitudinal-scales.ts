@@ -58,6 +58,7 @@ export function effectiveScalePoints(
 export const SCALE_DIRECTIONS: Record<string, ScaleDirection> = {
   ecog: "higher-worse",
   crash_mna_sf: "higher-worse",
+  isi: "higher-worse",
   katz: "higher-better", lawton: "higher-better", barthel: "higher-better",
   pfeffer: "higher-worse", gds15: "higher-worse", cornell: "higher-worse",
   moca: "higher-better", meem: "higher-better", dez_cs: "higher-better",
