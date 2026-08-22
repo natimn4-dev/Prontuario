@@ -1,39 +1,46 @@
-# ISI — integração segura por licença (2026-08-21)
+# ISI — registro simplificado e seguro (2026-08-21)
 
 ## Objetivo
-Adicionar a ISI — Insomnia Severity Index / Índice de Gravidade de Insônia — ao fluxo clínico sem fragmentar a caixa única **Escalas clínicas**, preservando cálculo automático, interpretação segura, longitudinalidade e integração com Plano por Problema.
+Adicionar a ISI — Insomnia Severity Index / Índice de Gravidade de Insônia — ao fluxo clínico no mesmo padrão simplificado de MEEM/MoCA: registrar somente a **pontuação total de uma escala já aplicada**, sem reproduzir o questionário protegido dentro do prontuário.
 
-## Implementado nesta branch
-- engine de pontuação estruturada com sete respostas obrigatórias, cada uma restrita a 0–4;
-- total automático 0–28, sem aceitar campo `total` informado manualmente;
-- faixas de referência 0–7, 8–14, 15–21 e 22–28 com linguagem de sintomas/rastreio, sem diagnóstico automático;
-- testes de fronteira obrigatórios 7/8, 14/15 e 21/22, além de 0/28, 28/28, soma intermediária e resposta ausente/inválida;
-- domínio **Sono** dentro da mesma caixa unificada de Escalas clínicas (não existe painel de sono separado);
-- proposta de problema `Sintomas de insônia / alteração do sono` somente quando o resultado atual estiver alterado e sempre sujeita à confirmação médica;
-- sugestões profissionais editáveis e não prescritivas para caracterização do padrão sono-vigília e revisão de fatores associados;
-- gate eletrônico fail-closed `CLINICAL_LICENSE_ISI_ELECTRONIC_CONFIRMED=false` por padrão;
-- documentação de procedência científica e licenciamento.
+## Decisão clínica e de produto
+A ISI fica disponível no domínio **Sono** dentro da caixa única **Escalas clínicas**, com um único campo numérico de 0 a 28.
+
+O prontuário:
+- não apresenta os sete itens;
+- não apresenta as alternativas do instrumento;
+- não traduz, parafraseia ou administra eletronicamente o formulário;
+- recebe apenas o total obtido em uma ISI/IGI já aplicada por meio autorizado;
+- calcula automaticamente a faixa de interpretação a partir do total informado;
+- persiste escore, classificação, interpretação, data e consulta;
+- mantém a direção longitudinal `higher-worse` para comparação temporal;
+- integra resultados alterados ao apoio ao Plano por Problema, sempre sujeito à revisão médica e sem prescrição automática.
+
+## Faixas adotadas
+- 0–7: sem sintomas clinicamente significativos pela faixa de referência;
+- 8–14: sintomas de insônia abaixo do limiar;
+- 15–21: sintomas de intensidade moderada;
+- 22–28: sintomas de intensidade grave.
+
+O resultado é apresentado como gravidade de sintomas/rastreio e **não estabelece diagnóstico isoladamente**.
 
 ## Evidência clínica revisada
 1. Bastien CH, Vallières A, Morin CM. *Validation of the Insomnia Severity Index as an outcome measure for insomnia research*. Sleep Med. 2001;2(4):297-307. PMID 11438246.
 2. Castro LS. *Adaptação e validação do Índice de Gravidade de Insônia (IGI): Caracterização Populacional, Valores Normativos e Aspectos Associados*. UNIFESP, 2011. Validação em amostra adulta da cidade de São Paulo.
-3. Mapi Research Trust / ePROVIDE — catálogo oficial da ISI, incluindo tradução Portuguese for Brazil e condições específicas para implementação eletrônica.
+3. Mapi Research Trust / ePROVIDE — catálogo oficial da ISI, incluindo tradução Portuguese for Brazil e condições específicas para reprodução/implementação eletrônica do formulário.
 
-## Bloqueio intencional antes da administração eletrônica
-O formulário literal de sete itens **não foi copiado de páginas de terceiros nem reescrito por paráfrase**. A Mapi Research Trust informa que cópias de revisão não autorizam retyping/copying/translation/duplication e que eVersions possuem condições próprias.
+## Licenciamento
+O gate específico de licença da ISI foi retirado desta implementação porque o aplicativo **não reproduz nem administra o instrumento**; ele apenas registra um escore total previamente obtido, como já ocorre nas entradas simplificadas de MEEM/MoCA.
 
-Antes de tornar a ISI selecionável e administrável no navegador, é necessário documentar:
-- autorização/licença aplicável ao uso eletrônico neste projeto;
-- tradução `Portuguese for Brazil` efetivamente autorizada;
-- texto oficial dos sete itens, alternativas e instruções;
-- intervalo recordatório adotado (o catálogo oficial recomenda `last month` como padrão, admitindo períodos menores com consistência entre avaliações);
-- eventuais exigências de revisão de screenshots/e-Booklet.
+Isso não autoriza inserir futuramente os sete itens no prontuário. Se houver decisão de oferecer o questionário completo, será necessária nova revisão documental da licença/permissão eletrônica e da versão brasileira oficial antes de qualquer implementação.
 
-Somente após essa confirmação deve-se habilitar `CLINICAL_LICENSE_ISI_ELECTRONIC_CONFIRMED=true` e inserir o conteúdo licenciado na definição de formulário. Não usar uma tradução encontrada na internet como substituta.
-
-## Próxima etapa após licença
-1. adicionar a definição licenciada da ISI ao endpoint de escalas clínicas;
-2. renderizar os sete itens com seleção exclusiva e significado visível;
-3. salvar respostas + escore + classificação pela persistência genérica existente;
-4. validar reabertura, histórico e gráfico longitudinal;
-5. executar QA de UI e integração do relatório familiar sem prescrição automática.
+## QA obrigatório
+- campo único `score`;
+- somente inteiros entre 0 e 28;
+- rejeitar valores negativos, acima de 28 ou decimais;
+- rejeitar campos extras que simulem respostas dos itens;
+- fronteiras 7/8, 14/15 e 21/22;
+- persistência e reabertura do escore;
+- histórico longitudinal;
+- integração profissional não prescritiva;
+- ausência de qualquer texto dos sete itens no domínio ou endpoint.
