@@ -2,9 +2,10 @@ export type ElectronicScaleLicenseFlags = {
   mnaEhrConfirmed: boolean;
   mmseElectronicConfirmed: boolean;
   mocaElectronicConfirmed: boolean;
+  isiElectronicConfirmed: boolean;
 };
 
-export type LicensedElectronicScaleCode = "mna_full" | "meem_freitas" | "moca_br_freitas";
+export type LicensedElectronicScaleCode = "mna_full" | "meem_freitas" | "moca_br_freitas" | "isi";
 
 export type ElectronicScaleRestriction = {
   code: LicensedElectronicScaleCode;
@@ -34,6 +35,12 @@ const RESTRICTIONS: Record<LicensedElectronicScaleCode, Omit<ElectronicScaleRest
     flag: "mocaElectronicConfirmed",
     reason: "O MoCA® restringe desenvolvimento/reprodução eletrônica sem autorização/licença apropriada.",
   },
+  isi: {
+    name: "ISI — Índice de Gravidade de Insônia",
+    envVar: "CLINICAL_LICENSE_ISI_ELECTRONIC_CONFIRMED",
+    flag: "isiElectronicConfirmed",
+    reason: "A ISI é distribuída pela Mapi Research Trust; a reprodução da tradução e a implementação eletrônica devem respeitar a permissão/licença aplicável e a versão linguística autorizada.",
+  },
 };
 
 export function electronicScaleLicenseFlagsFromEnvironment(env: EnvironmentLike): ElectronicScaleLicenseFlags {
@@ -42,6 +49,7 @@ export function electronicScaleLicenseFlagsFromEnvironment(env: EnvironmentLike)
     mnaEhrConfirmed: confirmed(env.CLINICAL_LICENSE_MNA_EHR_CONFIRMED),
     mmseElectronicConfirmed: confirmed(env.CLINICAL_LICENSE_MMSE_ELECTRONIC_CONFIRMED),
     mocaElectronicConfirmed: confirmed(env.CLINICAL_LICENSE_MOCA_ELECTRONIC_CONFIRMED),
+    isiElectronicConfirmed: confirmed(env.CLINICAL_LICENSE_ISI_ELECTRONIC_CONFIRMED),
   };
 }
 
