@@ -24,6 +24,8 @@ export interface ClinicalScaleOptionInput {
   name: string;
   dimension?: string | null;
   appliedInCurrentConsultation?: boolean;
+  disabled?: boolean;
+  statusNote?: string;
 }
 
 export interface ClinicalScaleOption extends ClinicalScaleOptionInput {
@@ -94,6 +96,7 @@ export function isScaleExposedInUnifiedWorkspace(input: Pick<ClinicalScaleOption
 }
 
 function sourcePriority(input: ClinicalScaleOptionInput): number {
+  if (input.disabled) return 0;
   if ((input.code === "meem" || input.code === "moca") && input.source === "complementary") return 100;
   if (input.source === "core") return 30;
   if (input.source === "complementary") return 20;
