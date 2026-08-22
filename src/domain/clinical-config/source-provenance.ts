@@ -20,6 +20,15 @@ export interface ClinicalSourceProvenance {
  */
 export const SOURCE_PROVENANCE: Record<string, ClinicalSourceProvenance> = {
 
+  isi: {
+    scaleId: "isi",
+    status: "mixed-primary-and-local",
+    legacyVersion: "ISI-7-scoring-2001-BR-validation-2011-v1",
+    primaryReference:
+      "Bastien CH, Vallières A, Morin CM. Sleep Med. 2001;2(4):297-307. PMID 11438246; Castro LS. Adaptação e validação do Índice de Gravidade de Insônia (IGI). UNIFESP, 2011.",
+    note:
+      "A publicação original sustenta a ISI como instrumento breve de rastreio/quantificação, e a validação brasileira de 2011 avaliou a versão em português em amostra adulta da cidade de São Paulo. As quatro faixas 0-7, 8-14, 15-21 e 22-28 são preservadas como referência operacional; o software não deve convertê-las em diagnóstico. A redação literal dos sete itens e alternativas permanece fora do código até confirmação documental da versão brasileira autorizada e da licença eletrônica aplicável via Mapi Research Trust.",
+  },
   ecog: {
     scaleId: "ecog",
     status: "confirmed-primary",
