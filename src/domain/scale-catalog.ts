@@ -7,6 +7,7 @@ import {
   type SourceMigrationStatus,
 } from "./clinical-config/scale-source-policy.ts";
 import { LEGACY_INTERVENTIONS } from "./interventions.ts";
+import { ISI_VERSION } from "./isi.ts";
 import { CRASH_MNA_SF_VERSION, ECOG_VERSION } from "./oncogeriatric-scales.ts";
 
 export type GeriatricDimension =
@@ -18,6 +19,7 @@ export type GeriatricDimension =
   | "nutricao"
   | "medicamentos"
   | "suporte-social"
+  | "sono"
   | "oncogeriatria"
   | "prognostico"
   | "sintomas"
@@ -58,6 +60,7 @@ const METADATA = {
   sppb: ["SPPB", "SPPB", "mobilidade"],
   polifarmacia: ["Polifarmácia / MPI", "Polifarmácia", "medicamentos"],
   stoppfall: ["STOPPFall", "STOPPFall", "medicamentos"],
+  isi: ["ISI — Índice de Gravidade de Insônia", "ISI", "sono"],
   kps: ["Karnofsky Performance Status", "KPS", "prognostico"],
   lace: ["LACE", "LACE", "prognostico"],
   g8: ["G8", "G8", "oncogeriatria"],
@@ -86,7 +89,9 @@ export const SCALE_CATALOG: Readonly<Record<string, ScaleCatalogEntry>> = Object
           ? ECOG_VERSION
           : code === "crash_mna_sf"
             ? CRASH_MNA_SF_VERSION
-            : LEGACY_CONFIG_VERSION,
+            : code === "isi"
+              ? ISI_VERSION
+              : LEGACY_CONFIG_VERSION,
       name,
       shortName,
       dimension,
