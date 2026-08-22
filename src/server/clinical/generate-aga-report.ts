@@ -1,7 +1,10 @@
 import type { Prisma } from "../../generated/prisma/client";
 import { buildAgaReportModel, renderAgaReportText } from "../../domain/aga-report";
 import { consultationHorizon, problemsAsOf } from "../../domain/as-of-consultation";
-import { buildCapacityDimensionHistory } from "../../domain/capacity-dimension-history";
+import {
+  buildCapacityDimensionHistory,
+  type CapacityTimelineMilestone,
+} from "../../domain/capacity-dimension-history";
 import type { LongitudinalAssessment } from "../../domain/clinical-change-summary";
 import { assertDocumentContextIntegrity } from "../../domain/document-context-integrity";
 import { withDocumentSnapshotWriteRetry } from "../../domain/document-snapshot-versioning";
@@ -114,6 +117,7 @@ export async function generateAgaReport(input: {
             title: true,
             description: true,
             priority: true,
+            createdAt: true,
             events: {
               where: {
                 patientId: consultation.patientId,
@@ -125,6 +129,7 @@ export async function generateAgaReport(input: {
                 consultationId: true,
                 previousStatus: true,
                 newStatus: true,
+                note: true,
                 createdAt: true,
               },
             },
@@ -164,6 +169,33 @@ export async function generateAgaReport(input: {
           description: problem.description ?? undefined,
           priority: problem.priority ?? undefined,
         })),
+      });
+      const milestones: CapacityTimelineMilestone[] = persistedProblems.flatMap((problem) => {
+        const items: CapacityTimelineMilestone[] = [];
+        const originNote = problem.description?.trim();
+        if (originNote) {
+          items.push({
+            patientId: problem.patientId,
+            consultationId: problem.originConsultationId,
+            title: problem.title,
+            note: originNote,
+            recordedAt: problem.createdAt,
+            source: "problem-origin",
+          });
+        }
+        for (const event of problem.events) {
+          const eventNote = event.note?.trim();
+          if (!eventNote) continue;
+          items.push({
+            patientId: event.patientId,
+            consultationId: event.consultationId,
+            title: problem.title,
+            note: eventNote,
+            recordedAt: event.createdAt,
+            source: "problem-event",
+          });
+        }
+        return items;
       });
 
       const medicationWorkspace = (await workspaceContext(tx, consultation.id)).view;
@@ -212,6 +244,7 @@ export async function generateAgaReport(input: {
           consultationOccurredAt: assessment.consultationOccurredAt,
           consultationCreatedAt: assessment.consultationCreatedAt,
         })),
+        milestones,
         targetConsultationId: consultation.id,
         includeTargetWhenEmpty: true,
       });
