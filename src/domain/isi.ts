@@ -75,7 +75,7 @@ export function classifyIsi(total: number): Pick<IsiResult, "classification" | "
   }
   if (total <= 14) {
     return {
-      classification: "Sintomas de insônia abaixo do limiar (subclínicos)",
+      classification: "Sintomas de insônia abaixo do limiar",
       interpretation:
         "ISI compatível com sintomas de insônia abaixo do limiar. Correlacionar com padrão sono-vigília, impacto diurno, condições clínicas e avaliação profissional; o escore isolado não estabelece diagnóstico.",
       clinicalColor: "amarelo",
