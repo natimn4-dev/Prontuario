@@ -11,21 +11,22 @@ import {
 } from "@/domain/cognitive-quick-entry";
 import { complementaryScaleConsultationHorizonIds } from "@/domain/complementary-scale-timeline";
 import {
-  electronicScaleLicenseFlagsFromEnvironment,
-  electronicScaleRestriction,
-} from "@/domain/clinical-config/electronic-scale-license-policy";
-import { ISI_CODE } from "@/domain/isi";
+  ISI_CODE,
+  ISI_QUICK_DEFINITION,
+  scoreIsi,
+} from "@/domain/isi";
 import { requireAuthenticatedUser } from "@/server/auth/require-user";
 import { saveScaleAssessment } from "@/server/clinical/persistence";
 import { prisma } from "@/server/db";
 
 const QUICK_CODES = new Set<CognitiveQuickCode>(COGNITIVE_QUICK_DEFINITIONS.map((item) => item.code));
+type RequestScaleCode = ComplementaryScoreScaleCode | typeof ISI_CODE;
 const DEFINITIONS = [
   ...COMPLEMENTARY_SCORE_SCALES.filter((item) => !QUICK_CODES.has(item.code as CognitiveQuickCode)),
   ...COGNITIVE_QUICK_DEFINITIONS,
+  ISI_QUICK_DEFINITION,
 ];
-const SUPPORTED = new Set<ComplementaryScoreScaleCode>(DEFINITIONS.map((item) => item.code as ComplementaryScoreScaleCode));
-type RequestScaleCode = ComplementaryScoreScaleCode | typeof ISI_CODE;
+const SUPPORTED = new Set<string>(DEFINITIONS.map((item) => item.code));
 
 async function consultationContext(consultationId: string) {
   const consultation = await prisma.consultation.findUnique({
@@ -44,14 +45,11 @@ function asRecord(value: unknown): Record<string, unknown> {
 function parseBody(value: unknown): { scaleCode: RequestScaleCode; answers: Record<string, unknown> } {
   const body = asRecord(value);
   if (Object.keys(body).some((key) => key !== "scaleCode" && key !== "answers")) throw new Error("INVALID_REQUEST");
-  if (typeof body.scaleCode !== "string") throw new Error("UNSUPPORTED_SCALE");
-  if (body.scaleCode !== ISI_CODE && !SUPPORTED.has(body.scaleCode as ComplementaryScoreScaleCode)) {
-    throw new Error("UNSUPPORTED_SCALE");
-  }
+  if (typeof body.scaleCode !== "string" || !SUPPORTED.has(body.scaleCode)) throw new Error("UNSUPPORTED_SCALE");
   return { scaleCode: body.scaleCode as RequestScaleCode, answers: asRecord(body.answers) };
 }
 
-function validateAgainstDefinition(scaleCode: ComplementaryScoreScaleCode, answers: Record<string, unknown>) {
+function validateAgainstDefinition(scaleCode: RequestScaleCode, answers: Record<string, unknown>) {
   const definition = DEFINITIONS.find((item) => item.code === scaleCode);
   if (!definition) throw new Error("UNSUPPORTED_SCALE");
   const fields = definition.fields;
@@ -75,7 +73,7 @@ function failure(error: unknown) {
   const code = error instanceof Error ? error.message : "UNKNOWN";
   if (code === "CONSULTATION_NOT_FOUND") return NextResponse.json({ code, message: "Consulta não encontrada." }, { status: 404 });
   if (code === "INVALID_REQUEST" || code === "UNSUPPORTED_SCALE") return NextResponse.json({ code, message: "Requisição de escala complementar inválida." }, { status: 400 });
-  if (error instanceof Error && /Valor inválido|Escala complementar|interpretar|Escolaridade|Pontuação|campo não permitido/i.test(error.message)) {
+  if (error instanceof Error && /Valor inválido|Escala complementar|interpretar|Escolaridade|Pontuação|campo não permitido|ISI_/i.test(error.message)) {
     return NextResponse.json({ code: "INVALID_SCALE_ANSWERS", message: error.message }, { status: 400 });
   }
   return NextResponse.json({ code: "COMPLEMENTARY_SCALE_FAILED", message: "Não foi possível processar a escala complementar." }, { status: 500 });
@@ -86,7 +84,7 @@ export async function GET(_request: Request, context: { params: Promise<{ id: st
     await requireAuthenticatedUser("patient.read");
     const { id } = await context.params;
     const consultation = await consultationContext(id);
-    const codes = DEFINITIONS.map((definition) => definition.code as ComplementaryScoreScaleCode);
+    const codes = DEFINITIONS.map((definition) => definition.code);
     const consultations = await prisma.consultation.findMany({
       where: { patientId: consultation.patientId },
       select: { id: true, patientId: true, occurredAt: true, createdAt: true },
@@ -140,24 +138,12 @@ export async function POST(request: Request, context: { params: Promise<{ id: st
     }
 
     const { scaleCode, answers } = parseBody(await request.json());
-    if (scaleCode === ISI_CODE) {
-      const restriction = electronicScaleRestriction(ISI_CODE, electronicScaleLicenseFlagsFromEnvironment(process.env));
-      if (restriction) {
-        return NextResponse.json({
-          code: "SCALE_LICENSE_REQUIRED",
-          message: `${restriction.name}: uso eletrônico indisponível até confirmação de licença/permissão aplicável e da versão brasileira autorizada.`,
-        }, { status: 403 });
-      }
-      return NextResponse.json({
-        code: "ISI_FORM_CONTENT_NOT_CONFIGURED",
-        message: "A licença eletrônica foi sinalizada, mas o conteúdo oficial/licenciado da versão brasileira da ISI ainda não foi configurado. A administração permanece bloqueada.",
-      }, { status: 503 });
-    }
-
     validateAgainstDefinition(scaleCode, answers);
-    const scored = QUICK_CODES.has(scaleCode as CognitiveQuickCode)
-      ? scoreCognitiveQuickEntry(scaleCode as CognitiveQuickCode, answers)
-      : scoreComplementaryScale(scaleCode, answers);
+    const scored = scaleCode === ISI_CODE
+      ? scoreIsi(answers)
+      : QUICK_CODES.has(scaleCode as CognitiveQuickCode)
+        ? scoreCognitiveQuickEntry(scaleCode as CognitiveQuickCode, answers)
+        : scoreComplementaryScale(scaleCode as ComplementaryScoreScaleCode, answers);
     const assessment = await saveScaleAssessment({
       consultationId: id,
       scaleCode,
