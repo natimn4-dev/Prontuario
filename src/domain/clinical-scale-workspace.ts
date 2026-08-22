@@ -2,6 +2,7 @@ export const CLINICAL_SCALE_DOMAIN_ORDER = [
   "Cognição",
   "Funcionalidade",
   "Capacidade psicológica e humor",
+  "Sono",
   "Locomoção e desempenho físico",
   "Fragilidade",
   "Vitalidade e nutrição",
@@ -34,6 +35,7 @@ const DIMENSION_DOMAIN: Record<string, ClinicalScaleDomain> = {
   cognicao: "Cognição",
   funcionalidade: "Funcionalidade",
   humor: "Capacidade psicológica e humor",
+  sono: "Sono",
   mobilidade: "Locomoção e desempenho físico",
   fragilidade: "Fragilidade",
   nutricao: "Vitalidade e nutrição",
@@ -47,6 +49,7 @@ const DIMENSION_DOMAIN: Record<string, ClinicalScaleDomain> = {
 };
 
 const CODE_DOMAIN: Record<string, ClinicalScaleDomain> = {
+  isi: "Sono",
   apgar_familiar: "Família",
   family_apgar_br_elderly: "Família",
   mos_sss_br_19: "Rede e suporte social",
