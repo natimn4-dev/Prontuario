@@ -198,6 +198,17 @@ export function ClinicalScalesWorkspace({ consultationId }: { consultationId: st
   const options = useMemo(() => buildClinicalScaleOptions([
     ...(coreView?.definitions ?? []).map((definition) => ({ source: "core" as const, code: definition.code, name: definition.name, dimension: definition.dimension, appliedInCurrentConsultation: appliedCodes.has(definition.code) })),
     ...(complementaryView?.definitions ?? []).map((definition) => ({ source: "complementary" as const, code: definition.code, name: definition.name, dimension: definition.dimension, appliedInCurrentConsultation: appliedCodes.has(definition.code) })),
+    ...(coreView?.licensingRestrictions ?? [])
+      .filter((restriction) => restriction.code === "isi")
+      .map((restriction) => ({
+        source: "complementary" as const,
+        code: restriction.code,
+        name: restriction.name,
+        dimension: "sono",
+        appliedInCurrentConsultation: appliedCodes.has(restriction.code),
+        disabled: true,
+        statusNote: "Aguarda licença eletrônica e versão brasileira autorizada.",
+      })),
     { source: "oncogeriatric" as const, code: "ecog", name: "ECOG — Estado de Desempenho", dimension: "oncogeriatria", appliedInCurrentConsultation: appliedCodes.has("ecog") },
     { source: "oncogeriatric" as const, code: "crash_mna_sf", name: "CRASH adaptada — MNA-SF", dimension: "oncogeriatria", appliedInCurrentConsultation: appliedCodes.has("crash_mna_sf") },
   ]), [coreView, complementaryView, appliedCodes]);
@@ -209,7 +220,7 @@ export function ClinicalScalesWorkspace({ consultationId }: { consultationId: st
 
   useEffect(() => {
     if (options.length === 0 || selectedKeys.size > 0) return;
-    const applied = options.filter((option) => option.appliedInCurrentConsultation);
+    const applied = options.filter((option) => !option.disabled && option.appliedInCurrentConsultation);
     if (applied.length === 0) return;
     setSelectedKeys(new Set(applied.map((option) => option.key)));
     setActiveKey(applied[0]!.key);
@@ -242,6 +253,7 @@ export function ClinicalScalesWorkspace({ consultationId }: { consultationId: st
   }, [activeOption?.key, oncogeriatricPrefills]);
 
   function toggleScale(option: ClinicalScaleOption, checked: boolean) {
+    if (option.disabled) return;
     const next = new Set(selectedKeys);
     if (checked) {
       next.add(option.key);
@@ -272,7 +284,7 @@ export function ClinicalScalesWorkspace({ consultationId }: { consultationId: st
   }
 
   async function saveActive() {
-    if (!activeOption || saving || finalized) return;
+    if (!activeOption || activeOption.disabled || saving || finalized) return;
     setSaving(true);
     setFeedback(null);
     try {
@@ -389,7 +401,7 @@ export function ClinicalScalesWorkspace({ consultationId }: { consultationId: st
     {finalized ? <p className={styles.locked}>Consulta finalizada: resultados e histórico permanecem visíveis, sem nova aplicação.</p> : null}
 
     <div className={styles.domainGrid}>
-      {groups.map((group) => <fieldset className={styles.domainBox} key={group.domain}><legend>{group.domain}</legend>{group.options.map((option) => <label className={styles.checkRow} key={option.key}><input type="checkbox" checked={selectedKeys.has(option.key)} onChange={(event) => toggleScale(option, event.target.checked)} /><span>{option.name}</span>{option.appliedInCurrentConsultation ? <strong>Aplicada</strong> : null}</label>)}</fieldset>)}
+      {groups.map((group) => <fieldset className={styles.domainBox} key={group.domain}><legend>{group.domain}</legend>{group.options.map((option) => <label className={styles.checkRow} key={option.key}><input type="checkbox" checked={selectedKeys.has(option.key)} disabled={option.disabled} onChange={(event) => toggleScale(option, event.target.checked)} /><span>{option.name}{option.statusNote ? ` — ${option.statusNote}` : ""}</span>{option.appliedInCurrentConsultation ? <strong>Aplicada</strong> : null}</label>)}</fieldset>)}
     </div>
 
     {selectedOptions.length ? <div className={styles.selectedBar} aria-label="Escalas selecionadas"><span>Em preenchimento:</span>{selectedOptions.map((option) => <button type="button" key={option.key} className={activeKey === option.key ? styles.activeTab : ""} aria-pressed={activeKey === option.key} onClick={() => setActiveKey(option.key)}>{option.name}{option.appliedInCurrentConsultation ? " ✓" : ""}</button>)}</div> : <p className={styles.empty}>Marque uma ou mais escalas acima para abrir o preenchimento aqui.</p>}
