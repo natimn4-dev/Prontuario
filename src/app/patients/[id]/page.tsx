@@ -5,6 +5,7 @@ import { CapacityDimensionHistoryChart } from "@/components/reports/capacity-dim
 import {
   buildCapacityDimensionHistory,
   type CapacityTimelineAssessment,
+  type CapacityTimelineMilestone,
 } from "@/domain/capacity-dimension-history";
 import type { ClinicalProblem } from "@/domain/problems";
 import { requireAuthenticatedUser } from "@/server/auth/require-user";
@@ -23,7 +24,26 @@ export default async function PatientPage({ params }: { params: Promise<{ id: st
       baselineConsultationId: true,
       problems: {
         orderBy: [{ priority: "asc" }, { createdAt: "asc" }],
-        select: { id: true, patientId: true, type: true, status: true, title: true, description: true, priority: true },
+        select: {
+          id: true,
+          patientId: true,
+          type: true,
+          status: true,
+          title: true,
+          description: true,
+          priority: true,
+          originConsultationId: true,
+          createdAt: true,
+          events: {
+            orderBy: { createdAt: "asc" },
+            select: {
+              patientId: true,
+              consultationId: true,
+              note: true,
+              createdAt: true,
+            },
+          },
+        },
       },
       consultations: {
         orderBy: [{ occurredAt: "desc" }, { createdAt: "desc" }, { id: "desc" }],
@@ -43,6 +63,34 @@ export default async function PatientPage({ params }: { params: Promise<{ id: st
   });
   if (!patient) notFound();
 
+  const milestones: CapacityTimelineMilestone[] = patient.problems.flatMap((problem) => {
+    const items: CapacityTimelineMilestone[] = [];
+    const originNote = problem.description?.trim();
+    if (originNote) {
+      items.push({
+        patientId: problem.patientId,
+        consultationId: problem.originConsultationId,
+        title: problem.title,
+        note: originNote,
+        recordedAt: problem.createdAt,
+        source: "problem-origin",
+      });
+    }
+    for (const event of problem.events) {
+      const eventNote = event.note?.trim();
+      if (!eventNote) continue;
+      items.push({
+        patientId: event.patientId,
+        consultationId: event.consultationId,
+        title: problem.title,
+        note: eventNote,
+        recordedAt: event.createdAt,
+        source: "problem-event",
+      });
+    }
+    return items;
+  });
+
   const capacityHistory = buildCapacityDimensionHistory({
     patientId: patient.id,
     consultations: patient.consultations.map((consultation) => ({
@@ -55,6 +103,7 @@ export default async function PatientPage({ params }: { params: Promise<{ id: st
       ...assessment,
       clinicalColor: assessment.clinicalColor as CapacityTimelineAssessment["clinicalColor"],
     })),
+    milestones,
     targetConsultationId: patient.consultations[0]?.id,
     includeTargetWhenEmpty: false,
   });
