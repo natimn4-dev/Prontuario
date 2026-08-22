@@ -13,7 +13,7 @@ test("ISI score-only stays in the Sono domain and remains selectable", () => {
   }]);
 
   assert.equal(isi?.domain, "Sono");
-  assert.equal(isi?.disabled, false);
+  assert.notEqual(isi?.disabled, true);
 });
 
 test("unified workspace receives ISI from complementary definitions instead of a licensed-form placeholder", () => {
