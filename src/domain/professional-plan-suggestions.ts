@@ -41,6 +41,8 @@ const EWGSOP2 = { pmid: "30312372", label: "EWGSOP2 sarcopenia consensus" } as c
 const ESPEN = { pmid: "35306388", label: "ESPEN practical guideline: clinical nutrition and hydration in geriatrics" } as const;
 const DEPRESSION = { pmid: "28535241", label: "Depression in older adults review" } as const;
 const CAREGIVER = { pmid: "24618967", label: "Caregiver burden assessment and intervention review" } as const;
+const AASM_INSOMNIA = { pmid: "33164742", label: "AASM guideline: behavioral and psychological treatments for chronic insomnia" } as const;
+const EUROPEAN_INSOMNIA = { pmid: "38016484", label: "European Insomnia Guideline 2023" } as const;
 
 const RULES: Readonly<Record<string, SuggestionRule>> = {
   "abvd-dependence": {
@@ -63,6 +65,15 @@ const RULES: Readonly<Record<string, SuggestionRule>> = {
       "Pesquisar risco de autoagressão ou suicídio quando clinicamente indicado e definir o plano terapêutico somente após avaliação médica individualizada.",
     ],
     sources: [DEPRESSION],
+  },
+  "sleep-insomnia-symptoms": {
+    actions: [
+      "Caracterizar o padrão sono-vigília e o impacto funcional diurno, incluindo horário de deitar/levantar, latência, despertares, cochilos e variabilidade da rotina; considerar diário do sono quando clinicamente útil.",
+      "Revisar fatores associados identificados nesta consulta, incluindo dor, noctúria, ansiedade/depressão, sintomas respiratórios noturnos ou apneia do sono, síndrome das pernas inquietas, ambiente e hábitos comportamentais.",
+      "Reconciliar medicamentos e substâncias que possam interferir no sono apenas como revisão profissional de indicação, horário, benefício e risco; qualquer início, suspensão, substituição ou ajuste depende de decisão médica explícita.",
+      "Se a avaliação clínica confirmar transtorno de insônia crônica, considerar intervenção comportamental estruturada baseada em evidência, priorizando terapia cognitivo-comportamental para insônia quando aplicável; não reduzir automaticamente a conduta a uma lista genérica de higiene do sono.",
+    ],
+    sources: [AASM_INSOMNIA, EUROPEAN_INSOMNIA],
   },
   frailty: {
     actions: [
