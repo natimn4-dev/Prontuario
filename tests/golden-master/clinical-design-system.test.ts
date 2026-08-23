@@ -17,7 +17,7 @@ test("PA-CDS mantém tokens clinical premium e não restaura paleta marrom antig
   assert.doesNotMatch(globals, /--primary:\s*#896d72/);
 });
 
-test("entrada e consulta preservam marca, paciente e navegação lateral aprovada", () => {
+test("entrada e consulta preservam marca, paciente, hook global e navegação lateral aprovada", () => {
   const home = source("src/app/page.tsx");
   const consultation = source("src/app/consultations/[id]/page.tsx");
   const nav = source("src/components/consultations/consultation-section-nav.tsx");
@@ -26,6 +26,7 @@ test("entrada e consulta preservam marca, paciente e navegação lateral aprovad
   assert.match(home, /natalia-mendes-logo\.svg/);
   assert.match(home, /Localize o paciente/);
   assert.match(consultation, /ConsultationSectionNav/);
+  assert.match(consultation, /shell consultation-shell/);
   assert.match(consultation, /patientName=\{context\.patientName\}/);
   assert.match(nav, /Natalia Mendes — Médica Geriatra/);
   assert.match(nav, /patientName/);
