@@ -1,1 +1,1 @@
-export const CLINICAL_RELEASE_ID = "2026-08-22-scales-sarcf-stoppfall-v1" as const;
+export const CLINICAL_RELEASE_ID = "2026-08-22-patient-search-video-fix-v1" as const;
