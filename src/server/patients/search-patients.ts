@@ -1,3 +1,4 @@
+import type { Prisma } from "@/generated/prisma/client";
 import {
   assertPatientSearchQuery,
   PATIENT_SEARCH_CANDIDATE_MULTIPLIER,
@@ -11,18 +12,6 @@ import {
 import { requireAuthenticatedUser } from "../auth/require-user";
 import { prisma } from "../db";
 
-type PatientSelectionRow = {
-  id: string;
-  fullName: string;
-  birthDate: Date | null;
-  needsIdentityReview: boolean;
-  consultations: Array<{
-    id: string;
-    status: string;
-    occurredAt: Date;
-  }>;
-};
-
 const selection = {
   id: true,
   fullName: true,
@@ -31,13 +20,13 @@ const selection = {
   consultations: {
     where: {
       status: {
-        in: ["DRAFT", "IN_REVIEW"] as const,
+        in: ["DRAFT", "IN_REVIEW"],
       },
     },
     orderBy: [
-      { occurredAt: "desc" as const },
-      { createdAt: "desc" as const },
-      { id: "desc" as const },
+      { occurredAt: "desc" },
+      { createdAt: "desc" },
+      { id: "desc" },
     ],
     take: 1,
     select: {
@@ -46,7 +35,9 @@ const selection = {
       occurredAt: true,
     },
   },
-} as const;
+} satisfies Prisma.PatientSelect;
+
+type PatientSelectionRow = Prisma.PatientGetPayload<{ select: typeof selection }>;
 
 function toSelection(patient: PatientSelectionRow): PatientSelectionResult {
   const consultation = patient.consultations[0];
