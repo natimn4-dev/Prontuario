@@ -61,37 +61,41 @@
   scrollbar-gutter: stable;
 }
 
-.timelineCanvas { padding: 10px; }
+.timelineCanvas {
+  box-sizing: content-box;
+  padding: 10px;
+}
 
 .dateRow,
 .dimensionRow {
   display: grid;
-  grid-template-columns: 190px minmax(560px, 1fr);
+  grid-template-columns: 190px minmax(0, 1fr);
   align-items: stretch;
+  width: 100%;
 }
 
 .dateRow { margin-bottom: 6px; }
 .dateRowLabel { align-self: center; padding: 0 12px; color: #7a7280; font-size: 10px; font-weight: 750; letter-spacing: .04em; text-transform: uppercase; }
-.dateAxis, .domainChart { display: block; width: 100%; height: auto; }
+.dateAxis, .domainChart { display: block; max-width: none; flex: none; }
 .dateBaseline, .dateTick, .statusGuide { stroke: #e4dfe8; stroke-width: 1; }
 .dateLabel, .targetLabel { fill: #706a79; font-family: "Segoe UI", Arial, sans-serif; }
 .dateLabel { font-size: 9px; }
 .targetLabel { fill: #5b238f; font-size: 7.5px; font-weight: 800; }
 
 .dimensionGroup {
-  padding: 10px 0 4px;
+  padding: 9px 0 3px;
   border: 1px solid #eee8f2;
   border-radius: 10px;
   background: #fdfcfe;
 }
 
-.dimensionGroup + .dimensionGroup { margin-top: 12px; }
-.groupHeading { display: grid; gap: 2px; margin: 0 0 6px; padding: 0 12px 8px; border-bottom: 1px solid #eee8f2; }
+.dimensionGroup + .dimensionGroup { margin-top: 10px; }
+.groupHeading { display: grid; gap: 2px; margin: 0 0 5px; padding: 0 12px 7px; border-bottom: 1px solid #eee8f2; }
 .groupHeading strong { color: #4d206f; font-size: 11px; letter-spacing: .055em; text-transform: uppercase; }
 .groupHeading span { color: #756f7a; font-size: 10px; line-height: 1.4; }
 
 .dimensionRow {
-  min-height: 92px;
+  min-height: 78px;
   background: #fff;
 }
 .dimensionRow + .dimensionRow { border-top: 1px solid #f0ebf3; }
@@ -99,8 +103,9 @@
 .dimensionSummary {
   display: grid;
   align-content: center;
-  gap: 7px;
-  padding: 11px 12px;
+  gap: 6px;
+  min-height: 78px;
+  padding: 9px 12px;
   border-left: 4px solid currentColor;
   background: linear-gradient(90deg, color-mix(in srgb, currentColor 5%, #fff), #fff 72%);
 }
@@ -127,19 +132,19 @@
 .latestBadge[data-status="recorded"] { background: #f6f4f7; color: #706a79; }
 .latestBadge[data-status="not-assessed"] { border-style: dashed; color: #837b87; }
 
-.domainChart { min-height: 88px; background: #fff; }
+.domainChart { background: #fff; }
 .statusGuide { stroke-dasharray: 2 5; opacity: .82; }
 .targetGuide { stroke: #5b238f; stroke-width: 1; stroke-dasharray: 3 4; opacity: .23; }
-.seriesLine { fill: none; stroke: currentColor; stroke-width: 2.5; stroke-linejoin: round; stroke-linecap: round; opacity: .78; }
+.seriesLine { fill: none; stroke: currentColor; stroke-width: 2.2; stroke-linejoin: round; stroke-linecap: round; opacity: .78; }
 .seriesPoint, .inflectionHalo, .indeterminatePoint, .recordedPoint, .missingPoint { stroke: currentColor; }
-.seriesPoint { stroke-width: 2.2; }
+.seriesPoint { stroke-width: 2; }
 .seriesPoint[data-status="preserved"] { fill: #edf7f1; }
 .seriesPoint[data-status="attention"] { fill: #fff7e8; }
 .seriesPoint[data-status="altered"] { fill: #faecee; }
-.inflectionHalo { fill: none; stroke: #d1992d; stroke-width: 1.8; }
-.indeterminatePoint { fill: #f5effa; stroke-width: 1.8; stroke-dasharray: 2 1; }
-.recordedPoint { fill: #f4f1f5; stroke-width: 1.8; }
-.missingPoint { fill: #fff; stroke: #aaa1ad; stroke-width: 1.6; stroke-dasharray: 2 2; }
+.inflectionHalo { fill: none; stroke: #d1992d; stroke-width: 1.6; }
+.indeterminatePoint { fill: #f5effa; stroke-width: 1.6; stroke-dasharray: 2 1; }
+.recordedPoint { fill: #f4f1f5; stroke-width: 1.6; }
+.missingPoint { fill: #fff; stroke: #aaa1ad; stroke-width: 1.5; stroke-dasharray: 2 2; }
 
 .dimensionRow[data-dimension="funcionalidade"] { color: #5b238f; }
 .dimensionRow[data-dimension="locomocao"] { color: #9a6a32; }
@@ -173,9 +178,8 @@
 .empty { margin: 0; padding: 12px; border-radius: 9px; background: #f7f2fb; color: #706a79; }
 
 @media (max-width: 900px) {
-  .dateRow, .dimensionRow { grid-template-columns: 165px minmax(540px, 1fr); }
-  .dimensionSummary { padding: 10px; }
-  .latestBadge { max-width: 142px; }
+  .dimensionSummary { padding: 8px 10px; }
+  .latestBadge { max-width: 150px; }
 }
 
 @media (max-width: 640px) {
@@ -184,9 +188,7 @@
   .modelBadge { justify-self: start; }
   .statusLegend { gap: 6px 10px; }
   .timelineCanvas { padding: 7px; }
-  .dateRow, .dimensionRow { grid-template-columns: 145px minmax(520px, 1fr); }
   .dimensionSummary strong { font-size: 11px; }
-  .groupHeading span { max-width: 580px; }
   .readingGuide { grid-template-columns: 1fr; }
   .readingGuide strong { grid-row: auto; }
 }
@@ -194,10 +196,10 @@
 @media print {
   .figure { margin: 3mm 0; padding: 3mm; border-color: #bbb; }
   .scroll { overflow: visible; border: 0; }
-  .timelineCanvas { min-width: 0 !important; padding: 0; }
+  .timelineCanvas { box-sizing: border-box; width: 100% !important; padding: 0; }
   .dateRow, .dimensionRow { grid-template-columns: 37mm minmax(0, 1fr); }
+  .dateAxis, .domainChart { width: 100%; height: auto; }
   .dimensionGroup { break-inside: avoid; }
-  .domainChart { min-height: 20mm; }
   .dateRowLabel, .dimensionSummary > div span, .groupHeading span, .readingGuide, .frameworkNote, .causalityNote, .methodDetails, .inflectionSection li { font-size: 7pt; }
   .dimensionSummary strong, .groupHeading strong { font-size: 8pt; }
   .latestBadge { max-width: 33mm; font-size: 6.5pt; }
