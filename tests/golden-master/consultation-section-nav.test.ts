@@ -25,8 +25,8 @@ test("consulta expõe barra lateral com todas as etapas principais e âncoras co
     "relatorio",
     "finalizacao",
   ]) {
-    assert.match(pageSource, new RegExp(`id=\\"${id}\\"`));
-    assert.match(navSource, new RegExp(`id: \\"${id}\\"`));
+    assert.equal(pageSource.includes(`id="${id}"`), true);
+    assert.equal(navSource.includes(`id: "${id}"`), true);
   }
 
   assert.match(navSource, /IntersectionObserver/);
