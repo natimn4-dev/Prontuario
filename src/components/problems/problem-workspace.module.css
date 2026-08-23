@@ -1,19 +1,21 @@
 .card {
-  margin: 24px 0;
-  padding: 22px;
-  border: 1px solid var(--care-line, #e2d9da);
-  border-radius: 16px;
-  background: #fff;
+  margin: 22px 0;
+  padding: 24px;
+  border: 1px solid var(--line);
+  border-radius: 18px;
+  background: var(--surface);
+  box-shadow: var(--shadow-sm);
 }
 
 .heading h2 {
   margin: 4px 0 6px;
+  color: var(--ink);
 }
 
 .heading p,
 .empty {
-  color: #6e6264;
-  font-size: 13px;
+  color: var(--muted);
+  font-size: 12px;
   line-height: 1.5;
 }
 
@@ -21,10 +23,10 @@
   display: grid;
   gap: 12px;
   margin: 16px 0 20px;
-  padding: 14px;
-  border: 1px solid #ddd1d4;
-  border-radius: 12px;
-  background: #fcfbfb;
+  padding: 16px;
+  border: 1px solid #e5ddec;
+  border-radius: 14px;
+  background: #fdfcff;
 }
 
 .creatorFields {
@@ -38,9 +40,9 @@
 .statusControls label {
   display: grid;
   gap: 5px;
-  color: #4a4042;
-  font-size: 12px;
-  font-weight: 700;
+  color: var(--ink);
+  font-size: 11px;
+  font-weight: 750;
 }
 
 .creatorFields input,
@@ -48,10 +50,10 @@
 .statusControls select {
   min-height: 40px;
   padding: 8px 10px;
-  border: 1px solid #cfc3c6;
-  border-radius: 9px;
+  border: 1px solid #dcd4e4;
+  border-radius: 10px;
   background: #fff;
-  color: #2e2f30;
+  color: var(--ink);
   font: inherit;
 }
 
@@ -60,12 +62,13 @@
 .presets button {
   min-height: 40px;
   padding: 8px 12px;
-  border: 1px solid #72595f;
-  border-radius: 9px;
-  background: #72595f;
+  border: 1px solid var(--primary);
+  border-radius: 10px;
+  background: var(--primary);
   color: #fff;
   font: inherit;
-  font-weight: 700;
+  font-size: 12px;
+  font-weight: 800;
   cursor: pointer;
 }
 
@@ -83,17 +86,25 @@
 }
 
 .presets span {
-  color: #6e6264;
-  font-size: 12px;
-  font-weight: 700;
+  color: var(--muted);
+  font-size: 11px;
+  font-weight: 750;
 }
 
 .presets button {
   min-height: 32px;
   padding: 5px 9px;
+  border-color: #d8cae5;
   background: #fff;
-  color: #5f4a4f;
-  font-size: 11px;
+  color: var(--primary-strong);
+  box-shadow: none;
+  font-size: 10px;
+}
+
+.presets button:hover:not(:disabled) {
+  border-color: #c5add9;
+  background: var(--primary-soft);
+  color: var(--primary-strong);
 }
 
 .columns {
@@ -103,27 +114,29 @@
 }
 
 .columns > section {
-  padding: 14px;
-  border: 1px solid var(--care-line, #e2d9da);
-  border-radius: 12px;
+  padding: 16px;
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  background: #fdfcff;
 }
 
 .columns h3 {
   margin: 0 0 10px;
-  color: #5f4a4f;
+  color: var(--primary-strong);
+  font-size: 15px;
 }
 
 .problem {
   margin-top: 9px;
-  padding: 11px;
-  border: 1px solid #e5dddf;
-  border-radius: 10px;
+  padding: 12px;
+  border: 1px solid #e8e1ee;
+  border-radius: 11px;
   background: #fff;
 }
 
 .problem[data-resolved="true"] {
   opacity: .72;
-  background: #f8f7f7;
+  background: #f7f6f9;
 }
 
 .problemHeading {
@@ -133,20 +146,25 @@
   align-items: flex-start;
 }
 
+.problemHeading strong {
+  color: var(--ink);
+}
+
 .problemHeading span {
   flex: 0 0 auto;
-  padding: 3px 7px;
+  padding: 4px 8px;
+  border: 1px solid #ddd0ea;
   border-radius: 999px;
-  background: #f1ecec;
-  color: #625457;
-  font-size: 10px;
-  font-weight: 800;
+  background: var(--primary-soft);
+  color: var(--primary-strong);
+  font-size: 9px;
+  font-weight: 850;
 }
 
 .problem p {
   margin: 6px 0 0;
-  color: #6e6264;
-  font-size: 12px;
+  color: var(--muted);
+  font-size: 11px;
   line-height: 1.45;
 }
 
@@ -169,9 +187,9 @@
   align-items: center;
   min-height: 40px;
   padding: 8px 10px;
-  border: 1px solid #e0d6d8;
-  border-radius: 9px;
-  background: #fbf8f8;
+  border: 1px solid #e2d8eb;
+  border-radius: 10px;
+  background: #fbf9fd;
   font-weight: 600;
   line-height: 1.35;
 }
@@ -181,25 +199,27 @@
   height: 18px;
   margin: 0;
   flex: 0 0 auto;
+  accent-color: var(--primary);
 }
 
 .notice,
 .error {
   margin: 12px 0;
   padding: 10px 12px;
-  border-radius: 9px;
-  font-size: 13px;
+  border-radius: 10px;
+  font-size: 12px;
 }
 
 .notice {
-  background: #f6f1ea;
-  color: #5a4e43;
+  border: 1px solid #ded1ed;
+  background: var(--primary-soft);
+  color: var(--primary-strong);
 }
 
 .error {
-  border: 1px solid #b96868;
-  background: #fff5f5;
-  color: #7d3131;
+  border: 1px solid #dda7b0;
+  background: var(--danger-soft);
+  color: var(--danger);
 }
 
 .creatorFields input:focus-visible,
@@ -209,7 +229,7 @@
 .statusControls button:focus-visible,
 .reviewConfirmation input:focus-visible,
 .presets button:focus-visible {
-  outline: 3px solid rgba(95, 74, 79, .24);
+  outline: 3px solid rgb(107 85 217 / 22%);
   outline-offset: 2px;
 }
 
@@ -224,6 +244,8 @@
 }
 
 @media (max-width: 760px) {
+  .card { padding: 16px; }
+
   .creatorFields,
   .columns {
     grid-template-columns: 1fr;
@@ -249,5 +271,6 @@
   .card,
   .columns > section {
     break-inside: avoid;
+    box-shadow: none;
   }
 }
