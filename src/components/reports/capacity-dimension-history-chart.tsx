@@ -15,10 +15,14 @@ const STATUS_LABEL: Record<CapacityDimensionStatus, string> = {
   altered: "Redução identificada",
 };
 
+const CHART_HEIGHT = 78;
+const LABEL_WIDTH = 190;
+const DATE_AXIS_HEIGHT = 46;
+
 const STATUS_Y: Record<CapacityComparableStatus, number> = {
-  preserved: 22,
-  attention: 50,
-  altered: 78,
+  preserved: 16,
+  attention: 39,
+  altered: 62,
 };
 
 function displayDate(value: string): string {
@@ -137,7 +141,9 @@ function DimensionTimeline({
 
       <svg
         className={styles.domainChart}
-        viewBox={`0 0 ${chartWidth} 100`}
+        viewBox={`0 0 ${chartWidth} ${CHART_HEIGHT}`}
+        width={chartWidth}
+        height={CHART_HEIGHT}
         role="img"
         aria-label={`Trajetória longitudinal de ${dimension.label}`}
       >
@@ -148,7 +154,7 @@ function DimensionTimeline({
         {targetConsultationId ? (() => {
           const x = xByConsultation.get(targetConsultationId);
           return x === undefined ? null : (
-            <line className={styles.targetGuide} x1={x} x2={x} y1={10} y2={90} />
+            <line className={styles.targetGuide} x1={x} x2={x} y1={7} y2={CHART_HEIGHT - 7} />
           );
         })() : null}
 
@@ -170,13 +176,13 @@ function DimensionTimeline({
           if (isComparable(cell.status) && cell.comparabilityKey) {
             return (
               <g key={`${dimension.code}-${cell.consultationId}`}>
-                {isInflection ? <circle className={styles.inflectionHalo} cx={x} cy={STATUS_Y[cell.status]} r={9} /> : null}
+                {isInflection ? <circle className={styles.inflectionHalo} cx={x} cy={STATUS_Y[cell.status]} r={8} /> : null}
                 <circle
                   className={styles.seriesPoint}
                   data-status={cell.status}
                   cx={x}
                   cy={STATUS_Y[cell.status]}
-                  r={5.5}
+                  r={5}
                 >
                   <title>{title}</title>
                 </circle>
@@ -186,7 +192,7 @@ function DimensionTimeline({
 
           if (cell.status === "indeterminate") {
             const y = STATUS_Y.attention;
-            const size = 7;
+            const size = 6;
             return (
               <polygon
                 key={`${dimension.code}-${cell.consultationId}`}
@@ -204,10 +210,10 @@ function DimensionTimeline({
               <rect
                 key={`${dimension.code}-${cell.consultationId}`}
                 className={styles.recordedPoint}
-                x={x - 5}
-                y={y - 5}
-                width={10}
-                height={10}
+                x={x - 4.5}
+                y={y - 4.5}
+                width={9}
+                height={9}
                 rx={2}
               >
                 <title>{title}</title>
@@ -221,7 +227,7 @@ function DimensionTimeline({
               className={styles.missingPoint}
               cx={x}
               cy={STATUS_Y.attention}
-              r={4.5}
+              r={4}
             >
               <title>{title}</title>
             </circle>
@@ -249,9 +255,10 @@ export function CapacityDimensionHistoryChart({
 
   const description = context === "final-report"
     ? "Inclui a consulta deste relatório e as consultas anteriores disponíveis no horizonte longitudinal."
-    : "Mostra a evolução por domínio ao longo das consultas já registradas.";
+    : "Mostra a evolução longitudinal de cada domínio ao longo das consultas registradas.";
 
   const chartWidth = Math.max(700, 96 + Math.max(history.consultations.length - 1, 1) * 150);
+  const timelineWidth = LABEL_WIDTH + chartWidth;
   const left = 24;
   const right = 24;
   const usableWidth = chartWidth - left - right;
@@ -270,15 +277,15 @@ export function CapacityDimensionHistoryChart({
   const inflectionKeys = new Set(history.inflectionPoints.map((point) => `${point.dimensionCode}:${point.consultationId}`));
   const functionalDimension = history.dimensions.find((dimension) => dimension.framework === "functional-capacity");
   const intrinsicDimensions = history.dimensions.filter((dimension) => dimension.framework === "intrinsic-capacity");
+  const orderedDimensions = functionalDimension ? [functionalDimension, ...intrinsicDimensions] : intrinsicDimensions;
 
   return (
     <figure className={styles.figure}>
       <figcaption className={styles.caption}>
         <div>
-          <strong>Evolução da capacidade intrínseca e da independência funcional</strong>
+          <strong>Evolução longitudinal por domínio</strong>
           <span>{description}</span>
         </div>
-        <span className={styles.modelBadge}>{history.methodologyVersion}</span>
       </figcaption>
 
       <div className={styles.statusLegend} aria-label="Legenda dos estados clínicos">
@@ -290,22 +297,28 @@ export function CapacityDimensionHistoryChart({
       </div>
 
       <div className={styles.scroll} tabIndex={0} aria-label="Evolução longitudinal por domínio, rolável por consulta">
-        <div className={styles.timelineCanvas} style={{ minWidth: `${chartWidth + 220}px` }}>
+        <div className={styles.timelineCanvas} style={{ width: `${timelineWidth}px` }}>
           <div className={styles.dateRow}>
             <div className={styles.dateRowLabel}>Consultas</div>
-            <svg className={styles.dateAxis} viewBox={`0 0 ${chartWidth} 52`} aria-hidden="true">
-              <line className={styles.dateBaseline} x1={left} x2={chartWidth - right} y1={16} y2={16} />
+            <svg
+              className={styles.dateAxis}
+              viewBox={`0 0 ${chartWidth} ${DATE_AXIS_HEIGHT}`}
+              width={chartWidth}
+              height={DATE_AXIS_HEIGHT}
+              aria-hidden="true"
+            >
+              <line className={styles.dateBaseline} x1={left} x2={chartWidth - right} y1={14} y2={14} />
               {history.consultations.map((consultation) => {
                 const x = xByConsultation.get(consultation.id) ?? left;
                 return (
                   <g key={consultation.id}>
-                    <line className={styles.dateTick} x1={x} x2={x} y1={12} y2={20} />
-                    <text className={styles.dateLabel} x={x} y={38} textAnchor="middle">
+                    <line className={styles.dateTick} x1={x} x2={x} y1={10} y2={18} />
+                    <text className={styles.dateLabel} x={x} y={32} textAnchor="middle">
                       {displayDate(consultation.occurredAt)}
                     </text>
                     {consultation.isTarget ? (
-                      <text className={styles.targetLabel} x={x} y={50} textAnchor="middle">
-                        {context === "final-report" ? "consulta atual" : "mais recente"}
+                      <text className={styles.targetLabel} x={x} y={43} textAnchor="middle">
+                        Atual
                       </text>
                     ) : null}
                   </g>
@@ -314,28 +327,8 @@ export function CapacityDimensionHistoryChart({
             </svg>
           </div>
 
-          {functionalDimension ? (
-            <section className={styles.dimensionGroup} aria-label="Independência funcional">
-              <div className={styles.groupHeading}>
-                <strong>Independência funcional</strong>
-                <span>ABVD/AIVD e funcionamento no cotidiano — apresentada separadamente da capacidade intrínseca.</span>
-              </div>
-              <DimensionTimeline
-                dimension={functionalDimension}
-                chartWidth={chartWidth}
-                xByConsultation={xByConsultation}
-                inflectionKeys={inflectionKeys}
-                targetConsultationId={targetConsultationId}
-              />
-            </section>
-          ) : null}
-
-          <section className={styles.dimensionGroup} aria-label="Domínios de capacidade intrínseca">
-            <div className={styles.groupHeading}>
-              <strong>Capacidade intrínseca</strong>
-              <span>Cinco domínios OMS, apresentados separadamente para evitar sobreposição e falsa agregação.</span>
-            </div>
-            {intrinsicDimensions.map((dimension) => (
+          <section className={styles.dimensionGroup} aria-label="Independência funcional e domínios de capacidade intrínseca">
+            {orderedDimensions.map((dimension) => (
               <DimensionTimeline
                 key={dimension.code}
                 dimension={dimension}
@@ -387,12 +380,13 @@ export function CapacityDimensionHistoryChart({
       {context === "patient-home" ? (
         <details className={styles.methodDetails}>
           <summary>Critérios metodológicos e proveniência</summary>
+          <p>Versão metodológica: {history.methodologyVersion}.</p>
           <p>{history.methodologyNote}</p>
           <p>Resultados originais, versões, classificação e fonte permanecem vinculados aos pontos. Quando o instrumento muda, a linha é interrompida em vez de fabricar uma tendência.</p>
         </details>
       ) : (
         <p className={styles.frameworkNote}>
-          {history.methodologyNote} Resultados originais, versões, classificação e fonte permanecem vinculados aos pontos.
+          Versão metodológica: {history.methodologyVersion}. {history.methodologyNote} Resultados originais, versões, classificação e fonte permanecem vinculados aos pontos.
         </p>
       )}
     </figure>
