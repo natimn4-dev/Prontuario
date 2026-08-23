@@ -3,7 +3,10 @@ import { readFileSync } from "node:fs";
 import test from "node:test";
 import {
   assertPatientSearchQuery,
+  PATIENT_SEARCH_CANDIDATE_MULTIPLIER,
   PATIENT_SEARCH_LIMIT,
+  patientNameMatchesSearch,
+  patientSearchTerms,
   toPatientSelectionResult,
 } from "../../src/domain/patient-search.ts";
 
@@ -14,6 +17,25 @@ test("busca de paciente normaliza acentos, caixa e espaços e exige dois caracte
     () => assertPatientSearchQuery(" a "),
     /pelo menos 2 caracteres/i,
   );
+});
+
+test("busca aceita nome completo, parcial, acentos, caixa e ordem de termos", () => {
+  const fullName = "Maria Clara de Ávila Andrade";
+
+  assert.equal(patientNameMatchesSearch(fullName, assertPatientSearchQuery("Maria Clara Andrade")), true);
+  assert.equal(patientNameMatchesSearch(fullName, assertPatientSearchQuery("maria clara")), true);
+  assert.equal(patientNameMatchesSearch(fullName, assertPatientSearchQuery("MARIA")), true);
+  assert.equal(patientNameMatchesSearch(fullName, assertPatientSearchQuery("Avila")), true);
+  assert.equal(patientNameMatchesSearch(fullName, assertPatientSearchQuery("  Andrade   Maria  ")), true);
+  assert.equal(patientNameMatchesSearch(fullName, assertPatientSearchQuery("Mariana")), false);
+});
+
+test("termos da busca preservam apenas tokens significativos após normalização", () => {
+  assert.deepEqual(patientSearchTerms(assertPatientSearchQuery("  Maria   Clara Andrade  ")), [
+    "maria",
+    "clara",
+    "andrade",
+  ]);
 });
 
 test("resultado de seleção expõe somente dados mínimos para diferenciar o paciente", () => {
@@ -33,15 +55,19 @@ test("resultado de seleção expõe somente dados mínimos para diferenciar o pa
   assert.deepEqual(Object.keys(result).sort(), ["birthDate", "fullName", "id", "needsIdentityReview"]);
 });
 
-test("serviço de busca exige patient.read, limita resultados e não seleciona identificadores sensíveis", () => {
+test("serviço exige patient.read, combina índice normalizado com fallback e mantém limite final", () => {
   const source = readFileSync(
     new URL("../../src/server/patients/search-patients.ts", import.meta.url),
     "utf8",
   );
 
   assert.equal(PATIENT_SEARCH_LIMIT, 8);
+  assert.equal(PATIENT_SEARCH_CANDIDATE_MULTIPLIER, 4);
   assert.match(source, /requireAuthenticatedUser\("patient\.read"\)/);
-  assert.match(source, /take:\s*PATIENT_SEARCH_LIMIT/);
+  assert.match(source, /normalizedFullName/);
+  assert.match(source, /fullName/);
+  assert.match(source, /patientNameMatchesSearch/);
+  assert.match(source, /slice\(0, PATIENT_SEARCH_LIMIT\)/);
   assert.doesNotMatch(source, /phone:\s*true/);
   assert.doesNotMatch(source, /caregiverPhone:\s*true/);
   assert.doesNotMatch(source, /identifiers:\s*true/);
