@@ -1,26 +1,67 @@
 .consultationShell {
-  width: min(1240px, calc(100% - 32px));
+  width: min(1360px, calc(100% - 32px));
+  padding-top: 24px;
 }
 
 .consultationLayout {
   display: grid;
-  grid-template-columns: 220px minmax(0, 1fr);
+  grid-template-columns: 250px minmax(0, 1fr);
   align-items: start;
-  gap: 24px;
+  gap: 26px;
 }
 
 .sidebarColumn {
   position: sticky;
-  top: 20px;
+  top: 18px;
   align-self: start;
   min-width: 0;
-  max-height: calc(100vh - 40px);
+  max-height: calc(100vh - 36px);
   overflow-y: auto;
   scrollbar-gutter: stable;
 }
 
+.sidebarColumn::-webkit-scrollbar { width: 7px; }
+.sidebarColumn::-webkit-scrollbar-thumb { border-radius: 999px; background: #d9cce7; }
+
 .contentColumn {
   min-width: 0;
+}
+
+.workspaceTopbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  min-height: 48px;
+  margin-bottom: 14px;
+  padding: 0 6px;
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 650;
+}
+
+.workspaceTopbar b {
+  margin: 0 7px;
+  color: #b0a5bb;
+}
+
+.savedState {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  color: var(--success);
+  font-size: 11px;
+  font-weight: 800;
+}
+
+.savedState::before {
+  content: "✓";
+  display: grid;
+  width: 18px;
+  height: 18px;
+  place-items: center;
+  border-radius: 999px;
+  background: var(--success-soft);
 }
 
 .sectionAnchor {
@@ -28,7 +69,20 @@
 }
 
 .sectionAnchor + .sectionAnchor {
-  margin-top: 24px;
+  margin-top: 22px;
+}
+
+.clinicalHero {
+  padding: 28px 30px;
+  border-color: #e3d9ec;
+  background:
+    linear-gradient(135deg, rgb(95 42 145 / 3%), transparent 52%),
+    var(--surface);
+}
+
+.clinicalHero h1 {
+  color: var(--ink);
+  font-size: clamp(28px, 3.5vw, 40px);
 }
 
 .identityHeading {
@@ -39,61 +93,63 @@
 }
 
 .subtitle {
-  margin: 8px 0 0;
+  margin: 6px 0 0;
   color: var(--muted);
-  font-size: 16px;
+  font-size: 14px;
   line-height: 1.4;
 }
 
 .statusBadge {
   flex: 0 0 auto;
-  padding: 8px 12px;
-  border: 1px solid var(--line);
+  padding: 8px 11px;
+  border: 1px solid #dacbe8;
   border-radius: 999px;
   background: var(--primary-soft);
-  color: var(--ink);
-  font-size: 13px;
-  font-weight: 700;
+  color: var(--primary-strong);
+  font-size: 11px;
+  font-weight: 800;
 }
 
 .statusBadge[data-status="FINALIZED"] {
-  background: #eef4ef;
-  border-color: #b9cdbd;
-  color: #355a40;
+  background: var(--success-soft);
+  border-color: #b9d9c6;
+  color: #1f663d;
 }
 
 .statusBadge[data-status="IN_REVIEW"] {
-  background: #fff8e6;
-  border-color: #d7a94d;
-  color: #6f5010;
+  background: var(--warning-soft);
+  border-color: #e6c36f;
+  color: #765000;
 }
 
 .contextGrid {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 10px;
-  margin: 22px 0 0;
+  margin: 20px 0 0;
 }
 
 .contextGrid div {
   min-width: 0;
   padding: 12px 14px;
-  border: 1px solid var(--line);
-  border-radius: 10px;
-  background: var(--background);
+  border: 1px solid #eee8f2;
+  border-radius: 11px;
+  background: #fcfbfe;
 }
 
 .contextGrid dt {
   color: var(--muted);
-  font-size: 12px;
-  font-weight: 700;
-  letter-spacing: .04em;
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: .055em;
   text-transform: uppercase;
 }
 
 .contextGrid dd {
   margin: 5px 0 0;
-  font-weight: 700;
+  color: var(--ink);
+  font-size: 13px;
+  font-weight: 750;
   line-height: 1.35;
 }
 
@@ -102,47 +158,90 @@
   gap: 4px;
   margin-top: 14px;
   padding: 13px 15px;
-  border: 1px solid #d7a94d;
-  border-radius: 10px;
-  background: #fff8e6;
-  color: #5f4614;
+  border: 1px solid #e6c36f;
+  border-radius: 11px;
+  background: var(--warning-soft);
+  color: #684b10;
   line-height: 1.4;
 }
 
 .identityWarning span {
-  font-size: 14px;
+  font-size: 13px;
+}
+
+.heroFooter {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 24px;
+  margin-top: 18px;
+  padding-top: 16px;
+  border-top: 1px solid var(--line);
 }
 
 .patientLink {
-  display: inline-block;
-  margin-top: 14px;
+  flex: 0 0 auto;
+  font-size: 12px;
+  text-decoration: none;
+}
+
+.patientLink::before {
+  content: "← ";
 }
 
 .intro {
-  max-width: 760px;
-  margin: 20px 0 0;
+  max-width: 620px;
+  margin: 0;
   color: var(--muted);
-  font-size: 17px;
-  line-height: 1.55;
+  font-size: 13px;
+  line-height: 1.5;
+  text-align: right;
+}
+
+@media (max-width: 1080px) {
+  .consultationLayout {
+    grid-template-columns: 230px minmax(0, 1fr);
+    gap: 20px;
+  }
 }
 
 @media (max-width: 980px) {
+  .consultationShell {
+    padding-top: 16px;
+  }
+
   .consultationLayout {
     grid-template-columns: 1fr;
   }
 
   .sidebarColumn {
-    position: relative;
-    top: auto;
-    z-index: 2;
+    position: sticky;
+    top: 8px;
+    z-index: 10;
     max-height: none;
     overflow: visible;
+  }
+
+  .workspaceTopbar {
+    margin-top: 4px;
   }
 }
 
 @media (max-width: 760px) {
   .consultationShell {
-    width: min(100% - 20px, 1240px);
+    width: min(100% - 20px, 1360px);
+  }
+
+  .workspaceTopbar {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 6px;
+    min-height: auto;
+    padding: 2px 4px;
+  }
+
+  .clinicalHero {
+    padding: 22px;
   }
 
   .identityHeading {
@@ -155,5 +254,15 @@
 
   .contextGrid {
     grid-template-columns: 1fr;
+  }
+
+  .heroFooter {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 10px;
+  }
+
+  .intro {
+    text-align: left;
   }
 }
