@@ -3,6 +3,7 @@ import "./globals.css";
 import "./clinical-report.css";
 import "./report-branding.css";
 import "./clinical-premium-overrides.css";
+import "./home-premium.css";
 
 export const metadata: Metadata = {
   title: "Prontuário Aprimorado",
