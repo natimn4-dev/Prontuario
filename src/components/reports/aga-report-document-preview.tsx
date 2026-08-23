@@ -60,7 +60,15 @@ function ProblemList({ items }: { items: AgaReportModel["clinicalProblems"] }) {
       {items.map((problem) => (
         <li key={problem.id}>
           <span>{problem.title}</span>
-          {problem.status !== "ACTIVE" ? <small>{problem.status === "STABLE" ? "Estável" : problem.status === "MONITORING" ? "Em acompanhamento" : "Resolvido"}</small> : null}
+          {problem.status !== "ACTIVE" ? (
+            <small>
+              {problem.status === "STABLE"
+                ? "Estável"
+                : problem.status === "MONITORING"
+                  ? "Em acompanhamento"
+                  : "Resolvido"}
+            </small>
+          ) : null}
         </li>
       ))}
     </ul>
@@ -71,8 +79,23 @@ function CareList({ title, items }: { title: string; items: readonly string[] })
   return (
     <section className={styles.careCard}>
       <h3>{title}</h3>
-      {items.length > 0 ? <ul>{items.map((item) => <li key={item}>{item}</li>)}</ul> : <p className={styles.empty}>Sem orientação registrada.</p>}
+      {items.length > 0 ? (
+        <ul>{items.map((item) => <li key={item}>{item}</li>)}</ul>
+      ) : (
+        <p className={styles.empty}>Sem orientação registrada.</p>
+      )}
     </section>
+  );
+}
+
+function PracticalMeaning({ scale }: { scale: AgaScaleReportSection }) {
+  if (scale.interventionSuggestions.length === 0) {
+    return <span className={styles.empty}>Sem orientação prática adicional registrada.</span>;
+  }
+  return (
+    <ul className={styles.compactList}>
+      {scale.interventionSuggestions.map((suggestion) => <li key={suggestion.text}>{suggestion.text}</li>)}
+    </ul>
   );
 }
 
@@ -97,9 +120,10 @@ function ScaleDomain({ label, scales }: { label: string; scales: AgaScaleReportS
                 <td>
                   <strong>{displayResult(scale)}</strong>
                   <small>{scale.result.classification ?? "Sem classificação registrada"}</small>
+                  {!scale.assessedInTargetConsultation ? <small>Último valor conhecido — não avaliado nesta consulta</small> : null}
                 </td>
                 <td>{scale.interpretation ?? "Sem interpretação registrada"}</td>
-                <td>{scale.interventionSuggestions[0]?.text ?? "Acompanhar conforme avaliação clínica."}</td>
+                <td><PracticalMeaning scale={scale} /></td>
               </tr>
             ))}
           </tbody>
@@ -177,7 +201,7 @@ export function AgaReportDocumentPreview({ consultationId }: { consultationId: s
 
   const targetConsultationDate = generated?.report.capacityHistory.consultations.find((item) => item.isTarget)?.occurredAt;
   const attentionItems = generated?.report.alerts.slice(0, 5) ?? [];
-  const recommendation = generated?.report.carePlan.now[0] ?? generated?.report.carePlan.mediumTerm[0] ?? "Manter acompanhamento e revisar o plano de cuidados conforme evolução clínica.";
+  const recommendation = generated?.report.carePlan.now[0] ?? generated?.report.carePlan.mediumTerm[0] ?? null;
 
   return (
     <section className={styles.workspace} data-review={clinicalReviewConfirmed ? "confirmed" : "pending"}>
@@ -238,14 +262,21 @@ export function AgaReportDocumentPreview({ consultationId }: { consultationId: s
               <article className={styles.executiveCard} data-tone="overview">
                 <span>Visão geral</span>
                 <p>{generated.report.changeSummary.headline}</p>
+                {generated.report.changeSummary.narrative.length > 0 ? (
+                  <ul>{generated.report.changeSummary.narrative.slice(0, 3).map((item) => <li key={item}>{item}</li>)}</ul>
+                ) : null}
               </article>
               <article className={styles.executiveCard} data-tone="attention">
                 <span>Pontos de atenção</span>
-                {attentionItems.length > 0 ? <ul>{attentionItems.map((item, index) => <li key={`${item.severity}-${index}`}>{item.message}</li>)}</ul> : <p>Nenhum alerta prioritário registrado nesta consulta.</p>}
+                {attentionItems.length > 0 ? (
+                  <ul>{attentionItems.map((item, index) => <li key={`${item.severity}-${index}`}>{item.message}</li>)}</ul>
+                ) : (
+                  <p>Nenhum alerta prioritário registrado nesta consulta.</p>
+                )}
               </article>
               <article className={styles.executiveCard} data-tone="recommendation">
                 <span>Recomendação principal</span>
-                <p>{recommendation}</p>
+                <p>{recommendation ?? "Sem recomendação priorizada registrada."}</p>
               </article>
             </section>
 
@@ -266,7 +297,9 @@ export function AgaReportDocumentPreview({ consultationId }: { consultationId: s
                 <h2>Resultados das avaliações</h2>
               </div>
               <div className={styles.scaleDomains}>
-                {groupedScales.length > 0 ? groupedScales.map((group) => <ScaleDomain key={group.dimension} label={group.label} scales={group.scales} />) : <p className={styles.empty}>Não avaliado nesta consulta.</p>}
+                {groupedScales.length > 0
+                  ? groupedScales.map((group) => <ScaleDomain key={group.dimension} label={group.label} scales={group.scales} />)
+                  : <p className={styles.empty}>Não avaliado nesta consulta.</p>}
               </div>
             </section>
 
@@ -291,9 +324,29 @@ export function AgaReportDocumentPreview({ consultationId }: { consultationId: s
                 <CareList title="O que priorizar agora" items={generated.report.carePlan.now} />
                 <CareList title="Próximos passos" items={generated.report.carePlan.mediumTerm} />
                 <CareList title="Família e cuidador" items={generated.report.carePlan.caregiver} />
+                <CareList title="Equipe e encaminhamentos" items={generated.report.carePlan.referrals} />
                 <CareList title="Quando entrar em contato" items={generated.report.carePlan.contact} />
                 <CareList title="Situações de urgência" items={generated.report.carePlan.urgent} />
               </div>
+
+              {generated.report.intrinsicCapacity.alteredDomains.length > 0 ? (
+                <div className={styles.intrinsicGuidance}>
+                  <h3>Orientações por domínio de capacidade intrínseca</h3>
+                  <p className={styles.guidanceSource}>{generated.report.intrinsicCapacity.sourceLabel}</p>
+                  <div className={styles.intrinsicGrid}>
+                    {generated.report.intrinsicCapacity.alteredDomains.map((domain) => (
+                      <article key={domain.code}>
+                        <h4>{domain.label}</h4>
+                        <p>{domain.whyItMatters}</p>
+                        <strong>O que fazer no dia a dia</strong>
+                        <ul>{domain.actions.map((action) => <li key={action}>{action}</li>)}</ul>
+                        <strong>Quando avisar a equipe ou procurar ajuda</strong>
+                        <ul>{domain.attentionSigns.map((sign) => <li key={sign}>{sign}</li>)}</ul>
+                      </article>
+                    ))}
+                  </div>
+                </div>
+              ) : null}
             </section>
 
             <section className={styles.section}>
@@ -303,7 +356,13 @@ export function AgaReportDocumentPreview({ consultationId }: { consultationId: s
               </div>
               <div className={styles.preventionBox}>
                 <strong>{generated.report.vaccinationPrevention.statusLabel}</strong>
-                {generated.report.vaccinationPrevention.status === "PENDING" ? <ul>{generated.report.vaccinationPrevention.pendingVaccines.map((item) => <li key={item}>{item}</li>)}</ul> : null}
+                {generated.report.vaccinationPrevention.status === "PENDING" ? (
+                  <ul>{generated.report.vaccinationPrevention.pendingVaccines.map((item) => <li key={item}>{item}</li>)}</ul>
+                ) : generated.report.vaccinationPrevention.status === "UNKNOWN" ? (
+                  <p>As pendências não podem ser determinadas sem revisar a carteira.</p>
+                ) : (
+                  <p>Nenhuma vacina foi registrada como pendente nesta consulta.</p>
+                )}
                 <ul>{generated.report.vaccinationPrevention.guidance.map((item) => <li key={item}>{item}</li>)}</ul>
                 <p>Esta seção é informativa e não gera prescrição automática.</p>
               </div>
@@ -312,7 +371,7 @@ export function AgaReportDocumentPreview({ consultationId }: { consultationId: s
             <section className={`${styles.section} ${styles.medicationLinkSection}`}>
               <div>
                 <h2>Plano de medicamentos</h2>
-                <p>O plano completo de medicamentos é um documento separado deste relatório.</p>
+                <p>Plano de medicamentos disponível em documento separado.</p>
                 <small>{generated.report.medicationPlan.message}</small>
               </div>
               <a className={styles.medicationLink} href={`/consultations/${consultationId}/medications/print`} target="_blank" rel="noreferrer">Ver / imprimir plano de medicamentos</a>
