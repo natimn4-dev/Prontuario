@@ -1,9 +1,10 @@
 .card {
-  margin: 24px 0;
-  padding: 22px;
-  border: 1px solid #e1d8da;
-  border-radius: 16px;
-  background: #fff;
+  margin: 22px 0;
+  padding: 24px;
+  border: 1px solid var(--line);
+  border-radius: 18px;
+  background: var(--surface);
+  box-shadow: var(--shadow-sm);
 }
 
 .heading {
@@ -15,12 +16,15 @@
 
 .heading h2 {
   margin: 4px 0 6px;
+  color: var(--ink);
+  font-size: 22px;
 }
 
 .heading p {
   margin: 0;
   max-width: 780px;
-  color: #665d60;
+  color: var(--muted);
+  font-size: 13px;
   line-height: 1.5;
 }
 
@@ -28,11 +32,12 @@
 .appliedBadge {
   flex: 0 0 auto;
   padding: 7px 10px;
+  border: 1px solid #dfd2ec;
   border-radius: 999px;
-  background: #f2edef;
-  color: #654d53;
-  font-size: 12px;
-  font-weight: 750;
+  background: var(--primary-soft);
+  color: var(--primary-strong);
+  font-size: 11px;
+  font-weight: 800;
 }
 
 .licenseNotice,
@@ -41,10 +46,12 @@
 .caution {
   margin: 14px 0;
   padding: 12px 14px;
-  border-left: 3px solid #886f75;
-  border-radius: 8px;
-  background: #f7f3f4;
-  color: #51484a;
+  border: 1px solid #e6c36f;
+  border-left: 3px solid var(--warning);
+  border-radius: 10px;
+  background: var(--warning-soft);
+  color: #624b18;
+  font-size: 12px;
   line-height: 1.45;
 }
 
@@ -55,24 +62,24 @@
 
 .domainGrid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 12px;
   margin-top: 20px;
 }
 
 .domainBox {
   min-width: 0;
-  padding: 12px;
-  border: 1px solid #e4dcde;
-  border-radius: 12px;
-  background: #fcfbfb;
+  padding: 14px;
+  border: 1px solid #e8e1ee;
+  border-radius: 14px;
+  background: #fdfcff;
 }
 
 .domainBox legend {
   padding: 0 6px;
-  color: #514348;
-  font-size: 13px;
-  font-weight: 800;
+  color: var(--primary-strong);
+  font-size: 12px;
+  font-weight: 850;
 }
 
 .checkRow {
@@ -80,20 +87,21 @@
   grid-template-columns: auto 1fr auto;
   gap: 9px;
   align-items: start;
-  padding: 8px 4px;
-  color: #453d40;
+  padding: 9px 4px;
+  color: var(--ink);
+  font-size: 12px;
   cursor: pointer;
 }
 
 .checkRow + .checkRow {
-  border-top: 1px solid #eee7e9;
+  border-top: 1px solid #f0ebf4;
 }
 
 .checkRow input {
   width: 18px;
   height: 18px;
   margin: 1px 0 0;
-  accent-color: #725960;
+  accent-color: var(--primary);
 }
 
 .checkRow input:focus-visible,
@@ -105,7 +113,7 @@
 .checkboxChoice input:focus-visible,
 .choiceCard input:focus-visible,
 .actions button:focus-visible {
-  outline: 3px solid rgba(114, 89, 96, .22);
+  outline: 3px solid rgb(107 85 217 / 22%);
   outline-offset: 2px;
 }
 
@@ -114,23 +122,24 @@
 }
 
 .checkRow strong {
-  color: #35664a;
-  font-size: 11px;
+  color: var(--success);
+  font-size: 10px;
 }
 
 .selectedBar {
   display: grid;
   gap: 10px;
   margin: 18px 0 0;
-  padding: 12px;
-  border-radius: 12px;
-  background: #f7f3f4;
+  padding: 14px;
+  border: 1px solid #e1d5ed;
+  border-radius: 14px;
+  background: var(--primary-soft);
 }
 
 .selectedHeading {
-  color: #66575b;
-  font-size: 12px;
-  font-weight: 800;
+  color: var(--primary-strong);
+  font-size: 11px;
+  font-weight: 850;
 }
 
 .selectedDomainList {
@@ -144,13 +153,13 @@
   gap: 10px 12px;
   align-items: start;
   padding-top: 9px;
-  border-top: 1px solid #e6dcdf;
+  border-top: 1px solid #dfd2ec;
 }
 
 .selectedDomain > strong {
   padding-top: 8px;
-  color: #5b484e;
-  font-size: 11px;
+  color: var(--primary-strong);
+  font-size: 10px;
   line-height: 1.35;
 }
 
@@ -163,33 +172,39 @@
 .selectedBar button {
   min-height: 38px;
   padding: 7px 11px;
-  border: 1px solid #d7cbce;
+  border: 1px solid #d4c3e4;
   border-radius: 999px;
   background: #fff;
-  color: #58484c;
+  color: var(--primary-strong);
+  box-shadow: none;
   font: inherit;
-  font-size: 12px;
-  font-weight: 700;
+  font-size: 11px;
+  font-weight: 750;
   cursor: pointer;
 }
 
+.selectedBar button:hover:not(:disabled) {
+  border-color: #bfa6d6;
+  background: #fbf8ff;
+}
+
 .selectedBar .activeTab {
-  border-color: #725960;
-  background: #725960;
+  border-color: var(--primary);
+  background: var(--primary);
   color: #fff;
 }
 
 .empty {
   margin: 18px 0 0;
-  color: #706568;
+  color: var(--muted);
 }
 
 .workspace {
   margin-top: 16px;
   padding: 20px;
-  border: 1px solid #e4dcde;
-  border-radius: 14px;
-  background: #fcfbfb;
+  border: 1px solid #e7dfee;
+  border-radius: 16px;
+  background: #fdfcff;
 }
 
 .workspaceHeader {
@@ -200,15 +215,16 @@
 }
 
 .workspaceHeader > div:first-child > span {
-  color: #725960;
-  font-size: 11px;
-  font-weight: 800;
-  letter-spacing: .04em;
+  color: var(--primary);
+  font-size: 10px;
+  font-weight: 850;
+  letter-spacing: .055em;
   text-transform: uppercase;
 }
 
 .workspaceHeader h3 {
   margin: 4px 0 0;
+  color: var(--ink);
   font-size: 20px;
 }
 
@@ -225,7 +241,8 @@
 .instruction {
   max-width: 800px;
   margin: 12px 0 0;
-  color: #665d60;
+  color: var(--muted);
+  font-size: 12px;
   line-height: 1.5;
 }
 
@@ -240,11 +257,12 @@
   display: grid;
   gap: 7px;
   padding: 14px;
-  border: 1px solid #e7dfe1;
+  border: 1px solid #e8e1ee;
   border-radius: 12px;
   background: #fff;
-  color: #453d40;
-  font-weight: 700;
+  color: var(--ink);
+  font-size: 12px;
+  font-weight: 750;
 }
 
 .fieldLabel {
@@ -258,15 +276,15 @@
   box-sizing: border-box;
   min-height: 44px;
   padding: 9px 11px;
-  border: 1px solid #cfc4c7;
+  border: 1px solid #dcd4e4;
   border-radius: 10px;
   background: #fff;
-  color: #363033;
+  color: var(--ink);
   font: inherit;
 }
 
 .field small {
-  color: #756a6d;
+  color: var(--muted);
   font-weight: 400;
   line-height: 1.4;
 }
@@ -277,34 +295,43 @@
   margin-top: 2px;
 }
 
-.inlineChoice {
+.inlineChoice,
+.checkboxChoice {
   display: flex;
   align-items: flex-start;
   gap: 10px;
   min-height: 42px;
   box-sizing: border-box;
   padding: 10px 12px;
-  border: 1px solid #e0d7d9;
+  border: 1px solid #e5ddea;
   border-radius: 10px;
   background: #fff;
-  color: #4d4346;
+  color: var(--ink);
   font-weight: 600;
   line-height: 1.4;
   cursor: pointer;
   transition: border-color .15s ease, background .15s ease;
 }
 
-.inlineChoice:hover {
-  border-color: #bcaeb2;
-  background: #fdfbfc;
+.checkboxChoice {
+  align-items: center;
 }
 
-.inlineChoice:has(input:checked) {
-  border-color: #80666d;
-  background: #f7f2f3;
+.inlineChoice:hover,
+.checkboxChoice:hover {
+  border-color: #cdb9df;
+  background: #fdfbff;
 }
 
-.inlineChoice input {
+.inlineChoice:has(input:checked),
+.checkboxChoice:has(input:checked) {
+  border-color: var(--primary);
+  background: var(--primary-soft);
+  color: var(--primary-strong);
+}
+
+.inlineChoice input,
+.checkboxChoice input {
   flex: 0 0 auto;
   width: 18px;
   height: 18px;
@@ -312,49 +339,12 @@
   margin: 1px 0 0;
   padding: 0;
   border: 0;
-  accent-color: #725960;
+  accent-color: var(--primary);
 }
 
-.inlineChoice input:disabled + span {
-  opacity: .6;
-}
+.checkboxChoice input { margin: 0; }
 
-.checkboxChoice {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  min-height: 42px;
-  box-sizing: border-box;
-  padding: 10px 12px;
-  border: 1px solid #e0d7d9;
-  border-radius: 10px;
-  background: #fff;
-  color: #4d4346;
-  font-weight: 600;
-  cursor: pointer;
-  transition: border-color .15s ease, background .15s ease;
-}
-
-.checkboxChoice:hover {
-  border-color: #bcaeb2;
-  background: #fdfbfc;
-}
-
-.checkboxChoice:has(input:checked) {
-  border-color: #80666d;
-  background: #f7f2f3;
-}
-
-.checkboxChoice input {
-  flex: 0 0 auto;
-  width: 18px;
-  height: 18px;
-  min-height: 0;
-  margin: 0;
-  padding: 0;
-  accent-color: #725960;
-}
-
+.inlineChoice input:disabled + span,
 .checkboxChoice input:disabled + span {
   opacity: .6;
 }
@@ -371,14 +361,14 @@
 }
 
 .numberRow span {
-  color: #6f6467;
-  font-size: 13px;
+  color: var(--muted);
+  font-size: 12px;
 }
 
 .guide,
 .source {
   margin-top: 16px;
-  border: 1px solid #ddd0d3;
+  border: 1px solid #e2d9eb;
   border-radius: 12px;
   background: #fff;
 }
@@ -387,7 +377,8 @@
 .source summary {
   padding: 12px 14px;
   cursor: pointer;
-  color: #58484c;
+  color: var(--primary-strong);
+  font-size: 12px;
   font-weight: 800;
 }
 
@@ -400,27 +391,27 @@
 
 .guideGrid h4 {
   margin: 0 0 6px;
-  color: #4f4044;
+  color: var(--ink);
 }
 
 .guideGrid ul {
   margin: 0;
   padding-left: 18px;
-  color: #665d60;
+  color: var(--muted);
   line-height: 1.45;
 }
 
 .source p {
   margin: 0;
   padding: 0 14px 12px;
-  color: #6c6265;
-  font-size: 12px;
+  color: var(--muted);
+  font-size: 11px;
   line-height: 1.45;
 }
 
 .sourceText {
-  color: #6c6265;
-  font-size: 12px;
+  color: var(--muted);
+  font-size: 11px;
   line-height: 1.45;
 }
 
@@ -436,7 +427,7 @@
   gap: 10px;
   align-items: start;
   padding: 11px 12px;
-  border: 1px solid #e0d7d9;
+  border: 1px solid #e5ddea;
   border-radius: 10px;
   background: #fff;
   cursor: pointer;
@@ -444,6 +435,7 @@
 
 .choiceCard input {
   margin-top: 3px;
+  accent-color: var(--primary);
 }
 
 .previous,
@@ -456,41 +448,42 @@
 }
 
 .previous {
-  border: 1px solid #e4dcde;
+  border: 1px solid var(--line);
   background: #fff;
 }
 
 .previous p,
 .result p {
   margin: 0;
-  color: #5f5558;
+  color: var(--muted);
   line-height: 1.5;
 }
 
 .result {
-  border-left: 4px solid #80666d;
-  background: #f4eff0;
+  border: 1px solid #deceec;
+  border-left: 4px solid var(--primary);
+  background: var(--primary-soft);
 }
 
 .result > span {
-  color: #725960;
-  font-size: 11px;
-  font-weight: 800;
+  color: var(--primary);
+  font-size: 10px;
+  font-weight: 850;
   text-transform: uppercase;
 }
 
 .error,
 .success {
   margin: 12px 0;
-  font-weight: 650;
+  font-weight: 700;
 }
 
 .error {
-  color: #8b1e2f;
+  color: var(--danger);
 }
 
 .success {
-  color: #35664a;
+  color: var(--success);
 }
 
 .actions {
@@ -502,24 +495,30 @@
 }
 
 .actions span {
-  color: #706568;
-  font-size: 12px;
+  color: var(--muted);
+  font-size: 11px;
 }
 
 .actions button {
   min-height: 42px;
   padding: 10px 16px;
-  border: 0;
+  border: 1px solid var(--primary);
   border-radius: 10px;
-  background: #725960;
+  background: var(--primary);
   color: #fff;
-  font-weight: 750;
+  font-weight: 800;
   cursor: pointer;
 }
 
 .actions button:disabled {
   opacity: .45;
   cursor: not-allowed;
+}
+
+@media (max-width: 1180px) {
+  .domainGrid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
 }
 
 @media (max-width: 760px) {
