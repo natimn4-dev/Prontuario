@@ -1,0 +1,337 @@
+.pageShell {
+  --primary: #5f2a91;
+  --primary-strong: #48206f;
+  --primary-soft: #f4eefb;
+  --ink: #272331;
+  --muted: #6f6879;
+  --line: #e7e1ec;
+  min-height: 100vh;
+  padding: 24px;
+  background: #f8f7fb;
+  color: var(--ink);
+}
+
+.toolbar {
+  width: min(100%, 210mm);
+  margin: 0 auto 16px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+}
+
+.toolbar a,
+.toolbar button {
+  min-height: 42px;
+  border-radius: 10px;
+  padding: 0.65rem 1rem;
+  font: inherit;
+  font-weight: 700;
+}
+
+.toolbar a {
+  color: var(--primary-strong);
+  text-decoration: none;
+}
+
+.toolbar button {
+  border: 1px solid var(--primary-strong);
+  color: #fff;
+  background: var(--primary-strong);
+  cursor: pointer;
+}
+
+.toolbar button:disabled {
+  cursor: not-allowed;
+  opacity: 0.45;
+}
+
+.document {
+  width: min(100%, 210mm);
+  margin: 0 auto;
+  padding: 14mm;
+  border: 1px solid var(--line);
+  border-radius: 18px;
+  background: #fff;
+  box-shadow: 0 14px 40px rgba(39, 35, 49, 0.08);
+  font-size: 13px;
+  line-height: 1.45;
+}
+
+.header {
+  display: flex;
+  justify-content: space-between;
+  gap: 20px;
+  align-items: flex-start;
+  padding-bottom: 16px;
+  border-bottom: 1px solid var(--line);
+}
+
+.brandBlock {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.brandBlock img {
+  width: 74px;
+  height: auto;
+}
+
+.brandBlock div {
+  display: grid;
+  gap: 2px;
+}
+
+.brandBlock span,
+.titleBlock p,
+.identityGrid dt,
+.signature small {
+  color: var(--muted);
+}
+
+.titleBlock {
+  text-align: right;
+}
+
+.titleBlock p {
+  margin: 0;
+  font-size: 0.72rem;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.titleBlock h1 {
+  margin: 4px 0 0;
+  color: var(--primary-strong);
+  font-size: 1.55rem;
+  line-height: 1.1;
+}
+
+.identityGrid {
+  display: grid;
+  grid-template-columns: 1.4fr 1fr 1fr;
+  gap: 10px;
+  margin: 16px 0;
+}
+
+.identityGrid div {
+  padding: 10px 12px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: #fcfbfd;
+}
+
+.identityGrid dt {
+  font-size: 0.72rem;
+  font-weight: 700;
+}
+
+.identityGrid dd {
+  margin: 2px 0 0;
+  font-weight: 700;
+}
+
+.blocker {
+  margin: 14px 0;
+  padding: 12px 14px;
+  border: 1px solid #e4b8b8;
+  border-radius: 10px;
+  color: #7c2525;
+  background: #fff8f8;
+}
+
+.blocker p {
+  margin: 4px 0 0;
+}
+
+.tableWrap {
+  overflow-x: auto;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+}
+
+.medicationTable {
+  width: 100%;
+  border-collapse: collapse;
+  table-layout: fixed;
+  font-size: 0.76rem;
+}
+
+.medicationTable th,
+.medicationTable td {
+  padding: 8px 7px;
+  border-right: 1px solid var(--line);
+  border-bottom: 1px solid var(--line);
+  vertical-align: middle;
+  text-align: center;
+}
+
+.medicationTable thead th {
+  color: var(--primary-strong);
+  background: var(--primary-soft);
+  font-size: 0.67rem;
+  line-height: 1.2;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+
+.medicationTable thead th:first-child,
+.medicationTable thead th:last-child,
+.medicationTable tbody th,
+.medicationTable tbody td:last-child {
+  text-align: left;
+}
+
+.medicationTable thead th:first-child {
+  width: 25%;
+}
+
+.medicationTable thead th:last-child {
+  width: 18%;
+}
+
+.medicationTable th:last-child,
+.medicationTable td:last-child {
+  border-right: 0;
+}
+
+.medicationTable tbody tr:last-child > * {
+  border-bottom: 0;
+}
+
+.medicationTable tbody th strong,
+.medicationTable tbody th span,
+.medicationTable tbody th small {
+  display: block;
+}
+
+.medicationTable tbody th span {
+  margin-top: 2px;
+}
+
+.medicationTable tbody th small {
+  margin-top: 2px;
+  color: var(--muted);
+}
+
+.safetyNote {
+  margin-top: 14px;
+  padding: 11px 13px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: #fcfbfd;
+  font-weight: 600;
+}
+
+.footer {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 34px;
+}
+
+.signature {
+  width: min(340px, 100%);
+  text-align: center;
+}
+
+.signature > span {
+  display: block;
+  margin-bottom: 8px;
+  border-top: 1px solid var(--primary);
+}
+
+.signature p,
+.signature small {
+  margin: 2px 0 0;
+}
+
+@media (max-width: 760px) {
+  .pageShell {
+    padding: 12px;
+  }
+
+  .toolbar,
+  .header {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .titleBlock {
+    text-align: left;
+  }
+
+  .identityGrid {
+    grid-template-columns: 1fr;
+  }
+
+  .document {
+    padding: 18px;
+  }
+
+  .medicationTable {
+    min-width: 900px;
+  }
+}
+
+@media print {
+  @page {
+    size: A4 portrait;
+    margin: 11mm;
+  }
+
+  .pageShell {
+    min-height: auto;
+    padding: 0;
+    background: #fff !important;
+  }
+
+  .document {
+    width: auto;
+    margin: 0;
+    padding: 0;
+    border: 0;
+    border-radius: 0;
+    box-shadow: none;
+    font-size: 9.5pt;
+  }
+
+  .header,
+  .identityGrid,
+  .blocker,
+  .safetyNote,
+  .footer {
+    break-inside: avoid;
+  }
+
+  .tableWrap {
+    overflow: visible;
+  }
+
+  .medicationTable {
+    min-width: 0;
+    font-size: 8pt;
+  }
+
+  .medicationTable thead {
+    display: table-header-group;
+  }
+
+  .medicationTable tr {
+    break-inside: avoid;
+  }
+
+  .medicationTable th,
+  .medicationTable td {
+    padding: 5px 4px;
+  }
+
+  .medicationTable thead th:first-child {
+    width: 24%;
+  }
+
+  .medicationTable thead th:last-child {
+    width: 16%;
+  }
+}
