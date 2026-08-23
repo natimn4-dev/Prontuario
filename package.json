@@ -20,6 +20,8 @@
     "validate:security": "node --experimental-strip-types --test tests/golden-master/security-*.test.ts tests/golden-master/html-safety.test.ts tests/golden-master/consultation-workflow.test.ts",
     "backup:check": "bash scripts/check-backup-tools.sh",
     "audit:soap-json": "node --experimental-strip-types scripts/audit-consultation-note-json.ts",
+    "audit:patient-search-index": "node --experimental-strip-types scripts/patient-search-index-maintenance.ts",
+    "backfill:patient-search-index": "node --experimental-strip-types scripts/patient-search-index-maintenance.ts --apply",
     "release:clinical:prestart": "node --experimental-strip-types scripts/check-clinical-readiness.ts",
     "release:clinical:smoke": "node --experimental-strip-types scripts/smoke-clinical-production.ts",
     "release:hostinger:build": "npm run build",
