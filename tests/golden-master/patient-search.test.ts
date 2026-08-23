@@ -1,9 +1,11 @@
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import test from "node:test";
+import { patientSearchFailureFeedback } from "../../src/domain/patient-search-http.ts";
 import {
   assertPatientSearchQuery,
   PATIENT_SEARCH_CANDIDATE_MULTIPLIER,
+  PATIENT_SEARCH_FALLBACK_MAX_PAGES,
   PATIENT_SEARCH_FALLBACK_PAGE_SIZE,
   PATIENT_SEARCH_LIMIT,
   patientNameMatchesSearch,
@@ -20,15 +22,17 @@ test("busca de paciente normaliza acentos, caixa e espaços e exige dois caracte
   );
 });
 
-test("busca aceita nome completo, parcial, acentos, caixa e ordem de termos", () => {
+test("busca aceita nome completo, parcial, acentos, caixa e ordem de termos sem falso positivo interno", () => {
   const fullName = "Maria Clara de Ávila Andrade";
 
   assert.equal(patientNameMatchesSearch(fullName, assertPatientSearchQuery("Maria Clara Andrade")), true);
   assert.equal(patientNameMatchesSearch(fullName, assertPatientSearchQuery("maria clara")), true);
   assert.equal(patientNameMatchesSearch(fullName, assertPatientSearchQuery("MARIA")), true);
+  assert.equal(patientNameMatchesSearch(fullName, assertPatientSearchQuery("Mari")), true);
   assert.equal(patientNameMatchesSearch(fullName, assertPatientSearchQuery("Avila")), true);
   assert.equal(patientNameMatchesSearch(fullName, assertPatientSearchQuery("  Andrade   Maria  ")), true);
   assert.equal(patientNameMatchesSearch(fullName, assertPatientSearchQuery("Mariana")), false);
+  assert.equal(patientNameMatchesSearch("Mariana Souza", assertPatientSearchQuery("Ana")), false);
 });
 
 test("termos da busca preservam apenas tokens significativos após normalização", () => {
@@ -78,7 +82,21 @@ test("paciente sem consulta ativa continua acessível pelo resumo longitudinal",
   assert.equal(result.activeConsultationStatus, null);
 });
 
-test("serviço exige patient.read, tenta índice e possui fallback paginado determinístico", () => {
+test("401, 403, 400 e 500 são mensagens de erro distintas e nunca viram ausência de paciente", () => {
+  assert.deepEqual(patientSearchFailureFeedback(401, { code: "AUTHENTICATION_REQUIRED" }), {
+    kind: "authentication",
+    message: "Sua sessão expirou. Entre novamente para localizar pacientes.",
+  });
+  assert.equal(patientSearchFailureFeedback(403, { code: "ACCESS_FORBIDDEN" }).kind, "permission");
+  assert.equal(patientSearchFailureFeedback(400, {
+    code: "INVALID_PATIENT_SEARCH",
+    message: "Busca sintética inválida.",
+  }).message, "Busca sintética inválida.");
+  assert.equal(patientSearchFailureFeedback(500, { code: "PATIENT_SEARCH_FAILED" }).kind, "server");
+  assert.doesNotMatch(patientSearchFailureFeedback(500).message, /nenhum paciente encontrado/i);
+});
+
+test("serviço exige patient.read, tenta o índice canônico e limita o fallback legado", () => {
   const source = readFileSync(
     new URL("../../src/server/patients/search-patients.ts", import.meta.url),
     "utf8",
@@ -87,19 +105,23 @@ test("serviço exige patient.read, tenta índice e possui fallback paginado dete
   assert.equal(PATIENT_SEARCH_LIMIT, 8);
   assert.equal(PATIENT_SEARCH_CANDIDATE_MULTIPLIER, 4);
   assert.equal(PATIENT_SEARCH_FALLBACK_PAGE_SIZE, 100);
+  assert.equal(PATIENT_SEARCH_FALLBACK_MAX_PAGES, 20);
   assert.match(source, /requireAuthenticatedUser\("patient\.read"\)/);
+  assert.match(source, /searchPatientsInDatabase\(prisma, query\)/);
   assert.match(source, /normalizedFullName/);
   assert.match(source, /patientNameMatchesSearch/);
   assert.match(source, /PATIENT_SEARCH_FALLBACK_PAGE_SIZE/);
-  assert.match(source, /while \(matched\.size < PATIENT_SEARCH_LIMIT\)/);
-  assert.match(source, /skip,/);
+  assert.match(source, /PATIENT_SEARCH_FALLBACK_MAX_PAGES/);
+  assert.match(source, /cursor:\s*\{ id: cursor \}/);
+  assert.match(source, /orderBy:\s*\{ id: "asc" \}/);
+  assert.doesNotMatch(source, /while \(matched\.size < PATIENT_SEARCH_LIMIT\)/);
   assert.match(source, /status:[\s\S]*DRAFT[\s\S]*IN_REVIEW/);
   assert.doesNotMatch(source, /phone:\s*true/);
   assert.doesNotMatch(source, /caregiverPhone:\s*true/);
   assert.doesNotMatch(source, /identifiers:\s*true/);
 });
 
-test("fronteira HTTP e UI evitam cache, mostram o nome e usam o destino clínico correto", () => {
+test("fronteira HTTP e UI evitam cache, diferenciam falha e usam o destino clínico correto", () => {
   const routeSource = readFileSync(
     new URL("../../src/app/api/patients/search/route.ts", import.meta.url),
     "utf8",
@@ -114,15 +136,23 @@ test("fronteira HTTP e UI evitam cache, mostram o nome e usam o destino clínico
   );
 
   assert.match(routeSource, /Cache-Control/);
-  assert.match(routeSource, /no-store/);
+  assert.match(routeSource, /private, no-store, max-age=0/);
+  assert.match(routeSource, /status:\s*401/);
+  assert.match(routeSource, /status:\s*403/);
+  assert.match(routeSource, /status:\s*400/);
+  assert.match(routeSource, /status:\s*500/);
   assert.match(finderSource, /AbortController/);
   assert.match(finderSource, /activeRequest\.current\?\.abort\(\)/);
   assert.match(finderSource, /cache:\s*"no-store"/);
   assert.match(finderSource, /signal:\s*controller\.signal/);
+  assert.match(finderSource, /patientSearchFailureFeedback/);
+  assert.match(finderSource, /setResults\(\[\]\)/);
+  assert.match(finderSource, /aria-live=\{feedbackIsError \? "assertive" : "polite"\}/);
   assert.match(finderSource, /patient\.fullName/);
   assert.match(finderSource, /href=\{patient\.destinationPath\}/);
   assert.match(finderSource, /Continuar consulta/);
   assert.match(finderSource, /Paciente localizado/);
+  assert.match(finderSource, /Nenhum paciente encontrado/);
   assert.match(finderStyles, /\.resultName/);
   assert.match(finderStyles, /font-size:\s*17px/);
   assert.match(finderStyles, /font-weight:\s*850/);
