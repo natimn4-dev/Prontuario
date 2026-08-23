@@ -167,6 +167,27 @@
 }
 
 @media print {
+  /* The report now lives inside the sidebar/content workspace. These late
+   * overrides supersede the legacy direct-child print selectors safely. */
+  .consultation-shell > .consultation-layout {
+    display: block !important;
+  }
+
+  .consultation-sidebar,
+  .consultation-workspace-topbar,
+  .consultation-content > .consultation-section:not(.consultation-report-section) {
+    display: none !important;
+  }
+
+  .consultation-content,
+  .consultation-content > .consultation-report-section {
+    display: block !important;
+  }
+
+  .consultation-report-section {
+    margin: 0 !important;
+  }
+
   .care-report,
   .care-report-header,
   .report-section,
