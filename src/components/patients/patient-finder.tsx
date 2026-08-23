@@ -3,7 +3,7 @@
 import { useRef, useState, type FormEvent } from "react";
 import styles from "./patient-finder.module.css";
 
-interface PatientSearchResult {
+export interface PatientSearchResult {
   id: string;
   fullName: string;
   birthDate: string | null;
@@ -31,18 +31,30 @@ function consultationStatusLabel(status: PatientSearchResult["activeConsultation
   return "Sem consulta em andamento";
 }
 
-export function PatientFinder() {
+export function PatientFinder({ initialResults = [] }: { initialResults?: PatientSearchResult[] }) {
   const [query, setQuery] = useState("");
-  const [results, setResults] = useState<PatientSearchResult[]>([]);
+  const [results, setResults] = useState<PatientSearchResult[]>(initialResults);
+  const [mode, setMode] = useState<"recent" | "search">("recent");
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
   const activeRequest = useRef<AbortController | null>(null);
+
+  function restoreRecentPatients() {
+    activeRequest.current?.abort();
+    activeRequest.current = null;
+    setQuery("");
+    setResults(initialResults);
+    setMode("recent");
+    setMessage(null);
+    setLoading(false);
+  }
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     const compactQuery = query.trim().replace(/\s+/g, " ");
     if (compactQuery.length < 2) {
-      setResults([]);
+      setResults(initialResults);
+      setMode("recent");
       setMessage("Digite pelo menos 2 caracteres para localizar um paciente.");
       return;
     }
@@ -52,6 +64,7 @@ export function PatientFinder() {
     activeRequest.current = controller;
 
     setLoading(true);
+    setMode("search");
     setMessage(null);
     try {
       const response = await fetch("/api/patients/search", {
@@ -86,6 +99,11 @@ export function PatientFinder() {
   }
 
   const hasValidationError = Boolean(message?.startsWith("Digite"));
+  const resultLabel = mode === "recent"
+    ? "Pacientes recentes"
+    : results.length === 1
+      ? "Paciente localizado"
+      : `${results.length} pacientes localizados`;
 
   return (
     <section className={styles.panel} aria-labelledby="patient-finder-title">
@@ -93,8 +111,9 @@ export function PatientFinder() {
         <div>
           <p className={styles.kicker}>Acesso rápido</p>
           <h2 id="patient-finder-title">Localizar paciente</h2>
+          <p className={styles.headingDescription}>Pesquise pelo nome ou escolha um dos pacientes recentes abaixo.</p>
         </div>
-        <a className={styles.newPatientLink} href="/patients/new">Cadastrar novo paciente</a>
+        <a className={styles.newPatientLink} href="/patients/new">+ Cadastrar paciente</a>
       </div>
 
       <form className={styles.form} onSubmit={handleSubmit}>
@@ -109,13 +128,26 @@ export function PatientFinder() {
             maxLength={120}
             autoComplete="off"
             value={query}
-            onChange={(event) => setQuery(event.target.value)}
+            onChange={(event) => {
+              const value = event.target.value;
+              setQuery(value);
+              if (!value.trim()) {
+                setResults(initialResults);
+                setMode("recent");
+                setMessage(null);
+              }
+            }}
             placeholder="Ex.: Maria ou Maria Silva"
           />
         </label>
         <button className={styles.button} type="submit" disabled={loading}>
           {loading ? "Localizando..." : "Localizar paciente"}
         </button>
+        {mode === "search" ? (
+          <button className={styles.clearButton} type="button" onClick={restoreRecentPatients}>
+            Ver recentes
+          </button>
+        ) : null}
         <p className={styles.help}>
           A busca aceita nome completo ou parcial e ignora acentos, diferença entre maiúsculas/minúsculas e espaços repetidos.
         </p>
@@ -129,10 +161,8 @@ export function PatientFinder() {
         ) : null}
         {results.length ? (
           <div className={styles.resultRegion}>
-            <p className={styles.resultRegionLabel}>
-              {results.length === 1 ? "Paciente localizado" : `${results.length} pacientes localizados`}
-            </p>
-            <ul className={styles.results} aria-label="Pacientes encontrados">
+            <p className={styles.resultRegionLabel}>{resultLabel}</p>
+            <ul className={styles.results} aria-label={mode === "recent" ? "Pacientes recentes" : "Pacientes encontrados"}>
               {results.map((patient) => {
                 const hasActiveConsultation = Boolean(patient.activeConsultationId);
                 return (
@@ -142,7 +172,7 @@ export function PatientFinder() {
                         <span className={styles.resultName}>{patient.fullName}</span>
                         <span className={styles.resultMeta}>
                           Nascimento: {displayDate(patient.birthDate)}
-                          {patient.needsIdentityReview ? " · homônimo/identidade pendente de revisão" : ""}
+                          {patient.needsIdentityReview ? " · identidade pendente de revisão" : ""}
                         </span>
                       </span>
                       <span className={styles.resultConsultation}>
@@ -164,6 +194,8 @@ export function PatientFinder() {
               })}
             </ul>
           </div>
+        ) : mode === "recent" && !message ? (
+          <p className={styles.status}>Nenhum paciente recente disponível. Use a busca acima ou cadastre um novo paciente.</p>
         ) : null}
       </div>
     </section>
