@@ -1,7 +1,9 @@
 # Prontuário Aprimorado Clinical Design System
 
-**Sigla:** PA-CDS  
-**Versão:** v1.0  
+**Sigla:** PA-CDS
+
+**Versão:** v1.0
+
 **Direção:** Minimal Clinical Premium — Geriatric HealthTech
 
 Este diretório é a referência visual oficial do Prontuário Aprimorado. Mudanças clínicas, metodológicas, de infraestrutura ou de dados não podem substituir silenciosamente este padrão de interface.
