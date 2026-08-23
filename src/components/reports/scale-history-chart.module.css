@@ -30,7 +30,7 @@
 .chartWrap {
   width: 100%;
   overflow-x: auto;
-  padding: 6px 4px 3px;
+  padding: 7px 6px 4px;
   border: 1px solid #eee8f2;
   border-radius: 9px;
   background: linear-gradient(180deg, #fff, #fdfbff);
@@ -38,14 +38,23 @@
 }
 .chartWrap:focus-visible { outline: 2px solid #5b238f; outline-offset: 2px; }
 
-.chart { display: block; width: max(100%, 640px); min-width: 640px; max-width: none; height: auto; }
-.axis { stroke: #6f6675; stroke-width: 1.4; }
-.guide { stroke: #e5deea; stroke-width: 1; stroke-dasharray: 3 5; }
-.point { fill: #fff; stroke: #5b238f; stroke-width: 2.6; }
+/* The SVG keeps its intrinsic width/height from the component. This is
+   intentional: width:100% made a 680×176 chart expand to the whole report
+   column and proportionally become hundreds of pixels tall. */
+.chart {
+  display: block;
+  max-width: none;
+  margin: 0 auto;
+}
+
+.axis { stroke: #8b828f; stroke-width: 1.2; }
+.seriesLine { stroke: #5b238f; stroke-width: 1.8; stroke-linecap: round; }
+.guide { stroke: #e8e2ec; stroke-width: 1; stroke-dasharray: 3 5; }
+.point { fill: #fff; stroke: #5b238f; stroke-width: 2.2; }
 .score, .axisLabel, .missing { fill: #312a35; font-family: "Segoe UI", Arial, sans-serif; }
-.score { font-size: 13px; font-weight: 800; }
-.axisLabel { fill: #716978; font-size: 10px; }
-.missing { fill: #827985; font-size: 10px; font-style: italic; }
+.score { font-size: 11px; font-weight: 800; }
+.axisLabel { fill: #716978; font-size: 9px; }
+.missing { fill: #827985; font-size: 9px; font-style: italic; }
 
 .emptyState { margin: 0; padding: 10px 12px; border: 1px dashed #ddd4e3; border-radius: 8px; background: #fcfafc; }
 .trendNote { margin: 8px 0 0; padding: 8px 10px; border-radius: 8px; background: #f8f4fb; }
@@ -58,14 +67,14 @@
 
 @media (max-width: 720px) {
   .windowControl { grid-template-columns: 1fr; }
-  .chart { width: 640px; min-width: 640px; }
+  .chart { margin: 0; }
 }
 
 @media print {
   .figure { margin: 3mm 0; padding: 2.5mm; border-color: #bbb; }
   .windowControl { display: none; }
   .chartWrap { overflow: visible; padding: 0; border: 0; }
-  .chart { width: 100%; min-width: 0; }
+  .chart { width: 100%; height: auto; min-width: 0; margin: 0; }
   .trendNote { padding: 1.5mm 2mm; }
   .dataTable { font-size: 8pt; }
 }
