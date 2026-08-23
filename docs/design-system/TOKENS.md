@@ -18,7 +18,7 @@
 | `--warning` | `#9b6500` | atenção |
 | `--danger` | `#a43a4b` | erro/risco |
 
-A identidade principal não deve voltar para a antiga paleta marrom/cinza.
+Os oito primeiros tokens formam o contrato cromático do **Minimal Clinical Premium** para relatório e plano de medicamentos. A identidade principal não deve voltar para a antiga paleta marrom/cinza e não deve depender de cor para comunicar estado clínico.
 
 ## Tipografia
 
@@ -32,11 +32,13 @@ Stack web: `Inter, ui-sans-serif, -apple-system, BlinkMacSystemFont, "Segoe UI",
 - captions/metadados: 9–12 px.
 - impressão: adaptar para pt/mm sem reduzir abaixo do legível.
 
+No documento A4, tipografia deve permanecer sans-serif, limpa, com hierarquia curta. Identificadores técnicos, schema e snapshots não podem competir com paciente, data, conteúdo clínico ou assinatura.
+
 ## Espaçamento
 
 Escala recomendada: 4, 6, 8, 10, 12, 14, 16, 18, 20, 24, 28, 32, 40 px.
 
-Cards clínicos usam em geral 20–24 px em desktop e 16 px em mobile.
+Cards clínicos usam em geral 20–24 px em desktop e 16 px em mobile. Em A4, preservar espaço em branco e reduzir decoração antes de reduzir legibilidade.
 
 ## Bordas e elevação
 
@@ -46,7 +48,15 @@ Cards clínicos usam em geral 20–24 px em desktop e 16 px em mobile.
 - `--shadow-sm`: separação discreta de card
 - `--shadow-md`: sidebar / superfícies principais
 
-Sombras nunca devem competir com conteúdo clínico.
+Sombras nunca devem competir com conteúdo clínico e devem ser removidas ou minimizadas no print.
+
+## A4 e impressão
+
+- formato obrigatório das duas saídas compartilháveis: `A4 portrait`;
+- margens devem ser explícitas em `@page`;
+- cabeçalho de tabela repetível;
+- blocos clínicos críticos usam `break-inside: avoid` quando viável;
+- navegação, botões e campos de edição nunca pertencem à superfície impressa.
 
 ## Cores do gráfico longitudinal aprovado
 
