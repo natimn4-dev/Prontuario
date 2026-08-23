@@ -1,3 +1,30 @@
+.consultationShell {
+  width: min(1240px, calc(100% - 32px));
+}
+
+.consultationLayout {
+  display: grid;
+  grid-template-columns: 220px minmax(0, 1fr);
+  align-items: start;
+  gap: 24px;
+}
+
+.sidebarColumn {
+  min-width: 0;
+}
+
+.contentColumn {
+  min-width: 0;
+}
+
+.sectionAnchor {
+  scroll-margin-top: 22px;
+}
+
+.sectionAnchor + .sectionAnchor {
+  margin-top: 24px;
+}
+
 .identityHeading {
   display: flex;
   align-items: flex-start;
@@ -93,7 +120,22 @@
   line-height: 1.55;
 }
 
+@media (max-width: 980px) {
+  .consultationLayout {
+    grid-template-columns: 1fr;
+  }
+
+  .sidebarColumn {
+    position: relative;
+    z-index: 2;
+  }
+}
+
 @media (max-width: 760px) {
+  .consultationShell {
+    width: min(100% - 20px, 1240px);
+  }
+
   .identityHeading {
     display: grid;
   }
