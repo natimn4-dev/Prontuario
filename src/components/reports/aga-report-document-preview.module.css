@@ -238,12 +238,12 @@
   text-transform: uppercase;
 }
 
-.executiveCard p,
-.executiveCard ul {
+.executiveCard p {
   margin: 0;
 }
 
 .executiveCard ul {
+  margin: 0.45rem 0 0;
   padding-left: 1.05rem;
 }
 
@@ -377,6 +377,15 @@
   color: var(--muted);
 }
 
+.compactList {
+  margin: 0;
+  padding-left: 1rem;
+}
+
+.compactList li + li {
+  margin-top: 0.25rem;
+}
+
 .chartSection {
   break-inside: avoid;
 }
@@ -409,6 +418,59 @@
 .careCard li,
 .preventionBox li {
   margin-bottom: 0.25rem;
+}
+
+.intrinsicGuidance {
+  margin-top: 0.9rem;
+  padding-top: 0.85rem;
+  border-top: 1px dashed var(--line);
+}
+
+.intrinsicGuidance > h3 {
+  margin: 0;
+  color: var(--primary-strong);
+  font-size: 0.9rem;
+}
+
+.guidanceSource {
+  margin: 0.2rem 0 0.65rem;
+  color: var(--muted);
+  font-size: 0.72rem;
+}
+
+.intrinsicGrid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.65rem;
+}
+
+.intrinsicGrid article {
+  padding: 0.75rem;
+  border: 1px solid var(--line);
+  border-radius: 11px;
+  background: #fcfbfd;
+  break-inside: avoid;
+}
+
+.intrinsicGrid h4 {
+  margin: 0 0 0.35rem;
+  color: var(--primary-strong);
+  font-size: 0.82rem;
+}
+
+.intrinsicGrid p {
+  margin: 0 0 0.55rem;
+}
+
+.intrinsicGrid strong {
+  display: block;
+  margin-top: 0.5rem;
+  font-size: 0.74rem;
+}
+
+.intrinsicGrid ul {
+  margin: 0.25rem 0 0;
+  padding-left: 1rem;
 }
 
 .preventionBox {
@@ -552,7 +614,8 @@
   }
 
   .executiveGrid,
-  .careGrid {
+  .careGrid,
+  .intrinsicGrid {
     grid-template-columns: 1fr 1fr;
   }
 }
@@ -577,7 +640,8 @@
   .header,
   .executiveGrid,
   .problemGrid,
-  .careGrid {
+  .careGrid,
+  .intrinsicGrid {
     grid-template-columns: 1fr;
   }
 
@@ -606,6 +670,11 @@
     margin: 11mm;
   }
 
+  .toolbar,
+  .reviewGate {
+    display: none !important;
+  }
+
   .workspace {
     background: #fff !important;
   }
@@ -625,6 +694,7 @@
   .problemGrid > article,
   .scaleDomain,
   .careCard,
+  .intrinsicGrid article,
   .preventionBox,
   .medicationLinkSection,
   .footer,
