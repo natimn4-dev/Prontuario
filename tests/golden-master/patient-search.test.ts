@@ -72,3 +72,21 @@ test("serviço exige patient.read, combina índice normalizado com fallback e ma
   assert.doesNotMatch(source, /caregiverPhone:\s*true/);
   assert.doesNotMatch(source, /identifiers:\s*true/);
 });
+
+test("fronteira HTTP e UI evitam cache e resultado obsoleto de requisição anterior", () => {
+  const routeSource = readFileSync(
+    new URL("../../src/app/api/patients/search/route.ts", import.meta.url),
+    "utf8",
+  );
+  const finderSource = readFileSync(
+    new URL("../../src/components/patients/patient-finder.tsx", import.meta.url),
+    "utf8",
+  );
+
+  assert.match(routeSource, /Cache-Control/);
+  assert.match(routeSource, /no-store/);
+  assert.match(finderSource, /AbortController/);
+  assert.match(finderSource, /activeRequest\.current\?\.abort\(\)/);
+  assert.match(finderSource, /cache:\s*"no-store"/);
+  assert.match(finderSource, /signal:\s*controller\.signal/);
+});
