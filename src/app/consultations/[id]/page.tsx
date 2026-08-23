@@ -42,7 +42,7 @@ export default async function ConsultationPage({ params }: { params: Promise<{ i
   });
 
   return (
-    <main className={`shell ${styles.consultationShell}`}>
+    <main className={`shell consultation-shell ${styles.consultationShell}`}>
       <div className={styles.consultationLayout}>
         <aside className={styles.sidebarColumn}>
           <ConsultationSectionNav
