@@ -69,25 +69,27 @@ test("relatório e impressão carregam a camada premium depois do legado", () =>
   assert.match(branding, /professional-signature/);
 });
 
-test("gráfico longitudinal aprovado permanece separado por seis dimensões e com marcador atual", () => {
+test("gráfico longitudinal aprovado usa small multiples por seis dimensões e marcador Atual", () => {
   const chart = source("src/components/reports/capacity-dimension-history-chart.tsx");
   const css = source("src/components/reports/capacity-dimension-history-chart.module.css");
 
-  assert.match(chart, /Evolução da capacidade intrínseca e da independência funcional/);
+  assert.match(chart, /Evolução longitudinal por domínio/);
   assert.match(chart, /Independência funcional/);
   assert.match(chart, /Capacidade intrínseca/);
+  assert.match(chart, /orderedDimensions/);
+  assert.match(chart, />Atual</);
   assert.match(chart, /targetGuide/);
-  assert.match(chart, /consulta atual/);
   assert.match(chart, /Pontos de inflexão observados/);
   assert.match(chart, /não atribui causa/);
   assert.doesNotMatch(chart, /<table/);
 
-  assert.match(css, /data-dimension="funcionalidade"\]\s*\{\s*color:\s*var\(--primary\)/);
-  assert.match(css, /data-dimension="locomocao"\]\s*\{\s*color:\s*#9a7440/);
-  assert.match(css, /data-dimension="cognicao"\]\s*\{\s*color:\s*#4f7189/);
-  assert.match(css, /data-dimension="psicologico"\]\s*\{\s*color:\s*#996277/);
-  assert.match(css, /data-dimension="vitalidade"\]\s*\{\s*color:\s*#5f8068/);
-  assert.match(css, /data-dimension="sensorial"\]\s*\{\s*color:\s*#6d6b82/);
+  assert.match(css, /data-dimension="funcionalidade"\]\s*\{\s*color:\s*#5b238f/);
+  assert.match(css, /data-dimension="locomocao"\]\s*\{\s*color:\s*#9a6a32/);
+  assert.match(css, /data-dimension="cognicao"\]\s*\{\s*color:\s*#416f91/);
+  assert.match(css, /data-dimension="psicologico"\]\s*\{\s*color:\s*#9b5f79/);
+  assert.match(css, /data-dimension="vitalidade"\]\s*\{\s*color:\s*#4f8060/);
+  assert.match(css, /data-dimension="sensorial"\]\s*\{\s*color:\s*#68647e/);
   assert.match(css, /\.targetGuide/);
   assert.match(css, /\.statusLegend/);
+  assert.match(css, /grid-template-columns:\s*190px minmax\(0, 1fr\)/);
 });
