@@ -27,6 +27,10 @@ test("entrada e consulta preservam marca, paciente, hook global e navegação la
   assert.match(home, /Localize o paciente/);
   assert.match(consultation, /ConsultationSectionNav/);
   assert.match(consultation, /shell consultation-shell/);
+  assert.match(consultation, /consultation-layout/);
+  assert.match(consultation, /consultation-sidebar/);
+  assert.match(consultation, /consultation-content/);
+  assert.match(consultation, /consultation-report-section/);
   assert.match(consultation, /patientName=\{context\.patientName\}/);
   assert.match(nav, /Natalia Mendes — Médica Geriatra/);
   assert.match(nav, /patientName/);
@@ -54,7 +58,7 @@ test("escala clínica permanece caixa única por domínio no padrão aprovado", 
   assert.match(css, /\.activeTab/);
 });
 
-test("relatório e impressão carregam a camada premium depois do legado", () => {
+test("relatório e impressão carregam camada premium e preservam relatório aninhado", () => {
   const layout = source("src/app/layout.tsx");
   const overrides = source("src/app/clinical-premium-overrides.css");
   const branding = source("src/app/report-branding.css");
@@ -65,6 +69,9 @@ test("relatório e impressão carregam a camada premium depois do legado", () =>
   assert.match(overrides, /--care-accent:\s*var\(--primary\)/);
   assert.match(overrides, /\.care-report-header h1/);
   assert.match(overrides, /\.medication-final-table thead th/);
+  assert.match(overrides, /\.consultation-shell > \.consultation-layout/);
+  assert.match(overrides, /\.consultation-content > \.consultation-section:not\(\.consultation-report-section\)/);
+  assert.match(overrides, /\.consultation-content > \.consultation-report-section/);
   assert.match(branding, /report-brand-logo/);
   assert.match(branding, /professional-signature/);
 });
