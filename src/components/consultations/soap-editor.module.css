@@ -1,9 +1,10 @@
 .card {
-  margin: 24px 0;
-  padding: 22px;
-  border: 1px solid var(--care-line, #e2d9da);
-  border-radius: 16px;
-  background: #fff;
+  margin: 22px 0;
+  padding: 24px;
+  border: 1px solid var(--line);
+  border-radius: 18px;
+  background: var(--surface);
+  box-shadow: var(--shadow-sm);
 }
 
 .heading {
@@ -16,13 +17,14 @@
 
 .heading h2 {
   margin: 4px 0 6px;
+  color: var(--ink);
 }
 
 .muted,
 .planField span,
 .problemList span {
-  color: #6e6264;
-  font-size: 13px;
+  color: var(--muted);
+  font-size: 12px;
   line-height: 1.45;
 }
 
@@ -35,12 +37,13 @@
 .actions button {
   min-height: 42px;
   padding: 9px 14px;
-  border: 1px solid #72595f;
+  border: 1px solid var(--primary);
   border-radius: 10px;
-  background: #72595f;
+  background: var(--primary);
   color: #fff;
   font: inherit;
-  font-weight: 700;
+  font-size: 12px;
+  font-weight: 800;
   cursor: pointer;
 }
 
@@ -50,8 +53,16 @@
 }
 
 .actions .secondary {
+  border-color: #d8cae5;
   background: #fff;
-  color: #5f4a4f;
+  color: var(--primary-strong);
+  box-shadow: none;
+}
+
+.actions .secondary:hover:not(:disabled) {
+  border-color: #c5add9;
+  background: var(--primary-soft);
+  color: var(--primary-strong);
 }
 
 .soapGrid {
@@ -62,14 +73,15 @@
 
 .soapSection {
   padding: 16px;
-  border: 1px solid var(--care-line, #e2d9da);
-  border-radius: 12px;
-  background: #fcfbfb;
+  border: 1px solid #e8e1ee;
+  border-radius: 14px;
+  background: #fdfcff;
 }
 
 .soapSection h3 {
   margin: 0 0 12px;
-  color: #5f4a4f;
+  color: var(--primary-strong);
+  font-size: 15px;
 }
 
 .soapSection label,
@@ -77,52 +89,52 @@
   display: grid;
   gap: 6px;
   margin-top: 10px;
-  font-size: 13px;
-  font-weight: 700;
+  color: var(--ink);
+  font-size: 12px;
+  font-weight: 750;
 }
 
 .soapSection fieldset {
   margin: 16px 0 0;
   padding: 12px;
-  border: 1px solid #d8cdd0;
-  border-radius: 10px;
+  border: 1px solid #e2d8eb;
+  border-radius: 11px;
+  background: #fff;
 }
 
 .soapSection legend {
   padding: 0 6px;
-  color: #5f4a4f;
-  font-size: 13px;
-  font-weight: 800;
+  color: var(--primary-strong);
+  font-size: 11px;
+  font-weight: 850;
+}
+
+.soapSection select,
+.soapSection textarea {
+  width: 100%;
+  border: 1px solid #dcd4e4;
+  border-radius: 10px;
+  background: #fff;
+  color: var(--ink);
+  font: inherit;
+  font-weight: 400;
 }
 
 .soapSection select {
   min-height: 42px;
   padding: 9px 11px;
-  border: 1px solid #cfc3c6;
-  border-radius: 9px;
-  background: #fff;
-  color: #2e2f30;
-  font: inherit;
-  font-weight: 400;
 }
 
 .soapSection textarea {
-  width: 100%;
   resize: vertical;
   padding: 10px 11px;
-  border: 1px solid #cfc3c6;
-  border-radius: 9px;
-  background: #fff;
-  color: #2e2f30;
-  font: inherit;
-  font-weight: 400;
   line-height: 1.45;
 }
 
 .soapSection textarea:focus-visible,
 .soapSection select:focus-visible,
 .actions button:focus-visible {
-  outline: 3px solid rgba(95, 74, 79, .24);
+  outline: 3px solid rgb(107 85 217 / 22%);
   outline-offset: 2px;
 }
 
@@ -146,25 +158,27 @@
 .success {
   margin: 10px 0;
   padding: 10px 12px;
-  border-radius: 9px;
-  font-size: 13px;
+  border-radius: 10px;
+  font-size: 12px;
 }
 
 .locked,
 .unsaved {
-  background: #f6f1ea;
+  border: 1px solid #e4d7ef;
+  background: var(--primary-soft);
+  color: var(--primary-strong);
 }
 
 .error {
-  border: 1px solid #b96868;
-  background: #fff5f5;
-  color: #7d3131;
+  border: 1px solid #dda7b0;
+  background: var(--danger-soft);
+  color: var(--danger);
 }
 
 .success {
-  border: 1px solid #8fae92;
-  background: #f5faf5;
-  color: #315d36;
+  border: 1px solid #add4bd;
+  background: var(--success-soft);
+  color: var(--success);
 }
 
 @media (max-width: 820px) {
@@ -177,6 +191,10 @@
   }
 }
 
+@media (max-width: 760px) {
+  .card { padding: 16px; }
+}
+
 @media print {
   .actions,
   .unsaved,
@@ -187,5 +205,6 @@
 
   .card {
     break-inside: auto;
+    box-shadow: none;
   }
 }
