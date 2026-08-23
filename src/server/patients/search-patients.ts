@@ -1,6 +1,7 @@
 import {
   assertPatientSearchQuery,
   PATIENT_SEARCH_CANDIDATE_MULTIPLIER,
+  PATIENT_SEARCH_FALLBACK_MAX_PAGES,
   PATIENT_SEARCH_FALLBACK_PAGE_SIZE,
   PATIENT_SEARCH_LIMIT,
   patientNameMatchesSearch,
@@ -11,14 +12,22 @@ import {
 import { requireAuthenticatedUser } from "../auth/require-user";
 import { prisma } from "../db";
 
-export async function searchPatientsForSelection(
+type PatientSearchClient = Pick<typeof prisma, "patient">;
+
+/**
+ * Núcleo de busca usado pela API e pelos testes de integração MySQL.
+ * A autorização permanece obrigatória na fronteira pública
+ * `searchPatientsForSelection`; esta função existe para que a mesma consulta
+ * real ao Prisma possa ser exercitada contra MySQL efêmero sem simular HTTP.
+ */
+export async function searchPatientsInDatabase(
+  client: PatientSearchClient,
   query: string,
 ): Promise<PatientSelectionResult[]> {
-  await requireAuthenticatedUser("patient.read");
   const normalizedQuery = assertPatientSearchQuery(query);
   const terms = patientSearchTerms(normalizedQuery);
 
-  const indexedCandidates = await prisma.patient.findMany({
+  const indexedCandidates = await client.patient.findMany({
     where: {
       OR: [
         {
@@ -28,7 +37,7 @@ export async function searchPatientsForSelection(
         },
         {
           AND: terms.map((term) => ({
-            fullName: {
+            normalizedFullName: {
               contains: term,
             },
           })),
@@ -74,19 +83,20 @@ export async function searchPatientsForSelection(
     }
   }
 
-  // Fallback determinístico para registros históricos cujo campo normalizado ou
-  // collation do banco não acompanhe a regra atual de acentos/caixa. O scan é
-  // paginado, lê somente os dados mínimos de seleção e só roda quando a busca
-  // indexada não preencheu o limite final.
-  let skip = 0;
-  while (matched.size < PATIENT_SEARCH_LIMIT) {
-    const page = await prisma.patient.findMany({
-      orderBy: [
-        { normalizedFullName: "asc" },
-        { birthDate: "asc" },
-        { id: "asc" },
-      ],
-      skip,
+  // Proteção para dados históricos cujo normalizedFullName não acompanha a
+  // função canônica atual. O fallback é deliberadamente limitado e pagina pela
+  // chave primária para evitar scan ilimitado/offset crescente. O release gate
+  // audita a consistência do índice derivado; portanto, este caminho é apenas
+  // uma rede de segurança temporária para legado, nunca o mecanismo principal.
+  let cursor: string | undefined;
+  for (
+    let pageIndex = 0;
+    pageIndex < PATIENT_SEARCH_FALLBACK_MAX_PAGES && matched.size < PATIENT_SEARCH_LIMIT;
+    pageIndex += 1
+  ) {
+    const page = await client.patient.findMany({
+      orderBy: { id: "asc" },
+      ...(cursor ? { cursor: { id: cursor }, skip: 1 } : {}),
       take: PATIENT_SEARCH_FALLBACK_PAGE_SIZE,
       select: {
         id: true,
@@ -123,8 +133,8 @@ export async function searchPatientsForSelection(
       }
     }
 
-    skip += page.length;
-    if (page.length < PATIENT_SEARCH_FALLBACK_PAGE_SIZE) break;
+    cursor = page.at(-1)?.id;
+    if (!cursor || page.length < PATIENT_SEARCH_FALLBACK_PAGE_SIZE) break;
   }
 
   return [...matched.values()]
@@ -148,4 +158,11 @@ export async function searchPatientsForSelection(
         activeConsultation,
       });
     });
+}
+
+export async function searchPatientsForSelection(
+  query: string,
+): Promise<PatientSelectionResult[]> {
+  await requireAuthenticatedUser("patient.read");
+  return searchPatientsInDatabase(prisma, query);
 }
