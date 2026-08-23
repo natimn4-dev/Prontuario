@@ -9,6 +9,7 @@ const files = {
   medicationPage: new URL("../../src/app/consultations/[id]/medications/print/page.tsx", import.meta.url),
   medicationCss: new URL("../../src/app/consultations/[id]/medications/print/page.module.css", import.meta.url),
   medicationServer: new URL("../../src/server/clinical/medication-plan-document.ts", import.meta.url),
+  medicationReadCore: new URL("../../src/server/clinical/medication-document-workspace.ts", import.meta.url),
 };
 
 async function text(url: URL) {
@@ -31,20 +32,27 @@ test("relatório final usa composição documental aprovada e não incorpora tab
   assert.match(report, /Problemas clínicos/);
   assert.match(report, /Problemas geriátricos/);
   assert.match(report, /CapacityDimensionHistoryChart/);
+  assert.match(report, /Equipe e encaminhamentos/);
+  assert.match(report, /Orientações por domínio de capacidade intrínseca/);
   assert.match(report, /Vacinas e prevenção/);
   assert.match(report, /Ver \/ imprimir plano de medicamentos/);
   assert.match(report, /\/consultations\/\$\{consultationId\}\/medications\/print/);
+  assert.match(report, /Sem recomendação priorizada registrada/);
+  assert.match(report, /Sem orientação prática adicional registrada/);
   assert.doesNotMatch(report, /MedicationPlanTable/);
   assert.doesNotMatch(report, /data-print-scope/);
+  assert.doesNotMatch(report, /Acompanhar conforme avaliação clínica/);
   assert.match(css, /size:\s*A4 portrait/);
   assert.match(css, /break-inside:\s*avoid/);
+  assert.match(css, /\.toolbar,\s*\n\s*\.reviewGate\s*\{\s*\n\s*display:\s*none !important/s);
 });
 
 test("plano de medicamentos é rota própria, read-only e vinculada à consulta", async () => {
-  const [page, css, server] = await Promise.all([
+  const [page, css, server, readCore] = await Promise.all([
     text(files.medicationPage),
     text(files.medicationCss),
     text(files.medicationServer),
+    text(files.medicationReadCore),
   ]);
 
   assert.match(page, /getMedicationPlanDocument\(id\)/);
@@ -61,9 +69,14 @@ test("plano de medicamentos é rota própria, read-only e vinculada à consulta"
   assert.match(server, /requireAuthenticatedUser\("document\.generate"\)/);
   assert.match(server, /where:\s*\{\s*id:\s*consultationId\s*\}/s);
   assert.match(server, /consultation\.patient\.id !== consultation\.patientId/);
-  assert.match(server, /workspaceContext\(tx, consultation\.id\)/);
+  assert.match(server, /medicationDocumentWorkspaceContext\(tx, consultation\.id\)/);
   assert.match(server, /buildMedicationPlanSnapshotModel/);
   assert.doesNotMatch(server, /findUnique\(\{\s*where:\s*\{\s*id:\s*medicationId/s);
+
+  assert.doesNotMatch(readCore, /requireAuthenticatedUser/);
+  assert.match(readCore, /where:\s*\{\s*patientId:\s*consultation\.patientId\s*\}/s);
+  assert.match(readCore, /medicationStatusAsOf/);
+  assert.match(readCore, /effectiveMedicationRegimens/);
 
   assert.match(css, /size:\s*A4 portrait/);
   assert.match(css, /display:\s*table-header-group/);
