@@ -2,6 +2,7 @@ import { execFileSync } from "node:child_process";
 import { PrismaMariaDb } from "@prisma/adapter-mariadb";
 import { PrismaClient } from "../src/generated/prisma/client.ts";
 import { validateProductionEnvironment } from "../src/domain/security/environment.ts";
+import { auditPatientSearchIndex } from "../src/server/patients/patient-search-index-audit.ts";
 
 function fail(messages: readonly string[]): never {
   console.error("CLINICAL_RELEASE=BLOCKED");
@@ -70,10 +71,43 @@ try {
   );
   const failed = Number(rows[0]?.failed ?? 0);
   if (failed > 0) fail(["Existem migrations Prisma incompletas no banco de produção."]);
+
+  const searchIndex = await auditPatientSearchIndex(client);
+  const searchErrors: string[] = [];
+  if (searchIndex.nullNormalizedFullName > 0) {
+    searchErrors.push(`Há ${searchIndex.nullNormalizedFullName} paciente(s) com normalizedFullName nulo.`);
+  }
+  if (searchIndex.emptyNormalizedFullName > 0) {
+    searchErrors.push(`Há ${searchIndex.emptyNormalizedFullName} paciente(s) com normalizedFullName vazio.`);
+  }
+  if (searchIndex.mismatchedNormalizedFullName > 0) {
+    searchErrors.push(
+      `Há ${searchIndex.mismatchedNormalizedFullName} paciente(s) cuja normalização armazenada diverge da regra canônica atual.`,
+    );
+  }
+  for (const [label, collation] of [
+    ["Patient.fullName", searchIndex.fullNameCollation],
+    ["Patient.normalizedFullName", searchIndex.normalizedFullNameCollation],
+  ] as const) {
+    if (!collation || !/^utf8mb4_/i.test(collation)) {
+      searchErrors.push(`${label} não possui collation utf8mb4 verificável.`);
+    }
+  }
+  if (searchErrors.length > 0) {
+    searchErrors.push(
+      "Execute primeiro `npm run audit:patient-search-index`; após backup válido, use `npm run backfill:patient-search-index`.",
+    );
+    fail(searchErrors);
+  }
+
+  console.log(`- índice de busca de pacientes consistente: ${searchIndex.totalPatients} registro(s)`);
+  console.log(`- collation do banco: ${searchIndex.databaseCollation ?? "indisponível"}`);
+  console.log(`- Patient.fullName: ${searchIndex.fullNameCollation}`);
+  console.log(`- Patient.normalizedFullName: ${searchIndex.normalizedFullNameCollation}`);
 } catch (error) {
   const safeMessage = error instanceof Error && /_prisma_migrations/.test(error.message)
     ? "Tabela de migrations Prisma não pôde ser validada. Execute prisma migrate deploy antes da liberação."
-    : "Banco de produção indisponível ou sem permissão suficiente para o health check.";
+    : "Banco de produção indisponível, inconsistente ou sem permissão suficiente para o health check.";
   fail([safeMessage]);
 } finally {
   await client.$disconnect();
@@ -84,4 +118,5 @@ console.log("- configuração de produção validada");
 console.log("- chave e ferramenta de backup presentes");
 console.log("- banco acessível");
 console.log("- migrations sem estado incompleto");
-console.log("Nenhum segredo foi exibido.");
+console.log("- índice auxiliar de busca validado sem expor PHI");
+console.log("Nenhum segredo ou identificador de paciente foi exibido.");
