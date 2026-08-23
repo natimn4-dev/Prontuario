@@ -44,7 +44,7 @@ test("workspace clínico carrega a camada visual aprovada e mantém identidade d
   assert.match(approved, /\.report-workspace/);
 });
 
-test("gráfico longitudinal preserva pequenos múltiplos por domínio e não volta à sobreposição de séries", () => {
+test("gráfico longitudinal preserva pequenos múltiplos e geometria compacta sem esticar SVG", () => {
   const chart = source("src/components/reports/capacity-dimension-history-chart.tsx");
   const styles = source("src/components/reports/capacity-dimension-history-chart.module.css");
 
@@ -53,11 +53,29 @@ test("gráfico longitudinal preserva pequenos múltiplos por domínio e não vol
   assert.match(chart, /Independência funcional/);
   assert.match(chart, /Capacidade intrínseca/);
   assert.match(chart, /DimensionTimeline/);
+  assert.match(chart, /const CHART_HEIGHT = 78/);
+  assert.match(chart, /style=\{\{ width: `\$\{timelineWidth\}px` \}\}/);
+  assert.match(chart, /height=\{CHART_HEIGHT\}/);
   assert.match(styles, /\.dimensionRow/);
-  assert.match(styles, /grid-template-columns:\s*190px minmax\(560px, 1fr\)/);
+  assert.match(styles, /grid-template-columns:\s*190px minmax\(0, 1fr\)/);
   assert.match(styles, /\.dimensionGroup/);
   assert.match(styles, /overflow-x:\s*auto/);
+  assert.doesNotMatch(styles, /\.dateAxis, \.domainChart \{[^}]*width:\s*100%/);
   assert.doesNotMatch(chart, /globalScore|compositeScore|overallScore/);
+});
+
+test("gráficos das escalas mantêm tamanho intrínseco e amortecem exagero visual sem inventar corte clínico", () => {
+  const chart = source("src/components/reports/scale-history-chart.tsx");
+  const styles = source("src/components/reports/scale-history-chart.module.css");
+
+  assert.match(chart, /const HEIGHT = 176/);
+  assert.match(chart, /const MIN_WIDTH = 680/);
+  assert.match(chart, /function visualScoreRange/);
+  assert.match(chart, /const padding = Math\.max\(1, span \* 0\.5\)/);
+  assert.match(chart, /height=\{HEIGHT\}/);
+  assert.match(styles, /\.chart\s*\{[\s\S]*max-width:\s*none/);
+  assert.doesNotMatch(styles, /width:\s*max\(100%,\s*640px\)/);
+  assert.doesNotMatch(chart, /clinicalCutoff|cutoff|threshold/);
 });
 
 test("tabela de medicações usa hierarquia e checkboxes do design aprovado", () => {
