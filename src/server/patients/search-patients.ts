@@ -11,6 +11,86 @@ import {
 import { requireAuthenticatedUser } from "../auth/require-user";
 import { prisma } from "../db";
 
+type PatientSelectionRow = {
+  id: string;
+  fullName: string;
+  birthDate: Date | null;
+  needsIdentityReview: boolean;
+  consultations: Array<{
+    id: string;
+    status: string;
+    occurredAt: Date;
+  }>;
+};
+
+const selection = {
+  id: true,
+  fullName: true,
+  birthDate: true,
+  needsIdentityReview: true,
+  consultations: {
+    where: {
+      status: {
+        in: ["DRAFT", "IN_REVIEW"] as const,
+      },
+    },
+    orderBy: [
+      { occurredAt: "desc" as const },
+      { createdAt: "desc" as const },
+      { id: "desc" as const },
+    ],
+    take: 1,
+    select: {
+      id: true,
+      status: true,
+      occurredAt: true,
+    },
+  },
+} as const;
+
+function toSelection(patient: PatientSelectionRow): PatientSelectionResult {
+  const consultation = patient.consultations[0];
+  const activeConsultation = consultation
+    && (consultation.status === "DRAFT" || consultation.status === "IN_REVIEW")
+    ? {
+        id: consultation.id,
+        status: consultation.status,
+        occurredAt: consultation.occurredAt,
+      }
+    : null;
+
+  return toPatientSelectionResult({
+    id: patient.id,
+    fullName: patient.fullName,
+    birthDate: patient.birthDate,
+    needsIdentityReview: patient.needsIdentityReview,
+    activeConsultation,
+  });
+}
+
+/**
+ * Lista inicial segura para a home.
+ *
+ * O nome do paciente precisa aparecer antes mesmo de uma busca manual. Isso
+ * também cria um caminho independente do índice textual para acessar pacientes
+ * já cadastrados, sem expor CPF, telefone, CNS ou outros identificadores.
+ */
+export async function listRecentPatientsForSelection(): Promise<PatientSelectionResult[]> {
+  await requireAuthenticatedUser("patient.read");
+
+  const patients = await prisma.patient.findMany({
+    orderBy: [
+      { updatedAt: "desc" },
+      { fullName: "asc" },
+      { id: "asc" },
+    ],
+    take: PATIENT_SEARCH_LIMIT,
+    select: selection,
+  });
+
+  return patients.map((patient) => toSelection(patient));
+}
+
 export async function searchPatientsForSelection(
   query: string,
 ): Promise<PatientSelectionResult[]> {
@@ -41,33 +121,10 @@ export async function searchPatientsForSelection(
       { id: "asc" },
     ],
     take: PATIENT_SEARCH_LIMIT * PATIENT_SEARCH_CANDIDATE_MULTIPLIER,
-    select: {
-      id: true,
-      fullName: true,
-      birthDate: true,
-      needsIdentityReview: true,
-      consultations: {
-        where: {
-          status: {
-            in: ["DRAFT", "IN_REVIEW"],
-          },
-        },
-        orderBy: [
-          { occurredAt: "desc" },
-          { createdAt: "desc" },
-          { id: "desc" },
-        ],
-        take: 1,
-        select: {
-          id: true,
-          status: true,
-          occurredAt: true,
-        },
-      },
-    },
+    select: selection,
   });
 
-  const matched = new Map<string, (typeof indexedCandidates)[number]>();
+  const matched = new Map<string, PatientSelectionRow>();
   for (const patient of indexedCandidates) {
     if (patientNameMatchesSearch(patient.fullName, normalizedQuery)) {
       matched.set(patient.id, patient);
@@ -88,30 +145,7 @@ export async function searchPatientsForSelection(
       ],
       skip,
       take: PATIENT_SEARCH_FALLBACK_PAGE_SIZE,
-      select: {
-        id: true,
-        fullName: true,
-        birthDate: true,
-        needsIdentityReview: true,
-        consultations: {
-          where: {
-            status: {
-              in: ["DRAFT", "IN_REVIEW"],
-            },
-          },
-          orderBy: [
-            { occurredAt: "desc" },
-            { createdAt: "desc" },
-            { id: "desc" },
-          ],
-          take: 1,
-          select: {
-            id: true,
-            status: true,
-            occurredAt: true,
-          },
-        },
-      },
+      select: selection,
     });
 
     if (page.length === 0) break;
@@ -129,23 +163,5 @@ export async function searchPatientsForSelection(
 
   return [...matched.values()]
     .slice(0, PATIENT_SEARCH_LIMIT)
-    .map((patient) => {
-      const consultation = patient.consultations[0];
-      const activeConsultation = consultation
-        && (consultation.status === "DRAFT" || consultation.status === "IN_REVIEW")
-        ? {
-            id: consultation.id,
-            status: consultation.status,
-            occurredAt: consultation.occurredAt,
-          }
-        : null;
-
-      return toPatientSelectionResult({
-        id: patient.id,
-        fullName: patient.fullName,
-        birthDate: patient.birthDate,
-        needsIdentityReview: patient.needsIdentityReview,
-        activeConsultation,
-      });
-    });
+    .map((patient) => toSelection(patient));
 }
