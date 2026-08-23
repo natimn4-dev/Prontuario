@@ -1,20 +1,41 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import styles from "./consultation-section-nav.module.css";
 
 const sections = [
-  { id: "resumo-consulta", label: "Resumo" },
-  { id: "problemas", label: "Problemas" },
-  { id: "medicamentos", label: "Medicamentos" },
-  { id: "soap", label: "SOAP / AGA" },
-  { id: "escalas", label: "Escalas clínicas" },
-  { id: "relatorio", label: "Relatório final" },
-  { id: "finalizacao", label: "Revisão e finalização" },
+  { id: "resumo-consulta", label: "Resumo", hint: "Visão geral" },
+  { id: "problemas", label: "Problemas", hint: "Clínicos e geriátricos" },
+  { id: "medicamentos", label: "Medicamentos", hint: "Lista e horários" },
+  { id: "soap", label: "SOAP / AGA", hint: "Registro técnico" },
+  { id: "escalas", label: "Escalas clínicas", hint: "Instrumentos aplicados" },
+  { id: "relatorio", label: "Relatório final", hint: "Paciente e família" },
+  { id: "finalizacao", label: "Revisão e finalização", hint: "Conferência e assinatura" },
 ] as const;
 
-export function ConsultationSectionNav() {
+interface ConsultationSectionNavProps {
+  patientName: string;
+  patientBirthDateLabel: string;
+  consultationDateLabel: string;
+  consultationStatusLabel: string;
+}
+
+function initials(name: string): string {
+  const parts = name.trim().split(/\s+/).filter(Boolean);
+  if (!parts.length) return "P";
+  const first = parts[0]?.[0] ?? "";
+  const last = parts.length > 1 ? parts.at(-1)?.[0] ?? "" : "";
+  return `${first}${last}`.toUpperCase();
+}
+
+export function ConsultationSectionNav({
+  patientName,
+  patientBirthDateLabel,
+  consultationDateLabel,
+  consultationStatusLabel,
+}: ConsultationSectionNavProps) {
   const [activeId, setActiveId] = useState<(typeof sections)[number]["id"]>(sections[0].id);
+  const patientInitials = useMemo(() => initials(patientName), [patientName]);
 
   useEffect(() => {
     const nodes = sections
@@ -45,10 +66,25 @@ export function ConsultationSectionNav() {
 
   return (
     <nav className={styles.nav} aria-label="Seções do preenchimento da consulta">
-      <div className={styles.heading}>
-        <p className={styles.kicker}>Preenchimento</p>
-        <p className={styles.title}>Navegação da consulta</p>
+      <div className={styles.brand}>
+        <img src="/brand/natalia-mendes-logo.svg" alt="Natalia Mendes — Médica Geriatra" />
       </div>
+
+      <section className={styles.patientCard} aria-label="Paciente da consulta atual">
+        <span className={styles.avatar} aria-hidden="true">{patientInitials}</span>
+        <span className={styles.patientIdentity}>
+          <strong>{patientName}</strong>
+          <small>Nascimento: {patientBirthDateLabel}</small>
+          <small>Consulta: {consultationDateLabel}</small>
+        </span>
+        <span className={styles.status}>{consultationStatusLabel}</span>
+      </section>
+
+      <div className={styles.heading}>
+        <p className={styles.kicker}>Consulta atual</p>
+        <p className={styles.title}>Preenchimento clínico</p>
+      </div>
+
       <ol className={styles.list}>
         {sections.map((section, index) => {
           const active = activeId === section.id;
@@ -61,13 +97,16 @@ export function ConsultationSectionNav() {
                 onClick={() => setActiveId(section.id)}
               >
                 <span className={styles.number} aria-hidden="true">{index + 1}</span>
-                <span>{section.label}</span>
+                <span className={styles.linkText}>
+                  <strong>{section.label}</strong>
+                  <small>{section.hint}</small>
+                </span>
               </a>
             </li>
           );
         })}
       </ol>
-      <p className={styles.helper}>Use a barra para saltar entre as etapas sem perder o contexto do paciente.</p>
+      <p className={styles.helper}>Navegue pelas etapas sem perder o contexto do paciente.</p>
     </nav>
   );
 }
