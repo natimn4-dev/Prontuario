@@ -5,7 +5,7 @@ import {
 } from "../../domain/medication-plan-snapshot.ts";
 import { requireAuthenticatedUser } from "../auth/require-user.ts";
 import { prisma } from "../db.ts";
-import { workspaceContext } from "./medication-workspace.ts";
+import { medicationDocumentWorkspaceContext } from "./medication-document-workspace.ts";
 
 export interface MedicationPlanDocument {
   consultationId: string;
@@ -45,7 +45,7 @@ export async function getMedicationPlanDocument(consultationId: string): Promise
       throw new Error("Contexto paciente-consulta divergente no plano de medicamentos.");
     }
 
-    const workspace = (await workspaceContext(tx, consultation.id)).view;
+    const workspace = (await medicationDocumentWorkspaceContext(tx, consultation.id)).view;
     if (workspace.consultationId !== consultation.id) {
       throw new Error("Contexto de consulta divergente no plano de medicamentos.");
     }
