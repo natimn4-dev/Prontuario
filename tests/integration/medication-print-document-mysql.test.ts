@@ -4,7 +4,7 @@ import test from "node:test";
 import { PrismaMariaDb } from "@prisma/adapter-mariadb";
 import { PrismaClient } from "../../src/generated/prisma/client.ts";
 import { buildMedicationPlanSnapshotModel } from "../../src/domain/medication-plan-snapshot.ts";
-import { workspaceContext } from "../../src/server/clinical/medication-workspace.ts";
+import { medicationDocumentWorkspaceContext } from "../../src/server/clinical/medication-document-workspace.ts";
 
 const databaseUrl = process.env.TEST_DATABASE_URL;
 
@@ -125,13 +125,14 @@ test("plano de impressão usa somente medicamentos efetivos do paciente da consu
       ],
     });
 
-    const context = await client.$transaction(async (tx) => workspaceContext(tx, consultationAId));
+    const context = await client.$transaction(async (tx) => medicationDocumentWorkspaceContext(tx, consultationAId));
     const snapshot = buildMedicationPlanSnapshotModel({
       consultationId: consultationAId,
       patientName: "Paciente Sintético A",
       workspace: context.view,
     });
 
+    assert.equal(context.consultation.patientId, patientAId);
     assert.equal(snapshot.consultationId, consultationAId);
     assert.equal(snapshot.patientName, "Paciente Sintético A");
     assert.equal(snapshot.plan.rows.length, 1);
@@ -141,6 +142,17 @@ test("plano de impressão usa somente medicamentos efetivos do paciente da consu
     assert.equal(snapshot.plan.rows[0]?.moments.manha, true);
     assert.equal(snapshot.plan.rows[0]?.moments.ao_deitar, true);
     assert.equal(snapshot.plan.rows[0]?.moments.noite, false);
+
+    await assert.rejects(
+      client.medicationRegimen.create({
+        data: {
+          medicationId: medicationBId,
+          patientId: patientAId,
+          consultationId: consultationAId,
+          dose: "tentativa cruzada",
+        },
+      }),
+    );
   } finally {
     await client.medicationScheduleSlot.deleteMany({
       where: { regimen: { medicationId: { in: [medicationAId, medicationBId] } } },
