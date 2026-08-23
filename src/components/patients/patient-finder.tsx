@@ -1,6 +1,7 @@
 "use client";
 
 import { useRef, useState, type FormEvent } from "react";
+import { patientSearchFailureFeedback } from "@/domain/patient-search-http";
 import styles from "./patient-finder.module.css";
 
 interface PatientSearchResult {
@@ -16,8 +17,14 @@ interface PatientSearchResult {
 
 interface PatientSearchResponse {
   results?: PatientSearchResult[];
+  code?: string;
   message?: string;
 }
+
+type FinderFeedback = {
+  kind: "status" | "validation" | "error";
+  text: string;
+};
 
 function displayDate(value: string | null): string {
   if (!value) return "não registrada";
@@ -35,7 +42,7 @@ export function PatientFinder() {
   const [query, setQuery] = useState("");
   const [results, setResults] = useState<PatientSearchResult[]>([]);
   const [loading, setLoading] = useState(false);
-  const [message, setMessage] = useState<string | null>(null);
+  const [feedback, setFeedback] = useState<FinderFeedback | null>(null);
   const activeRequest = useRef<AbortController | null>(null);
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
@@ -43,7 +50,10 @@ export function PatientFinder() {
     const compactQuery = query.trim().replace(/\s+/g, " ");
     if (compactQuery.length < 2) {
       setResults([]);
-      setMessage("Digite pelo menos 2 caracteres para localizar um paciente.");
+      setFeedback({
+        kind: "validation",
+        text: "Digite pelo menos 2 caracteres para localizar um paciente.",
+      });
       return;
     }
 
@@ -52,7 +62,8 @@ export function PatientFinder() {
     activeRequest.current = controller;
 
     setLoading(true);
-    setMessage(null);
+    setResults([]);
+    setFeedback(null);
     try {
       const response = await fetch("/api/patients/search", {
         method: "POST",
@@ -61,22 +72,31 @@ export function PatientFinder() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ query: compactQuery }),
       });
-      const payload = await response.json() as PatientSearchResponse;
+      const payload = await response.json().catch(() => ({})) as PatientSearchResponse;
       if (controller.signal.aborted) return;
 
       if (!response.ok) {
+        const failure = patientSearchFailureFeedback(response.status, payload);
         setResults([]);
-        setMessage(payload.message ?? "Não foi possível localizar pacientes.");
+        setFeedback({
+          kind: failure.kind === "validation" ? "validation" : "error",
+          text: failure.message,
+        });
         return;
       }
 
       const nextResults = payload.results ?? [];
       setResults(nextResults);
-      setMessage(nextResults.length === 0 ? "Nenhum paciente encontrado." : null);
+      setFeedback(nextResults.length === 0
+        ? { kind: "status", text: "Nenhum paciente encontrado." }
+        : null);
     } catch (error) {
       if ((error as { name?: string })?.name === "AbortError") return;
       setResults([]);
-      setMessage("Não foi possível localizar pacientes.");
+      setFeedback({
+        kind: "error",
+        text: "Não foi possível concluir a busca por uma falha de rede. Tente novamente.",
+      });
     } finally {
       if (activeRequest.current === controller) {
         activeRequest.current = null;
@@ -85,7 +105,7 @@ export function PatientFinder() {
     }
   }
 
-  const hasValidationError = Boolean(message?.startsWith("Digite"));
+  const feedbackIsError = feedback?.kind === "validation" || feedback?.kind === "error";
 
   return (
     <section className={styles.panel} aria-labelledby="patient-finder-title">
@@ -121,10 +141,10 @@ export function PatientFinder() {
         </p>
       </form>
 
-      <div aria-live="polite" aria-busy={loading}>
-        {message ? (
-          <p className={hasValidationError ? styles.error : styles.status} role={hasValidationError ? "alert" : undefined}>
-            {message}
+      <div aria-live={feedbackIsError ? "assertive" : "polite"} aria-busy={loading}>
+        {feedback ? (
+          <p className={feedbackIsError ? styles.error : styles.status} role={feedbackIsError ? "alert" : "status"}>
+            {feedback.text}
           </p>
         ) : null}
         {results.length ? (
