@@ -24,6 +24,7 @@
     "backfill:patient-search-index": "node --experimental-strip-types scripts/patient-search-index-maintenance.ts --apply",
     "release:clinical:prestart": "node --experimental-strip-types scripts/check-clinical-readiness.ts",
     "release:clinical:smoke": "node --experimental-strip-types scripts/smoke-clinical-production.ts",
+    "release:patient-search:smoke": "node --experimental-strip-types scripts/smoke-patient-search-production.ts",
     "release:hostinger:build": "npm run build",
     "validate:repo": "node scripts/validate-repo.mjs",
     "test:backup": "bash scripts/test-backup-roundtrip.sh"
