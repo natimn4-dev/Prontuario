@@ -11,6 +11,8 @@ import { requireAuthenticatedUser } from "@/server/auth/require-user";
 import { prisma } from "@/server/db";
 import styles from "./page.module.css";
 
+const BRAND_LOGO_PATH = "/brand/natalia-mendes-logo.svg";
+
 export default async function ConsultationPage({ params }: { params: Promise<{ id: string }> }) {
   await requireAuthenticatedUser("patient.read");
   const { id } = await params;
@@ -43,6 +45,27 @@ export default async function ConsultationPage({ params }: { params: Promise<{ i
 
   return (
     <main className={`shell ${styles.consultationShell}`}>
+      <header className={styles.clinicalTopbar} aria-label="Contexto da consulta">
+        <a className={styles.brandLink} href="/" aria-label="Voltar para página inicial">
+          <img src={BRAND_LOGO_PATH} alt="Natalia Mendes — Médica Geriatra" />
+        </a>
+        <nav className={styles.flowBreadcrumbs} aria-label="Fluxo clínico">
+          <a href={`/patients/${context.patientId}`}>Paciente</a>
+          <span aria-hidden="true">›</span>
+          <a href="#resumo-consulta">Consulta</a>
+          <span aria-hidden="true">›</span>
+          <a href="#escalas">Avaliação</a>
+          <span aria-hidden="true">›</span>
+          <a href="#relatorio">Documentos</a>
+        </nav>
+        <div className={styles.topbarActions}>
+          <span className={styles.topbarStatus} data-status={consultation.status}>
+            {context.consultationStatusLabel}
+          </span>
+          <a className={styles.finalizeShortcut} href="#finalizacao">Finalizar consulta</a>
+        </div>
+      </header>
+
       <div className={styles.consultationLayout}>
         <aside className={styles.sidebarColumn}>
           <ConsultationSectionNav />
@@ -50,12 +73,21 @@ export default async function ConsultationPage({ params }: { params: Promise<{ i
 
         <div className={styles.contentColumn}>
           <section id="resumo-consulta" className={styles.sectionAnchor} aria-labelledby="consultation-title">
-            <header className="hero compact-hero clinical-hero">
-              <p className="eyebrow">Consulta geriátrica longitudinal</p>
+            <header className={`hero compact-hero clinical-hero ${styles.patientHero}`}>
+              <div className={styles.heroKickerRow}>
+                <p className="eyebrow">Consulta geriátrica longitudinal</p>
+                <a className={styles.patientLink} href={`/patients/${context.patientId}`}>
+                  Ver cadastro e histórico
+                </a>
+              </div>
+
               <div className={styles.identityHeading}>
-                <div>
-                  <h1 id="consultation-title">{context.patientName}</h1>
-                  <p className={styles.subtitle}>Centro de cuidado e evolução</p>
+                <div className={styles.patientIdentityBlock}>
+                  <span className={styles.patientAvatar} aria-hidden="true">○</span>
+                  <div>
+                    <h1 id="consultation-title">{context.patientName}</h1>
+                    <p className={styles.subtitle}>Avaliação Geriátrica Ampla · acompanhamento longitudinal</p>
+                  </div>
                 </div>
                 <span className={styles.statusBadge} data-status={consultation.status}>
                   {context.consultationStatusLabel}
@@ -83,13 +115,6 @@ export default async function ConsultationPage({ params }: { params: Promise<{ i
                   <span>Confirme a identidade no cadastro do paciente antes de emitir ou compartilhar documentos.</span>
                 </div>
               ) : null}
-
-              <a className={styles.patientLink} href={`/patients/${context.patientId}`}>
-                Voltar ao cadastro do paciente
-              </a>
-              <p className={styles.intro}>
-                Navegue pelas etapas à esquerda para preencher a consulta com menos rolagem e manter o contexto clínico do paciente.
-              </p>
             </header>
           </section>
 
