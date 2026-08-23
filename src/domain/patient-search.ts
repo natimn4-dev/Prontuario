@@ -4,6 +4,7 @@ export const PATIENT_SEARCH_MIN_LENGTH = 2;
 export const PATIENT_SEARCH_LIMIT = 8;
 export const PATIENT_SEARCH_CANDIDATE_MULTIPLIER = 4;
 export const PATIENT_SEARCH_FALLBACK_PAGE_SIZE = 100;
+export const PATIENT_SEARCH_FALLBACK_MAX_PAGES = 20;
 
 export class PatientSearchValidationError extends Error {
   constructor(message: string) {
@@ -61,15 +62,17 @@ export function patientSearchTerms(normalizedQuery: string): string[] {
 /**
  * Validação determinística após a consulta ao banco.
  *
- * A busca não pode depender exclusivamente de `normalizedFullName`, pois esse é
- * um campo derivado e registros históricos/importados podem ter sido gravados
- * antes da normalização atual. O nome original continua sendo a fonte de
- * verdade para confirmar o match, sem alterar qualquer dado clínico.
+ * O nome original é a fonte de verdade. Cada termo digitado precisa coincidir
+ * com o início de algum token do nome canônico, em qualquer ordem. Isso mantém
+ * a busca parcial útil ("Mari" -> "Maria") sem aceitar substring interna que
+ * gere falso positivo evidente ("Ana" não encontra "Mariana").
  */
 export function patientNameMatchesSearch(fullName: string, normalizedQuery: string): boolean {
-  const normalizedName = normalizePersonName(fullName);
-  const terms = patientSearchTerms(normalizedQuery);
-  return terms.length > 0 && terms.every((term) => normalizedName.includes(term));
+  const nameTokens = patientSearchTerms(normalizePersonName(fullName));
+  const queryTerms = patientSearchTerms(normalizedQuery);
+  return queryTerms.length > 0 && queryTerms.every((queryTerm) =>
+    nameTokens.some((nameToken) => nameToken.startsWith(queryTerm)),
+  );
 }
 
 function toIsoDate(value?: Date | string | null): string | null {
