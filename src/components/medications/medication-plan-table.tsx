@@ -21,12 +21,16 @@ export function MedicationPlanTable({
 
   return (
     <section className={styles.card} aria-labelledby="medication-plan-title">
-      <div className={`section-heading ${styles.heading}`}>
+      <div className={styles.heading}>
         <div>
-          <p className="eyebrow">Plano de medicamentos</p>
-          <h2 id="medication-plan-title">Horários de {model.patientName}</h2>
+          <p className={styles.kicker}>Medicações em uso</p>
+          <h2 id="medication-plan-title">Tabela de medicações</h2>
+          <p className={styles.description}>Lista estruturada dos medicamentos em uso atual pelo paciente.</p>
         </div>
-        <p className="muted">Use somente conforme a orientação médica registrada.</p>
+        <div className={styles.patientIdentity}>
+          <span>Paciente</span>
+          <strong>{model.patientName}</strong>
+        </div>
       </div>
 
       {model.rows.length === 0 ? (
@@ -62,7 +66,7 @@ export function MedicationPlanTable({
                           className={`${styles.check} ${selected ? styles.selected : ""}`}
                           aria-label={selected ? `${MEDICATION_MOMENT_LABELS[moment]} selecionado` : `${MEDICATION_MOMENT_LABELS[moment]} não selecionado`}
                         >
-                          {selected ? "✓" : "—"}
+                          {selected ? "✓" : ""}
                         </span>
                       </td>
                     );
