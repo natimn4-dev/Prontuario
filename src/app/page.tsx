@@ -1,5 +1,5 @@
 import { PatientFinder } from "@/components/patients/patient-finder";
-import { requireAuthenticatedUser } from "@/server/auth/require-user";
+import { listRecentPatientsForSelection } from "@/server/patients/search-patients";
 
 const modules = [
   ["Paciente", "Identidade segura, homônimos e continuidade longitudinal"],
@@ -13,22 +13,27 @@ const modules = [
 ];
 
 export default async function Home() {
-  await requireAuthenticatedUser("patient.read");
+  const recentPatients = await listRecentPatientsForSelection();
 
   return (
-    <main className="shell">
-      <header className="hero">
-        <p className="eyebrow">Prática clínica · continuidade do cuidado</p>
-        <h1>Prontuário Aprimorado</h1>
-        <p>
-          Paciente → AGA inicial → Escalas → Problemas clínicos e geriátricos →
-          Medicações → SOAP → Revisão clínica → Relatório final.
-        </p>
+    <main className="shell home-shell">
+      <header className="hero home-hero">
+        <div>
+          <p className="eyebrow">Prática clínica · continuidade do cuidado</p>
+          <h1>Prontuário Aprimorado</h1>
+          <p>
+            Localize o paciente e continue diretamente no contexto clínico atual, com AGA,
+            escalas, problemas, medicações, SOAP e relatório longitudinal no mesmo fluxo.
+          </p>
+        </div>
+        <div className="home-flow" aria-label="Fluxo principal">
+          <span>Paciente</span><span>Consulta</span><span>Avaliação</span><span>Documentos</span>
+        </div>
       </header>
 
-      <PatientFinder />
+      <PatientFinder initialResults={recentPatients} />
 
-      <section className="notice">
+      <section className="notice home-safety-note">
         <strong>Segurança por padrão</strong>
         <span>
           A seleção do paciente precede o fluxo clínico. Documentos permanecem vinculados
@@ -37,7 +42,7 @@ export default async function Home() {
         </span>
       </section>
 
-      <section className="grid" aria-label="Etapas do fluxo clínico">
+      <section className="grid home-module-grid" aria-label="Etapas do fluxo clínico">
         {modules.map(([title, description]) => (
           <article className="card" key={title}>
             <h2>{title}</h2>
