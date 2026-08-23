@@ -97,8 +97,12 @@ test("401, 403, 400 e 500 são mensagens de erro distintas e nunca viram ausênc
 });
 
 test("serviço exige patient.read, tenta o índice canônico e limita o fallback legado", () => {
-  const source = readFileSync(
+  const boundarySource = readFileSync(
     new URL("../../src/server/patients/search-patients.ts", import.meta.url),
+    "utf8",
+  );
+  const databaseSource = readFileSync(
+    new URL("../../src/server/patients/search-patients-database.ts", import.meta.url),
     "utf8",
   );
 
@@ -106,19 +110,19 @@ test("serviço exige patient.read, tenta o índice canônico e limita o fallback
   assert.equal(PATIENT_SEARCH_CANDIDATE_MULTIPLIER, 4);
   assert.equal(PATIENT_SEARCH_FALLBACK_PAGE_SIZE, 100);
   assert.equal(PATIENT_SEARCH_FALLBACK_MAX_PAGES, 20);
-  assert.match(source, /requireAuthenticatedUser\("patient\.read"\)/);
-  assert.match(source, /searchPatientsInDatabase\(prisma, query\)/);
-  assert.match(source, /normalizedFullName/);
-  assert.match(source, /patientNameMatchesSearch/);
-  assert.match(source, /PATIENT_SEARCH_FALLBACK_PAGE_SIZE/);
-  assert.match(source, /PATIENT_SEARCH_FALLBACK_MAX_PAGES/);
-  assert.match(source, /cursor:\s*\{ id: cursor \}/);
-  assert.match(source, /orderBy:\s*\{ id: "asc" \}/);
-  assert.doesNotMatch(source, /while \(matched\.size < PATIENT_SEARCH_LIMIT\)/);
-  assert.match(source, /status:[\s\S]*DRAFT[\s\S]*IN_REVIEW/);
-  assert.doesNotMatch(source, /phone:\s*true/);
-  assert.doesNotMatch(source, /caregiverPhone:\s*true/);
-  assert.doesNotMatch(source, /identifiers:\s*true/);
+  assert.match(boundarySource, /requireAuthenticatedUser\("patient\.read"\)/);
+  assert.match(boundarySource, /searchPatientsInDatabase\(prisma, query\)/);
+  assert.match(databaseSource, /normalizedFullName/);
+  assert.match(databaseSource, /patientNameMatchesSearch/);
+  assert.match(databaseSource, /PATIENT_SEARCH_FALLBACK_PAGE_SIZE/);
+  assert.match(databaseSource, /PATIENT_SEARCH_FALLBACK_MAX_PAGES/);
+  assert.match(databaseSource, /cursor:\s*\{ id: cursor \}/);
+  assert.match(databaseSource, /orderBy:\s*\{ id: "asc" \}/);
+  assert.doesNotMatch(databaseSource, /while \(matched\.size < PATIENT_SEARCH_LIMIT\)/);
+  assert.match(databaseSource, /status:[\s\S]*DRAFT[\s\S]*IN_REVIEW/);
+  assert.doesNotMatch(databaseSource, /phone:\s*true/);
+  assert.doesNotMatch(databaseSource, /caregiverPhone:\s*true/);
+  assert.doesNotMatch(databaseSource, /identifiers:\s*true/);
 });
 
 test("fronteira HTTP e UI evitam cache, diferenciam falha e usam o destino clínico correto", () => {
