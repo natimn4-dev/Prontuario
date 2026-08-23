@@ -124,6 +124,7 @@ test("fronteira HTTP e UI evitam cache, mostram o nome e usam o destino clínico
   assert.match(finderSource, /Continuar consulta/);
   assert.match(finderSource, /Paciente localizado/);
   assert.match(finderStyles, /\.resultName/);
-  assert.match(finderStyles, /font-size:\s*18px/);
+  assert.match(finderStyles, /font-size:\s*17px/);
+  assert.match(finderStyles, /font-weight:\s*850/);
   assert.match(finderStyles, /var\(--primary-soft\)/);
 });
