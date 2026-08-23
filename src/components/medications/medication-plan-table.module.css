@@ -1,20 +1,64 @@
 .card {
-  margin: 32px 0;
-  padding: 24px;
-  border: 1px solid var(--line);
-  border-radius: 14px;
+  margin: 18px 0 0;
+  padding: 0;
+  overflow: hidden;
+  border: 1px solid #dfd4e8;
+  border-radius: 13px;
   background: #fff;
 }
 
 .heading {
-  margin-bottom: 16px;
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 20px;
+  padding: 18px 20px;
+  border-bottom: 1px solid #e8e1ed;
+  background: linear-gradient(180deg, #fff, #fdfbff);
 }
 
-.heading p {
-  max-width: 420px;
+.kicker {
+  margin: 0 0 4px;
+  color: #5b238f;
+  font-size: 10px;
+  font-weight: 850;
+  letter-spacing: .07em;
+  text-transform: uppercase;
+}
+
+.heading h2 {
   margin: 0;
-  text-align: right;
+  color: #211a27;
+  font-size: 21px;
+  line-height: 1.2;
+  letter-spacing: -.02em;
+}
+
+.description {
+  margin: 5px 0 0;
+  color: #706a79;
+  font-size: 12px;
   line-height: 1.45;
+}
+
+.patientIdentity {
+  display: grid;
+  justify-items: end;
+  gap: 2px;
+  min-width: 180px;
+}
+
+.patientIdentity span {
+  color: #837b88;
+  font-size: 9px;
+  font-weight: 800;
+  letter-spacing: .05em;
+  text-transform: uppercase;
+}
+
+.patientIdentity strong {
+  color: #4d236e;
+  font-size: 13px;
 }
 
 .wrap {
@@ -24,95 +68,88 @@
 
 .table {
   width: 100%;
-  min-width: 980px;
+  min-width: 920px;
   border-collapse: collapse;
-  font-size: 13px;
+  font-size: 12px;
 }
 
 .table th,
 .table td {
-  padding: 12px 10px;
-  border-bottom: 1px solid var(--line);
+  padding: 11px 10px;
+  border-right: 1px solid #ece6f0;
+  border-bottom: 1px solid #ece6f0;
   vertical-align: middle;
   text-align: left;
 }
 
+.table tr > *:last-child { border-right: 0; }
+.table tbody tr:last-child > * { border-bottom: 0; }
+
 .table thead th {
-  color: var(--muted);
-  font-size: 10px;
+  color: #4d236e;
+  background: #f6f0fa;
+  font-size: 9px;
+  font-weight: 850;
   letter-spacing: .04em;
+  text-align: center;
   text-transform: uppercase;
 }
 
-.table tbody th {
-  min-width: 180px;
+.table thead th:first-child,
+.table thead th:nth-child(2),
+.table thead th:nth-child(3) {
+  text-align: left;
 }
+
+.table tbody th {
+  min-width: 170px;
+  color: #29222e;
+}
+
+.table tbody tr:hover { background: #fdfbff; }
 
 .continuous {
   display: block;
-  margin-top: 4px;
-  color: var(--muted);
-  font-size: 11px;
-  font-weight: 400;
+  margin-top: 3px;
+  color: #7b7480;
+  font-size: 9px;
+  font-weight: 500;
 }
 
 .moment {
-  min-width: 74px;
+  min-width: 68px;
   text-align: center !important;
 }
 
 .check {
   display: inline-grid;
-  width: 26px;
-  height: 26px;
+  width: 23px;
+  height: 23px;
   place-items: center;
-  border: 1px solid var(--line);
-  border-radius: 6px;
-  color: var(--muted);
-  font-weight: 800;
+  border: 1px solid #cfc5d6;
+  border-radius: 4px;
+  background: #fff;
+  color: #fff;
+  font-size: 13px;
+  font-weight: 850;
 }
 
 .selected {
-  border-color: var(--primary);
-  background: var(--primary-soft);
-  color: var(--primary);
+  border-color: #5b238f;
+  background: #5b238f;
+  color: #fff;
 }
 
 @media (max-width: 760px) {
-  .card {
-    padding: 18px;
-  }
-
-  .heading p {
-    max-width: none;
-    text-align: left;
-  }
+  .heading { align-items: flex-start; flex-direction: column; }
+  .patientIdentity { justify-items: start; min-width: 0; }
 }
 
 @media print {
-  .card {
-    margin: 6mm 0;
-    padding: 0;
-    border: 0;
-  }
-
-  .wrap {
-    overflow: visible;
-  }
-
-  .table {
-    min-width: 0;
-    font-size: 9pt;
-  }
-
-  .table th,
-  .table td {
-    padding: 2.5mm 1.5mm;
-  }
-
-  .check {
-    width: 5mm;
-    height: 5mm;
-    border-color: #777;
-  }
+  .card { margin: 4mm 0; border-color: #aaa; border-radius: 0; }
+  .heading { padding: 3mm 4mm; }
+  .wrap { overflow: visible; }
+  .table { min-width: 0; font-size: 8pt; }
+  .table th, .table td { padding: 2mm 1.3mm; }
+  .check { width: 4.5mm; height: 4.5mm; border-color: #777; }
 }
