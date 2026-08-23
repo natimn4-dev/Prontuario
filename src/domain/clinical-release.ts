@@ -1,1 +1,1 @@
-export const CLINICAL_RELEASE_ID = "2026-08-23-patient-entry-workspace-v2" as const;
+export const CLINICAL_RELEASE_ID = "2026-08-23-pa-cds-v1" as const;
