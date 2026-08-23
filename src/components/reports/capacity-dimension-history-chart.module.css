@@ -1,6 +1,6 @@
 .figure {
-  margin: 20px 0;
-  padding: 18px;
+  margin: 16px 0 0;
+  padding: 16px;
   border: 1px solid var(--line);
   border-radius: 14px;
   background: #fff;
@@ -11,18 +11,19 @@
   display: flex;
   align-items: flex-start;
   justify-content: space-between;
-  gap: 16px;
-  margin-bottom: 14px;
+  gap: 18px;
+  margin-bottom: 12px;
 }
 
 .caption > div {
   display: grid;
-  gap: 5px;
+  gap: 4px;
 }
 
 .caption strong {
-  color: var(--primary);
-  font-size: 17px;
+  color: var(--primary-strong);
+  font-size: 16px;
+  line-height: 1.3;
 }
 
 .caption span,
@@ -31,29 +32,21 @@
 .methodDetails,
 .readingGuide {
   color: var(--muted);
-  font-size: 12px;
-  line-height: 1.5;
-}
-
-.modelBadge {
-  flex: 0 0 auto;
-  padding: 5px 8px;
-  border: 1px solid var(--line);
-  border-radius: 999px;
-  background: var(--primary-soft);
-  color: var(--primary) !important;
-  font-size: 10px !important;
-  font-weight: 700;
-  white-space: nowrap;
+  font-size: 11px;
+  line-height: 1.48;
 }
 
 .statusLegend {
   display: flex;
   flex-wrap: wrap;
-  gap: 8px 14px;
-  margin: 0 0 14px;
+  gap: 7px 13px;
+  margin: 0 0 12px;
+  padding: 9px 11px;
+  border: 1px solid #eee8f2;
+  border-radius: 10px;
+  background: #fcfbfe;
   color: var(--muted);
-  font-size: 11px;
+  font-size: 10px;
 }
 
 .statusLegend span {
@@ -63,16 +56,16 @@
 }
 
 .statusLegend i {
-  width: 10px;
-  height: 10px;
-  border: 1px solid var(--line);
+  width: 9px;
+  height: 9px;
+  border: 1px solid #d7d0da;
   border-radius: 50%;
   background: #fff;
 }
 
-.statusLegend i[data-status="preserved"] { background: #edf6f0; border-color: #4c765f; }
-.statusLegend i[data-status="attention"] { background: #fff8e6; border-color: #b58a28; }
-.statusLegend i[data-status="altered"] { background: #f8e8e8; border-color: #8f3b3b; }
+.statusLegend i[data-status="preserved"] { background: #edf7f1; border-color: #4f8a67; }
+.statusLegend i[data-status="attention"] { background: #fff7e8; border-color: #c6912b; }
+.statusLegend i[data-status="altered"] { background: #faecee; border-color: #b94a59; }
 .statusLegend i[data-status="indeterminate"] {
   border-radius: 2px;
   transform: rotate(45deg);
@@ -81,115 +74,100 @@
 }
 .statusLegend i[data-status="missing"] {
   background: #fff;
-  border-color: #a7a0a1;
+  border-color: #aaa1ad;
   border-style: dashed;
 }
 
 .scroll {
+  width: 100%;
   overflow-x: auto;
-  border: 1px solid var(--line);
+  border: 1px solid #e7e1eb;
   border-radius: 12px;
   background: #fff;
+  scrollbar-gutter: stable;
 }
 
 .timelineCanvas {
-  padding: 12px;
+  box-sizing: content-box;
+  padding: 10px;
 }
 
 .dateRow,
 .dimensionRow {
   display: grid;
-  grid-template-columns: 200px minmax(700px, 1fr);
+  grid-template-columns: 190px minmax(0, 1fr);
   align-items: stretch;
+  width: 100%;
 }
 
 .dateRow {
-  margin-bottom: 10px;
+  margin-bottom: 5px;
 }
 
 .dateRowLabel {
   align-self: center;
-  padding: 0 14px;
-  color: var(--muted);
-  font-size: 11px;
-  font-weight: 700;
-  text-transform: uppercase;
+  padding: 0 12px;
+  color: #7a7280;
+  font-size: 10px;
+  font-weight: 750;
   letter-spacing: .04em;
+  text-transform: uppercase;
 }
 
 .dateAxis,
 .domainChart {
   display: block;
-  width: 100%;
-  height: auto;
+  max-width: none;
+  flex: none;
 }
 
 .dateBaseline,
 .dateTick,
 .statusGuide {
-  stroke: var(--line);
+  stroke: #e4dfe8;
   stroke-width: 1;
 }
 
 .dateLabel,
 .targetLabel {
   fill: var(--muted);
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: "Segoe UI", Arial, sans-serif;
 }
 
 .dateLabel {
-  font-size: 10px;
+  font-size: 9px;
 }
 
 .targetLabel {
   fill: var(--primary);
-  font-size: 8px;
-  font-weight: 800;
+  font-size: 7.5px;
+  font-weight: 850;
 }
 
-.dimensionGroup + .dimensionGroup {
-  margin-top: 16px;
-  padding-top: 14px;
-  border-top: 1px solid var(--line);
-}
-
-.groupHeading {
-  display: grid;
-  gap: 3px;
-  margin: 0 0 8px;
-  padding: 0 10px;
-}
-
-.groupHeading strong {
-  color: var(--primary);
-  font-size: 13px;
-}
-
-.groupHeading span {
-  color: var(--muted);
-  font-size: 11px;
-  line-height: 1.45;
+.dimensionGroup {
+  overflow: hidden;
+  border: 1px solid #eee8f2;
+  border-radius: 11px;
+  background: #fff;
 }
 
 .dimensionRow {
-  min-height: 104px;
-  border-radius: 10px;
+  min-height: 78px;
+  background: #fff;
 }
 
 .dimensionRow + .dimensionRow {
-  margin-top: 4px;
-}
-
-.dimensionRow:nth-of-type(even) {
-  background: #fcfbfb;
+  border-top: 1px solid #f0ebf3;
 }
 
 .dimensionSummary {
   display: grid;
   align-content: center;
-  gap: 9px;
-  padding: 12px 14px;
+  gap: 6px;
+  min-height: 78px;
+  padding: 9px 12px;
   border-left: 4px solid currentColor;
+  background: linear-gradient(90deg, color-mix(in srgb, currentColor 5%, #fff), #fff 72%);
 }
 
 .dimensionSummary > div {
@@ -199,42 +177,42 @@
 
 .dimensionSummary strong {
   color: var(--ink);
-  font-size: 13px;
+  font-size: 12px;
   line-height: 1.3;
 }
 
 .dimensionSummary > div span {
-  color: var(--muted);
-  font-size: 10px;
+  color: #7b7480;
+  font-size: 9px;
 }
 
 .latestBadge {
   justify-self: start;
-  max-width: 176px;
+  max-width: 165px;
   padding: 4px 7px;
-  border: 1px solid var(--line);
+  border: 1px solid #dfd8e4;
   border-radius: 999px;
   background: #fff;
   color: var(--muted);
-  font-size: 10px;
-  font-weight: 700;
-  line-height: 1.25;
+  font-size: 9px;
+  font-weight: 750;
+  line-height: 1.2;
 }
 
-.latestBadge[data-status="preserved"] { background: #edf6f0; border-color: #b8d2c0; color: #315b43; }
-.latestBadge[data-status="attention"] { background: #fff8e6; border-color: #ead7a4; color: #765a18; }
-.latestBadge[data-status="altered"] { background: #f8e8e8; border-color: #e2bcbc; color: #783232; }
+.latestBadge[data-status="preserved"] { background: #edf7f1; border-color: #b7d8c3; color: #2f6245; }
+.latestBadge[data-status="attention"] { background: #fff7e8; border-color: #ead29d; color: #775917; }
+.latestBadge[data-status="altered"] { background: #faecee; border-color: #e4bcc3; color: #7c3440; }
 .latestBadge[data-status="indeterminate"] { background: var(--primary-soft); border-style: dashed; color: var(--primary); }
-.latestBadge[data-status="recorded"] { background: #f5f3f3; color: var(--muted); }
-.latestBadge[data-status="not-assessed"] { border-style: dashed; color: #81797b; }
+.latestBadge[data-status="recorded"] { background: #f6f4f7; color: var(--muted); }
+.latestBadge[data-status="not-assessed"] { border-style: dashed; color: #837b87; }
 
 .domainChart {
-  min-height: 96px;
+  background: #fff;
 }
 
 .statusGuide {
   stroke-dasharray: 2 5;
-  opacity: .85;
+  opacity: .82;
 }
 
 .targetGuide {
@@ -247,10 +225,10 @@
 .seriesLine {
   fill: none;
   stroke: currentColor;
-  stroke-width: 3;
+  stroke-width: 2.2;
   stroke-linejoin: round;
   stroke-linecap: round;
-  opacity: .78;
+  opacity: .82;
 }
 
 .seriesPoint,
@@ -262,83 +240,88 @@
 }
 
 .seriesPoint {
-  stroke-width: 2.5;
+  stroke-width: 2;
 }
 
-.seriesPoint[data-status="preserved"] { fill: #edf6f0; }
-.seriesPoint[data-status="attention"] { fill: #fff8e6; }
-.seriesPoint[data-status="altered"] { fill: #f8e8e8; }
+.seriesPoint[data-status="preserved"] { fill: #edf7f1; }
+.seriesPoint[data-status="attention"] { fill: #fff7e8; }
+.seriesPoint[data-status="altered"] { fill: #faecee; }
 
 .inflectionHalo {
   fill: none;
-  stroke: #b58a28;
-  stroke-width: 2;
+  stroke: #d1992d;
+  stroke-width: 1.6;
 }
 
 .indeterminatePoint {
   fill: var(--primary-soft);
-  stroke-width: 2;
+  stroke-width: 1.6;
   stroke-dasharray: 2 1;
 }
 
 .recordedPoint {
-  fill: #f5f3f3;
-  stroke-width: 2;
+  fill: #f4f1f5;
+  stroke-width: 1.6;
 }
 
 .missingPoint {
   fill: #fff;
-  stroke: #a7a0a1;
-  stroke-width: 1.8;
+  stroke: #aaa1ad;
+  stroke-width: 1.5;
   stroke-dasharray: 2 2;
 }
 
-.dimensionRow[data-dimension="funcionalidade"] { color: var(--primary); }
-.dimensionRow[data-dimension="locomocao"] { color: #9a7440; }
-.dimensionRow[data-dimension="cognicao"] { color: #4f7189; }
-.dimensionRow[data-dimension="psicologico"] { color: #996277; }
-.dimensionRow[data-dimension="vitalidade"] { color: #5f8068; }
-.dimensionRow[data-dimension="sensorial"] { color: #6d6b82; }
+.dimensionRow[data-dimension="funcionalidade"] { color: #5b238f; }
+.dimensionRow[data-dimension="locomocao"] { color: #9a6a32; }
+.dimensionRow[data-dimension="cognicao"] { color: #416f91; }
+.dimensionRow[data-dimension="psicologico"] { color: #9b5f79; }
+.dimensionRow[data-dimension="vitalidade"] { color: #4f8060; }
+.dimensionRow[data-dimension="sensorial"] { color: #68647e; }
 
 .readingGuide {
   display: grid;
-  gap: 2px;
-  margin-top: 12px;
-  padding: 11px 13px;
+  grid-template-columns: auto 1fr;
+  gap: 3px 12px;
+  margin-top: 10px;
+  padding: 10px 12px;
+  border: 1px solid #ebe4ef;
   border-radius: 10px;
-  background: var(--primary-soft);
+  background: #faf7fc;
 }
 
 .readingGuide strong {
+  grid-row: 1 / span 2;
+  align-self: center;
   color: var(--primary);
-  font-size: 11px;
+  font-size: 10px;
 }
 
 .inflectionSection {
-  margin-top: 14px;
-  padding: 14px 16px;
-  border-left: 4px solid #b58a28;
+  margin-top: 12px;
+  padding: 12px 14px;
+  border: 1px solid #f0d6a4;
+  border-left: 4px solid #c6902b;
   border-radius: 10px;
-  background: #fff8e6;
+  background: #fff9ed;
 }
 
 .inflectionSection h3 {
-  margin: 0 0 8px;
+  margin: 0 0 7px;
   color: var(--primary);
-  font-size: 13px;
+  font-size: 12px;
 }
 
 .inflectionSection ul {
   display: grid;
-  gap: 9px;
+  gap: 8px;
   margin: 0;
-  padding-left: 18px;
+  padding-left: 17px;
 }
 
 .inflectionSection li {
   color: var(--ink);
-  font-size: 11px;
-  line-height: 1.45;
+  font-size: 10px;
+  line-height: 1.43;
 }
 
 .inflectionSection li strong,
@@ -352,117 +335,118 @@
 }
 
 .causalityNote {
-  margin: 10px 0 0;
+  margin: 8px 0 0;
   font-style: italic;
 }
 
 .methodDetails {
-  margin-top: 12px;
-  padding-top: 10px;
-  border-top: 1px solid var(--line);
+  margin-top: 10px;
+  padding-top: 9px;
+  border-top: 1px solid #ebe5ee;
 }
 
 .methodDetails summary {
   cursor: pointer;
   color: var(--primary);
-  font-size: 11px;
-  font-weight: 700;
+  font-size: 10px;
+  font-weight: 750;
 }
 
 .methodDetails p,
 .frameworkNote {
-  margin: 8px 0 0;
+  margin: 7px 0 0;
 }
 
 .empty {
   margin: 0;
-  padding: 14px;
-  border-radius: 10px;
+  padding: 12px;
+  border-radius: 9px;
   background: var(--primary-soft);
   color: var(--muted);
 }
 
-@media (max-width: 760px) {
+@media (max-width: 640px) {
   .figure {
-    margin: 14px 0;
-    padding: 14px;
+    margin: 12px 0;
+    padding: 12px;
   }
 
   .caption {
     display: grid;
-    gap: 10px;
-  }
-
-  .modelBadge {
-    justify-self: start;
+    gap: 8px;
   }
 
   .statusLegend {
-    gap: 7px 11px;
+    gap: 6px 10px;
   }
 
   .timelineCanvas {
-    padding: 8px;
-  }
-
-  .dateRow,
-  .dimensionRow {
-    grid-template-columns: 164px minmax(700px, 1fr);
-  }
-
-  .dimensionSummary {
-    padding: 10px;
+    padding: 7px;
   }
 
   .dimensionSummary strong {
-    font-size: 12px;
+    font-size: 11px;
   }
 
-  .latestBadge {
-    max-width: 142px;
-    font-size: 9px;
+  .readingGuide {
+    grid-template-columns: 1fr;
+  }
+
+  .readingGuide strong {
+    grid-row: auto;
   }
 }
 
 @media print {
   .figure {
-    padding: 10px;
+    margin: 3mm 0;
+    padding: 3mm;
+    border-color: #bbb;
   }
 
   .scroll {
     overflow: visible;
-    border-color: #bbb;
+    border: 0;
   }
 
   .timelineCanvas {
-    min-width: 0 !important;
-    padding: 6px;
+    box-sizing: border-box;
+    width: 100% !important;
+    padding: 0;
   }
 
   .dateRow,
   .dimensionRow {
-    grid-template-columns: 150px minmax(0, 1fr);
+    grid-template-columns: 37mm minmax(0, 1fr);
+  }
+
+  .dateAxis,
+  .domainChart {
+    width: 100%;
+    height: auto;
+  }
+
+  .dimensionGroup {
+    break-inside: avoid;
   }
 
   .dateRowLabel,
   .dimensionSummary > div span,
-  .groupHeading span,
   .readingGuide,
   .frameworkNote,
   .causalityNote,
   .methodDetails,
   .inflectionSection li {
-    font-size: 8px;
+    font-size: 7pt;
   }
 
-  .dimensionSummary strong,
-  .groupHeading strong {
-    font-size: 9px;
+  .dimensionSummary strong {
+    font-size: 8pt;
   }
 
   .latestBadge {
-    max-width: 138px;
-    font-size: 7px;
+    max-width: 33mm;
+    font-size: 6.5pt;
   }
 
   .inflectionSection {
