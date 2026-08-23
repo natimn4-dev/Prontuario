@@ -9,6 +9,7 @@ on:
 
 permissions:
   contents: read
+  issues: write
 
 concurrency:
   group: production-clinical-smoke
@@ -33,6 +34,8 @@ jobs:
       - name: Show release target
         run: echo "Validating production against commit ${TARGET_SHA}"
       - name: Wait for deployment and verify clinical perimeter
+        id: clinical_smoke
+        continue-on-error: true
         shell: bash
         run: |
           set -uo pipefail
@@ -47,3 +50,67 @@ jobs:
           done
           echo "Production did not satisfy the clinical smoke gate after 30 attempts." >&2
           exit 1
+      - name: Record stale production deployment
+        if: steps.clinical_smoke.outcome == 'failure'
+        uses: actions/github-script@v7
+        env:
+          TARGET_SHA: ${{ env.TARGET_SHA }}
+        with:
+          script: |
+            const owner = context.repo.owner;
+            const repo = context.repo.repo;
+            const title = "Production deployment drift detected";
+            const marker = "<!-- production-deployment-drift -->";
+            const body = `${marker}\nProduction did not reach the release from \`${process.env.TARGET_SHA}\` within the smoke window.\n\nThis means CI passed but the Hostinger production deployment is stale, disconnected, or failed to build.\n\nRequired operational checks:\n1. Hostinger Node.js app is connected to \`${owner}/${repo}\` on branch \`main\`.\n2. Latest deployment targets commit \`${process.env.TARGET_SHA}\`.\n3. Build logs contain \`CLINICAL_RELEASE=PRESTART_OK\`.\n4. If GitHub integration is disconnected, reconnect it and use **Settings & Redeploy**.\n5. Clear Hostinger website cache only after a healthy deployment, then rerun this smoke.\n\nDo not treat production as current until the workflow returns \`SMOKE_OK\`.`;
+
+            const { data: openIssues } = await github.rest.issues.listForRepo({
+              owner,
+              repo,
+              state: "open",
+              per_page: 100,
+            });
+            const existing = openIssues.find((issue) => issue.title === title && issue.body?.includes(marker));
+
+            if (existing) {
+              await github.rest.issues.createComment({
+                owner,
+                repo,
+                issue_number: existing.number,
+                body: `Production is still stale for target \`${process.env.TARGET_SHA}\`. See workflow run ${context.runId}.`,
+              });
+            } else {
+              await github.rest.issues.create({ owner, repo, title, body });
+            }
+      - name: Close resolved production drift incident
+        if: steps.clinical_smoke.outcome == 'success'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const owner = context.repo.owner;
+            const repo = context.repo.repo;
+            const title = "Production deployment drift detected";
+            const marker = "<!-- production-deployment-drift -->";
+            const { data: openIssues } = await github.rest.issues.listForRepo({
+              owner,
+              repo,
+              state: "open",
+              per_page: 100,
+            });
+            for (const issue of openIssues.filter((item) => item.title === title && item.body?.includes(marker))) {
+              await github.rest.issues.createComment({
+                owner,
+                repo,
+                issue_number: issue.number,
+                body: `Production smoke recovered successfully in workflow run ${context.runId}. Closing this incident automatically.`,
+              });
+              await github.rest.issues.update({
+                owner,
+                repo,
+                issue_number: issue.number,
+                state: "closed",
+                state_reason: "completed",
+              });
+            }
+      - name: Fail workflow after incident is recorded
+        if: steps.clinical_smoke.outcome == 'failure'
+        run: exit 1
