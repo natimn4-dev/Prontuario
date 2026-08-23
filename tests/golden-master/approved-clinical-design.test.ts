@@ -60,7 +60,8 @@ test("gráfico longitudinal preserva pequenos múltiplos e geometria compacta se
   assert.match(styles, /grid-template-columns:\s*190px minmax\(0, 1fr\)/);
   assert.match(styles, /\.dimensionGroup/);
   assert.match(styles, /overflow-x:\s*auto/);
-  assert.doesNotMatch(styles, /\.dateAxis, \.domainChart \{[^}]*width:\s*100%/);
+  assert.match(styles, /\.dateAxis, \.domainChart \{ display: block; max-width: none; flex: none; \}/);
+  assert.doesNotMatch(styles, /min-height:\s*88px/);
   assert.doesNotMatch(chart, /globalScore|compositeScore|overallScore/);
 });
 
