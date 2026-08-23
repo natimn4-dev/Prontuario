@@ -6,7 +6,8 @@ import styles from "./page.module.css";
 
 const BRAND_LOGO_PATH = "/brand/natalia-mendes-logo.svg";
 
-function formatDate(value: string): string {
+function formatDate(value: string | null): string {
+  if (!value) return "Não registrada";
   return new Intl.DateTimeFormat("pt-BR", { timeZone: "UTC" }).format(new Date(value));
 }
 
