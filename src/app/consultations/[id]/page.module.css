@@ -1,99 +1,263 @@
 .consultationShell {
-  width: min(1240px, calc(100% - 32px));
+  width: min(1480px, calc(100% - 32px));
+  padding-top: 20px;
+}
+
+.clinicalTopbar {
+  position: sticky;
+  top: 0;
+  z-index: 20;
+  display: grid;
+  grid-template-columns: 230px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 20px;
+  min-height: 72px;
+  margin: 0 0 18px;
+  padding: 10px 14px;
+  border: 1px solid #e7e0ec;
+  border-radius: 14px;
+  background: rgb(255 255 255 / 96%);
+  box-shadow: 0 10px 28px rgb(49 27 68 / 6%);
+  backdrop-filter: blur(12px);
+}
+
+.brandLink {
+  display: inline-flex;
+  align-items: center;
+  min-width: 0;
+}
+
+.brandLink img {
+  display: block;
+  width: 188px;
+  max-width: 100%;
+  height: 46px;
+  object-fit: contain;
+  object-position: left center;
+}
+
+.flowBreadcrumbs {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 9px;
+  min-width: 0;
+  color: #746d79;
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.flowBreadcrumbs a {
+  color: #5f5866;
+  text-decoration: none;
+}
+
+.flowBreadcrumbs a:last-of-type {
+  color: #5b238f;
+}
+
+.flowBreadcrumbs span {
+  color: #aaa1af;
+  font-size: 18px;
+}
+
+.topbarActions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 10px;
+}
+
+.topbarStatus {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 34px;
+  padding: 6px 9px;
+  border-radius: 999px;
+  background: #f7f4f8;
+  color: #645c68;
+  font-size: 11px;
+  font-weight: 800;
+}
+
+.topbarStatus::before {
+  content: "";
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #8d8392;
+}
+
+.topbarStatus[data-status="DRAFT"]::before { background: #5b238f; }
+.topbarStatus[data-status="IN_REVIEW"]::before { background: #d39825; }
+.topbarStatus[data-status="FINALIZED"]::before { background: #249567; }
+
+.finalizeShortcut {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 42px;
+  padding: 10px 15px;
+  border-radius: 10px;
+  background: linear-gradient(135deg, #65259f, #4b187c);
+  color: #fff;
+  font-size: 12px;
+  font-weight: 800;
+  text-decoration: none;
+  box-shadow: 0 7px 16px rgb(80 29 126 / 13%);
 }
 
 .consultationLayout {
   display: grid;
   grid-template-columns: 220px minmax(0, 1fr);
   align-items: start;
-  gap: 24px;
+  gap: 20px;
 }
 
 .sidebarColumn {
   position: sticky;
-  top: 20px;
+  top: 90px;
   align-self: start;
   min-width: 0;
-  max-height: calc(100vh - 40px);
+  max-height: calc(100vh - 106px);
   overflow-y: auto;
   scrollbar-gutter: stable;
 }
 
-.contentColumn {
-  min-width: 0;
+.contentColumn { min-width: 0; }
+.sectionAnchor { scroll-margin-top: 100px; }
+.sectionAnchor + .sectionAnchor { margin-top: 20px; }
+
+.patientHero {
+  padding: 24px 26px 22px;
+  border-radius: 14px;
 }
 
-.sectionAnchor {
-  scroll-margin-top: 22px;
+.heroKickerRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 16px;
 }
 
-.sectionAnchor + .sectionAnchor {
-  margin-top: 24px;
+.heroKickerRow .patientLink {
+  margin: 0;
 }
 
 .identityHeading {
   display: flex;
   align-items: flex-start;
   justify-content: space-between;
-  gap: 20px;
+  gap: 24px;
+}
+
+.patientIdentityBlock {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  min-width: 0;
+}
+
+.patientAvatar {
+  display: grid;
+  flex: 0 0 auto;
+  width: 48px;
+  height: 48px;
+  place-items: center;
+  border: 2px solid #6b2ca1;
+  border-radius: 50%;
+  color: transparent;
+  position: relative;
+}
+
+.patientAvatar::before,
+.patientAvatar::after {
+  content: "";
+  position: absolute;
+  left: 50%;
+  transform: translateX(-50%);
+  border: 2px solid #6b2ca1;
+}
+
+.patientAvatar::before {
+  top: 9px;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+}
+
+.patientAvatar::after {
+  bottom: 8px;
+  width: 22px;
+  height: 12px;
+  border-radius: 14px 14px 8px 8px;
+  border-bottom: 0;
+}
+
+.patientIdentityBlock h1 {
+  color: #18131f;
+  font-size: clamp(28px, 3.2vw, 42px);
+  line-height: 1.02;
+  letter-spacing: -.035em;
 }
 
 .subtitle {
-  margin: 8px 0 0;
-  color: var(--muted);
-  font-size: 16px;
+  margin: 6px 0 0;
+  color: #706a79;
+  font-size: 14px;
   line-height: 1.4;
 }
 
 .statusBadge {
   flex: 0 0 auto;
-  padding: 8px 12px;
-  border: 1px solid var(--line);
+  padding: 7px 11px;
+  border: 1px solid #ded6e3;
   border-radius: 999px;
-  background: var(--primary-soft);
-  color: var(--ink);
-  font-size: 13px;
-  font-weight: 700;
+  background: #f7f4f8;
+  color: #5d5661;
+  font-size: 11px;
+  font-weight: 800;
 }
 
-.statusBadge[data-status="FINALIZED"] {
-  background: #eef4ef;
-  border-color: #b9cdbd;
-  color: #355a40;
-}
-
-.statusBadge[data-status="IN_REVIEW"] {
-  background: #fff8e6;
-  border-color: #d7a94d;
-  color: #6f5010;
-}
+.statusBadge[data-status="FINALIZED"] { background: #edf7f1; border-color: #bddbc8; color: #35654a; }
+.statusBadge[data-status="IN_REVIEW"] { background: #fff7e8; border-color: #ecd5a3; color: #745718; }
+.statusBadge[data-status="DRAFT"] { background: #f5effa; border-color: #d6c2e6; color: #5b238f; }
 
 .contextGrid {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 10px;
-  margin: 22px 0 0;
+  gap: 0;
+  margin: 20px 0 0;
+  border: 1px solid #e6e0eb;
+  border-radius: 11px;
+  overflow: hidden;
 }
 
 .contextGrid div {
   min-width: 0;
   padding: 12px 14px;
-  border: 1px solid var(--line);
-  border-radius: 10px;
-  background: var(--background);
+  background: #fcfbfd;
+}
+
+.contextGrid div + div {
+  border-left: 1px solid #e6e0eb;
 }
 
 .contextGrid dt {
-  color: var(--muted);
-  font-size: 12px;
-  font-weight: 700;
+  color: #7a7280;
+  font-size: 10px;
+  font-weight: 800;
   letter-spacing: .04em;
   text-transform: uppercase;
 }
 
 .contextGrid dd {
-  margin: 5px 0 0;
-  font-weight: 700;
+  margin: 4px 0 0;
+  color: #28212e;
+  font-size: 13px;
+  font-weight: 750;
   line-height: 1.35;
 }
 
@@ -101,36 +265,44 @@
   display: grid;
   gap: 4px;
   margin-top: 14px;
-  padding: 13px 15px;
-  border: 1px solid #d7a94d;
-  border-radius: 10px;
-  background: #fff8e6;
-  color: #5f4614;
+  padding: 12px 14px;
+  border: 1px solid #ebd2a1;
+  border-radius: 9px;
+  background: #fff8ea;
+  color: #654c16;
+  font-size: 12px;
   line-height: 1.4;
-}
-
-.identityWarning span {
-  font-size: 14px;
 }
 
 .patientLink {
   display: inline-block;
-  margin-top: 14px;
+  color: #5b238f;
+  font-size: 12px;
+  font-weight: 800;
+  text-decoration: none;
 }
 
-.intro {
-  max-width: 760px;
-  margin: 20px 0 0;
-  color: var(--muted);
-  font-size: 17px;
-  line-height: 1.55;
+.patientLink:hover { text-decoration: underline; }
+
+@media (max-width: 1100px) {
+  .clinicalTopbar { grid-template-columns: 190px minmax(0, 1fr) auto; }
+  .brandLink img { width: 165px; }
 }
 
 @media (max-width: 980px) {
-  .consultationLayout {
-    grid-template-columns: 1fr;
+  .clinicalTopbar {
+    position: relative;
+    top: auto;
+    grid-template-columns: 1fr auto;
   }
-
+  .flowBreadcrumbs {
+    grid-column: 1 / -1;
+    grid-row: 2;
+    justify-content: flex-start;
+    overflow-x: auto;
+    padding-top: 4px;
+  }
+  .consultationLayout { grid-template-columns: 1fr; }
   .sidebarColumn {
     position: relative;
     top: auto;
@@ -138,22 +310,26 @@
     max-height: none;
     overflow: visible;
   }
+  .sectionAnchor { scroll-margin-top: 22px; }
 }
 
 @media (max-width: 760px) {
-  .consultationShell {
-    width: min(100% - 20px, 1240px);
-  }
+  .consultationShell { width: min(100% - 20px, 1480px); }
+  .clinicalTopbar { grid-template-columns: 1fr; gap: 9px; }
+  .topbarActions { justify-content: space-between; }
+  .brandLink img { width: 175px; }
+  .flowBreadcrumbs { grid-row: auto; grid-column: auto; }
+  .identityHeading { display: grid; }
+  .statusBadge { width: fit-content; }
+  .patientIdentityBlock { align-items: flex-start; }
+  .patientAvatar { width: 42px; height: 42px; }
+  .contextGrid { grid-template-columns: 1fr; }
+  .contextGrid div + div { border-left: 0; border-top: 1px solid #e6e0eb; }
+  .heroKickerRow { align-items: flex-start; flex-direction: column; }
+}
 
-  .identityHeading {
-    display: grid;
-  }
-
-  .statusBadge {
-    width: fit-content;
-  }
-
-  .contextGrid {
-    grid-template-columns: 1fr;
-  }
+@media print {
+  .clinicalTopbar,
+  .sidebarColumn { display: none !important; }
+  .consultationLayout { display: block; }
 }
