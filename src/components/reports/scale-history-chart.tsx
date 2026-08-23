@@ -6,12 +6,12 @@ import { buildScaleChartPresentation } from "@/domain/scale-chart-presentation";
 import { selectScaleChartWindow, type ScaleChartWindow } from "@/domain/scale-chart-window";
 import styles from "./scale-history-chart.module.css";
 
-const HEIGHT = 220;
-const LEFT = 62;
-const RIGHT = 26;
-const TOP = 28;
-const BOTTOM = 52;
-const MIN_WIDTH = 720;
+const HEIGHT = 176;
+const LEFT = 54;
+const RIGHT = 24;
+const TOP = 24;
+const BOTTOM = 42;
+const MIN_WIDTH = 680;
 
 function displayDate(value: string): string {
   return new Intl.DateTimeFormat("pt-BR", {
@@ -27,9 +27,9 @@ function pointLabel(point: AgaScaleReportSection["chartSeries"]["points"][number
 }
 
 function pointSpacing(pointCount: number): number {
-  if (pointCount <= 8) return 112;
-  if (pointCount <= 16) return 88;
-  return 72;
+  if (pointCount <= 8) return 104;
+  if (pointCount <= 16) return 82;
+  return 68;
 }
 
 function chartWidth(pointCount: number): number {
@@ -40,6 +40,23 @@ function positionX(index: number, total: number, width: number): number {
   const usable = width - LEFT - RIGHT;
   if (total <= 1) return LEFT + usable / 2;
   return LEFT + (usable * index) / (total - 1);
+}
+
+function visualScoreRange(scores: readonly number[]): { min: number; max: number } {
+  const observedMin = Math.min(...scores);
+  const observedMax = Math.max(...scores);
+  const span = observedMax - observedMin;
+
+  if (span === 0) {
+    const padding = Math.max(1, Math.abs(observedMax) * 0.1);
+    return { min: observedMin - padding, max: observedMax + padding };
+  }
+
+  // Presentation-only breathing room. It prevents two nearby observations from
+  // occupying the full chart height; no clinical cut-off or scale range is
+  // inferred here.
+  const padding = Math.max(1, span * 0.5);
+  return { min: observedMin - padding, max: observedMax + padding };
 }
 
 function positionY(score: number, min: number, max: number): number {
@@ -57,8 +74,9 @@ export function ScaleHistoryChart({ scale }: { scale: AgaScaleReportSection }) {
 
   const points = chartSeries.points;
   const numeric = points.filter((point): point is typeof point & { score: number } => point.score !== null);
-  const min = presentation.canPlot ? Math.min(...numeric.map((point) => point.score)) : 0;
-  const max = presentation.canPlot ? Math.max(...numeric.map((point) => point.score)) : 0;
+  const displayRange = presentation.canPlot
+    ? visualScoreRange(numeric.map((point) => point.score))
+    : { min: 0, max: 0 };
   const width = chartWidth(points.length);
   const chartTitle = `Trajetória de ${scale.name}`;
   const chartDescription = `Janela visual com ${points.length} de ${fullSeries.points.length} registro(s). Trechos incompatíveis ou sem dados suficientes são exibidos com uma interrupção, sem conexão visual.`;
@@ -101,6 +119,7 @@ export function ScaleHistoryChart({ scale }: { scale: AgaScaleReportSection }) {
             className={styles.chart}
             viewBox={`0 0 ${width} ${HEIGHT}`}
             width={width}
+            height={HEIGHT}
             role="img"
             aria-label={`${chartTitle}. ${chartDescription}`}
           >
@@ -118,10 +137,10 @@ export function ScaleHistoryChart({ scale }: { scale: AgaScaleReportSection }) {
                 <line
                   key={`${segment.fromConsultationId}-${segment.toConsultationId}`}
                   x1={positionX(fromIndex, points.length, width)}
-                  y1={positionY(from.score, min, max)}
+                  y1={positionY(from.score, displayRange.min, displayRange.max)}
                   x2={positionX(toIndex, points.length, width)}
-                  y2={positionY(to.score, min, max)}
-                  className={styles.axis}
+                  y2={positionY(to.score, displayRange.min, displayRange.max)}
+                  className={styles.seriesLine}
                   aria-hidden="true"
                 />
               );
@@ -134,16 +153,16 @@ export function ScaleHistoryChart({ scale }: { scale: AgaScaleReportSection }) {
                 <g key={`${point.consultationId}-${point.appliedAt}`}>
                   <line x1={x} y1={TOP} x2={x} y2={HEIGHT - BOTTOM} className={styles.guide} />
                   {visibleDateLabels.has(index) ? (
-                    <text x={x} y={HEIGHT - 21} textAnchor="middle" className={styles.axisLabel}>{pointLabel(point)}</text>
+                    <text x={x} y={HEIGHT - 16} textAnchor="middle" className={styles.axisLabel}>{pointLabel(point)}</text>
                   ) : null}
                   {score === null ? (
                     <text x={x} y={TOP + 18} textAnchor="middle" className={styles.missing}>sem dado</text>
                   ) : (
                     <>
-                      <circle cx={x} cy={positionY(score, min, max)} r="7" className={styles.point} />
+                      <circle cx={x} cy={positionY(score, displayRange.min, displayRange.max)} r="5.5" className={styles.point} />
                       <text
                         x={x}
-                        y={positionY(score, min, max) - 14}
+                        y={positionY(score, displayRange.min, displayRange.max) - 11}
                         textAnchor="middle"
                         className={styles.score}
                       >
