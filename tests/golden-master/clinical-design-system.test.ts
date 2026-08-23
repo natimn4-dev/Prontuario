@@ -84,7 +84,7 @@ test("gráfico longitudinal aprovado usa small multiples por seis dimensões e m
   assert.match(chart, /Independência funcional/);
   assert.match(chart, /Capacidade intrínseca/);
   assert.match(chart, /orderedDimensions/);
-  assert.match(chart, />Atual</);
+  assert.match(chart, /targetLabel[\s\S]*?Atual/);
   assert.match(chart, /targetGuide/);
   assert.match(chart, /Pontos de inflexão observados/);
   assert.match(chart, /não atribui causa/);
