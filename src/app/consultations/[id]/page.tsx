@@ -45,12 +45,22 @@ export default async function ConsultationPage({ params }: { params: Promise<{ i
     <main className={`shell ${styles.consultationShell}`}>
       <div className={styles.consultationLayout}>
         <aside className={styles.sidebarColumn}>
-          <ConsultationSectionNav />
+          <ConsultationSectionNav
+            patientName={context.patientName}
+            patientBirthDateLabel={context.patientBirthDateLabel}
+            consultationDateLabel={context.consultationDateLabel}
+            consultationStatusLabel={context.consultationStatusLabel}
+          />
         </aside>
 
         <div className={styles.contentColumn}>
+          <div className={styles.workspaceTopbar} aria-label="Contexto do workspace">
+            <span>Paciente <b aria-hidden="true">›</b> Consulta <b aria-hidden="true">›</b> {context.consultationTypeLabel}</span>
+            <span className={styles.savedState}>Dados vinculados à consulta atual</span>
+          </div>
+
           <section id="resumo-consulta" className={styles.sectionAnchor} aria-labelledby="consultation-title">
-            <header className="hero compact-hero clinical-hero">
+            <header className={`hero compact-hero clinical-hero ${styles.clinicalHero}`}>
               <p className="eyebrow">Consulta geriátrica longitudinal</p>
               <div className={styles.identityHeading}>
                 <div>
@@ -84,12 +94,14 @@ export default async function ConsultationPage({ params }: { params: Promise<{ i
                 </div>
               ) : null}
 
-              <a className={styles.patientLink} href={`/patients/${context.patientId}`}>
-                Voltar ao cadastro do paciente
-              </a>
-              <p className={styles.intro}>
-                Navegue pelas etapas à esquerda para preencher a consulta com menos rolagem e manter o contexto clínico do paciente.
-              </p>
+              <div className={styles.heroFooter}>
+                <a className={styles.patientLink} href={`/patients/${context.patientId}`}>
+                  Voltar ao cadastro do paciente
+                </a>
+                <p className={styles.intro}>
+                  Use a navegação lateral para preencher a consulta por etapas e manter o contexto clínico sempre visível.
+                </p>
+              </div>
             </header>
           </section>
 
