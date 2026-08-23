@@ -16,13 +16,17 @@ export default async function Home() {
   await requireAuthenticatedUser("patient.read");
 
   return (
-    <main className="shell">
-      <header className="hero">
+    <main className="shell home-shell">
+      <header className="hero home-hero">
+        <div className="home-brand-row">
+          <img className="home-brand-logo" src="/brand/natalia-mendes-logo.svg" alt="Natalia Mendes — Médica Geriatra" />
+          <span className="home-product-badge">Prontuário Aprimorado</span>
+        </div>
         <p className="eyebrow">Prática clínica · continuidade do cuidado</p>
-        <h1>Prontuário Aprimorado</h1>
+        <h1>Consulta geriátrica, organizada do início ao relatório final.</h1>
         <p>
-          Paciente → AGA inicial → Escalas → Problemas clínicos e geriátricos →
-          Medicações → SOAP → Revisão clínica → Relatório final.
+          Localize o paciente e continue o atendimento no mesmo workspace: AGA inicial, escalas,
+          problemas, medicamentos, SOAP, revisão clínica e relatório para paciente e família.
         </p>
       </header>
 
@@ -37,13 +41,25 @@ export default async function Home() {
         </span>
       </section>
 
-      <section className="grid" aria-label="Etapas do fluxo clínico">
-        {modules.map(([title, description]) => (
-          <article className="card" key={title}>
-            <h2>{title}</h2>
-            <p>{description}</p>
-          </article>
-        ))}
+      <section className="home-flow-section" aria-labelledby="home-flow-title">
+        <div className="section-heading">
+          <div>
+            <p className="eyebrow">Fluxo do prontuário</p>
+            <h2 id="home-flow-title">Todas as etapas no mesmo padrão visual</h2>
+          </div>
+          <span className="muted">Baixa carga cognitiva · navegação consistente</span>
+        </div>
+        <div className="grid" aria-label="Etapas do fluxo clínico">
+          {modules.map(([title, description], index) => (
+            <article className="card home-flow-card" key={title}>
+              <span className="home-flow-number" aria-hidden="true">{index + 1}</span>
+              <div>
+                <h2>{title}</h2>
+                <p>{description}</p>
+              </div>
+            </article>
+          ))}
+        </div>
       </section>
 
       <p className="demo-link"><a href="/demo">Abrir demonstração longitudinal sintética →</a></p>
