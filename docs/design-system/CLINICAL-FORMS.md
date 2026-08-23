@@ -11,6 +11,25 @@
 - manter tab order previsível;
 - salvar com feedback inequívoco.
 
+## Busca de paciente existente
+
+O campo usa rótulo `Nome ou parte do nome`, suporta Enter e botão `Localizar paciente`.
+
+A correspondência final deve ser decidida pela função canônica da aplicação, tolerando caixa, acentos, espaços repetidos, nome parcial e termos em ordem diferente quando pertencem ao mesmo nome. O índice `normalizedFullName` pode acelerar a consulta, mas não substitui a validação canônica.
+
+A interface deve distinguir claramente:
+
+- carregamento;
+- nenhum resultado real (`200 + []`);
+- busca inválida (`400`);
+- autenticação necessária (`401`);
+- falta de permissão (`403`);
+- falha interna (`500`).
+
+Resultado válido exibe identidade suficiente para conferência, alerta de homônimo quando aplicável e status de consulta ativa. `DRAFT`/`IN_REVIEW` direciona para `Continuar consulta`; sem consulta ativa, `Abrir paciente`.
+
+Falha de busca nunca deve oferecer recadastro automático como substituição. Fingerprint, homônimos, identificadores fortes e confirmação de identidade permanecem independentes da lógica de pesquisa.
+
 ## Escalas
 
 Na caixa única `Escalas clínicas`:
@@ -31,7 +50,18 @@ Problemas clínicos e geriátricos devem ficar visualmente separados. Mudanças 
 
 ## Medicamentos
 
-Horários são dados estruturados. Manhã/tarde/noite/ao dormir devem usar checkbox quando esse é o modelo disponível. Não substituir silenciosamente por texto de frequência.
+Horários são dados estruturados. O contrato vigente inclui:
+
+- manhã;
+- almoço;
+- tarde;
+- noite;
+- ao deitar;
+- se necessário.
+
+Não substituir silenciosamente horários reais por `2x/dia`, `3x/dia` ou outro texto de frequência. Nome/apresentação, dose, via e observações permanecem separados dos momentos estruturados.
+
+A página de impressão de medicamentos é read-only e só pode usar o regime efetivo da consulta após validação do contexto paciente-consulta e da reconciliação/status histórico.
 
 ## Sinais vitais e antropometria
 
