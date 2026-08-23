@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import "./globals.css";
 import "./clinical-report.css";
 import "./report-branding.css";
+import "./approved-clinical-design.css";
 
 export const metadata: Metadata = {
   title: "Prontuário Aprimorado",
