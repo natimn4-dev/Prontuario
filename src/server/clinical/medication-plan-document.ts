@@ -11,7 +11,7 @@ export interface MedicationPlanDocument {
   consultationId: string;
   patientId: string;
   patientName: string;
-  patientBirthDate: string;
+  patientBirthDate: string | null;
   consultationDate: string;
   needsIdentityReview: boolean;
   status: "READY" | "REQUIRES_REVIEW";
@@ -50,6 +50,8 @@ export async function getMedicationPlanDocument(consultationId: string): Promise
       throw new Error("Contexto de consulta divergente no plano de medicamentos.");
     }
 
+    const patientBirthDate = consultation.patient.birthDate?.toISOString() ?? null;
+
     try {
       const snapshot = buildMedicationPlanSnapshotModel({
         consultationId: consultation.id,
@@ -61,7 +63,7 @@ export async function getMedicationPlanDocument(consultationId: string): Promise
         consultationId: consultation.id,
         patientId: consultation.patientId,
         patientName: consultation.patient.fullName,
-        patientBirthDate: consultation.patient.birthDate.toISOString(),
+        patientBirthDate,
         consultationDate: consultation.occurredAt.toISOString(),
         needsIdentityReview: consultation.patient.needsIdentityReview,
         status: "READY" as const,
@@ -74,7 +76,7 @@ export async function getMedicationPlanDocument(consultationId: string): Promise
           consultationId: consultation.id,
           patientId: consultation.patientId,
           patientName: consultation.patient.fullName,
-          patientBirthDate: consultation.patient.birthDate.toISOString(),
+          patientBirthDate,
           consultationDate: consultation.occurredAt.toISOString(),
           needsIdentityReview: consultation.patient.needsIdentityReview,
           status: "REQUIRES_REVIEW" as const,
