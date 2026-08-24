@@ -37,3 +37,7 @@
 - presença e versionamento do bloco fixo de segurança;
 - bloqueio do gráfico sem baseline comparável;
 - busca por índice canônico, nome-fonte e fallback legado limitado.
+
+## Release verificável
+
+O health check desta revisão publica `2026-08-24-patient-search-scales-family-report-v1`, permitindo que o smoke de produção espere a implantação exata em vez de aceitar uma versão anterior ainda saudável.

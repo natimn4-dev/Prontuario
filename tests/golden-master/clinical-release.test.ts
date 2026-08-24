@@ -3,6 +3,6 @@ import test from "node:test";
 import { CLINICAL_RELEASE_ID } from "../../src/domain/clinical-release.ts";
 
 test("release clínica possui identificador estável e não vazio para o smoke de produção", () => {
-  assert.equal(CLINICAL_RELEASE_ID, "2026-08-24-report-medications-separated-v1");
+  assert.equal(CLINICAL_RELEASE_ID, "2026-08-24-patient-search-scales-family-report-v1");
   assert.ok(CLINICAL_RELEASE_ID.length > 10);
 });
