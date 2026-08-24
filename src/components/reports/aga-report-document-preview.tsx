@@ -1,9 +1,13 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import type { AgaReportModel, AgaScaleReportSection } from "@/domain/aga-report";
+import type { AgaReportModel } from "@/domain/aga-report";
 import type { CapacityDimensionHistory } from "@/domain/capacity-dimension-history";
 import { CapacityDimensionHistoryChart } from "@/components/reports/capacity-dimension-history-chart";
+import {
+  buildReportDomainSummaries,
+  type ReportDomainSummary,
+} from "@/domain/report-domain-summary";
 import styles from "./aga-report-document-preview.module.css";
 
 interface GeneratedReportResponse {
@@ -11,12 +15,6 @@ interface GeneratedReportResponse {
   text: string;
   snapshot: { id: string; version: number };
 }
-
-type ScaleGroup = {
-  dimension: string;
-  label: string;
-  scales: AgaScaleReportSection[];
-};
 
 type ReportGlyphName =
   | "overview"
@@ -31,45 +29,11 @@ type ReportGlyphName =
   | "home"
   | "support";
 
-const DIMENSION_LABELS: Record<string, string> = {
-  funcionalidade: "Funcionalidade",
-  cognicao: "Cognição",
-  humor: "Humor e saúde mental",
-  fragilidade: "Fragilidade",
-  mobilidade: "Locomoção e equilíbrio",
-  nutricao: "Nutrição e vitalidade",
-  medicamentos: "Medicamentos",
-  "suporte-social": "Família e rede de apoio",
-  oncogeriatria: "Oncogeriatria",
-  prognostico: "Prognóstico e cuidados paliativos",
-  sintomas: "Sintomas",
-  outros: "Outras avaliações",
-};
-
-const DIMENSION_ORDER = [
-  "funcionalidade",
-  "cognicao",
-  "humor",
-  "fragilidade",
-  "mobilidade",
-  "nutricao",
-  "medicamentos",
-  "suporte-social",
-  "oncogeriatria",
-  "prognostico",
-  "sintomas",
-  "outros",
-];
-
 const BRAND_LOGO_PATH = "/brand/natalia-mendes-logo.svg";
 
 function formatDate(value?: string): string {
   if (!value) return "Data não registrada";
   return new Intl.DateTimeFormat("pt-BR", { timeZone: "UTC" }).format(new Date(value));
-}
-
-function displayResult(scale: AgaScaleReportSection): string {
-  return scale.result.scoreText ?? (scale.result.score === null ? "—" : String(scale.result.score));
 }
 
 function ReportGlyph({ name }: { name: ReportGlyphName }) {
@@ -139,44 +103,40 @@ function CareList({ title, items, icon }: { title: string; items: readonly strin
   );
 }
 
-function PracticalMeaning({ scale }: { scale: AgaScaleReportSection }) {
-  if (scale.interventionSuggestions.length === 0) {
-    return <span className={styles.empty}>Sem orientação prática adicional registrada.</span>;
-  }
-  return (
-    <ul className={styles.compactList}>
-      {scale.interventionSuggestions.map((suggestion) => <li key={suggestion.text}>{suggestion.text}</li>)}
-    </ul>
-  );
-}
-
-function ScaleSummaryTable({ groups }: { groups: ScaleGroup[] }) {
+function DomainSummaryTable({ domains }: { domains: ReportDomainSummary[] }) {
   return (
     <div className={styles.tableWrap}>
-      <table className={styles.scaleTable}>
+      <table className={styles.domainTable} aria-label="Resultados das avaliações resumidos por domínio">
         <thead>
           <tr>
             <th scope="col">Domínio</th>
-            <th scope="col">Escala</th>
-            <th scope="col">Resultado</th>
-            <th scope="col">Interpretação</th>
-            <th scope="col">Significado / orientação prática</th>
+            <th scope="col">Situação nesta consulta</th>
+            <th scope="col">Orientações pertinentes</th>
           </tr>
         </thead>
         <tbody>
-          {groups.flatMap((group) => group.scales.map((scale, index) => (
-            <tr key={`${scale.code}-${scale.version}`}>
-              {index === 0 ? <th className={styles.domainCell} scope="rowgroup" rowSpan={group.scales.length}>{group.label}</th> : null}
-              <th scope="row">{scale.name}</th>
-              <td className={styles.resultCell}>
-                <strong>{displayResult(scale)}</strong>
-                <small>{scale.result.classification ?? "Sem classificação registrada"}</small>
-                {!scale.assessedInTargetConsultation ? <small>Último valor conhecido — não avaliado nesta consulta</small> : null}
+          {domains.map((domain) => (
+            <tr key={domain.code} data-state={domain.state}>
+              <th className={styles.domainCell} scope="row">{domain.label}</th>
+              <td><span className={styles.domainStatus} data-state={domain.state}>{domain.stateLabel}</span></td>
+              <td>
+                {domain.guidance.length > 0 ? (
+                  <ul className={styles.compactList}>
+                    {domain.guidance.map((guidance) => <li key={guidance}>{guidance}</li>)}
+                  </ul>
+                ) : (
+                  <strong className={styles.guidanceReviewRequired}>
+                    Orientação individual deste domínio deve ser concluída e revisada pela médica antes do compartilhamento.
+                  </strong>
+                )}
+                {domain.evidenceReferences.length > 0 ? (
+                  <p className={styles.inlineEvidence}>
+                    Base científica: {domain.evidenceReferences.map((reference) => `PMID ${reference.pmid}`).join(" · ")}.
+                  </p>
+                ) : null}
               </td>
-              <td>{scale.interpretation ?? "Sem interpretação registrada"}</td>
-              <td><PracticalMeaning scale={scale} /></td>
             </tr>
-          )))}
+          ))}
         </tbody>
       </table>
     </div>
@@ -201,21 +161,12 @@ export function AgaReportDocumentPreview({ consultationId }: { consultationId: s
   const [clinicalReviewConfirmed, setClinicalReviewConfirmed] = useState(false);
   const [showTechnical, setShowTechnical] = useState(false);
 
-  const groupedScales = useMemo(() => {
+  const reportDomains = useMemo(() => {
     if (!generated) return [];
-    const groups = new Map<string, AgaScaleReportSection[]>();
-    for (const scale of generated.report.assessedScales) {
-      const items = groups.get(scale.dimension) ?? [];
-      items.push(scale);
-      groups.set(scale.dimension, items);
-    }
-    return DIMENSION_ORDER
-      .filter((dimension) => groups.has(dimension))
-      .map((dimension) => ({
-        dimension,
-        label: DIMENSION_LABELS[dimension] ?? dimension,
-        scales: groups.get(dimension) ?? [],
-      }));
+    return buildReportDomainSummaries(
+      generated.report.assessedScales,
+      generated.report.intrinsicCapacity,
+    );
   }, [generated]);
 
   async function generate() {
@@ -355,7 +306,8 @@ export function AgaReportDocumentPreview({ consultationId }: { consultationId: s
 
             <section className={styles.section}>
               <div className={styles.sectionHeading}><span>2</span><h2>Resultados das avaliações</h2></div>
-              {groupedScales.length > 0 ? <ScaleSummaryTable groups={groupedScales} /> : <p className={styles.empty}>Não avaliado nesta consulta.</p>}
+              <p className={styles.sectionLead}>Resumo por domínio, com foco no significado funcional e nas orientações para o cuidado. As orientações sugeridas exigem revisão médica antes do compartilhamento; nomes e escores das escalas permanecem no prontuário técnico.</p>
+              {reportDomains.length > 0 ? <DomainSummaryTable domains={reportDomains} /> : <p className={styles.empty}>Não avaliado nesta consulta.</p>}
             </section>
 
             <section className={`${styles.section} ${styles.chartSection}`}>
@@ -392,6 +344,17 @@ export function AgaReportDocumentPreview({ consultationId }: { consultationId: s
                         <ul>{domain.actions.map((action) => <li key={action}>{action}</li>)}</ul>
                         <strong>Quando avisar a equipe ou procurar ajuda</strong>
                         <ul>{domain.attentionSigns.map((sign) => <li key={sign}>{sign}</li>)}</ul>
+                        <div className={styles.evidenceBlock}>
+                          <strong>Base científica</strong>
+                          <ul>
+                            {domain.evidenceReferences.map((reference) => (
+                              <li key={reference.pmid}>
+                                <a href={reference.url} target="_blank" rel="noreferrer">{reference.label} — PMID {reference.pmid}</a>
+                                <span>{reference.relevance}</span>
+                              </li>
+                            ))}
+                          </ul>
+                        </div>
                       </article>
                     ))}
                   </div>

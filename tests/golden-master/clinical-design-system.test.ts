@@ -80,7 +80,9 @@ test("gráfico longitudinal aprovado usa small multiples por seis dimensões e m
   const chart = source("src/components/reports/capacity-dimension-history-chart.tsx");
   const css = source("src/components/reports/capacity-dimension-history-chart.module.css");
 
-  assert.match(chart, /Evolução longitudinal por domínio/);
+  assert.match(chart, /Gráfico em linhas por domínio/);
+  assert.match(chart, /data-chart="line-small-multiples"/);
+  assert.match(chart, /<polyline/);
   assert.match(chart, /Independência funcional/);
   assert.match(chart, /Capacidade intrínseca/);
   assert.match(chart, /orderedDimensions/);

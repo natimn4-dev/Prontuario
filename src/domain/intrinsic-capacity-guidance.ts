@@ -8,6 +8,13 @@ export type IntrinsicCapacityDomainCode =
   | "vitalidade"
   | "sensorial";
 
+export interface IntrinsicCapacityEvidenceReference {
+  label: string;
+  pmid: string;
+  url: string;
+  relevance: string;
+}
+
 export interface IntrinsicCapacityGuidanceSection {
   code: IntrinsicCapacityDomainCode;
   label: string;
@@ -15,6 +22,7 @@ export interface IntrinsicCapacityGuidanceSection {
   triggeredBy: string[];
   actions: string[];
   attentionSigns: string[];
+  evidenceReferences: IntrinsicCapacityEvidenceReference[];
 }
 
 export interface IntrinsicCapacityGuidance {
@@ -52,6 +60,12 @@ const DOMAIN_CONTENT: Readonly<Record<IntrinsicCapacityDomainCode, Omit<Intrinsi
       "Avise a equipe se houver nova queda, piora progressiva para caminhar ou necessidade crescente de ajuda.",
       "Procure atendimento imediato após queda com trauma importante ou se surgir incapacidade súbita de ficar em pé ou mover um membro.",
     ],
+    evidenceReferences: [{
+      label: "Exercício para prevenção de quedas em idosos na comunidade",
+      pmid: "30703272",
+      url: "https://pubmed.ncbi.nlm.nih.gov/30703272/",
+      relevance: "Revisão sistemática: exercícios de equilíbrio e funcionais reduzem quedas; o programa deve ser individualizado e seguro.",
+    }],
   },
   cognicao: {
     label: "Cognição",
@@ -65,6 +79,20 @@ const DOMAIN_CONTENT: Readonly<Record<IntrinsicCapacityDomainCode, Omit<Intrinsi
     attentionSigns: [
       "Avise a equipe se esquecimentos começarem a comprometer alimentação, higiene, segurança, dinheiro ou uso correto dos medicamentos.",
       "Confusão de início súbito, sonolência incomum, agitação nova ou grande flutuação ao longo do dia requer avaliação urgente.",
+    ],
+    evidenceReferences: [
+      {
+        label: "Reabilitação cognitiva orientada por metas na demência inicial",
+        pmid: "30724405",
+        url: "https://pubmed.ncbi.nlm.nih.gov/30724405/",
+        relevance: "Ensaio clínico: metas funcionais individualizadas podem melhorar o desempenho nas atividades diretamente trabalhadas.",
+      },
+      {
+        label: "Intervenção multicomponente para prevenção de delirium",
+        pmid: "10053175",
+        url: "https://pubmed.ncbi.nlm.nih.gov/10053175/",
+        relevance: "Estudo clínico: orientação, sono, mobilidade, visão, audição e hidratação são fatores modificáveis relevantes no cuidado do idoso hospitalizado.",
+      },
     ],
   },
   psicologico: {
@@ -80,6 +108,20 @@ const DOMAIN_CONTENT: Readonly<Record<IntrinsicCapacityDomainCode, Omit<Intrinsi
       "Avise a equipe se tristeza, ansiedade, apatia, irritabilidade ou recusa de atividades persistirem ou piorarem.",
       "Fala sobre morte, desesperança intensa, intenção de se machucar ou risco para outras pessoas exige ajuda imediata.",
     ],
+    evidenceReferences: [
+      {
+        label: "Ativação comportamental para sintomas depressivos em instituições de longa permanência",
+        pmid: "35680539",
+        url: "https://pubmed.ncbi.nlm.nih.gov/35680539/",
+        relevance: "Ensaio clínico em idosos: atividades estruturadas e significativas integram uma estratégia não farmacológica para sintomas depressivos.",
+      },
+      {
+        label: "Intervenções domiciliares para solidão e conexão social",
+        pmid: "37466183",
+        url: "https://pubmed.ncbi.nlm.nih.gov/37466183/",
+        relevance: "Revisão sistemática: intervenções domiciliares podem ampliar conexão social e reduzir solidão e sintomas depressivos.",
+      },
+    ],
   },
   vitalidade: {
     label: "Vitalidade",
@@ -94,6 +136,12 @@ const DOMAIN_CONTENT: Readonly<Record<IntrinsicCapacityDomainCode, Omit<Intrinsi
       "Avise a equipe sobre perda de peso, redução persistente da ingestão, cansaço crescente, vômitos ou dificuldade para engolir.",
       "Procure avaliação rápida se houver engasgo com falta de ar, incapacidade de ingerir líquidos ou sinais de desidratação e prostração importante.",
     ],
+    evidenceReferences: [{
+      label: "Diretriz ESPEN de nutrição clínica e hidratação em geriatria",
+      pmid: "30005900",
+      url: "https://pubmed.ncbi.nlm.nih.gov/30005900/",
+      relevance: "Diretriz baseada em evidências: rastreio, cuidado nutricional individualizado e prevenção de desidratação devem integrar o acompanhamento geriátrico.",
+    }],
   },
   sensorial: {
     label: "Capacidade sensorial",
@@ -108,6 +156,12 @@ const DOMAIN_CONTENT: Readonly<Record<IntrinsicCapacityDomainCode, Omit<Intrinsi
       "Avise a equipe se a dificuldade para ver ou ouvir estiver aumentando quedas, isolamento ou erros nas tarefas diárias.",
       "Perda súbita de visão ou audição, dor ocular intensa ou novo sintoma neurológico requer avaliação urgente.",
     ],
+    evidenceReferences: [{
+      label: "ACHIEVE: intervenção auditiva e declínio cognitivo em idosos",
+      pmid: "37478886",
+      url: "https://pubmed.ncbi.nlm.nih.gov/37478886/",
+      relevance: "Ensaio clínico: a avaliação e o cuidado auditivo são relevantes; o benefício cognitivo global não foi uniforme e deve ser interpretado conforme o risco individual.",
+    }],
   },
 };
 
@@ -138,7 +192,7 @@ export function buildIntrinsicCapacityGuidance(
 
   return {
     framework: "WHO intrinsic capacity — five domains",
-    sourceLabel: "OMS — capacidade intrínseca: locomoção, capacidade sensorial, vitalidade, cognição e capacidade psicológica. O aplicativo usa regras metodológicas versionadas e não cria escore global.",
+    sourceLabel: "OMS — capacidade intrínseca: locomoção, capacidade sensorial, vitalidade, cognição e capacidade psicológica. Orientações apoiadas por literatura científica indexada no PubMed; o aplicativo usa regras metodológicas versionadas, não cria escore global e não substitui revisão médica.",
     alteredDomains: DOMAIN_ORDER.flatMap((code) => {
       const names = triggers.get(code);
       if (!names?.size) return [];
@@ -150,6 +204,7 @@ export function buildIntrinsicCapacityGuidance(
         triggeredBy: [...names],
         actions: [...content.actions],
         attentionSigns: [...content.attentionSigns],
+        evidenceReferences: content.evidenceReferences.map((reference) => ({ ...reference })),
       }];
     }),
   };

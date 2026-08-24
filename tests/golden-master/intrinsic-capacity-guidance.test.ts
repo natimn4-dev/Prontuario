@@ -15,6 +15,9 @@ test("gera orientações somente para domínios alterados e avaliados na consult
   assert.deepEqual(guidance.alteredDomains[1]?.triggeredBy, ["MNA-SF"]);
   assert.ok(guidance.alteredDomains.every((domain) => domain.actions.length >= 4));
   assert.ok(guidance.alteredDomains.every((domain) => domain.attentionSigns.length >= 2));
+  assert.ok(guidance.alteredDomains.every((domain) => domain.evidenceReferences.length >= 1));
+  assert.ok(guidance.alteredDomains.every((domain) => domain.evidenceReferences.every((reference) => /^\d+$/.test(reference.pmid))));
+  assert.ok(guidance.alteredDomains.every((domain) => domain.evidenceReferences.every((reference) => reference.url === `https://pubmed.ncbi.nlm.nih.gov/${reference.pmid}/`)));
 });
 
 test("MNA-SF é indicador proxy de vitalidade e FRAIL-BR permanece contextual", () => {

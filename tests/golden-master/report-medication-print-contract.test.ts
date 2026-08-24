@@ -32,10 +32,12 @@ test("relatório final usa composição documental compacta, ilustrativa e não 
   assert.match(report, /ReportGlyph/);
   assert.match(report, /Problemas clínicos/);
   assert.match(report, /Problemas geriátricos/);
-  assert.match(report, /ScaleSummaryTable/);
+  assert.match(report, /DomainSummaryTable/);
   assert.match(report, /<th scope="col">Domínio<\/th>/);
-  assert.match(report, /Significado \/ orientação prática/);
-  assert.match(report, /rowSpan=\{group\.scales\.length\}/);
+  assert.match(report, /Situação nesta consulta/);
+  assert.match(report, /Orientações pertinentes/);
+  assert.doesNotMatch(report, /<th scope="col">Escala<\/th>/);
+  assert.doesNotMatch(report, /displayResult/);
   assert.match(report, /CapacityDimensionHistoryChart/);
   assert.match(report, /Evolução da capacidade intrínseca e da independência funcional/);
   assert.match(report, /Equipe e encaminhamentos/);
@@ -50,14 +52,16 @@ test("relatório final usa composição documental compacta, ilustrativa e não 
   assert.match(report, /Ver \/ imprimir plano de medicamentos/);
   assert.match(report, /\/consultations\/\$\{consultationId\}\/medications\/print/);
   assert.match(report, /Sem recomendação priorizada registrada/);
-  assert.match(report, /Sem orientação prática adicional registrada/);
+  assert.doesNotMatch(report, /Sem orientação prática adicional registrada/);
+  assert.match(report, /Base científica/);
+  assert.match(report, /PMID/);
   assert.doesNotMatch(report, /MedicationPlanTable/);
   assert.doesNotMatch(report, /data-print-scope/);
   assert.doesNotMatch(report, /Acompanhar conforme avaliação clínica/);
 
   assert.match(css, /\.executiveGrid\s*\{[\s\S]*?grid-template-columns:\s*repeat\(3, minmax\(0, 1fr\)\)/);
   assert.match(css, /\.glyph\s*\{/);
-  assert.match(css, /\.scaleTable\s*\{[\s\S]*?table-layout:\s*fixed/);
+  assert.match(css, /\.domainTable\s*\{[\s\S]*?table-layout:\s*fixed/);
   assert.match(css, /\.careGrid\s*\{[\s\S]*?grid-template-columns:\s*repeat\(3, minmax\(0, 1fr\)\)/);
   assert.match(css, /\.supportGrid\s*\{[\s\S]*?grid-template-columns:\s*1fr 1fr/);
   assert.match(css, /\.safetyColumns\s*\{[\s\S]*?grid-template-columns:\s*repeat\(2, minmax\(0, 1fr\)\)/);

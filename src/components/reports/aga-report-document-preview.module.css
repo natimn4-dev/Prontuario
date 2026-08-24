@@ -413,7 +413,13 @@
   border-radius: 10px;
 }
 
-.scaleTable {
+.sectionLead {
+  margin: -0.12rem 0 0.48rem;
+  color: var(--muted);
+  font-size: 0.68rem;
+}
+
+.domainTable {
   width: 100%;
   border-collapse: collapse;
   table-layout: fixed;
@@ -422,8 +428,8 @@
   line-height: 1.3;
 }
 
-.scaleTable th,
-.scaleTable td {
+.domainTable th,
+.domainTable td {
   padding: 0.42rem 0.46rem;
   border-right: 1px solid #eee9f1;
   border-bottom: 1px solid var(--line);
@@ -432,12 +438,12 @@
   overflow-wrap: anywhere;
 }
 
-.scaleTable th:last-child,
-.scaleTable td:last-child {
+.domainTable th:last-child,
+.domainTable td:last-child {
   border-right: 0;
 }
 
-.scaleTable thead th {
+.domainTable thead th {
   color: var(--primary-strong);
   background: var(--primary-soft);
   font-size: 0.61rem;
@@ -445,13 +451,11 @@
   letter-spacing: 0.035em;
 }
 
-.scaleTable thead th:nth-child(1) { width: 14%; }
-.scaleTable thead th:nth-child(2) { width: 17%; }
-.scaleTable thead th:nth-child(3) { width: 14%; }
-.scaleTable thead th:nth-child(4) { width: 22%; }
-.scaleTable thead th:nth-child(5) { width: 33%; }
+.domainTable thead th:nth-child(1) { width: 18%; }
+.domainTable thead th:nth-child(2) { width: 23%; }
+.domainTable thead th:nth-child(3) { width: 59%; }
 
-.scaleTable tbody tr:last-child > * {
+.domainTable tbody tr:last-child > * {
   border-bottom: 0;
 }
 
@@ -462,20 +466,51 @@
   font-weight: 800;
 }
 
-.resultCell > strong,
-.resultCell > small {
-  display: block;
-}
-
-.resultCell > strong {
-  color: var(--ink);
-  font-size: 0.78rem;
-}
-
-.resultCell > small {
-  margin-top: 0.1rem;
+.domainStatus {
+  display: inline-block;
+  padding: 0.2rem 0.38rem;
+  border: 1px solid var(--line);
+  border-radius: 999px;
   color: var(--muted);
+  background: #fff;
   font-size: 0.62rem;
+  font-weight: 800;
+  line-height: 1.25;
+}
+
+.domainStatus[data-state="altered"] {
+  border-color: #e4bcc3;
+  color: #7c3440;
+  background: #faecee;
+}
+
+.domainStatus[data-state="attention"] {
+  border-color: #ead29d;
+  color: #775917;
+  background: #fff7e8;
+}
+
+.domainStatus[data-state="preserved"] {
+  border-color: #b7d8c3;
+  color: #2f6245;
+  background: #edf7f1;
+}
+
+.domainStatus[data-state="not-assessed"] {
+  border-style: dashed;
+}
+
+.guidanceReviewRequired {
+  display: block;
+  color: #7c3440;
+  font-size: 0.66rem;
+  line-height: 1.4;
+}
+
+.inlineEvidence {
+  margin: 0.28rem 0 0;
+  color: var(--muted);
+  font-size: 0.61rem;
 }
 
 .compactList {
@@ -591,6 +626,27 @@
 .intrinsicGrid ul {
   margin: 0.2rem 0 0;
   padding-left: 0.92rem;
+}
+
+.evidenceBlock {
+  margin-top: 0.48rem;
+  padding-top: 0.38rem;
+  border-top: 1px dashed var(--line);
+}
+
+.evidenceBlock a {
+  color: var(--primary-strong);
+  font-weight: 750;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+.evidenceBlock li span {
+  display: block;
+  margin-top: 0.1rem;
+  color: var(--muted);
+  font-size: 0.63rem;
+  line-height: 1.35;
 }
 
 .safetyPanel,
@@ -927,8 +983,8 @@
     font-size: 12.5px;
   }
 
-  .scaleTable {
-    min-width: 820px;
+  .domainTable {
+    min-width: 640px;
   }
 }
 
@@ -981,20 +1037,20 @@
     gap: 4mm;
   }
 
-  .scaleTable {
+  .domainTable {
     font-size: 8.5pt;
   }
 
-  .scaleTable th,
-  .scaleTable td {
+  .domainTable th,
+  .domainTable td {
     padding: 2.3mm 2.4mm;
   }
 
-  .scaleTable thead {
+  .domainTable thead {
     display: table-header-group;
   }
 
-  .scaleTable tr {
+  .domainTable tr {
     break-inside: avoid;
   }
 

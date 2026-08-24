@@ -280,10 +280,10 @@ export function CapacityDimensionHistoryChart({
   const orderedDimensions = functionalDimension ? [functionalDimension, ...intrinsicDimensions] : intrinsicDimensions;
 
   return (
-    <figure className={styles.figure}>
+    <figure className={styles.figure} data-chart="line-small-multiples">
       <figcaption className={styles.caption}>
         <div>
-          <strong>Evolução longitudinal por domínio</strong>
+          <strong>Gráfico em linhas por domínio</strong>
           <span>{description}</span>
         </div>
       </figcaption>
