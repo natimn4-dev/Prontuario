@@ -32,6 +32,7 @@ test("busca real no MySQL localiza pacientes novos, legado e consulta ativa sem 
   const mariaId = `patient-search-maria-${suffix}`;
   const joseId = `patient-search-jose-${suffix}`;
   const anaId = `patient-search-ana-${suffix}`;
+  const testPatientId = `patient-search-reported-case-${suffix}`;
   const legacyId = `patient-search-legacy-${suffix}`;
   const consultationId = `patient-search-consultation-${suffix}`;
 
@@ -66,6 +67,13 @@ test("busca real no MySQL localiza pacientes novos, legado e consulta ativa sem 
           normalizedFullName: normalizePersonName("Ana Beatriz de Almeida"),
           identityFingerprint: `ana-beatriz-${suffix}`,
           birthDate: new Date("1948-08-10T12:00:00.000Z"),
+        },
+        {
+          id: testPatientId,
+          fullName: "Paciente Teste",
+          normalizedFullName: normalizePersonName("Paciente Teste"),
+          identityFingerprint: `paciente-teste-${suffix}`,
+          birthDate: new Date("1945-01-15T12:00:00.000Z"),
         },
         {
           id: legacyId,
@@ -113,6 +121,16 @@ test("busca real no MySQL localiza pacientes novos, legado e consulta ativa sem 
     const anaResults = await searchPatientsInDatabase(client, "Ana Beatriz");
     assert.ok(anaResults.some((patient) => patient.id === anaId));
 
+    for (const query of ["paciente teste", "PACIENTE TESTE", "  paciente   teste  "]) {
+      const results = await searchPatientsInDatabase(client, query);
+      const reportedCase = results.find((patient) => patient.id === testPatientId);
+      assert.ok(
+        reportedCase,
+        `Paciente Teste deveria ser localizado por ${JSON.stringify(query)}`,
+      );
+      assert.equal(reportedCase.destinationPath, `/patients/${testPatientId}`);
+    }
+
     const falsePositive = await searchPatientsInDatabase(client, "Mariana");
     assert.equal(falsePositive.some((patient) => patient.id === mariaId), false);
 
@@ -135,7 +153,7 @@ test("busca real no MySQL localiza pacientes novos, legado e consulta ativa sem 
   } finally {
     await client.consultation.deleteMany({ where: { id: consultationId } });
     await client.patient.deleteMany({
-      where: { id: { in: [mariaId, joseId, anaId, legacyId] } },
+      where: { id: { in: [mariaId, joseId, anaId, testPatientId, legacyId] } },
     });
     await client.user.deleteMany({ where: { id: userId } });
     await client.$disconnect();
