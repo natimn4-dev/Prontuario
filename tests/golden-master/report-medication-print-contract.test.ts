@@ -93,4 +93,6 @@ test("plano de medicamentos é rota própria, read-only e vinculada à consulta"
   assert.match(css, /size:\s*A4 portrait/);
   assert.match(css, /display:\s*table-header-group/);
   assert.match(css, /break-inside:\s*avoid/);
+  assert.match(css, /\.medicationTable thead th\s*\{[\s\S]*?overflow-wrap:\s*anywhere/);
+  assert.match(css, /@media print[\s\S]*?\.medicationTable thead th\s*\{[\s\S]*?font-size:\s*7pt/);
 });

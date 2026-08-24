@@ -171,10 +171,11 @@
 .medicationTable thead th {
   color: var(--primary-strong);
   background: var(--primary-soft);
-  font-size: 0.67rem;
+  font-size: 0.62rem;
   line-height: 1.2;
   text-transform: uppercase;
-  letter-spacing: 0.03em;
+  letter-spacing: 0.01em;
+  overflow-wrap: anywhere;
 }
 
 .medicationTable thead th:first-child,
@@ -325,6 +326,11 @@
   .medicationTable th,
   .medicationTable td {
     padding: 5px 4px;
+  }
+
+  .medicationTable thead th {
+    font-size: 7pt;
+    letter-spacing: 0;
   }
 
   .medicationTable thead th:first-child {
