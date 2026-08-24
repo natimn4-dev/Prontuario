@@ -125,6 +125,10 @@ try {
     if (![301, 302, 303, 307, 308, 401, 403].includes(protectedResponse.status)) {
       blocked(`${path} apresentou comportamento inesperado para acesso anônimo: HTTP ${protectedResponse.status}.`);
     }
+    const protectedCacheControl = protectedResponse.headers.get("cache-control")?.toLowerCase() ?? "";
+    if (!protectedCacheControl.includes("no-store") || !protectedCacheControl.includes("private")) {
+      blocked(`${path} não bloqueou cache compartilhado na resposta de acesso anônimo.`);
+    }
   }
 } catch (error) {
   if (error instanceof Error && error.message.includes("CLINICAL_RELEASE")) throw error;

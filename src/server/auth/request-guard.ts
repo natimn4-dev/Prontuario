@@ -3,6 +3,14 @@ import { isPublicRoute, routeAccessFor } from "../../domain/security/route-acces
 
 export type SessionValidator = (headers: Headers) => Promise<boolean>;
 
+function preventSharedCaching(response: NextResponse): NextResponse {
+  response.headers.set("Cache-Control", "private, no-store, max-age=0, must-revalidate");
+  response.headers.set("Pragma", "no-cache");
+  response.headers.set("Expires", "0");
+  response.headers.append("Vary", "Cookie");
+  return response;
+}
+
 export function createRequestGuard(validateSession: SessionValidator) {
   return async function guardRequest(request: NextRequest): Promise<NextResponse> {
     const pathname = request.nextUrl.pathname;
@@ -19,14 +27,14 @@ export function createRequestGuard(validateSession: SessionValidator) {
     }
 
     const access = routeAccessFor({ pathname, authenticated });
-    if (access === "authenticated") return NextResponse.next();
+    if (access === "authenticated") return preventSharedCaching(NextResponse.next());
     if (access === "unauthorized-api") {
-      return NextResponse.json(
+      return preventSharedCaching(NextResponse.json(
         { code: "AUTHENTICATION_REQUIRED", message: "Autenticação obrigatória." },
         { status: 401 },
-      );
+      ));
     }
 
-    return NextResponse.redirect(new URL("/login", request.url));
+    return preventSharedCaching(NextResponse.redirect(new URL("/login", request.url)));
   };
 }

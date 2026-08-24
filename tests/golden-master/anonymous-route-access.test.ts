@@ -34,6 +34,9 @@ test("visitante anônimo é redirecionado antes de acessar páginas clínicas", 
     const response = await guard(new NextRequest(`https://prontuario.test${pathname}`));
     assert.equal(response.status, 307);
     assert.equal(response.headers.get("location"), "https://prontuario.test/login");
+    assert.match(response.headers.get("cache-control") ?? "", /private/);
+    assert.match(response.headers.get("cache-control") ?? "", /no-store/);
+    assert.match(response.headers.get("vary") ?? "", /Cookie/);
   }
 });
 
@@ -45,6 +48,7 @@ test("API clínica anônima falha com 401 e não redireciona", async () => {
     const response = await guard(new NextRequest(`https://prontuario.test${pathname}`));
     assert.equal(response.status, 401);
     assert.equal(response.headers.get("location"), null);
+    assert.match(response.headers.get("cache-control") ?? "", /no-store/);
     assert.deepEqual(await response.json(), {
       code: "AUTHENTICATION_REQUIRED",
       message: "Autenticação obrigatória.",
@@ -66,6 +70,8 @@ test("sessão validada libera áreas protegidas sem ampliar rotas públicas", as
     const response = await guard(new NextRequest(`https://prontuario.test${pathname}`));
     assert.equal(response.status, 200);
     assert.equal(response.headers.get("location"), null);
+    assert.match(response.headers.get("cache-control") ?? "", /private/);
+    assert.match(response.headers.get("cache-control") ?? "", /no-store/);
   }
 });
 

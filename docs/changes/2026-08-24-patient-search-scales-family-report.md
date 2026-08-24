@@ -40,4 +40,4 @@
 
 ## Release verificável
 
-O health check desta revisão publica `2026-08-24-patient-search-scales-family-report-v1`, permitindo que o smoke de produção espere a implantação exata em vez de aceitar uma versão anterior ainda saudável.
+O health check desta revisão publica `2026-08-24-patient-search-scales-family-report-v2`, permitindo que o smoke de produção espere a implantação exata em vez de aceitar uma versão anterior ainda saudável. Respostas de rotas protegidas também recebem `private, no-store` e `Vary: Cookie`, impedindo que a CDN reutilize uma página clínica autenticada para uma requisição anônima.
