@@ -12,6 +12,25 @@ interface GeneratedReportResponse {
   snapshot: { id: string; version: number };
 }
 
+type ScaleGroup = {
+  dimension: string;
+  label: string;
+  scales: AgaScaleReportSection[];
+};
+
+type ReportGlyphName =
+  | "overview"
+  | "attention"
+  | "recommendation"
+  | "clinical"
+  | "geriatric"
+  | "nutrition"
+  | "activity"
+  | "sleep"
+  | "cognition"
+  | "home"
+  | "support";
+
 const DIMENSION_LABELS: Record<string, string> = {
   funcionalidade: "Funcionalidade",
   cognicao: "Cognição",
@@ -53,6 +72,38 @@ function displayResult(scale: AgaScaleReportSection): string {
   return scale.result.scoreText ?? (scale.result.score === null ? "—" : String(scale.result.score));
 }
 
+function ReportGlyph({ name }: { name: ReportGlyphName }) {
+  return (
+    <span className={styles.glyph} data-glyph={name} aria-hidden="true">
+      <svg viewBox="0 0 24 24" focusable="false">
+        {name === "overview" ? (
+          <><circle cx="12" cy="12" r="8" /><path d="m8.5 12 2.2 2.2 4.8-5" /></>
+        ) : name === "attention" ? (
+          <><path d="M12 3.5 21 20H3L12 3.5Z" /><path d="M12 8v5" /><path d="M12 16.8h.01" /></>
+        ) : name === "recommendation" ? (
+          <path d="M12 20s-7-4.2-7-9a4 4 0 0 1 7-2.6A4 4 0 0 1 19 11c0 4.8-7 9-7 9Z" />
+        ) : name === "clinical" ? (
+          <><path d="M4 13h4l1.5-4 3 8 1.8-4H20" /><path d="M12 21C7 18.2 4 15.6 4 10.7A4.2 4.2 0 0 1 11.6 8 4.2 4.2 0 0 1 20 10.7" /></>
+        ) : name === "geriatric" ? (
+          <><circle cx="12" cy="6.5" r="2.3" /><path d="M8.5 20v-4.5c0-2.6 1.6-4.5 3.5-4.5s3.5 1.9 3.5 4.5V20" /><path d="M6.5 20h11" /></>
+        ) : name === "nutrition" ? (
+          <><path d="M7 5c3.5 0 6 2.4 6 5.5 0 3.8-3.3 6.7-7.5 7.5C5.2 13.6 5.7 9 7 5Z" /><path d="M8.2 15.5 15.5 8" /></>
+        ) : name === "activity" ? (
+          <><circle cx="13" cy="5" r="2" /><path d="m11 9 2.5 2 2-1" /><path d="m13.5 11-2 4-3.5 4" /><path d="m13 14 4 5" /><path d="m11 9-3 3" /></>
+        ) : name === "sleep" ? (
+          <path d="M17.5 15.5A7.5 7.5 0 0 1 8.5 6.2 7.5 7.5 0 1 0 17.5 15.5Z" />
+        ) : name === "cognition" ? (
+          <><path d="M9.5 19a3 3 0 0 1-2.7-4.3A3.4 3.4 0 0 1 7.5 8a3 3 0 0 1 5-2.2A3 3 0 0 1 17.7 8a3.4 3.4 0 0 1 .6 6.7A3 3 0 0 1 15.5 19" /><path d="M12 6v13" /><path d="M8.5 11H12" /><path d="M12 14h4" /></>
+        ) : name === "home" ? (
+          <><path d="m4 11 8-7 8 7" /><path d="M6.5 10.5V20h11v-9.5" /><path d="M10 20v-5h4v5" /></>
+        ) : (
+          <><circle cx="8" cy="8" r="2.5" /><circle cx="16" cy="8" r="2.5" /><path d="M3.5 19c.3-3 2.1-5 4.5-5s4.2 2 4.5 5" /><path d="M11.5 19c.3-3 2.1-5 4.5-5s4.2 2 4.5 5" /></>
+        )}
+      </svg>
+    </span>
+  );
+}
+
 function ProblemList({ items }: { items: AgaReportModel["clinicalProblems"] }) {
   if (items.length === 0) return <p className={styles.empty}>Sem problemas registrados.</p>;
   return (
@@ -75,10 +126,10 @@ function ProblemList({ items }: { items: AgaReportModel["clinicalProblems"] }) {
   );
 }
 
-function CareList({ title, items }: { title: string; items: readonly string[] }) {
+function CareList({ title, items, icon }: { title: string; items: readonly string[]; icon: ReportGlyphName }) {
   return (
     <section className={styles.careCard}>
-      <h3>{title}</h3>
+      <div className={styles.careTitle}><ReportGlyph name={icon} /><h3>{title}</h3></div>
       {items.length > 0 ? (
         <ul>{items.map((item) => <li key={item}>{item}</li>)}</ul>
       ) : (
@@ -99,37 +150,36 @@ function PracticalMeaning({ scale }: { scale: AgaScaleReportSection }) {
   );
 }
 
-function ScaleDomain({ label, scales }: { label: string; scales: AgaScaleReportSection[] }) {
+function ScaleSummaryTable({ groups }: { groups: ScaleGroup[] }) {
   return (
-    <section className={styles.scaleDomain}>
-      <h3>{label}</h3>
-      <div className={styles.tableWrap}>
-        <table className={styles.scaleTable}>
-          <thead>
-            <tr>
-              <th scope="col">Escala</th>
-              <th scope="col">Resultado</th>
-              <th scope="col">Interpretação</th>
-              <th scope="col">Significado prático</th>
+    <div className={styles.tableWrap}>
+      <table className={styles.scaleTable}>
+        <thead>
+          <tr>
+            <th scope="col">Domínio</th>
+            <th scope="col">Escala</th>
+            <th scope="col">Resultado</th>
+            <th scope="col">Interpretação</th>
+            <th scope="col">Significado / orientação prática</th>
+          </tr>
+        </thead>
+        <tbody>
+          {groups.flatMap((group) => group.scales.map((scale, index) => (
+            <tr key={`${scale.code}-${scale.version}`}>
+              {index === 0 ? <th className={styles.domainCell} scope="rowgroup" rowSpan={group.scales.length}>{group.label}</th> : null}
+              <th scope="row">{scale.name}</th>
+              <td className={styles.resultCell}>
+                <strong>{displayResult(scale)}</strong>
+                <small>{scale.result.classification ?? "Sem classificação registrada"}</small>
+                {!scale.assessedInTargetConsultation ? <small>Último valor conhecido — não avaliado nesta consulta</small> : null}
+              </td>
+              <td>{scale.interpretation ?? "Sem interpretação registrada"}</td>
+              <td><PracticalMeaning scale={scale} /></td>
             </tr>
-          </thead>
-          <tbody>
-            {scales.map((scale) => (
-              <tr key={`${scale.code}-${scale.version}`}>
-                <th scope="row">{scale.name}</th>
-                <td>
-                  <strong>{displayResult(scale)}</strong>
-                  <small>{scale.result.classification ?? "Sem classificação registrada"}</small>
-                  {!scale.assessedInTargetConsultation ? <small>Último valor conhecido — não avaliado nesta consulta</small> : null}
-                </td>
-                <td>{scale.interpretation ?? "Sem interpretação registrada"}</td>
-                <td><PracticalMeaning scale={scale} /></td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
-    </section>
+          )))}
+        </tbody>
+      </table>
+    </div>
   );
 }
 
@@ -260,14 +310,14 @@ export function AgaReportDocumentPreview({ consultationId }: { consultationId: s
 
             <section className={styles.executiveGrid} aria-label="Resumo executivo">
               <article className={styles.executiveCard} data-tone="overview">
-                <span>Visão geral</span>
+                <div className={styles.cardTitle}><ReportGlyph name="overview" /><span>Visão geral</span></div>
                 <p>{generated.report.changeSummary.headline}</p>
                 {generated.report.changeSummary.narrative.length > 0 ? (
                   <ul>{generated.report.changeSummary.narrative.slice(0, 3).map((item) => <li key={item}>{item}</li>)}</ul>
                 ) : null}
               </article>
               <article className={styles.executiveCard} data-tone="attention">
-                <span>Pontos de atenção</span>
+                <div className={styles.cardTitle}><ReportGlyph name="attention" /><span>Pontos de atenção</span></div>
                 {attentionItems.length > 0 ? (
                   <ul>{attentionItems.map((item, index) => <li key={`${item.severity}-${index}`}>{item.message}</li>)}</ul>
                 ) : (
@@ -275,32 +325,28 @@ export function AgaReportDocumentPreview({ consultationId }: { consultationId: s
                 )}
               </article>
               <article className={styles.executiveCard} data-tone="recommendation">
-                <span>Recomendação principal</span>
+                <div className={styles.cardTitle}><ReportGlyph name="recommendation" /><span>Recomendação principal</span></div>
                 <p>{recommendation ?? "Sem recomendação priorizada registrada."}</p>
               </article>
             </section>
 
             <section className={styles.section}>
-              <div className={styles.sectionHeading}>
-                <span>1</span>
-                <h2>Problemas ativos e em acompanhamento</h2>
-              </div>
+              <div className={styles.sectionHeading}><span>1</span><h2>Problemas ativos</h2></div>
               <div className={styles.problemGrid}>
-                <article><h3>Problemas clínicos</h3><ProblemList items={generated.report.clinicalProblems} /></article>
-                <article><h3>Problemas geriátricos</h3><ProblemList items={generated.report.geriatricProblems} /></article>
+                <article>
+                  <div className={styles.problemTitle}><ReportGlyph name="clinical" /><h3>Problemas clínicos</h3></div>
+                  <ProblemList items={generated.report.clinicalProblems} />
+                </article>
+                <article>
+                  <div className={styles.problemTitle}><ReportGlyph name="geriatric" /><h3>Problemas geriátricos</h3></div>
+                  <ProblemList items={generated.report.geriatricProblems} />
+                </article>
               </div>
             </section>
 
             <section className={styles.section}>
-              <div className={styles.sectionHeading}>
-                <span>2</span>
-                <h2>Resultados das avaliações</h2>
-              </div>
-              <div className={styles.scaleDomains}>
-                {groupedScales.length > 0
-                  ? groupedScales.map((group) => <ScaleDomain key={group.dimension} label={group.label} scales={group.scales} />)
-                  : <p className={styles.empty}>Não avaliado nesta consulta.</p>}
-              </div>
+              <div className={styles.sectionHeading}><span>2</span><h2>Resultados das avaliações</h2></div>
+              {groupedScales.length > 0 ? <ScaleSummaryTable groups={groupedScales} /> : <p className={styles.empty}>Não avaliado nesta consulta.</p>}
             </section>
 
             <section className={`${styles.section} ${styles.chartSection}`}>
@@ -316,17 +362,14 @@ export function AgaReportDocumentPreview({ consultationId }: { consultationId: s
             </section>
 
             <section className={styles.section}>
-              <div className={styles.sectionHeading}>
-                <span>4</span>
-                <h2>Plano de cuidados e orientações para a família</h2>
-              </div>
+              <div className={styles.sectionHeading}><span>4</span><h2>Plano de cuidados e orientações para a família</h2></div>
               <div className={styles.careGrid}>
-                <CareList title="O que priorizar agora" items={generated.report.carePlan.now} />
-                <CareList title="Próximos passos" items={generated.report.carePlan.mediumTerm} />
-                <CareList title="Família e cuidador" items={generated.report.carePlan.caregiver} />
-                <CareList title="Equipe e encaminhamentos" items={generated.report.carePlan.referrals} />
-                <CareList title="Quando entrar em contato" items={generated.report.carePlan.contact} />
-                <CareList title="Situações de urgência" items={generated.report.carePlan.urgent} />
+                <CareList title="O que priorizar agora" items={generated.report.carePlan.now} icon="nutrition" />
+                <CareList title="Próximos passos" items={generated.report.carePlan.mediumTerm} icon="activity" />
+                <CareList title="Família e cuidador" items={generated.report.carePlan.caregiver} icon="support" />
+                <CareList title="Equipe e encaminhamentos" items={generated.report.carePlan.referrals} icon="cognition" />
+                <CareList title="Quando entrar em contato" items={generated.report.carePlan.contact} icon="home" />
+                <CareList title="Situações de urgência" items={generated.report.carePlan.urgent} icon="attention" />
               </div>
 
               {generated.report.intrinsicCapacity.alteredDomains.length > 0 ? (
@@ -349,33 +392,33 @@ export function AgaReportDocumentPreview({ consultationId }: { consultationId: s
               ) : null}
             </section>
 
-            <section className={styles.section}>
-              <div className={styles.sectionHeading}>
-                <span>5</span>
-                <h2>Vacinas e prevenção</h2>
-              </div>
-              <div className={styles.preventionBox}>
-                <strong>{generated.report.vaccinationPrevention.statusLabel}</strong>
-                {generated.report.vaccinationPrevention.status === "PENDING" ? (
-                  <ul>{generated.report.vaccinationPrevention.pendingVaccines.map((item) => <li key={item}>{item}</li>)}</ul>
-                ) : generated.report.vaccinationPrevention.status === "UNKNOWN" ? (
-                  <p>As pendências não podem ser determinadas sem revisar a carteira.</p>
-                ) : (
-                  <p>Nenhuma vacina foi registrada como pendente nesta consulta.</p>
-                )}
-                <ul>{generated.report.vaccinationPrevention.guidance.map((item) => <li key={item}>{item}</li>)}</ul>
-                <p>Esta seção é informativa e não gera prescrição automática.</p>
-              </div>
-            </section>
+            <div className={styles.supportGrid}>
+              <section className={`${styles.section} ${styles.supportPanel}`}>
+                <div className={styles.sectionHeading}><span>5</span><h2>Vacinas e prevenção</h2></div>
+                <div className={styles.preventionBox}>
+                  <strong>{generated.report.vaccinationPrevention.statusLabel}</strong>
+                  {generated.report.vaccinationPrevention.status === "PENDING" ? (
+                    <ul>{generated.report.vaccinationPrevention.pendingVaccines.map((item) => <li key={item}>{item}</li>)}</ul>
+                  ) : generated.report.vaccinationPrevention.status === "UNKNOWN" ? (
+                    <p>As pendências não podem ser determinadas sem revisar a carteira.</p>
+                  ) : (
+                    <p>Nenhuma vacina foi registrada como pendente nesta consulta.</p>
+                  )}
+                  <ul>{generated.report.vaccinationPrevention.guidance.map((item) => <li key={item}>{item}</li>)}</ul>
+                  <p>Esta seção é informativa e não gera prescrição automática.</p>
+                </div>
+              </section>
 
-            <section className={`${styles.section} ${styles.medicationLinkSection}`}>
-              <div>
-                <h2>Plano de medicamentos</h2>
-                <p>Plano de medicamentos disponível em documento separado.</p>
-                <small>{generated.report.medicationPlan.message}</small>
-              </div>
-              <a className={styles.medicationLink} href={`/consultations/${consultationId}/medications/print`} target="_blank" rel="noreferrer">Ver / imprimir plano de medicamentos</a>
-            </section>
+              <section className={`${styles.section} ${styles.medicationLinkSection}`}>
+                <div className={styles.medicationLinkCopy}>
+                  <span className={styles.documentBadge}>Documento separado</span>
+                  <h2>Plano de medicamentos</h2>
+                  <p>Plano de medicamentos disponível em documento próprio, vinculado a esta consulta.</p>
+                  <small>{generated.report.medicationPlan.message}</small>
+                </div>
+                <a className={styles.medicationLink} href={`/consultations/${consultationId}/medications/print`} target="_blank" rel="noreferrer">Ver / imprimir plano de medicamentos</a>
+              </section>
+            </div>
 
             {showTechnical ? (
               <section className={`${styles.section} ${styles.technicalAppendix}`}>
