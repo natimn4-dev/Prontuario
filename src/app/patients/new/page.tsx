@@ -1,5 +1,7 @@
 import { PatientForm } from "@/components/patients/patient-form";
 
+export const dynamic = "force-dynamic";
+
 export default function NewPatientPage() {
   return (
     <main className="shell narrow-shell">

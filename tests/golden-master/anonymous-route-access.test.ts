@@ -1,4 +1,5 @@
 import assert from "node:assert/strict";
+import { readFileSync } from "node:fs";
 import test from "node:test";
 import { NextRequest } from "next/server.js";
 import { parseEmailSet } from "../../src/domain/security/auth-policy.ts";
@@ -9,6 +10,13 @@ import {
   type WorkspaceSessionUser,
 } from "../../src/domain/security/route-access.ts";
 import { createRequestGuard } from "../../src/server/auth/request-guard.ts";
+
+test("páginas protegidas sem leitura dinâmica não podem ser prerenderizadas para cache compartilhado", () => {
+  for (const path of ["src/app/patients/new/page.tsx", "src/app/demo/page.tsx"]) {
+    const source = readFileSync(path, "utf8");
+    assert.match(source, /export const dynamic = "force-dynamic"/);
+  }
+});
 
 test("login, autenticação e health permanecem públicos sem consultar sessão", async () => {
   let validationCalls = 0;

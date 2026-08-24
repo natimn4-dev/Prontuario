@@ -3,6 +3,8 @@ import { DEMO_ASSESSMENTS, DEMO_MEDICATIONS, DEMO_PATIENT, DEMO_PROBLEMS } from 
 import { MedicationPlanTable } from "@/components/medications/medication-plan-table";
 import { ProblemColumns } from "@/components/problems/problem-columns";
 
+export const dynamic = "force-dynamic";
+
 const outputs = buildConsultationOutputs({
   patientId: DEMO_PATIENT.id,
   consultationId: "demo-follow-2",
