@@ -252,6 +252,15 @@ export function AgaReportDocumentPreview({ consultationId }: { consultationId: s
   const targetConsultationDate = generated?.report.capacityHistory.consultations.find((item) => item.isTarget)?.occurredAt;
   const attentionItems = generated?.report.alerts.slice(0, 5) ?? [];
   const recommendation = generated?.report.carePlan.now[0] ?? generated?.report.carePlan.mediumTerm[0] ?? null;
+  const finalMessageItems = generated
+    ? [...new Set([
+        ...generated.report.carePlan.now,
+        ...generated.report.carePlan.mediumTerm,
+        ...generated.report.carePlan.caregiver,
+        ...generated.report.carePlan.referrals,
+        ...generated.report.vaccinationPrevention.guidance,
+      ])].slice(0, 6)
+    : [];
 
   return (
     <section className={styles.workspace} data-review={clinicalReviewConfirmed ? "confirmed" : "pending"}>
@@ -368,8 +377,6 @@ export function AgaReportDocumentPreview({ consultationId }: { consultationId: s
                 <CareList title="Próximos passos" items={generated.report.carePlan.mediumTerm} icon="activity" />
                 <CareList title="Família e cuidador" items={generated.report.carePlan.caregiver} icon="support" />
                 <CareList title="Equipe e encaminhamentos" items={generated.report.carePlan.referrals} icon="cognition" />
-                <CareList title="Quando entrar em contato" items={generated.report.carePlan.contact} icon="home" />
-                <CareList title="Situações de urgência" items={generated.report.carePlan.urgent} icon="attention" />
               </div>
 
               {generated.report.intrinsicCapacity.alteredDomains.length > 0 ? (
@@ -390,6 +397,46 @@ export function AgaReportDocumentPreview({ consultationId }: { consultationId: s
                   </div>
                 </div>
               ) : null}
+            </section>
+
+            <section className={styles.safetyPanel} aria-labelledby="report-urgent-help-title">
+              <div className={styles.safetyTitle}>
+                <ReportGlyph name="attention" />
+                <div>
+                  <p>Segurança e continuidade do cuidado</p>
+                  <h2 id="report-urgent-help-title">Quando procurar ajuda médica imediata</h2>
+                </div>
+              </div>
+              <div className={styles.safetyColumns}>
+                <article>
+                  <h3>Situações de urgência</h3>
+                  {generated.report.carePlan.urgent.length > 0 ? (
+                    <ul>{generated.report.carePlan.urgent.map((item) => <li key={item}>{item}</li>)}</ul>
+                  ) : <p className={styles.empty}>Sem situação urgente registrada.</p>}
+                </article>
+                <article>
+                  <h3>Quando entrar em contato com a equipe</h3>
+                  {generated.report.carePlan.contact.length > 0 ? (
+                    <ul>{generated.report.carePlan.contact.map((item) => <li key={item}>{item}</li>)}</ul>
+                  ) : <p className={styles.empty}>Sem sinal adicional registrado.</p>}
+                </article>
+              </div>
+            </section>
+
+            <section className={styles.finalMessage} aria-labelledby="report-final-message-title">
+              <div className={styles.finalMessageTitle}>
+                <ReportGlyph name="recommendation" />
+                <div>
+                  <p>Fechamento do relatório</p>
+                  <h2 id="report-final-message-title">Mensagem final</h2>
+                </div>
+              </div>
+              <div className={styles.finalMessageContent}>
+                <strong>O acompanhamento contínuo e a revisão regular do plano de cuidados fazem diferença.</strong>
+                {finalMessageItems.length > 0 ? (
+                  <ul>{finalMessageItems.map((item) => <li key={item}>{item}</li>)}</ul>
+                ) : <p className={styles.empty}>Sem orientação adicional registrada.</p>}
+              </div>
             </section>
 
             <div className={styles.supportGrid}>

@@ -593,6 +593,105 @@
   padding-left: 0.92rem;
 }
 
+.safetyPanel,
+.finalMessage {
+  margin: 0.72rem 0;
+  padding: 0.7rem;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  break-inside: avoid;
+}
+
+.safetyPanel {
+  border-color: #d8e4f7;
+  background: var(--info-soft);
+}
+
+.safetyTitle,
+.finalMessageTitle {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.safetyTitle .glyph {
+  color: var(--info);
+}
+
+.safetyTitle p,
+.safetyTitle h2,
+.finalMessageTitle p,
+.finalMessageTitle h2 {
+  margin: 0;
+}
+
+.safetyTitle p,
+.finalMessageTitle p {
+  color: var(--muted);
+  font-size: 0.61rem;
+  font-weight: 800;
+  letter-spacing: 0.045em;
+  text-transform: uppercase;
+}
+
+.safetyTitle h2,
+.finalMessageTitle h2 {
+  margin-top: 0.08rem;
+  color: var(--primary-strong);
+  font-size: 0.86rem;
+}
+
+.safetyColumns {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.7rem;
+  margin-top: 0.55rem;
+}
+
+.safetyColumns article + article {
+  padding-left: 0.7rem;
+  border-left: 1px solid #d8e4f7;
+}
+
+.safetyColumns h3 {
+  margin: 0 0 0.25rem;
+  color: var(--primary-strong);
+  font-size: 0.72rem;
+}
+
+.safetyColumns ul,
+.finalMessageContent ul {
+  margin: 0;
+  padding-left: 0.95rem;
+}
+
+.safetyColumns li + li,
+.finalMessageContent li + li {
+  margin-top: 0.16rem;
+}
+
+.finalMessage {
+  border-color: var(--primary-soft-strong);
+  background: #fcfaff;
+}
+
+.finalMessageTitle .glyph {
+  color: var(--primary);
+}
+
+.finalMessageContent {
+  display: grid;
+  grid-template-columns: minmax(0, 0.9fr) minmax(0, 1.6fr);
+  gap: 0.8rem;
+  margin-top: 0.55rem;
+}
+
+.finalMessageContent > strong {
+  color: var(--primary-strong);
+  font-size: 0.76rem;
+  line-height: 1.4;
+}
+
 .supportGrid {
   display: grid;
   grid-template-columns: 1fr 1fr;
@@ -772,7 +871,9 @@
   .executiveGrid,
   .careGrid,
   .intrinsicGrid,
-  .supportGrid {
+  .supportGrid,
+  .safetyColumns,
+  .finalMessageContent {
     grid-template-columns: 1fr 1fr;
   }
 }
@@ -799,8 +900,17 @@
   .problemGrid,
   .careGrid,
   .intrinsicGrid,
-  .supportGrid {
+  .supportGrid,
+  .safetyColumns,
+  .finalMessageContent {
     grid-template-columns: 1fr;
+  }
+
+  .safetyColumns article + article {
+    padding-top: 0.55rem;
+    padding-left: 0;
+    border-top: 1px solid #d8e4f7;
+    border-left: 0;
   }
 
   .titleBlock {
@@ -855,6 +965,8 @@
   .intrinsicGrid article,
   .preventionBox,
   .medicationLinkSection,
+  .safetyPanel,
+  .finalMessage,
   .footer,
   .chartSection,
   .supportGrid {

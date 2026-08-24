@@ -38,6 +38,11 @@ test("relatório final usa composição documental compacta, ilustrativa e não 
   assert.match(report, /rowSpan=\{group\.scales\.length\}/);
   assert.match(report, /CapacityDimensionHistoryChart/);
   assert.match(report, /Equipe e encaminhamentos/);
+  assert.match(report, /Quando procurar ajuda médica imediata/);
+  assert.match(report, /Situações de urgência/);
+  assert.match(report, /Quando entrar em contato com a equipe/);
+  assert.match(report, /Mensagem final/);
+  assert.match(report, /finalMessageItems/);
   assert.match(report, /Orientações por domínio de capacidade intrínseca/);
   assert.match(report, /Vacinas e prevenção/);
   assert.match(report, /Documento separado/);
@@ -54,6 +59,8 @@ test("relatório final usa composição documental compacta, ilustrativa e não 
   assert.match(css, /\.scaleTable\s*\{[\s\S]*?table-layout:\s*fixed/);
   assert.match(css, /\.careGrid\s*\{[\s\S]*?grid-template-columns:\s*repeat\(3, minmax\(0, 1fr\)\)/);
   assert.match(css, /\.supportGrid\s*\{[\s\S]*?grid-template-columns:\s*1fr 1fr/);
+  assert.match(css, /\.safetyColumns\s*\{[\s\S]*?grid-template-columns:\s*repeat\(2, minmax\(0, 1fr\)\)/);
+  assert.match(css, /\.finalMessageContent\s*\{[\s\S]*?grid-template-columns:\s*minmax\(0, 0\.9fr\) minmax\(0, 1\.6fr\)/);
   assert.match(css, /size:\s*A4 portrait/);
   assert.match(css, /break-inside:\s*avoid/);
   assert.match(css, /\.toolbar,\s*\n\s*\.reviewGate\s*\{\s*\n\s*display:\s*none !important/s);
