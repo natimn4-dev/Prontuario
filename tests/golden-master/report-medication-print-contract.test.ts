@@ -10,6 +10,8 @@ const files = {
   medicationCss: new URL("../../src/app/consultations/[id]/medications/print/page.module.css", import.meta.url),
   medicationServer: new URL("../../src/server/clinical/medication-plan-document.ts", import.meta.url),
   medicationReadCore: new URL("../../src/server/clinical/medication-document-workspace.ts", import.meta.url),
+  reportScaleChart: new URL("../../src/components/reports/report-scale-evolution-chart.tsx", import.meta.url),
+  reportScaleChartCss: new URL("../../src/components/reports/report-scale-evolution-chart.module.css", import.meta.url),
 };
 
 async function text(url: URL) {
@@ -37,6 +39,9 @@ test("relatório final usa composição documental compacta, ilustrativa e não 
   assert.match(report, /Significado \/ orientação prática/);
   assert.match(report, /rowSpan=\{group\.scales\.length\}/);
   assert.match(report, /CapacityDimensionHistoryChart/);
+  assert.match(report, /ReportScaleEvolutionChart/);
+  assert.match(report, /Evolução das escalas/);
+  assert.match(report, /Capacidade intrínseca e independência funcional/);
   assert.match(report, /Equipe e encaminhamentos/);
   assert.match(report, /Quando procurar ajuda médica imediata/);
   assert.match(report, /Situações de urgência/);
@@ -102,4 +107,20 @@ test("plano de medicamentos é rota própria, read-only e vinculada à consulta"
   assert.match(css, /break-inside:\s*avoid/);
   assert.match(css, /\.medicationTable thead th\s*\{[\s\S]*?overflow-wrap:\s*anywhere/);
   assert.match(css, /@media print[\s\S]*?\.medicationTable thead th\s*\{[\s\S]*?font-size:\s*7pt/);
+});
+
+test("gráfico compacto segue o modelo visual sem misturar valores brutos de instrumentos diferentes", async () => {
+  const [chart, css] = await Promise.all([
+    text(files.reportScaleChart),
+    text(files.reportScaleChartCss),
+  ]);
+
+  assert.match(chart, /buildReportScaleEvolution\(scales\)/);
+  assert.match(chart, /Y_TICKS = \[0, 25, 50, 75, 100\]/);
+  assert.match(chart, /Acompanhamento ao longo das consultas/);
+  assert.match(chart, /percentual da faixa possível de cada instrumento/);
+  assert.match(chart, /Linhas só conectam registros comparáveis do mesmo instrumento e versão/);
+  assert.match(chart, /Alternativa textual do gráfico de evolução das escalas/);
+  assert.match(css, /\.legend\s*\{[\s\S]*?grid-template-columns:\s*repeat\(2, minmax\(0, 1fr\)\)/);
+  assert.match(css, /break-inside:\s*avoid/);
 });

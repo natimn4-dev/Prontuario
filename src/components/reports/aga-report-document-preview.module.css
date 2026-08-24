@@ -491,6 +491,28 @@
   break-inside: avoid;
 }
 
+.capacityDetailHeading {
+  margin: 0.7rem 0 0.45rem;
+  padding-top: 0.62rem;
+  border-top: 1px dashed var(--line);
+}
+
+.capacityDetailHeading h3,
+.capacityDetailHeading p {
+  margin: 0;
+}
+
+.capacityDetailHeading h3 {
+  color: var(--primary-strong);
+  font-size: 0.8rem;
+}
+
+.capacityDetailHeading p {
+  margin-top: 0.12rem;
+  color: var(--muted);
+  font-size: 0.66rem;
+}
+
 .causalityNote {
   margin: 0.4rem 0 0;
   color: var(--muted);
