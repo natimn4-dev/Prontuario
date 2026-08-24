@@ -4,7 +4,6 @@ import { useMemo, useState } from "react";
 import type { AgaReportModel, AgaScaleReportSection } from "@/domain/aga-report";
 import type { CapacityDimensionHistory } from "@/domain/capacity-dimension-history";
 import { CapacityDimensionHistoryChart } from "@/components/reports/capacity-dimension-history-chart";
-import { ReportScaleEvolutionChart } from "@/components/reports/report-scale-evolution-chart";
 import styles from "./aga-report-document-preview.module.css";
 
 interface GeneratedReportResponse {
@@ -363,14 +362,9 @@ export function AgaReportDocumentPreview({ consultationId }: { consultationId: s
               <div className={styles.sectionHeading}>
                 <span>3</span>
                 <div>
-                  <h2>Evolução das escalas</h2>
-                  <p>Acompanhamento ao longo das consultas, com valores exatos preservados na tabela.</p>
+                  <h2>Evolução da capacidade intrínseca e da independência funcional</h2>
+                  <p>Uma trajetória por dimensão. O tempo real entre consultas é preservado.</p>
                 </div>
-              </div>
-              <ReportScaleEvolutionChart scales={generated.report.assessedScales} />
-              <div className={styles.capacityDetailHeading}>
-                <h3>Capacidade intrínseca e independência funcional</h3>
-                <p>Leitura clínica detalhada por domínio, sem escore composto.</p>
               </div>
               <CapacityDimensionHistoryChart history={generated.report.capacityHistory} context="final-report" />
               <p className={styles.causalityNote}>A associação temporal entre uma mudança e um evento registrado não estabelece causalidade.</p>
