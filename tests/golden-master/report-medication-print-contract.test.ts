@@ -16,7 +16,7 @@ async function text(url: URL) {
   return readFile(url, "utf8");
 }
 
-test("relatório final usa composição documental aprovada e não incorpora tabela completa de medicamentos", async () => {
+test("relatório final usa composição documental compacta, ilustrativa e não incorpora tabela completa de medicamentos", async () => {
   const [consultationPage, report, css] = await Promise.all([
     text(files.consultationPage),
     text(files.report),
@@ -29,12 +29,18 @@ test("relatório final usa composição documental aprovada e não incorpora tab
   assert.match(report, /Visão geral/);
   assert.match(report, /Pontos de atenção/);
   assert.match(report, /Recomendação principal/);
+  assert.match(report, /ReportGlyph/);
   assert.match(report, /Problemas clínicos/);
   assert.match(report, /Problemas geriátricos/);
+  assert.match(report, /ScaleSummaryTable/);
+  assert.match(report, /<th scope="col">Domínio<\/th>/);
+  assert.match(report, /Significado \/ orientação prática/);
+  assert.match(report, /rowSpan=\{group\.scales\.length\}/);
   assert.match(report, /CapacityDimensionHistoryChart/);
   assert.match(report, /Equipe e encaminhamentos/);
   assert.match(report, /Orientações por domínio de capacidade intrínseca/);
   assert.match(report, /Vacinas e prevenção/);
+  assert.match(report, /Documento separado/);
   assert.match(report, /Ver \/ imprimir plano de medicamentos/);
   assert.match(report, /\/consultations\/\$\{consultationId\}\/medications\/print/);
   assert.match(report, /Sem recomendação priorizada registrada/);
@@ -42,6 +48,12 @@ test("relatório final usa composição documental aprovada e não incorpora tab
   assert.doesNotMatch(report, /MedicationPlanTable/);
   assert.doesNotMatch(report, /data-print-scope/);
   assert.doesNotMatch(report, /Acompanhar conforme avaliação clínica/);
+
+  assert.match(css, /\.executiveGrid\s*\{[\s\S]*?grid-template-columns:\s*repeat\(3, minmax\(0, 1fr\)\)/);
+  assert.match(css, /\.glyph\s*\{/);
+  assert.match(css, /\.scaleTable\s*\{[\s\S]*?table-layout:\s*fixed/);
+  assert.match(css, /\.careGrid\s*\{[\s\S]*?grid-template-columns:\s*repeat\(3, minmax\(0, 1fr\)\)/);
+  assert.match(css, /\.supportGrid\s*\{[\s\S]*?grid-template-columns:\s*1fr 1fr/);
   assert.match(css, /size:\s*A4 portrait/);
   assert.match(css, /break-inside:\s*avoid/);
   assert.match(css, /\.toolbar,\s*\n\s*\.reviewGate\s*\{\s*\n\s*display:\s*none !important/s);
