@@ -228,6 +228,14 @@
   margin-bottom: 0.7rem;
 }
 
+.executiveGrid[data-count="2"] {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.executiveGrid[data-count="1"] {
+  grid-template-columns: 1fr;
+}
+
 .executiveCard {
   min-height: 100px;
   padding: 0.68rem;
@@ -724,6 +732,14 @@
 .safetyColumns li + li,
 .finalMessageContent li + li {
   margin-top: 0.16rem;
+}
+
+.safetyEvidence {
+  margin: 0.5rem 0 0;
+  padding-top: 0.4rem;
+  border-top: 1px solid #d8e4f7;
+  color: var(--muted);
+  font-size: 0.61rem;
 }
 
 .finalMessage {

@@ -25,6 +25,17 @@ import {
   STOPPFALL_STRUCTURED_DEFINITION,
   scoreStoppfallStructured,
 } from "@/domain/stoppfall-structured";
+import {
+  BARTHEL_STRUCTURED_CODE,
+  BARTHEL_STRUCTURED_DEFINITION,
+  FRAIL_BR_STRUCTURED_CODE,
+  FRAIL_BR_STRUCTURED_DEFINITION,
+  MNA_SF_STRUCTURED_CODE,
+  MNA_SF_STRUCTURED_DEFINITION,
+  scoreBarthelStructured,
+  scoreFrailBrStructured,
+  scoreMnaSfStructured,
+} from "@/domain/structured-geriatric-scales";
 import { withStructuredScaleEntry } from "@/domain/structured-scale-entry";
 import {
   TEN_CS_STRUCTURED_CODE,
@@ -41,6 +52,9 @@ const DEFINITIONS = [
   ...COMPLEMENTARY_SCORE_SCALES
     .filter((item) => !QUICK_CODES.has(item.code as CognitiveQuickCode))
     .map((item) => {
+      if (item.code === BARTHEL_STRUCTURED_CODE) return BARTHEL_STRUCTURED_DEFINITION;
+      if (item.code === FRAIL_BR_STRUCTURED_CODE) return FRAIL_BR_STRUCTURED_DEFINITION;
+      if (item.code === MNA_SF_STRUCTURED_CODE) return MNA_SF_STRUCTURED_DEFINITION;
       if (item.code === TEN_CS_STRUCTURED_CODE) return TEN_CS_STRUCTURED_DEFINITION;
       if (item.code === SARCF_STRUCTURED_CODE) return SARCF_STRUCTURED_DEFINITION;
       if (item.code === STOPPFALL_STRUCTURED_CODE) return STOPPFALL_STRUCTURED_DEFINITION;
@@ -163,17 +177,23 @@ export async function POST(request: Request, context: { params: Promise<{ id: st
 
     const { scaleCode, answers } = parseBody(await request.json());
     validateAgainstDefinition(scaleCode, answers);
-    const scored = scaleCode === TEN_CS_STRUCTURED_CODE
-      ? scoreTenCsStructured(answers)
-      : scaleCode === SARCF_STRUCTURED_CODE
-        ? scoreSarcfStructured(answers)
-        : scaleCode === STOPPFALL_STRUCTURED_CODE
-          ? scoreStoppfallStructured(answers)
-          : scaleCode === ISI_CODE
-            ? scoreIsi(answers)
-            : QUICK_CODES.has(scaleCode as CognitiveQuickCode)
-              ? scoreCognitiveQuickEntry(scaleCode as CognitiveQuickCode, answers)
-              : scoreComplementaryScale(scaleCode as ComplementaryScoreScaleCode, answers);
+    const scored = scaleCode === BARTHEL_STRUCTURED_CODE
+      ? scoreBarthelStructured(answers)
+      : scaleCode === FRAIL_BR_STRUCTURED_CODE
+        ? scoreFrailBrStructured(answers)
+        : scaleCode === MNA_SF_STRUCTURED_CODE
+          ? scoreMnaSfStructured(answers)
+          : scaleCode === TEN_CS_STRUCTURED_CODE
+            ? scoreTenCsStructured(answers)
+            : scaleCode === SARCF_STRUCTURED_CODE
+              ? scoreSarcfStructured(answers)
+              : scaleCode === STOPPFALL_STRUCTURED_CODE
+                ? scoreStoppfallStructured(answers)
+                : scaleCode === ISI_CODE
+                  ? scoreIsi(answers)
+                  : QUICK_CODES.has(scaleCode as CognitiveQuickCode)
+                    ? scoreCognitiveQuickEntry(scaleCode as CognitiveQuickCode, answers)
+                    : scoreComplementaryScale(scaleCode as ComplementaryScoreScaleCode, answers);
     const assessment = await saveScaleAssessment({
       consultationId: id,
       scaleCode,

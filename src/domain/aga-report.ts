@@ -1,5 +1,9 @@
 import { buildClinicalChangeSummary, type LongitudinalAssessment } from "./clinical-change-summary.ts";
 import {
+  buildFamilyReportSafetyGuidance,
+  type FamilyReportSafetyGuidance,
+} from "./family-report-safety.ts";
+import {
   buildIntrinsicCapacityGuidance,
   type IntrinsicCapacityGuidance,
 } from "./intrinsic-capacity-guidance.ts";
@@ -109,6 +113,7 @@ export interface AgaReportModel {
   };
   vaccinationPrevention: VaccinationPreventionSection;
   intrinsicCapacity: IntrinsicCapacityGuidance;
+  safetyGuidance: FamilyReportSafetyGuidance;
   carePlan: {
     now: string[];
     mediumTerm: string[];
@@ -256,6 +261,7 @@ export function buildAgaReportModel(input: {
       color: card.current.color,
       assessedInTargetConsultation: card.assessedInTargetConsultation,
     }))),
+    safetyGuidance: buildFamilyReportSafetyGuidance(),
     carePlan: {
       now: [...summary.combinedPlan.agora],
       mediumTerm: [...summary.combinedPlan.medio],
@@ -276,7 +282,7 @@ function list(items: readonly string[]): string {
 }
 
 function carePlanBlock(title: string, items: readonly string[]): string[] {
-  return ["", title, list(items)];
+  return items.length > 0 ? ["", title, list(items)] : [];
 }
 
 export function renderAgaReportText(model: AgaReportModel): string {
@@ -292,14 +298,12 @@ export function renderAgaReportText(model: AgaReportModel): string {
     blocks.push("", "ATENÇÃO: relatório gerado antes da finalização da consulta.");
   }
 
-  blocks.push(
-    "",
-    "PROBLEMAS CLÍNICOS",
-    list(model.clinicalProblems.map((problem) => `${problem.title} [${problem.status}]`)),
-    "",
-    "PROBLEMAS GERIÁTRICOS",
-    list(model.geriatricProblems.map((problem) => `${problem.title} [${problem.status}]`)),
-  );
+  if (model.clinicalProblems.length > 0) {
+    blocks.push("", "PROBLEMAS CLÍNICOS", list(model.clinicalProblems.map((problem) => `${problem.title} [${problem.status}]`)));
+  }
+  if (model.geriatricProblems.length > 0) {
+    blocks.push("", "PROBLEMAS GERIÁTRICOS", list(model.geriatricProblems.map((problem) => `${problem.title} [${problem.status}]`)));
+  }
 
   const vaccinationItems = model.vaccinationPrevention.status === "PENDING"
     ? model.vaccinationPrevention.pendingVaccines
@@ -317,7 +321,7 @@ export function renderAgaReportText(model: AgaReportModel): string {
     "Esta seção não contém prescrição automática e permanece separada da tabela de medicamentos.",
   );
 
-  for (const scale of model.assessedScales) {
+  for (const scale of model.assessedScales.filter((item) => item.assessedInTargetConsultation)) {
     const resultLabel = scale.assessedInTargetConsultation
       ? "Avaliado nesta consulta"
       : `Último valor conhecido — não avaliado nesta consulta (consulta ${scale.lastKnown.consultationId}, ${scale.lastKnown.appliedAt.slice(0, 10)})`;
@@ -342,37 +346,29 @@ export function renderAgaReportText(model: AgaReportModel): string {
     );
   }
 
-  blocks.push(
-    "",
-    "CAPACIDADE INTRÍNSECA — ORIENTAÇÕES AO PACIENTE E À FAMÍLIA",
-    model.intrinsicCapacity.sourceLabel,
-  );
-  if (model.intrinsicCapacity.alteredDomains.length === 0) {
-    blocks.push("- Nenhum domínio foi marcado como alterado pelas avaliações aplicadas nesta consulta.");
-  } else {
-    for (const domain of model.intrinsicCapacity.alteredDomains) {
-      blocks.push(
-        "",
-        domain.label.toUpperCase(),
-        `Por que aparece aqui: alteração identificada em ${domain.triggeredBy.join(", ")}.`,
-        domain.whyItMatters,
-        "O que fazer no dia a dia:",
-        list(domain.actions),
-        "Quando avisar a equipe ou procurar ajuda:",
-        list(domain.attentionSigns),
-      );
-    }
+  const carePlanBlocks = [
+    ...carePlanBlock("Agora", model.carePlan.now),
+    ...carePlanBlock("Médio prazo", model.carePlan.mediumTerm),
+    ...carePlanBlock("Família/cuidador", model.carePlan.caregiver),
+    ...carePlanBlock("Encaminhamentos", model.carePlan.referrals),
+  ];
+  if (carePlanBlocks.length > 0) {
+    blocks.push("", "PLANO DE CUIDADO — SUGESTÕES PENDENTES DE REVISÃO MÉDICA", ...carePlanBlocks);
   }
 
-  blocks.push("", "PLANO DE CUIDADO — SUGESTÕES PENDENTES DE REVISÃO MÉDICA");
-  blocks.push(...carePlanBlock("Agora", model.carePlan.now));
-  blocks.push(...carePlanBlock("Médio prazo", model.carePlan.mediumTerm));
-  blocks.push(...carePlanBlock("Família/cuidador", model.carePlan.caregiver));
-  blocks.push(...carePlanBlock("Encaminhamentos", model.carePlan.referrals));
-  blocks.push(...carePlanBlock("Quando entrar em contato", model.carePlan.contact));
-  blocks.push(...carePlanBlock("Urgência", model.carePlan.urgent));
+  blocks.push(
+    "",
+    "QUANDO PROCURAR AJUDA MÉDICA IMEDIATA",
+    list(model.safetyGuidance.urgent),
+    "",
+    "QUANDO ENTRAR EM CONTATO COM A EQUIPE",
+    list(model.safetyGuidance.contact),
+    `Base científica: ${model.safetyGuidance.evidenceReferences.map((reference) => `PMID ${reference.pmid}`).join(" · ")}.`,
+  );
 
-  blocks.push("", "ALERTAS VISÍVEIS", list(model.alerts.map((alert) => `[${alert.severity}] ${alert.message}`)));
+  if (model.alerts.length > 0) {
+    blocks.push("", "ALERTAS VISÍVEIS", list(model.alerts.map((alert) => `[${alert.severity}] ${alert.message}`)));
+  }
   blocks.push("", "TABELA FINAL DE MEDICAMENTOS", model.medicationPlan.message);
   if (model.medicationPlan.status === "READY" && model.medicationPlan.plan) {
     if (model.medicationPlan.plan.rows.length === 0) {

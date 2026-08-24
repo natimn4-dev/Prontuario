@@ -69,7 +69,7 @@ function ReportGlyph({ name }: { name: ReportGlyphName }) {
 }
 
 function ProblemList({ items }: { items: AgaReportModel["clinicalProblems"] }) {
-  if (items.length === 0) return <p className={styles.empty}>Sem problemas registrados.</p>;
+  if (items.length === 0) return null;
   return (
     <ul className={styles.problemList}>
       {items.map((problem) => (
@@ -91,14 +91,11 @@ function ProblemList({ items }: { items: AgaReportModel["clinicalProblems"] }) {
 }
 
 function CareList({ title, items, icon }: { title: string; items: readonly string[]; icon: ReportGlyphName }) {
+  if (items.length === 0) return null;
   return (
     <section className={styles.careCard}>
       <div className={styles.careTitle}><ReportGlyph name={icon} /><h3>{title}</h3></div>
-      {items.length > 0 ? (
-        <ul>{items.map((item) => <li key={item}>{item}</li>)}</ul>
-      ) : (
-        <p className={styles.empty}>Sem orientação registrada.</p>
-      )}
+      <ul>{items.map((item) => <li key={item}>{item}</li>)}</ul>
     </section>
   );
 }
@@ -124,11 +121,7 @@ function DomainSummaryTable({ domains }: { domains: ReportDomainSummary[] }) {
                   <ul className={styles.compactList}>
                     {domain.guidance.map((guidance) => <li key={guidance}>{guidance}</li>)}
                   </ul>
-                ) : (
-                  <strong className={styles.guidanceReviewRequired}>
-                    Orientação individual deste domínio deve ser concluída e revisada pela médica antes do compartilhamento.
-                  </strong>
-                )}
+                ) : null}
                 {domain.evidenceReferences.length > 0 ? (
                   <p className={styles.inlineEvidence}>
                     Base científica: {domain.evidenceReferences.map((reference) => `PMID ${reference.pmid}`).join(" · ")}.
@@ -203,15 +196,19 @@ export function AgaReportDocumentPreview({ consultationId }: { consultationId: s
   const targetConsultationDate = generated?.report.capacityHistory.consultations.find((item) => item.isTarget)?.occurredAt;
   const attentionItems = generated?.report.alerts.slice(0, 5) ?? [];
   const recommendation = generated?.report.carePlan.now[0] ?? generated?.report.carePlan.mediumTerm[0] ?? null;
-  const finalMessageItems = generated
-    ? [...new Set([
-        ...generated.report.carePlan.now,
-        ...generated.report.carePlan.mediumTerm,
-        ...generated.report.carePlan.caregiver,
-        ...generated.report.carePlan.referrals,
-        ...generated.report.vaccinationPrevention.guidance,
-      ])].slice(0, 6)
-    : [];
+  const executiveCardCount = 1 + (attentionItems.length > 0 ? 1 : 0) + (recommendation ? 1 : 0);
+  const finalMessageItems = generated ? [
+    "Leve este relatório e a lista atualizada de medicamentos às consultas e atendimentos.",
+    "Compartilhe com a equipe as mudanças observadas desde esta avaliação.",
+    "As orientações prioritárias e os sinais de alerta estão resumidos nos blocos acima.",
+  ] : [];
+  const hasProblems = Boolean(generated && (generated.report.clinicalProblems.length > 0 || generated.report.geriatricProblems.length > 0));
+  const hasCarePlan = Boolean(generated && [
+    generated.report.carePlan.now,
+    generated.report.carePlan.mediumTerm,
+    generated.report.carePlan.caregiver,
+    generated.report.carePlan.referrals,
+  ].some((items) => items.length > 0));
 
   return (
     <section className={styles.workspace} data-review={clinicalReviewConfirmed ? "confirmed" : "pending"}>
@@ -268,7 +265,7 @@ export function AgaReportDocumentPreview({ consultationId }: { consultationId: s
               Este relatório resume os principais achados da Avaliação Geriátrica Ampla para apoiar o cuidado diário e a continuidade do acompanhamento. Ele não substitui avaliação médica individualizada.
             </section>
 
-            <section className={styles.executiveGrid} aria-label="Resumo executivo">
+            <section className={styles.executiveGrid} data-count={executiveCardCount} aria-label="Resumo executivo">
               <article className={styles.executiveCard} data-tone="overview">
                 <div className={styles.cardTitle}><ReportGlyph name="overview" /><span>Visão geral</span></div>
                 <p>{generated.report.changeSummary.headline}</p>
@@ -276,41 +273,41 @@ export function AgaReportDocumentPreview({ consultationId }: { consultationId: s
                   <ul>{generated.report.changeSummary.narrative.slice(0, 3).map((item) => <li key={item}>{item}</li>)}</ul>
                 ) : null}
               </article>
-              <article className={styles.executiveCard} data-tone="attention">
-                <div className={styles.cardTitle}><ReportGlyph name="attention" /><span>Pontos de atenção</span></div>
-                {attentionItems.length > 0 ? (
+              {attentionItems.length > 0 ? (
+                <article className={styles.executiveCard} data-tone="attention">
+                  <div className={styles.cardTitle}><ReportGlyph name="attention" /><span>Pontos de atenção</span></div>
                   <ul>{attentionItems.map((item, index) => <li key={`${item.severity}-${index}`}>{item.message}</li>)}</ul>
-                ) : (
-                  <p>Nenhum alerta prioritário registrado nesta consulta.</p>
-                )}
-              </article>
-              <article className={styles.executiveCard} data-tone="recommendation">
-                <div className={styles.cardTitle}><ReportGlyph name="recommendation" /><span>Recomendação principal</span></div>
-                <p>{recommendation ?? "Sem recomendação priorizada registrada."}</p>
-              </article>
+                </article>
+              ) : null}
+              {recommendation ? (
+                <article className={styles.executiveCard} data-tone="recommendation">
+                  <div className={styles.cardTitle}><ReportGlyph name="recommendation" /><span>Recomendação principal</span></div>
+                  <p>{recommendation}</p>
+                </article>
+              ) : null}
             </section>
 
-            <section className={styles.section}>
+            {hasProblems ? <section className={styles.section}>
               <div className={styles.sectionHeading}><span>1</span><h2>Problemas ativos</h2></div>
               <div className={styles.problemGrid}>
-                <article>
+                {generated.report.clinicalProblems.length > 0 ? <article>
                   <div className={styles.problemTitle}><ReportGlyph name="clinical" /><h3>Problemas clínicos</h3></div>
                   <ProblemList items={generated.report.clinicalProblems} />
-                </article>
-                <article>
+                </article> : null}
+                {generated.report.geriatricProblems.length > 0 ? <article>
                   <div className={styles.problemTitle}><ReportGlyph name="geriatric" /><h3>Problemas geriátricos</h3></div>
                   <ProblemList items={generated.report.geriatricProblems} />
-                </article>
+                </article> : null}
               </div>
-            </section>
+            </section> : null}
 
-            <section className={styles.section}>
+            {reportDomains.length > 0 ? <section className={styles.section}>
               <div className={styles.sectionHeading}><span>2</span><h2>Resultados das avaliações</h2></div>
               <p className={styles.sectionLead}>Resumo por domínio, com foco no significado funcional e nas orientações para o cuidado. As orientações sugeridas exigem revisão médica antes do compartilhamento; nomes e escores das escalas permanecem no prontuário técnico.</p>
-              {reportDomains.length > 0 ? <DomainSummaryTable domains={reportDomains} /> : <p className={styles.empty}>Não avaliado nesta consulta.</p>}
-            </section>
+              <DomainSummaryTable domains={reportDomains} />
+            </section> : null}
 
-            <section className={`${styles.section} ${styles.chartSection}`}>
+            {generated.report.capacityHistory.hasLongitudinalTrendData ? <section className={`${styles.section} ${styles.chartSection}`}>
               <div className={styles.sectionHeading}>
                 <span>3</span>
                 <div>
@@ -320,9 +317,9 @@ export function AgaReportDocumentPreview({ consultationId }: { consultationId: s
               </div>
               <CapacityDimensionHistoryChart history={generated.report.capacityHistory} context="final-report" />
               <p className={styles.causalityNote}>A associação temporal entre uma mudança e um evento registrado não estabelece causalidade.</p>
-            </section>
+            </section> : null}
 
-            <section className={styles.section}>
+            {hasCarePlan ? <section className={styles.section}>
               <div className={styles.sectionHeading}><span>4</span><h2>Plano de cuidados e orientações para a família</h2></div>
               <div className={styles.careGrid}>
                 <CareList title="O que priorizar agora" items={generated.report.carePlan.now} icon="nutrition" />
@@ -330,37 +327,7 @@ export function AgaReportDocumentPreview({ consultationId }: { consultationId: s
                 <CareList title="Família e cuidador" items={generated.report.carePlan.caregiver} icon="support" />
                 <CareList title="Equipe e encaminhamentos" items={generated.report.carePlan.referrals} icon="cognition" />
               </div>
-
-              {generated.report.intrinsicCapacity.alteredDomains.length > 0 ? (
-                <div className={styles.intrinsicGuidance}>
-                  <h3>Orientações por domínio de capacidade intrínseca</h3>
-                  <p className={styles.guidanceSource}>{generated.report.intrinsicCapacity.sourceLabel}</p>
-                  <div className={styles.intrinsicGrid}>
-                    {generated.report.intrinsicCapacity.alteredDomains.map((domain) => (
-                      <article key={domain.code}>
-                        <h4>{domain.label}</h4>
-                        <p>{domain.whyItMatters}</p>
-                        <strong>O que fazer no dia a dia</strong>
-                        <ul>{domain.actions.map((action) => <li key={action}>{action}</li>)}</ul>
-                        <strong>Quando avisar a equipe ou procurar ajuda</strong>
-                        <ul>{domain.attentionSigns.map((sign) => <li key={sign}>{sign}</li>)}</ul>
-                        <div className={styles.evidenceBlock}>
-                          <strong>Base científica</strong>
-                          <ul>
-                            {domain.evidenceReferences.map((reference) => (
-                              <li key={reference.pmid}>
-                                <a href={reference.url} target="_blank" rel="noreferrer">{reference.label} — PMID {reference.pmid}</a>
-                                <span>{reference.relevance}</span>
-                              </li>
-                            ))}
-                          </ul>
-                        </div>
-                      </article>
-                    ))}
-                  </div>
-                </div>
-              ) : null}
-            </section>
+            </section> : null}
 
             <section className={styles.safetyPanel} aria-labelledby="report-urgent-help-title">
               <div className={styles.safetyTitle}>
@@ -373,17 +340,16 @@ export function AgaReportDocumentPreview({ consultationId }: { consultationId: s
               <div className={styles.safetyColumns}>
                 <article>
                   <h3>Situações de urgência</h3>
-                  {generated.report.carePlan.urgent.length > 0 ? (
-                    <ul>{generated.report.carePlan.urgent.map((item) => <li key={item}>{item}</li>)}</ul>
-                  ) : <p className={styles.empty}>Sem situação urgente registrada.</p>}
+                  <ul>{generated.report.safetyGuidance.urgent.map((item) => <li key={item}>{item}</li>)}</ul>
                 </article>
                 <article>
                   <h3>Quando entrar em contato com a equipe</h3>
-                  {generated.report.carePlan.contact.length > 0 ? (
-                    <ul>{generated.report.carePlan.contact.map((item) => <li key={item}>{item}</li>)}</ul>
-                  ) : <p className={styles.empty}>Sem sinal adicional registrado.</p>}
+                  <ul>{generated.report.safetyGuidance.contact.map((item) => <li key={item}>{item}</li>)}</ul>
                 </article>
               </div>
+              <p className={styles.safetyEvidence}>
+                Base científica: {generated.report.safetyGuidance.evidenceReferences.map((reference) => `PMID ${reference.pmid}`).join(" · ")}.
+              </p>
             </section>
 
             <section className={styles.finalMessage} aria-labelledby="report-final-message-title">
@@ -396,9 +362,7 @@ export function AgaReportDocumentPreview({ consultationId }: { consultationId: s
               </div>
               <div className={styles.finalMessageContent}>
                 <strong>O acompanhamento contínuo e a revisão regular do plano de cuidados fazem diferença.</strong>
-                {finalMessageItems.length > 0 ? (
-                  <ul>{finalMessageItems.map((item) => <li key={item}>{item}</li>)}</ul>
-                ) : <p className={styles.empty}>Sem orientação adicional registrada.</p>}
+                <ul>{finalMessageItems.map((item) => <li key={item}>{item}</li>)}</ul>
               </div>
             </section>
 

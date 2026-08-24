@@ -10,13 +10,14 @@ A busca da página inicial é parte do fluxo clínico crítico. Paciente já cad
 - comparação canônica: ignora caixa, acentos e espaços repetidos;
 - termos podem estar em ordem diferente;
 - validação final é feita na aplicação a partir de `Patient.fullName`;
+- uma segunda consulta limitada ao nome-fonte recupera registros legados mesmo quando o índice derivado está divergente e o paciente está além das páginas do fallback;
 - `Patient.normalizedFullName` é índice auxiliar derivado, nunca fonte de verdade de identidade;
 - `DRAFT` ou `IN_REVIEW` retorna `destinationPath` da consulta ativa;
 - sem consulta ativa retorna `destinationPath` do paciente;
 - resposta contém somente identidade mínima de seleção;
 - `401`, `403`, `400` e `500` nunca são apresentados como “Nenhum paciente encontrado”.
 
-O fallback para dados legados é paginado pela chave primária e limitado a 20 páginas de 100 registros. A correção permanente é manter `normalizedFullName` consistente; o fallback não deve evoluir para scan completo ilimitado.
+Depois da consulta pelo índice, a busca faz uma consulta limitada em `fullName` e valida os candidatos com a mesma normalização canônica da aplicação. O último fallback para dados legados continua paginado pela chave primária e limitado a 20 páginas de 100 registros. A correção permanente é manter `normalizedFullName` consistente; o fallback não deve evoluir para scan completo ilimitado.
 
 ## Auditoria segura do banco
 

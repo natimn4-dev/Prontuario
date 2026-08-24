@@ -165,6 +165,19 @@ const DOMAIN_CONTENT: Readonly<Record<IntrinsicCapacityDomainCode, Omit<Intrinsi
   },
 };
 
+export function intrinsicCapacityGuidanceForDomain(
+  code: IntrinsicCapacityDomainCode,
+): Omit<IntrinsicCapacityGuidanceSection, "code" | "triggeredBy"> {
+  const content = DOMAIN_CONTENT[code];
+  return {
+    label: content.label,
+    whyItMatters: content.whyItMatters,
+    actions: [...content.actions],
+    attentionSigns: [...content.attentionSigns],
+    evidenceReferences: content.evidenceReferences.map((reference) => ({ ...reference })),
+  };
+}
+
 function isAltered(color: ClinicalColor | undefined): boolean {
   return color === "amarelo" || color === "vermelho";
 }

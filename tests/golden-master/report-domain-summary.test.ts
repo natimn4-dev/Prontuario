@@ -71,3 +71,41 @@ test("domínio alterado nunca é silenciosamente apresentado como sem orientaç�
   assert.ok(altered.length >= 1);
   assert.ok(altered.every((domain) => domain.guidance.length > 0 || domain.requiresMedicalGuidance));
 });
+
+test("tabela inclui somente domínios avaliados na consulta alvo e nunca usa orientação genérica", () => {
+  const report = buildAgaReportModel({
+    patientId: "patient-current-domains-only",
+    consultationId: "consultation-current",
+    consultationStatus: "IN_REVIEW",
+    patientName: "Paciente Sintético",
+    longitudinalProblems: [],
+    longitudinalAssessments: [
+      {
+        patientId: "patient-current-domains-only",
+        consultationId: "consultation-old",
+        scaleCode: "gds15",
+        scaleVersion: "1.0",
+        score: 8,
+        color: "amarelo",
+        appliedAt: "2026-07-20",
+      },
+      {
+        patientId: "patient-current-domains-only",
+        consultationId: "consultation-current",
+        scaleCode: "barthel",
+        scaleVersion: "barthel-items-2026-08-v1",
+        score: 80,
+        color: "amarelo",
+        appliedAt: "2026-08-24",
+      },
+    ],
+  });
+
+  const domains = buildReportDomainSummaries(report.assessedScales, report.intrinsicCapacity);
+  assert.deepEqual(domains.map((domain) => domain.code), ["funcionalidade"]);
+  assert.ok(domains[0]!.guidance.length > 0);
+  assert.ok(domains[0]!.evidenceReferences.some((reference) => reference.pmid === "29953830"));
+  const text = domains.flatMap((domain) => domain.guidance).join(" ");
+  assert.doesNotMatch(text, /Manter o plano de cuidado já acordado/);
+  assert.doesNotMatch(text, /orientação individual deste domínio/i);
+});

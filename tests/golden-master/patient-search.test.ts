@@ -113,6 +113,8 @@ test("serviço exige patient.read, tenta o índice canônico e limita o fallback
   assert.match(boundarySource, /requireAuthenticatedUser\("patient\.read"\)/);
   assert.match(boundarySource, /searchPatientsInDatabase\(prisma, query\)/);
   assert.match(databaseSource, /normalizedFullName/);
+  assert.match(databaseSource, /sourceNameCandidates/);
+  assert.match(databaseSource, /fullName:\s*\{ contains: normalizedQuery \}/);
   assert.match(databaseSource, /patientNameMatchesSearch/);
   assert.match(databaseSource, /PATIENT_SEARCH_FALLBACK_PAGE_SIZE/);
   assert.match(databaseSource, /PATIENT_SEARCH_FALLBACK_MAX_PAGES/);

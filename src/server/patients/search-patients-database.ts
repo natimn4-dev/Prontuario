@@ -81,6 +81,53 @@ export async function searchPatientsInDatabase(
     }
   }
 
+  // Segunda via determinística para registros legados: consulta o nome-fonte
+  // diretamente antes do fallback paginado. Em MySQL/MariaDB com a collation
+  // validada pelo release gate, isto recupera um paciente mesmo quando o índice
+  // derivado ficou desatualizado e o registro estaria além das páginas de
+  // segurança do scan. A validação final continua canônica na aplicação.
+  if (matched.size < PATIENT_SEARCH_LIMIT) {
+    const sourceNameCandidates = await client.patient.findMany({
+      where: {
+        OR: [
+          { fullName: { contains: normalizedQuery } },
+          {
+            AND: terms.map((term) => ({
+              fullName: { contains: term },
+            })),
+          },
+        ],
+      },
+      orderBy: [
+        { fullName: "asc" },
+        { birthDate: "asc" },
+        { id: "asc" },
+      ],
+      take: PATIENT_SEARCH_LIMIT * PATIENT_SEARCH_CANDIDATE_MULTIPLIER,
+      select: {
+        id: true,
+        fullName: true,
+        birthDate: true,
+        needsIdentityReview: true,
+        consultations: {
+          where: { status: { in: ["DRAFT", "IN_REVIEW"] } },
+          orderBy: [
+            { occurredAt: "desc" },
+            { createdAt: "desc" },
+            { id: "desc" },
+          ],
+          take: 1,
+          select: { id: true, status: true, occurredAt: true },
+        },
+      },
+    });
+
+    for (const patient of sourceNameCandidates) {
+      if (matched.has(patient.id)) continue;
+      if (patientNameMatchesSearch(patient.fullName, normalizedQuery)) matched.set(patient.id, patient);
+    }
+  }
+
   // Proteção para dados históricos cujo normalizedFullName não acompanha a
   // função canônica atual. O fallback é deliberadamente limitado e pagina pela
   // chave primária para evitar scan ilimitado/offset crescente. O release gate

@@ -29,8 +29,8 @@ test("relatório separa dado, resultado, interpretação, proposta, intervençã
   assert.equal(section.evolution.baseline, 3);
   assert.equal(report.geriatricProblems[0]?.status, "RESOLVED");
   assert.deepEqual(report.intrinsicCapacity.alteredDomains.map((domain) => domain.code), ["locomocao"]);
-  assert.match(renderAgaReportText(report), /CAPACIDADE INTRÍNSECA/);
-  assert.match(renderAgaReportText(report), /O que fazer no dia a dia/);
+  assert.doesNotMatch(renderAgaReportText(report), /CAPACIDADE INTRÍNSECA — ORIENTAÇÕES/);
+  assert.match(renderAgaReportText(report), /QUANDO PROCURAR AJUDA MÉDICA IMEDIATA/);
 });
 
 test("relatório distingue último valor conhecido quando escala não foi reaplicada", () => {
@@ -52,7 +52,7 @@ test("relatório distingue último valor conhecido quando escala não foi reapli
   assert.equal(scale.lastKnown.score, 60);
   assert.equal(scale.evolution.current, null);
   assert.ok(report.notAssessedScaleCodes.includes("barthel"));
-  assert.match(renderAgaReportText(report), /Último valor conhecido — não avaliado nesta consulta/);
+  assert.doesNotMatch(renderAgaReportText(report), /Último valor conhecido — não avaliado nesta consulta/);
   assert.doesNotMatch(renderAgaReportText(report), /atual 60/);
   assert.deepEqual(scale.interventionSuggestions, []);
   assert.deepEqual(scale.relatedProblemProposals, []);

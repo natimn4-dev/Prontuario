@@ -245,10 +245,10 @@ export function CapacityDimensionHistoryChart({
   history: CapacityDimensionHistory;
   context: "patient-home" | "final-report";
 }) {
-  if (!history.hasAssessmentData || history.consultations.length === 0) {
+  if (!history.hasLongitudinalTrendData) {
     return (
       <p className={styles.empty}>
-        Ainda não há avaliações suficientes de capacidade intrínseca ou funcional para compor o gráfico longitudinal.
+        O gráfico longitudinal será exibido a partir de uma consulta subsequente com pelo menos dois resultados comparáveis do mesmo instrumento e versão.
       </p>
     );
   }
@@ -283,7 +283,8 @@ export function CapacityDimensionHistoryChart({
     <figure className={styles.figure} data-chart="line-small-multiples">
       <figcaption className={styles.caption}>
         <div>
-          <strong>Gráfico em linhas por domínio</strong>
+          <span className={styles.chartKicker}>Evolução desde a avaliação inicial</span>
+          <strong>Trajetória por domínio</strong>
           <span>{description}</span>
         </div>
       </figcaption>
@@ -344,7 +345,7 @@ export function CapacityDimensionHistoryChart({
 
       <div className={styles.readingGuide}>
         <strong>Como ler</strong>
-        <span>A posição vertical mostra o estado: acima = sem redução detectada, centro = atenção, abaixo = redução identificada.</span>
+        <span>A posição vertical mostra o estado: acima = sem redução detectada, centro = atenção, abaixo = redução identificada. O marcador “Atual” identifica esta consulta.</span>
         <span>A linha só continua quando o instrumento e a versão são comparáveis. Círculo cinza = não avaliada; quadrado = registro sem estado; losango = resultados discordantes.</span>
       </div>
 

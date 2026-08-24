@@ -155,6 +155,8 @@ test("instrumentos ou versões diferentes não criam falsa tendência longitudin
 
   assert.equal(differentInstrument.inflectionPoints.length, 0);
   assert.equal(differentVersion.inflectionPoints.length, 0);
+  assert.equal(differentInstrument.hasLongitudinalTrendData, false);
+  assert.equal(differentVersion.hasLongitudinalTrendData, false);
 });
 
 test("consulta sem avaliação de capacidade permanece no eixo como missing explícito e interrompe comparabilidade", () => {
@@ -173,6 +175,7 @@ test("consulta sem avaliação de capacidade permanece no eixo como missing expl
   assert.equal(functionality.cells[1]?.status, "not-assessed");
   assert.equal(functionality.cells[2]?.status, "altered");
   assert.equal(history.inflectionPoints.length, 0);
+  assert.equal(history.hasLongitudinalTrendData, false);
 });
 
 test("mesmo instrumento e versão produz inflexão observada sem inferir causalidade", () => {
@@ -201,6 +204,7 @@ test("mesmo instrumento e versão produz inflexão observada sem inferir causali
   assert.equal(history.inflectionPoints[0]?.toStatus, "altered");
   assert.equal(history.inflectionPoints[0]?.comparabilityKey, "lawton@1");
   assert.equal(history.inflectionPoints[0]?.milestones[0]?.title, "AVC");
+  assert.equal(history.hasLongitudinalTrendData, true);
 });
 
 test("último registro da mesma escala na consulta é o efetivo sem apagar proveniência", () => {

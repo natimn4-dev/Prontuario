@@ -132,6 +132,7 @@ export interface CapacityDimensionHistory {
   dimensions: CapacityDimensionRow[];
   inflectionPoints: CapacityInflectionPoint[];
   hasAssessmentData: boolean;
+  hasLongitudinalTrendData: boolean;
 }
 
 export const CAPACITY_DIMENSIONS: readonly {
@@ -371,6 +372,21 @@ function buildInflectionPoints(
       - CAPACITY_DIMENSIONS.findIndex((item) => item.code === right.dimensionCode));
 }
 
+function hasDrawableLongitudinalTrend(dimensions: readonly CapacityDimensionRow[]): boolean {
+  return dimensions.some((dimension) => {
+    let previousKey: string | undefined;
+    for (const cell of dimension.cells) {
+      if (!isComparableStatus(cell.status) || !cell.comparabilityKey) {
+        previousKey = undefined;
+        continue;
+      }
+      if (previousKey === cell.comparabilityKey) return true;
+      previousKey = cell.comparabilityKey;
+    }
+    return false;
+  });
+}
+
 export function buildCapacityDimensionHistory(input: {
   patientId: string;
   assessments: readonly CapacityTimelineAssessment[];
@@ -480,5 +496,6 @@ export function buildCapacityDimensionHistory(input: {
     dimensions,
     inflectionPoints,
     hasAssessmentData: effective.length > 0,
+    hasLongitudinalTrendData: hasDrawableLongitudinalTrend(dimensions),
   };
 }

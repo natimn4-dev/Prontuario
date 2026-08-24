@@ -46,12 +46,12 @@ test("relatório final usa composição documental compacta, ilustrativa e não 
   assert.match(report, /Quando entrar em contato com a equipe/);
   assert.match(report, /Mensagem final/);
   assert.match(report, /finalMessageItems/);
-  assert.match(report, /Orientações por domínio de capacidade intrínseca/);
+  assert.doesNotMatch(report, /Orientações por domínio de capacidade intrínseca/);
   assert.match(report, /Vacinas e prevenção/);
   assert.match(report, /Documento separado/);
   assert.match(report, /Ver \/ imprimir plano de medicamentos/);
   assert.match(report, /\/consultations\/\$\{consultationId\}\/medications\/print/);
-  assert.match(report, /Sem recomendação priorizada registrada/);
+  assert.doesNotMatch(report, /Sem recomendação priorizada registrada/);
   assert.doesNotMatch(report, /Sem orientação prática adicional registrada/);
   assert.match(report, /Base científica/);
   assert.match(report, /PMID/);
