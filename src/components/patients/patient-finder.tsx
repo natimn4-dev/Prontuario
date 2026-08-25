@@ -68,8 +68,12 @@ export function PatientFinder() {
       const response = await fetch("/api/patients/search", {
         method: "POST",
         cache: "no-store",
+        credentials: "same-origin",
         signal: controller.signal,
-        headers: { "Content-Type": "application/json" },
+        headers: {
+          "Accept": "application/json",
+          "Content-Type": "application/json",
+        },
         body: JSON.stringify({ query: compactQuery }),
       });
       const payload = await response.json().catch(() => ({})) as PatientSearchResponse;
