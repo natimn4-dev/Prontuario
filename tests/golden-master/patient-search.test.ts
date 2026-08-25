@@ -12,6 +12,7 @@ import {
   patientSearchTerms,
   toPatientSelectionResult,
 } from "../../src/domain/patient-search.ts";
+import { searchPatientsInDatabase } from "../../src/server/patients/search-patients-database.ts";
 
 test("busca de paciente normaliza acentos, caixa e espaços e exige dois caracteres", () => {
   assert.equal(assertPatientSearchQuery("  MÁria   da SILVA  "), "maria da silva");
@@ -127,6 +128,57 @@ test("serviço exige patient.read, tenta o índice canônico e limita o fallback
   assert.doesNotMatch(databaseSource, /identifiers:\s*true/);
 });
 
+test("resultado indexado encerra a busca sem varreduras legadas adicionais", async () => {
+  let calls = 0;
+  const indexedPatient = {
+    id: "patient-indexed",
+    fullName: "Maria Clara Andrade",
+    birthDate: new Date("1944-03-20T12:00:00.000Z"),
+    needsIdentityReview: false,
+    consultations: [],
+  };
+  const client = {
+    patient: {
+      findMany: async () => {
+        calls += 1;
+        if (calls > 1) throw new Error("fallback legado não deveria executar após resultado indexado");
+        return [indexedPatient];
+      },
+    },
+  } as unknown as Parameters<typeof searchPatientsInDatabase>[0];
+
+  const results = await searchPatientsInDatabase(client, "Maria Clara");
+
+  assert.equal(calls, 1);
+  assert.deepEqual(results.map((patient) => patient.id), ["patient-indexed"]);
+});
+
+test("nome-fonte legado só é consultado quando o índice não encontra paciente", async () => {
+  let calls = 0;
+  const legacyPatient = {
+    id: "patient-legacy",
+    fullName: "José Ávila Souza",
+    birthDate: new Date("1941-04-12T12:00:00.000Z"),
+    needsIdentityReview: false,
+    consultations: [],
+  };
+  const client = {
+    patient: {
+      findMany: async () => {
+        calls += 1;
+        if (calls === 1) return [];
+        if (calls === 2) return [legacyPatient];
+        throw new Error("scan paginado não deveria executar após resultado no nome-fonte");
+      },
+    },
+  } as unknown as Parameters<typeof searchPatientsInDatabase>[0];
+
+  const results = await searchPatientsInDatabase(client, "Jose Avila");
+
+  assert.equal(calls, 2);
+  assert.deepEqual(results.map((patient) => patient.id), ["patient-legacy"]);
+});
+
 test("fronteira HTTP e UI evitam cache, diferenciam falha e usam o destino clínico correto", () => {
   const routeSource = readFileSync(
     new URL("../../src/app/api/patients/search/route.ts", import.meta.url),
@@ -150,6 +202,7 @@ test("fronteira HTTP e UI evitam cache, diferenciam falha e usam o destino clín
   assert.match(finderSource, /AbortController/);
   assert.match(finderSource, /activeRequest\.current\?\.abort\(\)/);
   assert.match(finderSource, /cache:\s*"no-store"/);
+  assert.match(finderSource, /credentials:\s*"same-origin"/);
   assert.match(finderSource, /signal:\s*controller\.signal/);
   assert.match(finderSource, /patientSearchFailureFeedback/);
   assert.match(finderSource, /setResults\(\[\]\)/);
