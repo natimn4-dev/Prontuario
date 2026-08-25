@@ -71,7 +71,7 @@ O endpoint público de health check deve responder HTTP 200 e incluir:
 
 - `status: "ok"`
 - `database: "ok"`
-- `releaseId: "2026-08-24-patient-search-scales-family-report-v3"`
+- `releaseId: "2026-08-25-patient-search-performance-v4"`
 
 Nesta release, os escores numéricos discretos das escalas complementares são apresentados como listas de seleção. MEEM, MoCA e ISI preservam o modo rápido score-only; medidas físicas contínuas preservam o valor bruto necessário ao acompanhamento longitudinal.
 
