@@ -86,7 +86,11 @@ export async function searchPatientsInDatabase(
   // validada pelo release gate, isto recupera um paciente mesmo quando o índice
   // derivado ficou desatualizado e o registro estaria além das páginas de
   // segurança do scan. A validação final continua canônica na aplicação.
-  if (matched.size < PATIENT_SEARCH_LIMIT) {
+  // O caminho indexado é o fluxo normal e suficiente quando encontra ao menos
+  // um candidato. Antes desta guarda, toda busca com menos de oito resultados
+  // continuava pelas duas rotas legadas e podia executar até 20 páginas com
+  // joins de consulta, fazendo uma busca válida expirar em produção.
+  if (matched.size === 0) {
     const sourceNameCandidates = await client.patient.findMany({
       where: {
         OR: [
@@ -136,7 +140,7 @@ export async function searchPatientsInDatabase(
   let cursor: string | undefined;
   for (
     let pageIndex = 0;
-    pageIndex < PATIENT_SEARCH_FALLBACK_MAX_PAGES && matched.size < PATIENT_SEARCH_LIMIT;
+    pageIndex < PATIENT_SEARCH_FALLBACK_MAX_PAGES && matched.size === 0;
     pageIndex += 1
   ) {
     const page = await client.patient.findMany({
