@@ -19,6 +19,7 @@ const view: ConsultationNoteView = {
   consultationStatus: "DRAFT",
   updatedAt: "2026-08-19T12:00:00.000Z",
   fields: { subjective: "Queixa sintética" },
+  exams: { current: "", history: [] },
   problems: [{ id: "problem-1", type: "CLINICAL", status: "ACTIVE", title: "Problema sintético" }],
   planSuggestions: [],
 };
@@ -86,6 +87,7 @@ test("PUT deriva consultationId exclusivamente da rota e preserva controle de ve
     physicalExam: "Exame",
     vitalSigns: "PA sintética",
     anthropometry: "Peso sintético",
+    examsText: "Exames sintéticos",
     planByProblem: { "problem-1": ["Ação sintética"] },
   }), "consultation-from-route");
 
@@ -93,6 +95,7 @@ test("PUT deriva consultationId exclusivamente da rota e preserva controle de ve
   assert.deepEqual(received, {
     consultationId: "consultation-from-route",
     expectedUpdatedAt: view.updatedAt,
+    examsText: "Exames sintéticos",
     fields: {
       subjective: "Subjetivo",
       physicalExam: "Exame",
@@ -125,6 +128,21 @@ test("fronteira SOAP aceita revisão vacinal estruturada e rejeita prescrição 
         pendingVaccines: [],
         prescription: "aplicar hoje",
       },
+    }),
+    ConsultationNoteRequestError,
+  );
+});
+
+test("fronteira SOAP aceita exames como texto longitudinal e rejeita excesso", () => {
+  const parsed = parseConsultationNoteUpdate({
+    expectedUpdatedAt: view.updatedAt,
+    examsText: "Hemograma e exame de imagem registrados pela médica.",
+  });
+  assert.equal(parsed.examsText, "Hemograma e exame de imagem registrados pela médica.");
+  assert.throws(
+    () => parseConsultationNoteUpdate({
+      expectedUpdatedAt: view.updatedAt,
+      examsText: "x".repeat(30001),
     }),
     ConsultationNoteRequestError,
   );

@@ -154,6 +154,7 @@ model Patient {
   consultations          Consultation[]      @relation("PatientConsultations")
   problems               ClinicalProblem[]
   scaleAssessments       ScaleAssessment[]
+  clinicalExamRecords    ClinicalExamRecord[]
   medications            Medication[]
   documents              DocumentSnapshot[]
   identifiers            PatientIdentifier[]
@@ -194,6 +195,7 @@ model Consultation {
   problemsOriginated ClinicalProblem[]  @relation("ProblemOrigin")
   problemEvents     ProblemEvent[]
   scaleAssessments  ScaleAssessment[]
+  clinicalExamRecord ClinicalExamRecord?
   medicationRegimens MedicationRegimen[]
   medicationStatusEvents MedicationStatusEvent[]
   documents         DocumentSnapshot[]
@@ -203,6 +205,20 @@ model Consultation {
   @@index([patientId, occurredAt])
   @@index([physicianId, occurredAt])
   @@unique([id, patientId])
+}
+
+model ClinicalExamRecord {
+  id             String       @id @default(cuid())
+  patientId      String
+  consultationId String       @unique
+  content        String       @db.LongText
+  patient        Patient      @relation(fields: [patientId], references: [id], onDelete: Restrict)
+  consultation   Consultation @relation(fields: [consultationId, patientId], references: [id, patientId], onDelete: Restrict)
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+
+  @@index([patientId, updatedAt])
+  @@unique([consultationId, patientId])
 }
 
 model ClinicalProblem {

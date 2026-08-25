@@ -1,6 +1,7 @@
 import type { SoapDraftFields } from "./consultation-note-contract.ts";
 import type { ClinicalProblem } from "./problems.ts";
 import type { ProfessionalPlanSuggestion } from "./professional-plan-suggestions.ts";
+import type { ConsultationExamView } from "./consultation-exams.ts";
 
 export type ConsultationNoteErrorCode =
   | "CONSULTATION_NOT_FOUND"
@@ -25,6 +26,7 @@ export interface ConsultationNoteView {
   consultationStatus: "DRAFT" | "IN_REVIEW" | "FINALIZED";
   updatedAt: string;
   fields: SoapDraftFields;
+  exams: ConsultationExamView;
   problems: Array<Pick<ClinicalProblem, "id" | "type" | "status" | "title">>;
   planSuggestions: ProfessionalPlanSuggestion[];
 }

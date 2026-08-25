@@ -16,6 +16,10 @@ import {
   type ConsultationNoteView,
 } from "../../domain/consultation-note-view.ts";
 import { buildProfessionalPlanSuggestions } from "../../domain/professional-plan-suggestions.ts";
+import {
+  buildConsultationExamView,
+  normalizeClinicalExamText,
+} from "../../domain/consultation-exams.ts";
 import { requireAuthenticatedUser } from "../auth/require-user.ts";
 import { prisma } from "../db.ts";
 
@@ -54,6 +58,26 @@ async function noteContext(tx: Prisma.TransactionClient, consultationId: string)
     consultations,
   });
   const consultationIds = horizon.map((item) => item.id);
+
+  const examRecords = await tx.clinicalExamRecord.findMany({
+    where: {
+      patientId: consultation.patientId,
+      consultationId: { in: consultationIds },
+    },
+    select: {
+      id: true,
+      patientId: true,
+      consultationId: true,
+      content: true,
+      updatedAt: true,
+    },
+  });
+  const exams = buildConsultationExamView({
+    patientId: consultation.patientId,
+    targetConsultationId: consultation.id,
+    consultations,
+    records: examRecords,
+  });
 
   const persistedProblems = await tx.clinicalProblem.findMany({
     where: { patientId: consultation.patientId },
@@ -140,7 +164,7 @@ async function noteContext(tx: Prisma.TransactionClient, consultationId: string)
     );
   }
 
-  return { consultation, fields, problems, currentAssessments };
+  return { consultation, fields, exams, problems, currentAssessments };
 }
 
 function publicView(context: Awaited<ReturnType<typeof noteContext>>): ConsultationNoteView {
@@ -161,6 +185,7 @@ function publicView(context: Awaited<ReturnType<typeof noteContext>>): Consultat
     consultationStatus: context.consultation.status,
     updatedAt: context.consultation.updatedAt.toISOString(),
     fields: context.fields,
+    exams: context.exams,
     problems: context.problems.map((problem) => ({
       id: problem.id,
       type: problem.type,
@@ -184,6 +209,7 @@ export async function saveConsultationNote(input: {
   consultationId: string;
   expectedUpdatedAt: string;
   fields: SoapDraftFields;
+  examsText?: string;
   requestId?: string;
 }): Promise<ConsultationNoteView> {
   const { user } = await requireAuthenticatedUser("consultation.write");
@@ -228,6 +254,30 @@ export async function saveConsultationNote(input: {
         "CONSULTATION_CHANGED",
         "A consulta foi alterada em outra sessão. Recarregue antes de salvar novamente.",
       );
+    }
+
+    if (input.examsText !== undefined) {
+      const content = normalizeClinicalExamText(input.examsText);
+      if (content) {
+        await tx.clinicalExamRecord.upsert({
+          where: { consultationId: context.consultation.id },
+          create: {
+            patientId: context.consultation.patientId,
+            consultationId: context.consultation.id,
+            content,
+          },
+          update: {
+            content,
+          },
+        });
+      } else {
+        await tx.clinicalExamRecord.deleteMany({
+          where: {
+            patientId: context.consultation.patientId,
+            consultationId: context.consultation.id,
+          },
+        });
+      }
     }
 
     await tx.auditEvent.create({

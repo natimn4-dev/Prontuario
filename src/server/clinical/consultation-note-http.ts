@@ -7,6 +7,7 @@ import {
   type ConsultationNoteView,
 } from "../../domain/consultation-note-view.ts";
 import type { SoapDraftFields } from "../../domain/consultation-note-contract.ts";
+import { MAX_CLINICAL_EXAM_TEXT_LENGTH } from "../../domain/consultation-exams.ts";
 import {
   normalizeVaccinationReview,
   type VaccinationReview,
@@ -33,6 +34,7 @@ type Operations = {
     consultationId: string;
     expectedUpdatedAt: string;
     fields: SoapDraftFields;
+    examsText?: string;
     requestId?: string;
   }): Promise<ConsultationNoteView>;
 };
@@ -51,12 +53,16 @@ function assertOnlyKeys(record: Record<string, unknown>, allowed: readonly strin
   }
 }
 
-function optionalText(value: unknown, label: string): string | undefined {
+function optionalTextWithLimit(value: unknown, label: string, maxLength: number): string | undefined {
   if (value === undefined || value === null) return undefined;
-  if (typeof value !== "string" || value.length > MAX_FIELD_LENGTH) {
+  if (typeof value !== "string" || value.length > maxLength) {
     throw new ConsultationNoteRequestError(`${label} inválido.`);
   }
   return value;
+}
+
+function optionalText(value: unknown, label: string): string | undefined {
+  return optionalTextWithLimit(value, label, MAX_FIELD_LENGTH);
 }
 
 function parsePlan(value: unknown): Record<string, readonly string[]> | undefined {
@@ -122,6 +128,7 @@ function parseVaccinationReview(value: unknown): VaccinationReview | undefined {
 export function parseConsultationNoteUpdate(body: unknown): {
   expectedUpdatedAt: string;
   fields: SoapDraftFields;
+  examsText?: string;
 } {
   const record = asRecord(body);
   assertOnlyKeys(record, [
@@ -130,6 +137,7 @@ export function parseConsultationNoteUpdate(body: unknown): {
     "physicalExam",
     "vitalSigns",
     "anthropometry",
+    "examsText",
     "vaccinationReview",
     "planByProblem",
   ], "Requisição");
@@ -140,6 +148,11 @@ export function parseConsultationNoteUpdate(body: unknown): {
 
   return {
     expectedUpdatedAt: record.expectedUpdatedAt,
+    examsText: optionalTextWithLimit(
+      record.examsText,
+      "Exames laboratoriais e de imagem",
+      MAX_CLINICAL_EXAM_TEXT_LENGTH,
+    ),
     fields: {
       subjective: optionalText(record.subjective, "Subjetivo"),
       physicalExam: optionalText(record.physicalExam, "Exame físico"),
@@ -199,6 +212,7 @@ export function consultationNoteHttpHandlers(operations: Operations) {
           consultationId,
           expectedUpdatedAt: parsed.expectedUpdatedAt,
           fields: parsed.fields,
+          examsText: parsed.examsText,
           requestId: requestId(request),
         }), 200);
       } catch (error) {
