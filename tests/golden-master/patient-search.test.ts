@@ -141,15 +141,15 @@ test("resultado indexado encerra a busca sem varreduras legadas adicionais", asy
     patient: {
       findMany: async () => {
         calls += 1;
-        if (calls > 1) throw new Error("fallback legado não deveria executar após resultado indexado");
-        return [indexedPatient];
+        if (calls <= 2) return [indexedPatient];
+        throw new Error("fallback legado não deveria executar após resultado indexado");
       },
     },
   } as unknown as Parameters<typeof searchPatientsInDatabase>[0];
 
   const results = await searchPatientsInDatabase(client, "Maria Clara");
 
-  assert.equal(calls, 1);
+  assert.equal(calls, 2, "uma consulta localiza e outra hidrata somente os resultados finais");
   assert.deepEqual(results.map((patient) => patient.id), ["patient-indexed"]);
 });
 
@@ -167,7 +167,7 @@ test("nome-fonte legado só é consultado quando o índice não encontra pacient
       findMany: async () => {
         calls += 1;
         if (calls === 1) return [];
-        if (calls === 2) return [legacyPatient];
+        if (calls <= 3) return [legacyPatient];
         throw new Error("scan paginado não deveria executar após resultado no nome-fonte");
       },
     },
@@ -175,8 +175,59 @@ test("nome-fonte legado só é consultado quando o índice não encontra pacient
 
   const results = await searchPatientsInDatabase(client, "Jose Avila");
 
-  assert.equal(calls, 2);
+  assert.equal(calls, 3, "índice, nome-fonte e hidratação final são consultas separadas");
   assert.deepEqual(results.map((patient) => patient.id), ["patient-legacy"]);
+});
+
+test("falha do índice no MariaDB não impede a busca pelo nome-fonte", async () => {
+  let calls = 0;
+  const patient = {
+    id: "patient-source-fallback",
+    fullName: "Idalia Marques da Silva",
+    birthDate: new Date("1940-05-12T12:00:00.000Z"),
+    needsIdentityReview: false,
+    consultations: [],
+  };
+  const client = {
+    patient: {
+      findMany: async () => {
+        calls += 1;
+        if (calls === 1) throw new Error("índice derivado indisponível");
+        return [patient];
+      },
+    },
+  } as unknown as Parameters<typeof searchPatientsInDatabase>[0];
+
+  const results = await searchPatientsInDatabase(client, "Idalia Marques da Silva");
+
+  assert.equal(calls, 3);
+  assert.deepEqual(results.map((result) => result.id), [patient.id]);
+});
+
+test("falha ao hidratar consulta ativa ainda devolve o paciente localizado", async () => {
+  let calls = 0;
+  const patient = {
+    id: "patient-hydration-fallback",
+    fullName: "Paciente Localizado",
+    birthDate: null,
+    needsIdentityReview: false,
+  };
+  const client = {
+    patient: {
+      findMany: async () => {
+        calls += 1;
+        if (calls === 1) return [patient];
+        throw new Error("relação de consultas temporariamente indisponível");
+      },
+    },
+  } as unknown as Parameters<typeof searchPatientsInDatabase>[0];
+
+  const results = await searchPatientsInDatabase(client, "Paciente Localizado");
+
+  assert.equal(calls, 2);
+  assert.equal(results[0]?.id, patient.id);
+  assert.equal(results[0]?.activeConsultationId, null);
+  assert.equal(results[0]?.destinationPath, `/patients/${patient.id}`);
 });
 
 test("fronteira HTTP e UI evitam cache, diferenciam falha e usam o destino clínico correto", () => {

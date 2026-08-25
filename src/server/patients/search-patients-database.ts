@@ -13,6 +13,34 @@ import {
 
 type PatientSearchClient = Pick<PrismaClient, "patient">;
 
+interface PatientSearchCandidate {
+  id: string;
+  fullName: string;
+  birthDate: Date | null;
+  needsIdentityReview: boolean;
+}
+
+interface PatientSearchHydratedCandidate extends PatientSearchCandidate {
+  consultations: Array<{
+    id: string;
+    status: "DRAFT" | "IN_REVIEW";
+    occurredAt: Date;
+  }>;
+}
+
+const PATIENT_SEARCH_CANDIDATE_SELECT = {
+  id: true,
+  fullName: true,
+  birthDate: true,
+  needsIdentityReview: true,
+} as const;
+
+const ACTIVE_CONSULTATION_SELECT = {
+  id: true,
+  status: true,
+  occurredAt: true,
+} as const;
+
 /**
  * Núcleo de busca usado pela API e pelos testes de integração MySQL.
  * Não contém sessão, headers ou logging de PHI; a autorização obrigatória fica
@@ -25,56 +53,39 @@ export async function searchPatientsInDatabase(
   const normalizedQuery = assertPatientSearchQuery(query);
   const terms = patientSearchTerms(normalizedQuery);
 
-  const indexedCandidates = await client.patient.findMany({
-    where: {
-      OR: [
-        {
-          normalizedFullName: {
-            contains: normalizedQuery,
-          },
-        },
-        {
-          AND: terms.map((term) => ({
+  let indexedCandidates: PatientSearchCandidate[] = [];
+  try {
+    indexedCandidates = await client.patient.findMany({
+      where: {
+        OR: [
+          {
             normalizedFullName: {
-              contains: term,
+              contains: normalizedQuery,
             },
-          })),
-        },
-      ],
-    },
-    orderBy: [
-      { normalizedFullName: "asc" },
-      { birthDate: "asc" },
-      { id: "asc" },
-    ],
-    take: PATIENT_SEARCH_LIMIT * PATIENT_SEARCH_CANDIDATE_MULTIPLIER,
-    select: {
-      id: true,
-      fullName: true,
-      birthDate: true,
-      needsIdentityReview: true,
-      consultations: {
-        where: {
-          status: {
-            in: ["DRAFT", "IN_REVIEW"],
           },
-        },
-        orderBy: [
-          { occurredAt: "desc" },
-          { createdAt: "desc" },
-          { id: "desc" },
+          {
+            AND: terms.map((term) => ({
+              normalizedFullName: {
+                contains: term,
+              },
+            })),
+          },
         ],
-        take: 1,
-        select: {
-          id: true,
-          status: true,
-          occurredAt: true,
-        },
       },
-    },
-  });
+      orderBy: [
+        { normalizedFullName: "asc" },
+        { birthDate: "asc" },
+        { id: "asc" },
+      ],
+      take: PATIENT_SEARCH_LIMIT * PATIENT_SEARCH_CANDIDATE_MULTIPLIER,
+      select: PATIENT_SEARCH_CANDIDATE_SELECT,
+    });
+  } catch {
+    // O índice derivado é uma otimização. Um schema legado ou uma divergência
+    // transitória no MariaDB não pode impedir a localização pelo nome-fonte.
+  }
 
-  const matched = new Map<string, (typeof indexedCandidates)[number]>();
+  const matched = new Map<string, PatientSearchCandidate>();
   for (const patient of indexedCandidates) {
     if (patientNameMatchesSearch(patient.fullName, normalizedQuery)) {
       matched.set(patient.id, patient);
@@ -91,40 +102,31 @@ export async function searchPatientsInDatabase(
   // continuava pelas duas rotas legadas e podia executar até 20 páginas com
   // joins de consulta, fazendo uma busca válida expirar em produção.
   if (matched.size === 0) {
-    const sourceNameCandidates = await client.patient.findMany({
-      where: {
-        OR: [
-          { fullName: { contains: normalizedQuery } },
-          {
-            AND: terms.map((term) => ({
-              fullName: { contains: term },
-            })),
-          },
-        ],
-      },
-      orderBy: [
-        { fullName: "asc" },
-        { birthDate: "asc" },
-        { id: "asc" },
-      ],
-      take: PATIENT_SEARCH_LIMIT * PATIENT_SEARCH_CANDIDATE_MULTIPLIER,
-      select: {
-        id: true,
-        fullName: true,
-        birthDate: true,
-        needsIdentityReview: true,
-        consultations: {
-          where: { status: { in: ["DRAFT", "IN_REVIEW"] } },
-          orderBy: [
-            { occurredAt: "desc" },
-            { createdAt: "desc" },
-            { id: "desc" },
+    let sourceNameCandidates: PatientSearchCandidate[] = [];
+    try {
+      sourceNameCandidates = await client.patient.findMany({
+        where: {
+          OR: [
+            { fullName: { contains: normalizedQuery } },
+            {
+              AND: terms.map((term) => ({
+                fullName: { contains: term },
+              })),
+            },
           ],
-          take: 1,
-          select: { id: true, status: true, occurredAt: true },
         },
-      },
-    });
+        orderBy: [
+          { fullName: "asc" },
+          { birthDate: "asc" },
+          { id: "asc" },
+        ],
+        take: PATIENT_SEARCH_LIMIT * PATIENT_SEARCH_CANDIDATE_MULTIPLIER,
+        select: PATIENT_SEARCH_CANDIDATE_SELECT,
+      });
+    } catch {
+      // O scan canônico e limitado abaixo continua disponível sem depender de
+      // LIKE/collation específicos do provedor.
+    }
 
     for (const patient of sourceNameCandidates) {
       if (matched.has(patient.id)) continue;
@@ -147,30 +149,7 @@ export async function searchPatientsInDatabase(
       orderBy: { id: "asc" },
       ...(cursor ? { cursor: { id: cursor }, skip: 1 } : {}),
       take: PATIENT_SEARCH_FALLBACK_PAGE_SIZE,
-      select: {
-        id: true,
-        fullName: true,
-        birthDate: true,
-        needsIdentityReview: true,
-        consultations: {
-          where: {
-            status: {
-              in: ["DRAFT", "IN_REVIEW"],
-            },
-          },
-          orderBy: [
-            { occurredAt: "desc" },
-            { createdAt: "desc" },
-            { id: "desc" },
-          ],
-          take: 1,
-          select: {
-            id: true,
-            status: true,
-            occurredAt: true,
-          },
-        },
-      },
+      select: PATIENT_SEARCH_CANDIDATE_SELECT,
     });
 
     if (page.length === 0) break;
@@ -186,25 +165,55 @@ export async function searchPatientsInDatabase(
     if (!cursor || page.length < PATIENT_SEARCH_FALLBACK_PAGE_SIZE) break;
   }
 
-  return [...matched.values()]
-    .slice(0, PATIENT_SEARCH_LIMIT)
-    .map((patient) => {
-      const consultation = patient.consultations[0];
-      const activeConsultation = consultation
-        && (consultation.status === "DRAFT" || consultation.status === "IN_REVIEW")
-        ? {
-            id: consultation.id,
-            status: consultation.status,
-            occurredAt: consultation.occurredAt,
-          }
-        : null;
+  const selectedCandidates = [...matched.values()].slice(0, PATIENT_SEARCH_LIMIT);
+  let hydratedById = new Map<string, PatientSearchHydratedCandidate>();
 
-      return toPatientSelectionResult({
-        id: patient.id,
-        fullName: patient.fullName,
-        birthDate: patient.birthDate,
-        needsIdentityReview: patient.needsIdentityReview,
-        activeConsultation,
+  if (selectedCandidates.length > 0) {
+    try {
+      const hydrated = await client.patient.findMany({
+        where: { id: { in: selectedCandidates.map((patient) => patient.id) } },
+        select: {
+          ...PATIENT_SEARCH_CANDIDATE_SELECT,
+          consultations: {
+            where: { status: { in: ["DRAFT", "IN_REVIEW"] } },
+            orderBy: [
+              { occurredAt: "desc" },
+              { createdAt: "desc" },
+              { id: "desc" },
+            ],
+            take: 1,
+            select: ACTIVE_CONSULTATION_SELECT,
+          },
+        },
       });
+      hydratedById = new Map(
+        (hydrated as PatientSearchHydratedCandidate[]).map((patient) => [patient.id, patient]),
+      );
+    } catch {
+      // Encontrar e abrir o paciente é prioritário. Se a relação de consultas
+      // estiver temporariamente indisponível, o resultado continua levando ao
+      // resumo longitudinal em vez de transformar um paciente existente em 500.
+    }
+  }
+
+  return selectedCandidates.map((candidate) => {
+    const patient = hydratedById.get(candidate.id) ?? { ...candidate, consultations: [] };
+    const consultation = patient.consultations[0];
+    const activeConsultation = consultation
+      && (consultation.status === "DRAFT" || consultation.status === "IN_REVIEW")
+      ? {
+          id: consultation.id,
+          status: consultation.status,
+          occurredAt: consultation.occurredAt,
+        }
+      : null;
+
+    return toPatientSelectionResult({
+      id: patient.id,
+      fullName: patient.fullName,
+      birthDate: patient.birthDate,
+      needsIdentityReview: patient.needsIdentityReview,
+      activeConsultation,
     });
+  });
 }
