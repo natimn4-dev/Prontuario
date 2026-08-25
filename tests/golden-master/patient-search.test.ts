@@ -183,7 +183,7 @@ test("falha do índice no MariaDB não impede a busca pelo nome-fonte", async ()
   let calls = 0;
   const patient = {
     id: "patient-source-fallback",
-    fullName: "Idalia Marques da Silva",
+    fullName: "Paciente Sintética da Silva",
     birthDate: new Date("1940-05-12T12:00:00.000Z"),
     needsIdentityReview: false,
     consultations: [],
@@ -198,7 +198,7 @@ test("falha do índice no MariaDB não impede a busca pelo nome-fonte", async ()
     },
   } as unknown as Parameters<typeof searchPatientsInDatabase>[0];
 
-  const results = await searchPatientsInDatabase(client, "Idalia Marques da Silva");
+  const results = await searchPatientsInDatabase(client, "Paciente Sintética da Silva");
 
   assert.equal(calls, 3);
   assert.deepEqual(results.map((result) => result.id), [patient.id]);
