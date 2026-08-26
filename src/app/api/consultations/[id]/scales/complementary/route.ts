@@ -11,6 +11,11 @@ import {
 } from "@/domain/cognitive-quick-entry";
 import { complementaryScaleConsultationHorizonIds } from "@/domain/complementary-scale-timeline";
 import {
+  CORNELL_STRUCTURED_CODE,
+  CORNELL_STRUCTURED_DEFINITION,
+  scoreCornellStructured,
+} from "@/domain/cornell-structured";
+import {
   ISI_CODE,
   ISI_QUICK_DEFINITION,
   scoreIsi,
@@ -57,6 +62,7 @@ const DEFINITIONS = [
       if (item.code === MNA_SF_STRUCTURED_CODE) return MNA_SF_STRUCTURED_DEFINITION;
       if (item.code === TEN_CS_STRUCTURED_CODE) return TEN_CS_STRUCTURED_DEFINITION;
       if (item.code === SARCF_STRUCTURED_CODE) return SARCF_STRUCTURED_DEFINITION;
+      if (item.code === CORNELL_STRUCTURED_CODE) return CORNELL_STRUCTURED_DEFINITION;
       if (item.code === STOPPFALL_STRUCTURED_CODE) return STOPPFALL_STRUCTURED_DEFINITION;
       return item;
     })
@@ -111,7 +117,7 @@ function failure(error: unknown) {
   const code = error instanceof Error ? error.message : "UNKNOWN";
   if (code === "CONSULTATION_NOT_FOUND") return NextResponse.json({ code, message: "Consulta não encontrada." }, { status: 404 });
   if (code === "INVALID_REQUEST" || code === "UNSUPPORTED_SCALE") return NextResponse.json({ code, message: "Requisição de escala complementar inválida." }, { status: 400 });
-  if (error instanceof Error && /Valor inválido|Escala complementar|interpretar|Escolaridade|Pontuação|campo não permitido|ISI_|10-CS|SARC-F|STOPPFall/i.test(error.message)) {
+  if (error instanceof Error && /Valor inválido|Escala complementar|interpretar|Escolaridade|Pontuação|campo não permitido|ISI_|10-CS|SARC-F|STOPPFall|Cornell/i.test(error.message)) {
     return NextResponse.json({ code: "INVALID_SCALE_ANSWERS", message: error.message }, { status: 400 });
   }
   return NextResponse.json({ code: "COMPLEMENTARY_SCALE_FAILED", message: "Não foi possível processar a escala complementar." }, { status: 500 });
@@ -187,6 +193,8 @@ export async function POST(request: Request, context: { params: Promise<{ id: st
             ? scoreTenCsStructured(answers)
             : scaleCode === SARCF_STRUCTURED_CODE
               ? scoreSarcfStructured(answers)
+              : scaleCode === CORNELL_STRUCTURED_CODE
+                ? scoreCornellStructured(answers)
               : scaleCode === STOPPFALL_STRUCTURED_CODE
                 ? scoreStoppfallStructured(answers)
                 : scaleCode === ISI_CODE
