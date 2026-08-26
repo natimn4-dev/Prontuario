@@ -18,7 +18,7 @@ const STATUS_LABEL: Record<CapacityDimensionStatus, string> = {
 
 const CHART_HEIGHT = 78;
 const LABEL_WIDTH = 190;
-const DATE_AXIS_HEIGHT = 46;
+const DATE_AXIS_HEIGHT = 52;
 
 const STATUS_Y: Record<CapacityComparableStatus, number> = {
   preserved: 16,
@@ -254,10 +254,6 @@ export function CapacityDimensionHistoryChart({
     );
   }
 
-  const description = context === "final-report"
-    ? "Inclui a consulta deste relatório e as consultas anteriores disponíveis no horizonte longitudinal."
-    : "Mostra a evolução longitudinal de cada domínio ao longo das consultas registradas.";
-
   const chartWidth = Math.max(700, 96 + Math.max(history.consultations.length - 1, 1) * 150);
   const timelineWidth = LABEL_WIDTH + chartWidth;
   const left = 24;
@@ -278,16 +274,14 @@ export function CapacityDimensionHistoryChart({
   const inflectionKeys = new Set(history.inflectionPoints.map((point) => `${point.dimensionCode}:${point.consultationId}`));
   const functionalDimension = history.dimensions.find((dimension) => dimension.framework === "functional-capacity");
   const intrinsicDimensions = history.dimensions.filter((dimension) => dimension.framework === "intrinsic-capacity");
-  const orderedDimensions = functionalDimension ? [functionalDimension, ...intrinsicDimensions] : intrinsicDimensions;
-
   return (
     <figure className={styles.figure} data-chart="line-small-multiples">
       <figcaption className={styles.caption}>
         <div>
-          <span className={styles.chartKicker}>Evolução desde a avaliação inicial</span>
-          <strong>Trajetória por domínio</strong>
-          <span>{description}</span>
+          <strong>Evolução da capacidade intrínseca e da independência funcional</strong>
+          <span>Uma trajetória por domínio. O tempo real entre consultas é preservado.</span>
         </div>
+        <span className={styles.methodologyBadge}>{history.methodologyVersion}</span>
       </figcaption>
 
       <div className={styles.statusLegend} aria-label="Legenda dos estados clínicos">
@@ -326,7 +320,7 @@ export function CapacityDimensionHistoryChart({
                     </text>
                     {consultation.isTarget ? (
                       <text className={styles.targetLabel} x={x} y={43} textAnchor="middle">
-                        Atual
+                        mais recente
                       </text>
                     ) : null}
                   </g>
@@ -336,7 +330,26 @@ export function CapacityDimensionHistoryChart({
           </div>
 
           <section className={styles.dimensionGroup} aria-label="Independência funcional e domínios de capacidade intrínseca">
-            {orderedDimensions.map((dimension) => (
+            {functionalDimension ? (
+              <>
+                <div className={styles.frameworkHeader}>
+                  <strong>Independência funcional</strong>
+                  <span>ABVD/AIVD — apresentada separadamente da capacidade intrínseca</span>
+                </div>
+                <DimensionTimeline
+                  dimension={functionalDimension}
+                  chartWidth={chartWidth}
+                  xByConsultation={xByConsultation}
+                  inflectionKeys={inflectionKeys}
+                  targetConsultationId={targetConsultationId}
+                />
+              </>
+            ) : null}
+            <div className={styles.frameworkHeader}>
+              <strong>Capacidade intrínseca</strong>
+              <span>Cinco domínios OMS — cada um com sua própria trajetória</span>
+            </div>
+            {intrinsicDimensions.map((dimension) => (
               <DimensionTimeline
                 key={dimension.code}
                 dimension={dimension}
@@ -352,21 +365,21 @@ export function CapacityDimensionHistoryChart({
 
       <div className={styles.readingGuide}>
         <strong>Como ler</strong>
-        <span>A posição vertical mostra o estado: acima = sem redução detectada, centro = atenção, abaixo = redução identificada. O marcador “Atual” identifica esta consulta.</span>
-        <span>A linha só continua quando o instrumento e a versão são comparáveis. Círculo cinza = não avaliada; quadrado = registro sem estado; losango = resultados discordantes.</span>
+        <span>Acima = sem redução • centro = atenção • abaixo = redução. A linha só continua quando instrumento e versão são comparáveis.</span>
+        <span>Círculo cinza = não avaliada • quadrado = registro sem estado • losango = resultados discordantes. O estado mais recente fica no badge à esquerda.</span>
       </div>
 
       {history.inflectionPoints.length > 0 ? (
         <section className={styles.inflectionSection} aria-labelledby="capacity-inflection-title">
-          <h3 id="capacity-inflection-title">Pontos de inflexão observados</h3>
+          <h3 id="capacity-inflection-title">
+            {history.inflectionPoints.length === 1 ? "Ponto de inflexão observado" : "Pontos de inflexão observados"}
+          </h3>
           <ul>
             {history.inflectionPoints.map((point) => (
               <li key={`${point.dimensionCode}-${point.consultationId}-${point.previousConsultationId}`}>
-                <strong>{displayDate(point.occurredAt)} · {point.dimensionLabel}</strong>
-                <span>
-                  {point.direction === "worsened" ? "Piora observada" : "Melhora observada"}: {STATUS_LABEL[point.fromStatus]} → {STATUS_LABEL[point.toStatus]}.
-                </span>
-                <span>Comparabilidade: mesmo instrumento e versão ({point.comparabilityKey}).</span>
+                <strong>
+                  {displayDate(point.occurredAt)} · {point.dimensionLabel} — {point.direction === "worsened" ? "piora observada" : "melhora observada"} em avaliações comparáveis.
+                </strong>
                 {point.milestones.length > 0 ? (
                   <span>
                     Registro clínico na mesma consulta: {point.milestones.map((milestone) => (
@@ -379,9 +392,7 @@ export function CapacityDimensionHistoryChart({
               </li>
             ))}
           </ul>
-          <p className={styles.causalityNote}>
-            Os marcos indicam apenas coincidência temporal com registros clínicos existentes. Causalidade não é inferida pelo software.
-          </p>
+          <p className={styles.causalityNote}>O software registra coincidência temporal, mas não atribui causalidade.</p>
         </section>
       ) : null}
 
