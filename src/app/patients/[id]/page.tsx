@@ -141,13 +141,7 @@ export default async function PatientPage({ params }: { params: Promise<{ id: st
       </header>
       <ProblemColumns problems={patient.problems as ClinicalProblem[]} />
 
-      <section className="panel" aria-labelledby="capacity-history-title">
-        <div className="section-heading">
-          <div>
-            <p className="eyebrow">Evolução longitudinal</p>
-            <h2 id="capacity-history-title">Capacidade intrínseca e independência funcional</h2>
-          </div>
-        </div>
+      <section className="panel" aria-label="Evolução da capacidade intrínseca e da independência funcional">
         <CapacityDimensionHistoryChart history={capacityHistory} context="patient-home" />
       </section>
 
