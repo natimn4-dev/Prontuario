@@ -324,7 +324,7 @@ test("UI usa tempo real, comparabilidade e o design system clínico aprovado sem
   assert.match(generator, /content: \{ report, text \}/);
   assert.match(chart, /timeSpan/);
   assert.match(chart, /comparabilityKey/);
-  assert.match(chart, /Pontos de inflexão observados/);
+  assert.match(chart, /Ponto de inflexão observado/);
   assert.match(chart, /não atribui causa/);
   assert.doesNotMatch(chart, /<table/);
   assert.match(chartStyles, /var\(--primary\)/);
