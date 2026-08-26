@@ -132,6 +132,7 @@ export interface CapacityDimensionHistory {
   dimensions: CapacityDimensionRow[];
   inflectionPoints: CapacityInflectionPoint[];
   hasAssessmentData: boolean;
+  hasLongitudinalHistoryData?: boolean;
   hasLongitudinalTrendData: boolean;
 }
 
@@ -387,6 +388,27 @@ function hasDrawableLongitudinalTrend(dimensions: readonly CapacityDimensionRow[
   });
 }
 
+function hasRepeatedDimensionHistory(dimensions: readonly CapacityDimensionRow[]): boolean {
+  return dimensions.some(
+    (dimension) => dimension.cells.filter((cell) => cell.assessments.length > 0).length >= 2,
+  );
+}
+
+/**
+ * Decide se o gráfico deve permanecer visível depois que um domínio recebeu
+ * resultados em pelo menos duas consultas.
+ *
+ * A propriedade é opcional para manter compatibilidade com snapshots gerados
+ * antes desta regra. Nesses snapshots, o estado é reconstruído a partir das
+ * células persistidas, sem criar comparabilidade nem conectar pontos.
+ */
+export function hasDisplayableLongitudinalHistory(
+  history: Pick<CapacityDimensionHistory, "dimensions" | "hasLongitudinalHistoryData">,
+): boolean {
+  return history.hasLongitudinalHistoryData
+    ?? hasRepeatedDimensionHistory(history.dimensions);
+}
+
 export function buildCapacityDimensionHistory(input: {
   patientId: string;
   assessments: readonly CapacityTimelineAssessment[];
@@ -496,6 +518,7 @@ export function buildCapacityDimensionHistory(input: {
     dimensions,
     inflectionPoints,
     hasAssessmentData: effective.length > 0,
+    hasLongitudinalHistoryData: hasRepeatedDimensionHistory(dimensions),
     hasLongitudinalTrendData: hasDrawableLongitudinalTrend(dimensions),
   };
 }

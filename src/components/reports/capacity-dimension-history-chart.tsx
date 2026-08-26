@@ -1,8 +1,9 @@
-import type {
-  CapacityComparableStatus,
-  CapacityDimensionHistory,
-  CapacityDimensionRow,
-  CapacityDimensionStatus,
+import {
+  hasDisplayableLongitudinalHistory,
+  type CapacityComparableStatus,
+  type CapacityDimensionHistory,
+  type CapacityDimensionRow,
+  type CapacityDimensionStatus,
 } from "@/domain/capacity-dimension-history";
 import styles from "./capacity-dimension-history-chart.module.css";
 
@@ -245,10 +246,10 @@ export function CapacityDimensionHistoryChart({
   history: CapacityDimensionHistory;
   context: "patient-home" | "final-report";
 }) {
-  if (!history.hasLongitudinalTrendData) {
+  if (!hasDisplayableLongitudinalHistory(history)) {
     return (
       <p className={styles.empty}>
-        O gráfico longitudinal será exibido a partir de uma consulta subsequente com pelo menos dois resultados comparáveis do mesmo instrumento e versão.
+        O gráfico longitudinal será exibido a partir de uma consulta subsequente com um novo resultado registrado no mesmo domínio. Depois disso, consultas sem reaplicação não apagam o histórico.
       </p>
     );
   }
@@ -296,6 +297,12 @@ export function CapacityDimensionHistoryChart({
         <span><i data-status="indeterminate" aria-hidden="true" />Discordante</span>
         <span><i data-status="missing" aria-hidden="true" />Não avaliada</span>
       </div>
+
+      {!history.hasLongitudinalTrendData ? (
+        <p className={styles.continuityNote}>
+          Histórico preservado: há resultados deste domínio em mais de uma consulta, mas os trechos sem o mesmo instrumento e versão permanecem desconectados. Uma consulta sem reaplicação não apaga os pontos anteriores.
+        </p>
+      ) : null}
 
       <div className={styles.scroll} tabIndex={0} aria-label="Evolução longitudinal por domínio, rolável por consulta">
         <div className={styles.timelineCanvas} style={{ width: `${timelineWidth}px` }}>

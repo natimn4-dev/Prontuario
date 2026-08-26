@@ -78,9 +78,12 @@ test("relatório e impressão carregam camada premium e preservam relatório ani
 
 test("gráfico longitudinal aprovado usa small multiples por seis dimensões e marcador Atual", () => {
   const chart = source("src/components/reports/capacity-dimension-history-chart.tsx");
+  const reportDocument = source("src/components/reports/aga-report-document-preview.tsx");
   const css = source("src/components/reports/capacity-dimension-history-chart.module.css");
 
   assert.match(chart, /Trajetória por domínio/);
+  assert.match(chart, /hasDisplayableLongitudinalHistory/);
+  assert.match(chart, /consultas sem reaplicação não apagam o histórico/i);
   assert.match(chart, /hasLongitudinalTrendData/);
   assert.match(chart, /data-chart="line-small-multiples"/);
   assert.match(chart, /<polyline/);
@@ -92,6 +95,7 @@ test("gráfico longitudinal aprovado usa small multiples por seis dimensões e m
   assert.match(chart, /Pontos de inflexão observados/);
   assert.match(chart, /não atribui causa/);
   assert.doesNotMatch(chart, /<table/);
+  assert.match(reportDocument, /hasDisplayableLongitudinalHistory/);
 
   assert.match(css, /data-dimension="funcionalidade"\]\s*\{\s*color:\s*#5b238f/);
   assert.match(css, /data-dimension="locomocao"\]\s*\{\s*color:\s*#9a6a32/);

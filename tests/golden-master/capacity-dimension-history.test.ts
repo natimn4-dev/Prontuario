@@ -4,6 +4,7 @@ import test from "node:test";
 import {
   buildCapacityDimensionHistory,
   CAPACITY_DIMENSIONS,
+  hasDisplayableLongitudinalHistory,
 } from "../../src/domain/capacity-dimension-history.ts";
 import { INTRINSIC_CAPACITY_MODEL_VERSION } from "../../src/domain/intrinsic-capacity-methodology.ts";
 
@@ -155,6 +156,10 @@ test("instrumentos ou versões diferentes não criam falsa tendência longitudin
 
   assert.equal(differentInstrument.inflectionPoints.length, 0);
   assert.equal(differentVersion.inflectionPoints.length, 0);
+  assert.equal(differentInstrument.hasLongitudinalHistoryData, true);
+  assert.equal(differentVersion.hasLongitudinalHistoryData, true);
+  assert.equal(hasDisplayableLongitudinalHistory(differentInstrument), true);
+  assert.equal(hasDisplayableLongitudinalHistory(differentVersion), true);
   assert.equal(differentInstrument.hasLongitudinalTrendData, false);
   assert.equal(differentVersion.hasLongitudinalTrendData, false);
 });
@@ -175,7 +180,42 @@ test("consulta sem avaliação de capacidade permanece no eixo como missing expl
   assert.equal(functionality.cells[1]?.status, "not-assessed");
   assert.equal(functionality.cells[2]?.status, "altered");
   assert.equal(history.inflectionPoints.length, 0);
+  assert.equal(history.hasLongitudinalHistoryData, true);
+  assert.equal(hasDisplayableLongitudinalHistory(history), true);
   assert.equal(history.hasLongitudinalTrendData, false);
+});
+
+test("gráfico permanece após consulta subsequente sem reaplicação", () => {
+  const history = buildCapacityDimensionHistory({
+    patientId: "p1",
+    consultations,
+    assessments: [
+      { patientId: "p1", consultationId: "c1", scaleCode: "lawton", scaleVersion: "1", clinicalColor: "verde", appliedAt: "2026-01-10" },
+      { patientId: "p1", consultationId: "c2", scaleCode: "lawton", scaleVersion: "1", clinicalColor: "vermelho", appliedAt: "2026-04-10" },
+    ],
+    targetConsultationId: "c3",
+    includeTargetWhenEmpty: true,
+  });
+
+  assert.equal(history.hasLongitudinalHistoryData, true);
+  assert.equal(history.hasLongitudinalTrendData, true);
+  assert.equal(hasDisplayableLongitudinalHistory(history), true);
+  assert.equal(dimension(history, "funcionalidade").cells.at(-1)?.status, "not-assessed");
+});
+
+test("snapshot anterior reconstrói a persistência visual a partir das células", () => {
+  const current = buildCapacityDimensionHistory({
+    patientId: "p1",
+    consultations: [consultations[0]!, consultations[1]!],
+    assessments: [
+      { patientId: "p1", consultationId: "c1", scaleCode: "lawton", scaleVersion: "1", clinicalColor: "verde", appliedAt: "2026-01-10" },
+      { patientId: "p1", consultationId: "c2", scaleCode: "barthel", scaleVersion: "1", clinicalColor: "vermelho", appliedAt: "2026-04-10" },
+    ],
+  });
+  const legacySnapshot = { ...current, hasLongitudinalHistoryData: undefined };
+
+  assert.equal(legacySnapshot.hasLongitudinalTrendData, false);
+  assert.equal(hasDisplayableLongitudinalHistory(legacySnapshot), true);
 });
 
 test("mesmo instrumento e versão produz inflexão observada sem inferir causalidade", () => {

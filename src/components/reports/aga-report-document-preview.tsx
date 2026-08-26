@@ -2,7 +2,10 @@
 
 import { useMemo, useState } from "react";
 import type { AgaReportModel } from "@/domain/aga-report";
-import type { CapacityDimensionHistory } from "@/domain/capacity-dimension-history";
+import {
+  hasDisplayableLongitudinalHistory,
+  type CapacityDimensionHistory,
+} from "@/domain/capacity-dimension-history";
 import { CapacityDimensionHistoryChart } from "@/components/reports/capacity-dimension-history-chart";
 import {
   buildReportDomainSummaries,
@@ -307,7 +310,7 @@ export function AgaReportDocumentPreview({ consultationId }: { consultationId: s
               <DomainSummaryTable domains={reportDomains} />
             </section> : null}
 
-            {generated.report.capacityHistory.hasLongitudinalTrendData ? <section className={`${styles.section} ${styles.chartSection}`}>
+            {hasDisplayableLongitudinalHistory(generated.report.capacityHistory) ? <section className={`${styles.section} ${styles.chartSection}`}>
               <div className={styles.sectionHeading}>
                 <span>3</span>
                 <div>

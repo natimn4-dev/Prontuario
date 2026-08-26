@@ -86,6 +86,16 @@
   border-style: dashed;
 }
 
+.continuityNote {
+  margin: -2px 0 12px;
+  padding: 9px 11px;
+  border-left: 3px solid var(--primary);
+  background: var(--primary-soft);
+  color: var(--muted);
+  font-size: 10px;
+  line-height: 1.48;
+}
+
 .scroll {
   width: 100%;
   overflow-x: auto;
