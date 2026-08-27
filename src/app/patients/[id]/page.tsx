@@ -7,6 +7,7 @@ import {
   type CapacityTimelineAssessment,
   type CapacityTimelineMilestone,
 } from "@/domain/capacity-dimension-history";
+import { isProblemLogicalDeletionNote } from "@/domain/as-of-consultation";
 import type { ClinicalProblem } from "@/domain/problems";
 import { requireAuthenticatedUser } from "@/server/auth/require-user";
 import { prisma } from "@/server/db";
@@ -75,7 +76,11 @@ export default async function PatientPage({ params }: { params: Promise<{ id: st
   });
   if (!patient) notFound();
 
-  const milestones: CapacityTimelineMilestone[] = patient.problems.flatMap((problem) => {
+  const visibleProblems = patient.problems.filter((problem) =>
+    !problem.events.some((event) => isProblemLogicalDeletionNote(event.note)),
+  );
+
+  const milestones: CapacityTimelineMilestone[] = visibleProblems.flatMap((problem) => {
     const items: CapacityTimelineMilestone[] = [];
     const originNote = problem.description?.trim();
     if (originNote) {
@@ -90,7 +95,7 @@ export default async function PatientPage({ params }: { params: Promise<{ id: st
     }
     for (const event of problem.events) {
       const eventNote = event.note?.trim();
-      if (!eventNote) continue;
+      if (!eventNote || isProblemLogicalDeletionNote(eventNote)) continue;
       items.push({
         patientId: event.patientId,
         consultationId: event.consultationId,
@@ -139,7 +144,7 @@ export default async function PatientPage({ params }: { params: Promise<{ id: st
         <p>Data de nascimento: {patient.birthDate?.toISOString().slice(0, 10) ?? "não registrada"}</p>
         {patient.needsIdentityReview ? <strong className="draft-watermark">Identidade/homônimo pendente de revisão</strong> : null}
       </header>
-      <ProblemColumns problems={patient.problems as ClinicalProblem[]} />
+      <ProblemColumns problems={visibleProblems as ClinicalProblem[]} />
 
       <section className="panel" aria-label="Evolução da capacidade intrínseca e da independência funcional">
         <CapacityDimensionHistoryChart history={capacityHistory} context="patient-home" />

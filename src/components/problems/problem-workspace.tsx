@@ -12,6 +12,7 @@ type Problem = {
   status: ProblemStatus;
   title: string;
   description?: string;
+  canDelete: boolean;
 };
 
 type WorkspaceView = {
@@ -42,14 +43,17 @@ function ProblemCard({
   problem,
   editable,
   onChangeStatus,
+  onDelete,
 }: {
   problem: Problem;
   editable: boolean;
   onChangeStatus: (problemId: string, newStatus: ProblemStatus) => Promise<void>;
+  onDelete: (problemId: string) => Promise<void>;
 }) {
   const [nextStatus, setNextStatus] = useState<ProblemStatus>(problem.status);
   const [reviewConfirmed, setReviewConfirmed] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [deleting, setDeleting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
@@ -76,6 +80,21 @@ function ProblemCard({
       setError(cause instanceof Error ? cause.message : "Não foi possível atualizar o problema.");
     } finally {
       setSaving(false);
+    }
+  }
+
+  async function deleteCurrentProblem() {
+    if (!editable || !problem.canDelete || deleting) return;
+    const confirmed = window.confirm("Excluir este problema incluído nesta consulta? O registro de auditoria será preservado.");
+    if (!confirmed) return;
+    setDeleting(true);
+    setError(null);
+    try {
+      await onDelete(problem.id);
+    } catch (cause) {
+      setError(cause instanceof Error ? cause.message : "Não foi possível excluir o problema desta consulta.");
+    } finally {
+      setDeleting(false);
     }
   }
 
@@ -113,6 +132,11 @@ function ProblemCard({
           <button type="button" onClick={updateStatus} disabled={!canSubmit}>
             {saving ? "Salvando…" : "Atualizar status"}
           </button>
+          {problem.canDelete ? (
+            <button type="button" className={styles.deleteButton} onClick={deleteCurrentProblem} disabled={saving || deleting}>
+              {deleting ? "Excluindo…" : "Excluir inclusão"}
+            </button>
+          ) : null}
         </div>
       ) : null}
       {error ? <p className={styles.error} role="alert">{error}</p> : null}
@@ -169,6 +193,11 @@ export function ProblemWorkspace({ consultationId }: { consultationId: string })
 
   async function changeStatus(problemId: string, newStatus: ProblemStatus) {
     const next = await requestUpdate({ action: "status", problemId, newStatus });
+    applyView(next);
+  }
+
+  async function deleteProblem(problemId: string) {
+    const next = await requestUpdate({ action: "delete", problemId });
     applyView(next);
   }
 
@@ -250,13 +279,13 @@ export function ProblemWorkspace({ consultationId }: { consultationId: string })
         <section>
           <h3>Problemas clínicos</h3>
           {clinical.length === 0 ? <p className={styles.empty}>Sem problemas clínicos registrados.</p> : clinical.map((problem) => (
-            <ProblemCard key={problem.id} problem={problem} editable={editable} onChangeStatus={changeStatus} />
+            <ProblemCard key={problem.id} problem={problem} editable={editable} onChangeStatus={changeStatus} onDelete={deleteProblem} />
           ))}
         </section>
         <section>
           <h3>Problemas geriátricos</h3>
           {geriatric.length === 0 ? <p className={styles.empty}>Sem problemas geriátricos registrados.</p> : geriatric.map((problem) => (
-            <ProblemCard key={problem.id} problem={problem} editable={editable} onChangeStatus={changeStatus} />
+            <ProblemCard key={problem.id} problem={problem} editable={editable} onChangeStatus={changeStatus} onDelete={deleteProblem} />
           ))}
         </section>
       </div>

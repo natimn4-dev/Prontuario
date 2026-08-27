@@ -6,7 +6,9 @@ export type ProblemWorkspaceErrorCode =
   | "CONSULTATION_FINALIZED"
   | "RETROSPECTIVE_EDIT_BLOCKED"
   | "PROBLEM_NOT_FOUND"
-  | "PROBLEM_CHANGED";
+  | "PROBLEM_CHANGED"
+  | "PROBLEM_DUPLICATE"
+  | "PROBLEM_DELETE_BLOCKED";
 
 export class ProblemWorkspaceError extends Error {
   readonly code: ProblemWorkspaceErrorCode;
@@ -25,6 +27,7 @@ export interface ProblemWorkspaceItem {
   title: string;
   description?: string;
   priority?: number;
+  canDelete: boolean;
 }
 
 export interface ProblemWorkspaceView {
@@ -47,6 +50,21 @@ export interface ChangeProblemStatusCommand {
   problemId: string;
   newStatus: ProblemStatus;
   requestId?: string;
+}
+
+export interface DeleteProblemCommand {
+  consultationId: string;
+  problemId: string;
+  requestId?: string;
+}
+
+export function normalizeProblemTitleKey(value: string): string {
+  return value
+    .normalize("NFKC")
+    .replace(/[\u200B-\u200D\u2060\uFEFF]/gu, "")
+    .replace(/\s+/gu, " ")
+    .trim()
+    .toLocaleLowerCase("pt-BR");
 }
 
 export function assertProblemWorkspaceEditable(input: {

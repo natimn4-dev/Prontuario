@@ -1,6 +1,10 @@
 import type { Prisma } from "../../generated/prisma/client";
 import { buildAgaReportModel, renderAgaReportText } from "../../domain/aga-report";
-import { consultationHorizon, problemsAsOf } from "../../domain/as-of-consultation";
+import {
+  consultationHorizon,
+  isProblemLogicalDeletionNote,
+  problemsAsOf,
+} from "../../domain/as-of-consultation";
 import {
   buildCapacityDimensionHistory,
   type CapacityTimelineMilestone,
@@ -192,7 +196,7 @@ export async function generateAgaReport(input: {
         }
         for (const event of problem.events) {
           const eventNote = event.note?.trim();
-          if (!eventNote) continue;
+          if (!eventNote || isProblemLogicalDeletionNote(eventNote)) continue;
           items.push({
             patientId: event.patientId,
             consultationId: event.consultationId,

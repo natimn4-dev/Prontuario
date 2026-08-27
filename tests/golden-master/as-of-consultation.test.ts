@@ -4,6 +4,7 @@ import {
   assessmentsAsOf,
   consultationHorizon,
   medicationRegimensAsOf,
+  PROBLEM_LOGICAL_DELETION_NOTE,
   problemsAsOf,
 } from "../../src/domain/as-of-consultation.ts";
 import { buildAgaReportModel } from "../../src/domain/aga-report.ts";
@@ -99,6 +100,29 @@ test("regimes de medicamentos respeitam o mesmo horizonte da consulta", () => {
 
   assert.deepEqual(projected.map((item) => item.id), ["regimen-baseline", "regimen-a"]);
   assert.ok(!projected.some((item) => item.consultationId === "consultation-b"));
+});
+
+test("exclusão lógica retira inclusão equivocada sem apagar problema nem evento de auditoria clínica", () => {
+  const logicallyDeleted = {
+    id: "problem-created-in-error",
+    patientId: "p1",
+    originConsultationId: "consultation-b",
+    type: "CLINICAL" as const,
+    status: "RESOLVED" as const,
+    title: "Problema sintético retirado",
+    events: [
+      { problemId: "problem-created-in-error", patientId: "p1", consultationId: "consultation-b", previousStatus: null, newStatus: "ACTIVE" as const, createdAt: "2026-06-01T08:00:00Z" },
+      { problemId: "problem-created-in-error", patientId: "p1", consultationId: "consultation-b", previousStatus: "ACTIVE" as const, newStatus: "RESOLVED" as const, note: PROBLEM_LOGICAL_DELETION_NOTE, createdAt: "2026-06-01T09:00:00Z" },
+    ],
+  };
+  const projected = problemsAsOf({
+    patientId: "p1",
+    consultationIds: ["baseline", "consultation-a", "consultation-b"],
+    problems: [...problems, logicallyDeleted],
+  });
+
+  assert.ok(!projected.some((problem) => problem.id === logicallyDeleted.id));
+  assert.equal(logicallyDeleted.events.length, 2);
 });
 
 test("corte temporal falha fechado ao receber dados de outro paciente", () => {

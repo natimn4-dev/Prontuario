@@ -90,6 +90,7 @@ async function noteContext(tx: Prisma.TransactionClient, consultationId: string)
           consultationId: true,
           previousStatus: true,
           newStatus: true,
+          note: true,
           createdAt: true,
         },
       },

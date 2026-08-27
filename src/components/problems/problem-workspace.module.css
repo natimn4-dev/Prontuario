@@ -78,6 +78,16 @@
   opacity: .5;
 }
 
+.statusControls .deleteButton {
+  border-color: #b86572;
+  background: #fff;
+  color: #8f2727;
+}
+
+.statusControls .deleteButton:hover:not(:disabled) {
+  background: var(--danger-soft);
+}
+
 .presets {
   display: flex;
   flex-wrap: wrap;

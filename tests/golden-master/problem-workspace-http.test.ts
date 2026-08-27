@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import test from "node:test";
 import {
   assertProblemWorkspaceEditable,
+  normalizeProblemTitleKey,
   ProblemWorkspaceError,
   type ProblemWorkspaceView,
 } from "../../src/domain/problem-workspace.ts";
@@ -23,6 +24,7 @@ function operations(overrides: Partial<Parameters<typeof problemWorkspaceHttpHan
     getProblemWorkspace: async () => view,
     createProblem: async () => view,
     changeProblemStatus: async () => view,
+    deleteProblem: async () => view,
     ...overrides,
   };
 }
@@ -46,7 +48,14 @@ test("parser rejeita identidade e status controlados pelo cliente", () => {
     { action: "create", type: "CLINICAL", title: "Problema", patientId: "p-forged" },
     { action: "create", type: "GERIATRIC", title: "Problema", consultationId: "c-forged" },
     { action: "status", problemId: "problem-1", newStatus: "ACTIVE", previousStatus: "RESOLVED" },
+    { action: "delete", problemId: "problem-1", patientId: "p-forged" },
   ]) assert.throws(() => parseProblemWorkspaceCommand(forged), ProblemWorkspaceRequestError);
+});
+
+test("títulos equivalentes por caixa, espaços e Unicode compartilham a mesma chave", () => {
+  assert.equal(normalizeProblemTitleKey("  HIPERTENSÃO\u00a0arterial  "), "hipertensão arterial");
+  assert.equal(normalizeProblemTitleKey("Hipertensa\u0303o arterial"), "hipertensão arterial");
+  assert.equal(normalizeProblemTitleKey("Ｒｉｓｃｏ\u200b de quedas"), "risco de quedas");
 });
 
 test("handler deriva consulta da rota e envia somente campos permitidos", async () => {
@@ -61,6 +70,20 @@ test("handler deriva consulta da rota e envia somente campos permitidos", async 
     type: "GERIATRIC",
     title: "Instabilidade postural",
     description: undefined,
+    requestId: undefined,
+  });
+});
+
+test("handler permite somente exclusão lógica identificada pela rota e pelo problema", async () => {
+  let received: unknown;
+  const handlers = problemWorkspaceHttpHandlers(operations({
+    deleteProblem: async (input) => { received = input; return view; },
+  }));
+  const response = await handlers.POST(request({ action: "delete", problemId: "problem-synthetic" }), "consultation-from-route");
+  assert.equal(response.status, 200);
+  assert.deepEqual(received, {
+    consultationId: "consultation-from-route",
+    problemId: "problem-synthetic",
     requestId: undefined,
   });
 });

@@ -23,7 +23,14 @@ export interface ProblemStatusTimelineEvent {
   consultationId: string;
   previousStatus: ProblemStatus | null;
   newStatus: ProblemStatus;
+  note?: string | null;
   createdAt: Date | string;
+}
+
+export const PROBLEM_LOGICAL_DELETION_NOTE = "[[SYSTEM:PROBLEM_CREATED_IN_ERROR]]";
+
+export function isProblemLogicalDeletionNote(note: string | null | undefined): boolean {
+  return note?.trim() === PROBLEM_LOGICAL_DELETION_NOTE;
 }
 
 export interface ProblemTimelineRecord extends ClinicalProblem {
@@ -92,9 +99,8 @@ export function problemsAsOf(input: {
 }): ClinicalProblem[] {
   const consultationOrder = new Map(input.consultationIds.map((id, index) => [id, index]));
 
-  return input.problems
-    .filter((problem) => consultationOrder.has(problem.originConsultationId))
-    .map((problem) => {
+  const projected: ClinicalProblem[] = [];
+  for (const problem of input.problems.filter((item) => consultationOrder.has(item.originConsultationId))) {
       if (problem.patientId !== input.patientId) {
         throw new Error("Problemas de pacientes diferentes não podem compor o mesmo relatório.");
       }
@@ -106,10 +112,11 @@ export function problemsAsOf(input: {
         .filter((event) => consultationOrder.has(event.consultationId))
         .sort((a, b) => (consultationOrder.get(a.consultationId)! - consultationOrder.get(b.consultationId)!)
           || timestamp(a.createdAt, "Data do evento") - timestamp(b.createdAt, "Data do evento"));
+      if (events.some((event) => isProblemLogicalDeletionNote(event.note))) continue;
       let status: ProblemStatus = events[0]?.previousStatus ?? "ACTIVE";
       for (const event of events) status = event.newStatus;
 
-      return {
+      projected.push({
         id: problem.id,
         patientId: problem.patientId,
         type: problem.type,
@@ -117,6 +124,7 @@ export function problemsAsOf(input: {
         title: problem.title,
         description: problem.description,
         priority: problem.priority,
-      };
-    });
+      });
+  }
+  return projected;
 }

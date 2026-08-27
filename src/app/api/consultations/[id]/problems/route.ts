@@ -1,6 +1,7 @@
 import {
   changeProblemStatus,
   createProblem,
+  deleteProblem,
   getProblemWorkspace,
 } from "@/server/clinical/problem-workspace";
 import { problemWorkspaceHttpHandlers } from "@/server/clinical/problem-workspace-http";
@@ -9,6 +10,7 @@ const handlers = problemWorkspaceHttpHandlers({
   getProblemWorkspace,
   createProblem,
   changeProblemStatus,
+  deleteProblem,
 });
 
 export async function GET(

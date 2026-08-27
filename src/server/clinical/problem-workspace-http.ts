@@ -24,12 +24,14 @@ export class ProblemWorkspaceRequestError extends Error {
 
 type CreateCommand = { action: "create"; type: ProblemType; title: string; description?: string };
 type StatusCommand = { action: "status"; problemId: string; newStatus: ProblemStatus };
-export type ProblemWorkspaceCommand = CreateCommand | StatusCommand;
+type DeleteCommand = { action: "delete"; problemId: string };
+export type ProblemWorkspaceCommand = CreateCommand | StatusCommand | DeleteCommand;
 
 type Operations = {
   getProblemWorkspace(consultationId: string): Promise<ProblemWorkspaceView>;
   createProblem(input: { consultationId: string; type: ProblemType; title: string; description?: string; requestId?: string }): Promise<ProblemWorkspaceView>;
   changeProblemStatus(input: { consultationId: string; problemId: string; newStatus: ProblemStatus; requestId?: string }): Promise<ProblemWorkspaceView>;
+  deleteProblem(input: { consultationId: string; problemId: string; requestId?: string }): Promise<ProblemWorkspaceView>;
 };
 
 function asRecord(value: unknown): Record<string, unknown> {
@@ -61,6 +63,10 @@ export function parseProblemWorkspaceCommand(body: unknown): ProblemWorkspaceCom
     if (typeof record.newStatus !== "string" || !STATUSES.has(record.newStatus)) throw new ProblemWorkspaceRequestError("Status do problema inválido.");
     return { action: "status", problemId: safeId(record.problemId, "Identificador do problema"), newStatus: record.newStatus as ProblemStatus };
   }
+  if (record.action === "delete") {
+    assertOnlyKeys(record, ["action", "problemId"]);
+    return { action: "delete", problemId: safeId(record.problemId, "Identificador do problema") };
+  }
   throw new ProblemWorkspaceRequestError("Ação de problemas inválida.");
 }
 
@@ -90,7 +96,9 @@ export function problemWorkspaceHttpHandlers(operations: Operations) {
         const operationalRequestId = requestId(request);
         const view = command.action === "create"
           ? await operations.createProblem({ consultationId, type: command.type, title: command.title, description: command.description, requestId: operationalRequestId })
-          : await operations.changeProblemStatus({ consultationId, problemId: command.problemId, newStatus: command.newStatus, requestId: operationalRequestId });
+          : command.action === "status"
+            ? await operations.changeProblemStatus({ consultationId, problemId: command.problemId, newStatus: command.newStatus, requestId: operationalRequestId })
+            : await operations.deleteProblem({ consultationId, problemId: command.problemId, requestId: operationalRequestId });
         return json(view, 200);
       } catch (error) { return errorResponse(error); }
     },
