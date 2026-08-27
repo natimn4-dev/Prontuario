@@ -11,6 +11,11 @@ test("login Google usa link navegável sem depender de hidratação do React", (
   assert.doesNotMatch(loginSource, /authClient\.signIn\.social/);
 });
 
+test("login Google é sempre renderizado dinamicamente e não pode voltar ao cache compartilhado", () => {
+  assert.match(loginSource, /export const dynamic = "force-dynamic"/);
+  assert.match(loginSource, /export const revalidate = 0/);
+});
+
 test("rota de bootstrap OAuth preserva state cookies e entrega continuação segura para Google", () => {
   assert.match(routeSource, /auth\.api\.signInSocial/);
   assert.match(routeSource, /provider:\s*"google"/);

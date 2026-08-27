@@ -2,6 +2,9 @@ type LoginPageProps = {
   searchParams?: Promise<{ error?: string }>;
 };
 
+export const dynamic = "force-dynamic";
+export const revalidate = 0;
+
 export default async function LoginPage({ searchParams }: LoginPageProps) {
   const params = searchParams ? await searchParams : undefined;
   const hasError = Boolean(params?.error);
