@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { requireAuthenticatedUser } from "@/server/auth/require-user";
+import { prisma } from "@/server/db";
 import { beginAgaVidaasSignature } from "@/server/signatures/digital-signature-service";
 
 export async function POST(
@@ -9,12 +10,22 @@ export async function POST(
   try {
     const { id: consultationId } = await context.params;
     const { user } = await requireAuthenticatedUser("document.generate");
-    const body = await request.json() as { snapshotId?: unknown };
-    if (typeof body.snapshotId !== "string" || !body.snapshotId) {
-      return NextResponse.json({ code: "SNAPSHOT_REQUIRED", message: "Gere e revise a prévia antes de assinar." }, { status: 400 });
+    const body = await request.json().catch(() => ({})) as { snapshotId?: unknown };
+    const requestedSnapshotId = typeof body.snapshotId === "string" && body.snapshotId ? body.snapshotId : null;
+    const latestSnapshot = requestedSnapshotId ? null : await prisma.documentSnapshot.findFirst({
+      where: { consultationId, type: "AGA_REPORT", generatedById: user.id },
+      orderBy: [{ createdAt: "desc" }, { version: "desc" }],
+      select: { id: true },
+    });
+    const snapshotId = requestedSnapshotId ?? latestSnapshot?.id;
+    if (!snapshotId) {
+      return NextResponse.json({
+        code: "SNAPSHOT_REQUIRED",
+        message: "Gere a prévia do relatório, revise o conteúdo e então inicie a assinatura.",
+      }, { status: 400 });
     }
 
-    const result = await beginAgaVidaasSignature({ consultationId, snapshotId: body.snapshotId, user });
+    const result = await beginAgaVidaasSignature({ consultationId, snapshotId, user });
     const response = NextResponse.json({
       signatureId: result.signatureId,
       authorizationUrl: result.authorizationUrl,
