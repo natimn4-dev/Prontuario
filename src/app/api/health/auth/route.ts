@@ -6,6 +6,8 @@ function classifyVidaasFailure(errorCode: string | null | undefined): string | n
   if (!errorCode) return null;
   const http = errorCode.match(/^VIDAAS_(TOKEN|SIGNATURE)_HTTP_(\d{3})$/);
   if (http) return `${http[1]}_HTTP_${http[2]}`;
+  if (errorCode === "VIDAAS_SIGNED_DOCUMENT_MISSING") return "SIGNED_DOCUMENT_MISSING";
+  if (errorCode === "VIDAAS_SIGNED_DOCUMENT_INVALID") return "SIGNED_DOCUMENT_INVALID";
   if (errorCode.startsWith("VIDAAS_SIGNED_DOCUMENT_")) return "SIGNED_DOCUMENT_RESPONSE";
   if (errorCode === "VIDAAS_DOCUMENT_TOO_LARGE") return "DOCUMENT_TOO_LARGE";
   if (errorCode === "UNSIGNED_DOCUMENT_INTEGRITY_FAILURE") return "UNSIGNED_DOCUMENT_INTEGRITY";
