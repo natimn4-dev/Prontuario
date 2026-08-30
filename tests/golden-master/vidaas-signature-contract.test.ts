@@ -92,7 +92,7 @@ test("fluxo clínico exige revisão separada e oferece assinatura do relatório 
   assert.match(panel, /Abrir \/ imprimir PDF assinado/);
   assert.match(service, /beginAdvanceDirectivesVidaasSignature/);
   assert.match(service, /buildAdvanceDirectivesPdf/);
-  assert.match(service, /vidaas-single-signature:\$\{input\.documentKind\}/);
+  assert.ok(service.includes("vidaas-single-signature:${input.documentKind}"));
   assert.match(callback, /signedDocumentKind/);
   assert.match(directivesRoute, /ADVANCE_DIRECTIVES_NOT_AVAILABLE/);
 });
