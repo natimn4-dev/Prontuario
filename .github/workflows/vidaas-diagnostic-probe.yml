@@ -1,0 +1,25 @@
+name: VIDaaS Diagnostic Probe
+
+on:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  probe:
+    runs-on: ubuntu-latest
+    timeout-minutes: 2
+    steps:
+      - name: Read sanitized VIDaaS failure class
+        shell: bash
+        run: |
+          set -euo pipefail
+          BODY="$(curl -fsS --max-time 20 -H 'Cache-Control: no-cache' https://prontuario.nataliamendesgeriatra.com/api/health/auth)"
+          FAILURE_CLASS="$(printf '%s' "$BODY" | node -e 'let s="";process.stdin.on("data",d=>s+=d).on("end",()=>{const j=JSON.parse(s);const v=j.vidaasFailureClass;if(v!==null&&v!==undefined&&typeof v!=="string")process.exit(2);process.stdout.write(v??"NONE")})')"
+          if [[ ! "$FAILURE_CLASS" =~ ^(NONE|TOKEN_HTTP_[0-9]{3}|SIGNATURE_HTTP_[0-9]{3}|SIGNED_DOCUMENT_RESPONSE|DOCUMENT_TOO_LARGE|UNSIGNED_DOCUMENT_INTEGRITY|TOKEN_RESPONSE|SIGNATURE_RESPONSE|OTHER)$ ]]; then
+            echo 'VIDAAS_FAILURE_CLASS=UNEXPECTED_SANITIZED_VALUE'
+            exit 1
+          fi
+          echo "VIDAAS_FAILURE_CLASS=$FAILURE_CLASS"
