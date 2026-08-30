@@ -7,6 +7,8 @@ import { buildVidaasAuthorizationUrl, createPkcePair } from "../../src/server/si
 
 const schema = readFileSync(new URL("../../prisma/schema.prisma", import.meta.url), "utf8");
 const service = readFileSync(new URL("../../src/server/signatures/digital-signature-service.ts", import.meta.url), "utf8");
+const credentials = readFileSync(new URL("../../src/server/signatures/vidaas-credentials.ts", import.meta.url), "utf8");
+const client = readFileSync(new URL("../../src/server/signatures/vidaas-client.ts", import.meta.url), "utf8");
 const panel = readFileSync(new URL("../../src/components/reports/vidaas-signature-panel.tsx", import.meta.url), "utf8");
 const pdfRenderer = readFileSync(new URL("../../src/server/signatures/report-pdf.ts", import.meta.url), "utf8");
 
@@ -58,6 +60,19 @@ test("persistência da assinatura não possui biometria, senha, chave privada ou
   assert.match(digitalSignatureModel, /verificationTokenHash/);
   assert.doesNotMatch(digitalSignatureModel, /biometr|fingerprint|password|senha|privateKey|accessToken/i);
   assert.match(service, /unsignedPdfBase64: null/);
+});
+
+test("credenciais VIDaaS podem ser bootstrapadas sem expor client_secret em texto claro no banco", () => {
+  const integrationModel = schema.match(/model ExternalIntegrationCredential \{[\s\S]*?\n\}/)?.[0] ?? "";
+  assert.match(integrationModel, /encryptedPayload/);
+  assert.doesNotMatch(integrationModel, /clientSecret|client_secret|password|privateKey/i);
+  assert.match(credentials, /createCipheriv\("aes-256-gcm"/);
+  assert.match(credentials, /hkdfSync\("sha256"/);
+  assert.match(credentials, /user\.role !== "ADMIN"/);
+  assert.match(credentials, /integration\.vidaas\.bootstrap/);
+  assert.match(client, /\/v0\/oauth\/application/);
+  assert.match(client, /redirect_uris/);
+  assert.match(client, /VIDAAS_PRODUCTION_BASE_URL/);
 });
 
 test("fluxo clínico exige revisão, finaliza e só então oferece impressão do PDF assinado", () => {
