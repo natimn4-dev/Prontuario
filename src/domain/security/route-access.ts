@@ -23,6 +23,8 @@ export function isPublicRoute(pathname: string): boolean {
     || path === "/api/health/auth"
     || path === "/api/auth"
     || path.startsWith("/api/auth/")
+    || path === "/verificar"
+    || path.startsWith("/verificar/")
     || path === "/favicon.ico"
     || path === "/robots.txt"
     || path === "/sitemap.xml"
