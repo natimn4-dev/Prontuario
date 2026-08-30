@@ -43,6 +43,12 @@ enum DocumentType {
   AGA_REPORT
 }
 
+enum DigitalSignatureStatus {
+  PENDING
+  SIGNED
+  FAILED
+}
+
 enum MedicationStatus {
   ACTIVE
   SUSPENDED
@@ -76,6 +82,7 @@ model User {
   consultations Consultation[]
   documents     DocumentSnapshot[] @relation("FinalizedDocuments")
   generatedDocuments DocumentSnapshot[] @relation("GeneratedDocuments")
+  digitalSignatures DigitalSignature[]
   auditEvents   AuditEvent[]
   advanceDirectiveRecords AdvanceDirectiveRecord[]
   sessions      Session[]
@@ -158,6 +165,7 @@ model Patient {
   clinicalExamRecords    ClinicalExamRecord[]
   medications            Medication[]
   documents              DocumentSnapshot[]
+  digitalSignatures      DigitalSignature[]
   advanceDirectiveRecords AdvanceDirectiveRecord[]
   identifiers            PatientIdentifier[]
   createdAt              DateTime            @default(now())
@@ -201,6 +209,7 @@ model Consultation {
   medicationRegimens MedicationRegimen[]
   medicationStatusEvents MedicationStatusEvent[]
   documents         DocumentSnapshot[]
+  digitalSignatures DigitalSignature[]
   advanceDirectiveRecords AdvanceDirectiveRecord[]
   createdAt         DateTime            @default(now())
   updatedAt         DateTime            @updatedAt
@@ -415,10 +424,44 @@ model DocumentSnapshot {
   consultation   Consultation @relation(fields: [consultationId, patientId], references: [id, patientId], onDelete: Restrict)
   finalizedBy    User?        @relation("FinalizedDocuments", fields: [finalizedById], references: [id], onDelete: SetNull)
   generatedBy    User?        @relation("GeneratedDocuments", fields: [generatedById], references: [id], onDelete: SetNull)
+  digitalSignatures DigitalSignature[]
   createdAt      DateTime     @default(now())
 
   @@unique([consultationId, type, version])
   @@index([patientId, createdAt])
+}
+
+model DigitalSignature {
+  id                    String                 @id @default(cuid())
+  patientId             String
+  consultationId        String
+  sourceSnapshotId      String
+  createdById           String
+  provider              String                 @default("VIDAAS")
+  status                DigitalSignatureStatus @default(PENDING)
+  unsignedPdfBase64     String?                @db.LongText
+  signedPdfBase64       String?                @db.LongText
+  unsignedSha256        String
+  signedSha256          String?
+  verificationTokenHash String                 @unique
+  oauthStateHash        String                 @unique
+  signatureFormat       String                 @default("PAdES_AD_RB")
+  certificateAlias      String?
+  errorCode             String?
+  expiresAt             DateTime
+  signedAt              DateTime?
+  patient               Patient                @relation(fields: [patientId], references: [id], onDelete: Restrict)
+  consultation          Consultation           @relation(fields: [consultationId, patientId], references: [id, patientId], onDelete: Restrict)
+  sourceSnapshot        DocumentSnapshot       @relation(fields: [sourceSnapshotId], references: [id], onDelete: Restrict)
+  createdBy             User                   @relation(fields: [createdById], references: [id], onDelete: Restrict)
+  createdAt             DateTime               @default(now())
+  updatedAt             DateTime               @updatedAt
+
+  @@index([consultationId, createdAt])
+  @@index([patientId, createdAt])
+  @@index([sourceSnapshotId])
+  @@index([createdById, createdAt])
+  @@index([status, expiresAt])
 }
 
 model AuditEvent {
