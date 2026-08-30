@@ -134,12 +134,14 @@ function qrCommands(payload: string, x: number, y: number, size: number): string
 class DirectivesPdfBuilder {
   private readonly pages: Page[] = [];
   private y = TOP;
+  private readonly identity: ProfessionalIdentity;
+  private readonly patientName: string;
+  private readonly directiveVersion: number;
 
-  constructor(
-    private readonly identity: ProfessionalIdentity,
-    private readonly patientName: string,
-    private readonly directiveVersion: number,
-  ) {
+  constructor(identity: ProfessionalIdentity, patientName: string, directiveVersion: number) {
+    this.identity = identity;
+    this.patientName = patientName;
+    this.directiveVersion = directiveVersion;
     this.addPage(false);
   }
 
