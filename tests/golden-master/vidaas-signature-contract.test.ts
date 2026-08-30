@@ -89,6 +89,17 @@ test("fluxo clínico exige revisão, finaliza e só então oferece impressão do
   assert.doesNotMatch(pdfRenderer, /googleapis|quickchart|api\.qrserver/i);
 });
 
+test("PDF destinado ao VIDaaS usa o relatório visual estruturado, não a exportação textual", () => {
+  assert.match(service, /requireStructuredReport/);
+  assert.doesNotMatch(service, /requireReportText/);
+  assert.match(pdfRenderer, /buildReportDomainSummaries/);
+  assert.match(pdfRenderer, /Evolução da capacidade e da independência funcional/);
+  assert.match(pdfRenderer, /Plano de medicamentos - documento separado/);
+  assert.doesNotMatch(pdfRenderer, /reportText/);
+  assert.doesNotMatch(pdfRenderer, /TABELA FINAL DE MEDICAMENTOS/);
+  assert.doesNotMatch(pdfRenderer, /medicationPlan\.plan/);
+});
+
 function vidaasPdfFixtures() {
   const unsignedPdf = Buffer.from("%PDF-1.7\n1 0 obj\n<<>>\nendobj\n%%EOF\n", "ascii");
   const signedPdf = Buffer.from(
