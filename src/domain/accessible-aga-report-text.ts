@@ -1,19 +1,14 @@
 import type { AgaReportModel } from "./aga-report.ts";
+import { buildReportDomainSummaries } from "./report-domain-summary.ts";
 import { MEDICATION_MOMENT_LABELS, type MedicationMoment } from "./medication-plan.ts";
 import {
   alertSeverityLabel,
   consultationStatusLabel,
   problemStatusLabel,
-  problemTypeLabel,
-  sourceStatusLabel,
 } from "./accessible-report-language.ts";
 
 function list(items: readonly string[]): string {
   return items.length > 0 ? items.map((item) => `- ${item}`).join("\n") : "- Sem dados registrados";
-}
-
-function carePlanBlock(title: string, items: readonly string[]): string[] {
-  return items.length > 0 ? ["", title, list(items)] : [];
 }
 
 export function renderAccessibleAgaReportText(model: AgaReportModel): string {
@@ -62,32 +57,20 @@ export function renderAccessibleAgaReportText(model: AgaReportModel): string {
     "Esta seção é informativa, não contém prescrição automática e permanece separada da tabela de medicamentos.",
   );
 
-  for (const scale of model.assessedScales.filter((item) => item.assessedInTargetConsultation)) {
-    const resultLabel = "Avaliado nesta consulta";
-    const finalPoint = `atual ${scale.evolution.current ?? "—"}${scale.evolution.currentVersion ? ` (v${scale.evolution.currentVersion})` : ""}`;
+  const domains = buildReportDomainSummaries(model.assessedScales, model.intrinsicCapacity);
+  if (domains.length > 0) {
     blocks.push(
       "",
-      `${scale.name} (${scale.code} · versão ${scale.version})`,
-      `Dado coletado nesta consulta: ${scale.collectedData.length > 0 ? scale.collectedData.map((item) => `${item.field}=${item.value}`).join("; ") : "sem respostas detalhadas registradas"}`,
-      `${resultLabel}: ${scale.result.scoreText ?? scale.result.score ?? "sem pontuação registrada"}`,
-      `Classificação: ${scale.result.classification ?? "sem classificação registrada"}`,
-      `Interpretação: ${scale.interpretation ?? "sem interpretação registrada"}`,
-      `Trajetória: avaliação inicial ${scale.evolution.baseline ?? "—"} (v${scale.evolution.baselineVersion}); anterior ${scale.evolution.previous ?? "—"}${scale.evolution.previousVersion ? ` (v${scale.evolution.previousVersion})` : ""}; ${finalPoint}; ${scale.evolution.vsPrevious}`,
-      `Problema relacionado (proposta): ${scale.relatedProblemProposals.map((problem) => `[${problemTypeLabel(problem.type)}] ${problem.title}`).join("; ") || "nenhum proposto"}`,
-      `Fonte: ${sourceStatusLabel(scale.source.status)}${scale.source.citation ? ` · ${scale.source.citation}` : ""}`,
-      "Sugestões que ainda precisam de revisão médica:",
-      list(scale.interventionSuggestions.map((suggestion) => suggestion.text)),
+      "RESULTADOS DAS AVALIAÇÕES E ORIENTAÇÕES PARA A FAMÍLIA",
     );
-  }
-
-  const carePlanBlocks = [
-    ...carePlanBlock("Agora", model.carePlan.now),
-    ...carePlanBlock("Médio prazo", model.carePlan.mediumTerm),
-    ...carePlanBlock("Família/cuidador", model.carePlan.caregiver),
-    ...carePlanBlock("Encaminhamentos", model.carePlan.referrals),
-  ];
-  if (carePlanBlocks.length > 0) {
-    blocks.push("", "PLANO DE CUIDADO — SUGESTÕES QUE PRECISAM DE REVISÃO MÉDICA", ...carePlanBlocks);
+    for (const domain of domains) {
+      blocks.push(
+        "",
+        `${domain.label.toUpperCase()} — ${domain.stateLabel}`,
+        list(domain.results.map((result) => `${result.scaleName}: ${result.value}`)),
+      );
+      if (domain.guidance.length > 0) blocks.push("Orientações:", list(domain.guidance));
+    }
   }
 
   blocks.push(
@@ -97,7 +80,6 @@ export function renderAccessibleAgaReportText(model: AgaReportModel): string {
     "",
     "QUANDO ENTRAR EM CONTATO COM A EQUIPE",
     list(model.safetyGuidance.contact),
-    `Base científica: ${model.safetyGuidance.evidenceReferences.map((reference) => `PMID ${reference.pmid}`).join(" · ")}.`,
   );
 
   if (model.alerts.length > 0) {

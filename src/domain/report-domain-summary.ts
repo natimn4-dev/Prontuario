@@ -21,6 +21,7 @@ export interface ReportDomainSummary {
   label: string;
   state: ReportDomainState;
   stateLabel: string;
+  results: { scaleCode: string; scaleName: string; value: string }[];
   guidance: string[];
   evidenceReferences: IntrinsicCapacityEvidenceReference[];
   requiresMedicalGuidance: boolean;
@@ -202,6 +203,11 @@ function stateLabelFor(state: ReportDomainState): string {
   return "Não avaliado nesta consulta";
 }
 
+function familyResultValue(scale: AgaScaleReportSection): string {
+  const score = scale.result.scoreText ?? (scale.result.score !== null ? String(scale.result.score) : undefined);
+  return unique([score ?? "Resultado registrado", scale.result.classification ?? ""]).join(" — ");
+}
+
 export function buildReportDomainSummaries(
   scales: readonly AgaScaleReportSection[],
   intrinsicCapacity: IntrinsicCapacityGuidance,
@@ -247,7 +253,7 @@ export function buildReportDomainSummaries(
             functionallyContextualized,
             immobilityContext,
           ),
-    ).slice(0, 5);
+    ).slice(0, 2);
     const requiresMedicalGuidance = (state === "altered" || state === "attention") && guidance.length === 0;
     const evidenceReferences = alteredIntrinsicGuidance?.evidenceReferences
       ?? intrinsicGuidance?.evidenceReferences
@@ -259,6 +265,11 @@ export function buildReportDomainSummaries(
       label: DIMENSION_LABELS[dimension] ?? dimension,
       state,
       stateLabel: stateLabelFor(state),
+      results: dimensionScales.map((scale) => ({
+        scaleCode: scale.code,
+        scaleName: scale.name,
+        value: familyResultValue(scale),
+      })),
       guidance,
       evidenceReferences: evidenceReferences.map((reference) => ({ ...reference })),
       requiresMedicalGuidance,

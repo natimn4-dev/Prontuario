@@ -42,7 +42,8 @@ test("relatório compartilhável agrega avaliações por domínio sem expor esca
   assert.equal(domains.filter((domain) => domain.code === "mobilidade").length, 1);
   assert.equal(mobility?.label, "Locomoção e equilíbrio");
   assert.equal(mobility?.state, "altered");
-  assert.ok((mobility?.guidance.length ?? 0) >= 4);
+  assert.equal(mobility?.guidance.length, 2);
+  assert.deepEqual(mobility?.results.map((result) => result.scaleCode), ["sarcf", "sppb"]);
   assert.ok(mobility?.evidenceReferences.some((reference) => reference.pmid === "30703272"));
   assert.equal(mobility?.requiresMedicalGuidance, false);
 });

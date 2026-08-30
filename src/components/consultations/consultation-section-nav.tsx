@@ -10,6 +10,7 @@ const sections = [
   { id: "medicamentos", label: "Medicamentos", hint: "Lista e horários" },
   { id: "soap", label: "SOAP / AGA", hint: "Registro técnico" },
   { id: "escalas", label: "Escalas clínicas", hint: "Instrumentos aplicados" },
+  { id: "diretivas", label: "Diretivas antecipadas", hint: "Valores e preferências" },
   { id: "relatorio", label: "Relatório final", hint: "Paciente e família" },
   { id: "finalizacao", label: "Revisão e finalização", hint: "Conferência e assinatura" },
 ] as const;

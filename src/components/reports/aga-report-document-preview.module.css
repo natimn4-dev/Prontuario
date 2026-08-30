@@ -530,6 +530,17 @@
   margin-top: 0.16rem;
 }
 
+.compactResults {
+  margin: 0.3rem 0 0;
+  padding-left: 0.9rem;
+  color: var(--ink);
+  font-size: 0.63rem;
+}
+
+.compactResults li + li {
+  margin-top: 0.14rem;
+}
+
 .chartSection {
   break-inside: avoid;
 }

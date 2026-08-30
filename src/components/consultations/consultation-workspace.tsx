@@ -5,7 +5,7 @@ import { useEffect, useMemo, useState } from "react";
 import type { ProfessionalIdentity } from "@/domain/professional-identity";
 import styles from "./consultation-workspace.module.css";
 
-type WorkspaceSectionId = "problemas" | "medicamentos" | "soap" | "escalas" | "relatorio" | "finalizacao";
+type WorkspaceSectionId = "problemas" | "medicamentos" | "soap" | "escalas" | "diretivas" | "relatorio" | "finalizacao";
 
 type WorkspaceSection = {
   id: WorkspaceSectionId;
@@ -19,6 +19,7 @@ const SECTIONS: readonly WorkspaceSection[] = [
   { id: "medicamentos", label: "Medicamentos", shortLabel: "Medicamentos", description: "Reconciliação e horários" },
   { id: "soap", label: "Evolução e plano", shortLabel: "Evolução + plano", description: "SOAP, exames, vacinas e condutas" },
   { id: "escalas", label: "Escalas clínicas", shortLabel: "Escalas", description: "Avaliações estruturadas" },
+  { id: "diretivas", label: "Diretivas antecipadas", shortLabel: "Diretivas", description: "Valores e preferências revisáveis" },
   { id: "relatorio", label: "Relatório final", shortLabel: "Relatório", description: "Documento para paciente e família" },
   { id: "finalizacao", label: "Finalizar consulta", shortLabel: "Finalizar", description: "Revisão dos itens obrigatórios" },
 ] as const;
@@ -37,6 +38,10 @@ const SoapEditor = dynamic(
 );
 const ClinicalScalesWorkspace = dynamic(
   () => import("@/components/scales/clinical-scales-workspace").then((module) => module.ClinicalScalesWorkspace),
+  { ssr: false, loading: () => <WorkspaceLoading /> },
+);
+const AdvanceDirectivesWorkspace = dynamic(
+  () => import("@/components/consultations/advance-directives-workspace").then((module) => module.AdvanceDirectivesWorkspace),
   { ssr: false, loading: () => <WorkspaceLoading /> },
 );
 const ReportWorkspaceTabs = dynamic(
@@ -156,6 +161,12 @@ export function ConsultationWorkspace({
         {visited.has("escalas") ? (
           <div id="escalas" hidden={active !== "escalas"} className={styles.panel}>
             <ClinicalScalesWorkspace consultationId={consultationId} />
+          </div>
+        ) : null}
+
+        {visited.has("diretivas") ? (
+          <div id="diretivas" hidden={active !== "diretivas"} className={styles.panel}>
+            <AdvanceDirectivesWorkspace consultationId={consultationId} />
           </div>
         ) : null}
 
