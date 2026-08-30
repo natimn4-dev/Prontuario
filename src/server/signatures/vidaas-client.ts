@@ -3,6 +3,9 @@ import { createHash, randomBytes } from "node:crypto";
 const SHA256_OID = "2.16.840.1.101.3.4.2.1";
 const MAX_DOCUMENT_BYTES = 7 * 1024 * 1024;
 const ALLOWED_PADES_FORMATS = new Set(["PAdES_AD_RB", "PAdES_AD_RT"]);
+const VIDAAS_HML_BASE_URL = "https://hml-certificado.vidaas.com.br";
+const VIDAAS_PRODUCTION_BASE_URL = "https://certificado.vidaas.com.br";
+const ALLOWED_VIDAAS_BASE_URLS = new Set([VIDAAS_HML_BASE_URL, VIDAAS_PRODUCTION_BASE_URL]);
 
 export type VidaasConfig = {
   baseUrl: string;
@@ -12,21 +15,27 @@ export type VidaasConfig = {
   signatureFormat: "PAdES_AD_RB" | "PAdES_AD_RT";
 };
 
+export type VidaasStaticConfig = Omit<VidaasConfig, "clientId" | "clientSecret">;
+export type VidaasApplicationCredentials = Pick<VidaasConfig, "clientId" | "clientSecret">;
+
 function required(name: string): string {
   const value = process.env[name]?.trim();
   if (!value) throw new Error(`VIDAAS_NOT_CONFIGURED:${name}`);
   return value;
 }
 
-export function getVidaasConfig(): VidaasConfig {
-  const baseUrl = required("VIDAAS_BASE_URL").replace(/\/$/, "");
-  const clientId = required("VIDAAS_CLIENT_ID");
-  const clientSecret = required("VIDAAS_CLIENT_SECRET");
+export function getVidaasStaticConfig(): VidaasStaticConfig {
   const appUrl = required("APP_URL").replace(/\/$/, "");
+  const configuredBaseUrl = process.env.VIDAAS_BASE_URL?.trim().replace(/\/$/, "");
+  const baseUrl = configuredBaseUrl || (process.env.NODE_ENV === "production"
+    ? VIDAAS_PRODUCTION_BASE_URL
+    : VIDAAS_HML_BASE_URL);
   const redirectUri = process.env.VIDAAS_REDIRECT_URI?.trim() || `${appUrl}/api/signatures/vidaas/callback`;
   const signatureFormat = process.env.VIDAAS_SIGNATURE_FORMAT?.trim() || "PAdES_AD_RB";
 
-  if (!baseUrl.startsWith("https://")) throw new Error("VIDAAS_CONFIGURATION_INVALID:BASE_URL");
+  if (!ALLOWED_VIDAAS_BASE_URLS.has(baseUrl)) {
+    throw new Error("VIDAAS_CONFIGURATION_INVALID:BASE_URL");
+  }
   if (!redirectUri.startsWith("https://") && !redirectUri.startsWith("http://localhost")) {
     throw new Error("VIDAAS_CONFIGURATION_INVALID:REDIRECT_URI");
   }
@@ -36,11 +45,57 @@ export function getVidaasConfig(): VidaasConfig {
 
   return {
     baseUrl,
-    clientId,
-    clientSecret,
     redirectUri,
-    signatureFormat: signatureFormat as VidaasConfig["signatureFormat"],
+    signatureFormat: signatureFormat as VidaasStaticConfig["signatureFormat"],
   };
+}
+
+export function getVidaasEnvironmentCredentials(): VidaasApplicationCredentials | null {
+  const clientId = process.env.VIDAAS_CLIENT_ID?.trim() || "";
+  const clientSecret = process.env.VIDAAS_CLIENT_SECRET?.trim() || "";
+  if (!clientId && !clientSecret) return null;
+  if (!clientId) throw new Error("VIDAAS_CONFIGURATION_INVALID:CLIENT_ID");
+  if (!clientSecret) throw new Error("VIDAAS_CONFIGURATION_INVALID:CLIENT_SECRET");
+  return { clientId, clientSecret };
+}
+
+export function combineVidaasConfig(
+  staticConfig: VidaasStaticConfig,
+  credentials: VidaasApplicationCredentials,
+): VidaasConfig {
+  return { ...staticConfig, ...credentials };
+}
+
+export async function registerVidaasApplication(input: {
+  staticConfig: VidaasStaticConfig;
+  supportEmail: string;
+}): Promise<VidaasApplicationCredentials> {
+  const supportEmail = input.supportEmail.trim().toLowerCase();
+  if (!supportEmail || !supportEmail.includes("@")) {
+    throw new Error("VIDAAS_APPLICATION_EMAIL_INVALID");
+  }
+
+  const response = await fetch(`${input.staticConfig.baseUrl}/v0/oauth/application`, {
+    method: "POST",
+    headers: {
+      accept: "application/json",
+      "content-type": "application/json",
+    },
+    body: JSON.stringify({
+      name: "Prontuário Aprimorado",
+      comments: "Assinatura digital PAdES de relatórios clínicos AGA com autorização do profissional.",
+      redirect_uris: [input.staticConfig.redirectUri],
+      email: supportEmail,
+    }),
+    cache: "no-store",
+  });
+  const payload = await parseJsonResponse(response, "APPLICATION");
+  const clientId = payload.client_id;
+  const clientSecret = payload.client_secret;
+  if (typeof clientId !== "string" || !clientId || typeof clientSecret !== "string" || !clientSecret) {
+    throw new Error("VIDAAS_APPLICATION_CREDENTIALS_MISSING");
+  }
+  return { clientId, clientSecret };
 }
 
 export function sha256Hex(value: string | Buffer): string {
@@ -160,3 +215,7 @@ export async function signPdfWithVidaas(input: {
 }
 
 export const vidaasLimits = Object.freeze({ maxDocumentBytes: MAX_DOCUMENT_BYTES });
+export const vidaasEndpoints = Object.freeze({
+  homologation: VIDAAS_HML_BASE_URL,
+  production: VIDAAS_PRODUCTION_BASE_URL,
+});
