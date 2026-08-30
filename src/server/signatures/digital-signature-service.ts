@@ -47,7 +47,6 @@ export async function beginAgaVidaasSignature(input: {
   snapshotId: string;
   user: SigningUser;
 }) {
-  const config = await getVidaasConfigForUser(input.user);
   const snapshot = await prisma.documentSnapshot.findFirst({
     where: {
       id: input.snapshotId,
@@ -65,6 +64,7 @@ export async function beginAgaVidaasSignature(input: {
   });
   if (!snapshot) throw new Error("REPORT_SNAPSHOT_NOT_FOUND");
 
+  const config = await getVidaasConfigForUser(input.user);
   const verificationToken = randomBytes(32).toString("base64url");
   const verificationUrl = `${appUrl()}/verificar/${verificationToken}`;
   const id = randomUUID();
