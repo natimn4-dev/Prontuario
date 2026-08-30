@@ -21,7 +21,7 @@ jobs:
           failure_class="$(printf '%s' "$payload" | jq -r '.vidaasFailureClass // "NONE"')"
           test "$status" = "ready"
           case "$failure_class" in
-            TOKEN_HTTP_*|SIGNATURE_HTTP_*|TOKEN_RESPONSE|SIGNATURE_RESPONSE|SIGNED_DOCUMENT_RESPONSE|DOCUMENT_TOO_LARGE|UNSIGNED_DOCUMENT_INTEGRITY|OTHER|NONE) ;;
+            TOKEN_HTTP_*|SIGNATURE_HTTP_*|TOKEN_RESPONSE|SIGNATURE_RESPONSE|SIGNED_DOCUMENT_RESPONSE|SIGNED_DOCUMENT_MISSING|SIGNED_DOCUMENT_INVALID|DOCUMENT_TOO_LARGE|UNSIGNED_DOCUMENT_INTEGRITY|OTHER|NONE) ;;
             *) echo 'Unexpected diagnostic class' >&2; exit 1 ;;
           esac
           echo "VIDAAS_FAILURE_CLASS=$failure_class"
