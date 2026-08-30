@@ -6,14 +6,19 @@ import {
   buildVidaasAuthorizationUrl,
   createPkcePair,
   exchangeVidaasAuthorizationCode,
-  getVidaasConfig,
   sha256Hex,
   signPdfWithVidaas,
 } from "./vidaas-client";
+import { getVidaasConfigForUser } from "./vidaas-credentials";
 
 const PENDING_LIFETIME_MS = 5 * 60 * 1000;
 
-type SigningUser = { id: string; name: string; email: string };
+type SigningUser = {
+  id: string;
+  name: string;
+  email: string;
+  role: "ADMIN" | "PHYSICIAN" | "READ_ONLY";
+};
 
 type SnapshotContent = {
   text?: unknown;
@@ -42,7 +47,7 @@ export async function beginAgaVidaasSignature(input: {
   snapshotId: string;
   user: SigningUser;
 }) {
-  const config = getVidaasConfig();
+  const config = await getVidaasConfigForUser(input.user);
   const snapshot = await prisma.documentSnapshot.findFirst({
     where: {
       id: input.snapshotId,
@@ -139,7 +144,7 @@ export async function completeAgaVidaasSignature(input: {
   if (!record.unsignedPdfBase64) throw new Error("VIDAAS_UNSIGNED_DOCUMENT_MISSING");
 
   try {
-    const config = getVidaasConfig();
+    const config = await getVidaasConfigForUser(input.user);
     const accessToken = await exchangeVidaasAuthorizationCode({
       config,
       code: input.code,
