@@ -25,7 +25,11 @@ export async function GET(request: Request) {
     const verifier = decodeURIComponent(cookieValue).slice(signatureId.length + 1);
     const result = await completeAgaVidaasSignature({ code, state, pkceVerifier: verifier, user });
     const appUrl = (process.env.APP_URL ?? new URL(request.url).origin).replace(/\/$/, "");
-    const redirect = NextResponse.redirect(`${appUrl}/consultations/${result.consultationId}?signedDocument=${encodeURIComponent(result.signatureId)}#relatorio`);
+    const params = new URLSearchParams({
+      signedDocument: result.signatureId,
+      signedDocumentKind: result.documentKind,
+    });
+    const redirect = NextResponse.redirect(`${appUrl}/consultations/${result.consultationId}?${params.toString()}#relatorio`);
     redirect.cookies.set("vidaas_pkce", "", {
       httpOnly: true,
       sameSite: "lax",
@@ -37,7 +41,7 @@ export async function GET(request: Request) {
   } catch {
     return NextResponse.json({
       code: "VIDAAS_SIGNATURE_FAILED",
-      message: "A assinatura não foi concluída. O relatório original permaneceu inalterado; inicie uma nova tentativa.",
+      message: "A assinatura não foi concluída. O documento original permaneceu inalterado; inicie uma nova tentativa.",
     }, { status: 400 });
   }
 }
