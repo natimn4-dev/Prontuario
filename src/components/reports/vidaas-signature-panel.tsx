@@ -1,0 +1,95 @@
+"use client";
+
+import { useEffect, useState } from "react";
+import styles from "./vidaas-signature-panel.module.css";
+
+type GeneratedSnapshot = { snapshot?: { id?: unknown } };
+type SignatureStart = { authorizationUrl?: unknown; message?: unknown };
+
+export function VidaasSignaturePanel({ consultationId }: { consultationId: string }) {
+  const [reviewConfirmed, setReviewConfirmed] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
+  const [signedDocumentId, setSignedDocumentId] = useState("");
+
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const value = params.get("signedDocument");
+    if (value) setSignedDocumentId(value);
+  }, []);
+
+  async function finalizeAndSign() {
+    if (!reviewConfirmed || loading) return;
+    setLoading(true);
+    setError("");
+    try {
+      // Generate a fresh immutable snapshot at the exact moment the physician confirms signing.
+      const reportResponse = await fetch(`/api/consultations/${consultationId}/reports/aga`, {
+        method: "POST",
+        headers: { accept: "application/json" },
+      });
+      const reportResult = await reportResponse.json() as GeneratedSnapshot & { message?: unknown };
+      if (!reportResponse.ok || typeof reportResult.snapshot?.id !== "string") {
+        throw new Error(typeof reportResult.message === "string" ? reportResult.message : "Não foi possível finalizar o relatório para assinatura.");
+      }
+
+      const signatureResponse = await fetch(`/api/consultations/${consultationId}/reports/aga/signatures/vidaas`, {
+        method: "POST",
+        headers: { "content-type": "application/json", accept: "application/json" },
+        body: JSON.stringify({ snapshotId: reportResult.snapshot.id }),
+      });
+      const signatureResult = await signatureResponse.json() as SignatureStart;
+      if (!signatureResponse.ok || typeof signatureResult.authorizationUrl !== "string") {
+        throw new Error(typeof signatureResult.message === "string" ? signatureResult.message : "Não foi possível iniciar a autorização no VIDaaS.");
+      }
+      window.location.assign(signatureResult.authorizationUrl);
+    } catch (caught) {
+      setError(caught instanceof Error ? caught.message : "Não foi possível iniciar a assinatura digital.");
+      setLoading(false);
+    }
+  }
+
+  return (
+    <section className={`${styles.panel} no-print`} aria-labelledby="vidaas-signature-title">
+      <div className={styles.copy}>
+        <span className={styles.eyebrow}>Assinatura digital do relatório final</span>
+        <h3 id="vidaas-signature-title">VIDaaS · PDF PAdES</h3>
+        <p>
+          Finaliza uma nova versão imutável do relatório, abre a autorização por QR Code do VIDaaS e, após a confirmação no celular, disponibiliza o PDF digitalmente assinado para impressão.
+        </p>
+      </div>
+
+      {signedDocumentId ? (
+        <div className={styles.success} role="status">
+          <strong>Assinatura digital concluída.</strong>
+          <a href={`/api/signed-documents/${encodeURIComponent(signedDocumentId)}/pdf`} target="_blank" rel="noreferrer">
+            Abrir / imprimir PDF assinado
+          </a>
+        </div>
+      ) : (
+        <div className={styles.actions}>
+          <label className={styles.review}>
+            <input
+              type="checkbox"
+              checked={reviewConfirmed}
+              onChange={(event) => setReviewConfirmed(event.target.checked)}
+              disabled={loading}
+            />
+            <span>
+              <strong>Confirmo a revisão clínica final</strong>
+              <small>O conteúdo desta consulta está pronto para ser transformado em PDF imutável e assinado.</small>
+            </span>
+          </label>
+          <button type="button" onClick={() => void finalizeAndSign()} disabled={!reviewConfirmed || loading}>
+            {loading ? "Preparando assinatura…" : "Finalizar e assinar com VIDaaS"}
+          </button>
+        </div>
+      )}
+
+      {error ? <p className={styles.error} role="alert">{error}</p> : null}
+      <small className={styles.privacy}>
+        A senha, biometria e chave privada permanecem no ambiente VIDaaS. O Prontuário não solicita nem armazena esses dados.
+      </small>
+    </section>
+  );
+}
