@@ -1,14 +1,17 @@
-import { createHash } from "node:crypto";
 import { NextResponse } from "next/server";
 import { buildPublicAuthReadiness } from "@/domain/security/auth-readiness";
 import { prisma } from "@/server/db";
 
-const VIDAAS_DIAGNOSTIC_TOKEN_SHA256 = "aba53744d206b12ac8bcb8755f49bf68a8551da983cb53a965af69b7d17beaf8";
-
-function diagnosticAuthorized(request: Request): boolean {
-  const token = new URL(request.url).searchParams.get("vidaasDiagnosticToken") ?? "";
-  if (!token) return false;
-  return createHash("sha256").update(token, "utf8").digest("hex") === VIDAAS_DIAGNOSTIC_TOKEN_SHA256;
+function classifyVidaasFailure(errorCode: string | null | undefined): string | null {
+  if (!errorCode) return null;
+  const http = errorCode.match(/^VIDAAS_(TOKEN|SIGNATURE)_HTTP_(\d{3})$/);
+  if (http) return `${http[1]}_HTTP_${http[2]}`;
+  if (errorCode.startsWith("VIDAAS_SIGNED_DOCUMENT_")) return "SIGNED_DOCUMENT_RESPONSE";
+  if (errorCode === "VIDAAS_DOCUMENT_TOO_LARGE") return "DOCUMENT_TOO_LARGE";
+  if (errorCode === "UNSIGNED_DOCUMENT_INTEGRITY_FAILURE") return "UNSIGNED_DOCUMENT_INTEGRITY";
+  if (errorCode.startsWith("VIDAAS_TOKEN_")) return "TOKEN_RESPONSE";
+  if (errorCode.startsWith("VIDAAS_SIGNATURE_")) return "SIGNATURE_RESPONSE";
+  return "OTHER";
 }
 
 export async function GET(request: Request) {
@@ -30,24 +33,16 @@ export async function GET(request: Request) {
     },
   );
 
-  if (diagnosticAuthorized(request)) {
-    const latestFailure = await prisma.digitalSignature.findFirst({
-      where: { provider: "VIDAAS", status: "FAILED" },
-      orderBy: [{ updatedAt: "desc" }, { createdAt: "desc" }],
-      select: { errorCode: true },
-    });
-    return NextResponse.json({
-      ...readiness,
-      vidaasDiagnostic: {
-        lastFailureCode: latestFailure?.errorCode ?? null,
-      },
-    }, {
-      status: readiness.status === "ready" ? 200 : 503,
-      headers: { "Cache-Control": "no-store" },
-    });
-  }
+  const latestFailure = await prisma.digitalSignature.findFirst({
+    where: { provider: "VIDAAS", status: "FAILED" },
+    orderBy: [{ updatedAt: "desc" }, { createdAt: "desc" }],
+    select: { errorCode: true },
+  });
 
-  return NextResponse.json(readiness, {
+  return NextResponse.json({
+    ...readiness,
+    vidaasFailureClass: classifyVidaasFailure(latestFailure?.errorCode),
+  }, {
     status: readiness.status === "ready" ? 200 : 503,
     headers: { "Cache-Control": "no-store" },
   });
