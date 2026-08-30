@@ -1,0 +1,27 @@
+name: VIDaaS Failure Diagnostic
+
+on:
+  push:
+    branches:
+      - diag/vidaas-smoke-read-failure
+
+permissions:
+  contents: read
+
+jobs:
+  read-failure-class:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Read coarse VIDaaS failure class
+        shell: bash
+        run: |
+          set -euo pipefail
+          payload="$(curl --fail --silent --show-error --max-time 20 'https://prontuario.nataliamendesgeriatra.com/api/health/auth')"
+          status="$(printf '%s' "$payload" | jq -r '.status // empty')"
+          failure_class="$(printf '%s' "$payload" | jq -r '.vidaasFailureClass // "NONE"')"
+          test "$status" = "ready"
+          case "$failure_class" in
+            TOKEN_HTTP_*|SIGNATURE_HTTP_*|TOKEN_RESPONSE|SIGNATURE_RESPONSE|SIGNED_DOCUMENT_RESPONSE|DOCUMENT_TOO_LARGE|UNSIGNED_DOCUMENT_INTEGRITY|OTHER|NONE) ;;
+            *) echo 'Unexpected diagnostic class' >&2; exit 1 ;;
+          esac
+          echo "VIDAAS_FAILURE_CLASS=$failure_class"
