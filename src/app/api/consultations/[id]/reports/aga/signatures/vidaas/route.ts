@@ -42,12 +42,23 @@ export async function POST(
     return response;
   } catch (error) {
     const message = error instanceof Error ? error.message : "Não foi possível iniciar a assinatura digital.";
-    const notConfigured = message.startsWith("VIDAAS_NOT_CONFIGURED") || message.startsWith("VIDAAS_CONFIGURATION_INVALID");
+    const adminBootstrapRequired = message === "VIDAAS_BOOTSTRAP_ADMIN_REQUIRED";
+    const notConfigured =
+      message.startsWith("VIDAAS_NOT_CONFIGURED") ||
+      message.startsWith("VIDAAS_CONFIGURATION_INVALID") ||
+      message.startsWith("VIDAAS_CREDENTIAL_") ||
+      adminBootstrapRequired;
     return NextResponse.json({
-      code: notConfigured ? "VIDAAS_NOT_CONFIGURED" : "VIDAAS_SIGNATURE_START_FAILED",
-      message: notConfigured
-        ? "A assinatura VIDaaS ainda não está configurada neste ambiente."
-        : "Não foi possível iniciar a assinatura digital com o VIDaaS.",
+      code: adminBootstrapRequired
+        ? "VIDAAS_BOOTSTRAP_ADMIN_REQUIRED"
+        : notConfigured
+          ? "VIDAAS_NOT_CONFIGURED"
+          : "VIDAAS_SIGNATURE_START_FAILED",
+      message: adminBootstrapRequired
+        ? "A integração VIDaaS precisa ser inicializada uma vez por um administrador autorizado."
+        : notConfigured
+          ? "A assinatura VIDaaS ainda não está configurada corretamente neste ambiente."
+          : "Não foi possível iniciar a assinatura digital com o VIDaaS.",
     }, { status: notConfigured ? 503 : 400 });
   }
 }
