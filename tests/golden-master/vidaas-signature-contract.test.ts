@@ -1,0 +1,71 @@
+import assert from "node:assert/strict";
+import { readFileSync } from "node:fs";
+import test from "node:test";
+import { routeAccessFor } from "../../src/domain/security/route-access.ts";
+import { createValidationQrMatrix, validationQrLimits } from "../../src/server/signatures/validation-qr.ts";
+import { buildVidaasAuthorizationUrl, createPkcePair } from "../../src/server/signatures/vidaas-client.ts";
+
+const schema = readFileSync(new URL("../../prisma/schema.prisma", import.meta.url), "utf8");
+const service = readFileSync(new URL("../../src/server/signatures/digital-signature-service.ts", import.meta.url), "utf8");
+const panel = readFileSync(new URL("../../src/components/reports/vidaas-signature-panel.tsx", import.meta.url), "utf8");
+const pdfRenderer = readFileSync(new URL("../../src/server/signatures/report-pdf.ts", import.meta.url), "utf8");
+
+test("VIDaaS usa OAuth PKCE single_signature com redirect registrado", () => {
+  const pair = createPkcePair();
+  assert.ok(pair.verifier.length >= 43);
+  assert.match(pair.verifier, /^[A-Za-z0-9_-]+$/);
+  assert.match(pair.challenge, /^[A-Za-z0-9_-]{43}$/);
+
+  const url = new URL(buildVidaasAuthorizationUrl({
+    config: {
+      baseUrl: "https://hml-certificado.vidaas.com.br",
+      clientId: "client-test",
+      clientSecret: "server-only",
+      redirectUri: "https://prontuario.example.test/api/signatures/vidaas/callback",
+      signatureFormat: "PAdES_AD_RB",
+    },
+    challenge: pair.challenge,
+    state: "signature.random-state",
+  }));
+  assert.equal(url.pathname, "/v0/oauth/authorize");
+  assert.equal(url.searchParams.get("scope"), "single_signature");
+  assert.equal(url.searchParams.get("code_challenge_method"), "S256");
+  assert.equal(url.searchParams.get("login_hint"), "");
+  assert.equal(url.searchParams.get("redirect_uri"), "https://prontuario.example.test/api/signatures/vidaas/callback");
+});
+
+test("QR de validação é gerado localmente e comporta a URL tokenizada", () => {
+  const token = "a".repeat(43);
+  const url = `https://prontuario.example.test/verificar/${token}`;
+  assert.ok(Buffer.byteLength(url, "utf8") <= validationQrLimits.maxPayloadBytes);
+  const matrix = createValidationQrMatrix(url);
+  assert.equal(matrix.length, 41);
+  assert.ok(matrix.every((row) => row.length === 41));
+  assert.equal(matrix[0][0], true);
+  assert.equal(matrix[3][3], true);
+  assert.equal(matrix[1][1], false);
+});
+
+test("somente a verificação tokenizada é pública; APIs e PDF permanecem protegidos", () => {
+  assert.equal(routeAccessFor({ pathname: "/verificar/token", authenticated: false }), "public");
+  assert.equal(routeAccessFor({ pathname: "/api/signed-documents/id/pdf", authenticated: false }), "unauthorized-api");
+  assert.equal(routeAccessFor({ pathname: "/api/signatures/vidaas/callback", authenticated: false }), "unauthorized-api");
+});
+
+test("persistência da assinatura não possui biometria, senha, chave privada ou access token", () => {
+  const digitalSignatureModel = schema.match(/model DigitalSignature \{[\s\S]*?\n\}/)?.[0] ?? "";
+  assert.match(digitalSignatureModel, /signedPdfBase64/);
+  assert.match(digitalSignatureModel, /verificationTokenHash/);
+  assert.doesNotMatch(digitalSignatureModel, /biometr|fingerprint|password|senha|privateKey|accessToken/i);
+  assert.match(service, /unsignedPdfBase64: null/);
+});
+
+test("fluxo clínico exige revisão, finaliza e só então oferece impressão do PDF assinado", () => {
+  assert.match(panel, /Confirmo a revisão clínica final/);
+  assert.match(panel, /Finalizar e assinar com VIDaaS/);
+  assert.match(panel, /disabled=\{!reviewConfirmed \|\| loading\}/);
+  assert.match(panel, /Abrir \/ imprimir PDF assinado/);
+  assert.match(pdfRenderer, /createValidationQrMatrix/);
+  assert.match(pdfRenderer, /não contém dados clínicos/);
+  assert.doesNotMatch(pdfRenderer, /googleapis|quickchart|api\.qrserver/i);
+});
