@@ -3,7 +3,11 @@ import { readFileSync } from "node:fs";
 import test from "node:test";
 import { routeAccessFor } from "../../src/domain/security/route-access.ts";
 import { createValidationQrMatrix, validationQrLimits } from "../../src/server/signatures/validation-qr.ts";
-import { buildVidaasAuthorizationUrl, createPkcePair } from "../../src/server/signatures/vidaas-client.ts";
+import {
+  buildVidaasAuthorizationUrl,
+  createPkcePair,
+  extractSignedPdfFromVidaasPayload,
+} from "../../src/server/signatures/vidaas-client.ts";
 
 const schema = readFileSync(new URL("../../prisma/schema.prisma", import.meta.url), "utf8");
 const service = readFileSync(new URL("../../src/server/signatures/digital-signature-service.ts", import.meta.url), "utf8");
@@ -83,4 +87,45 @@ test("fluxo clínico exige revisão, finaliza e só então oferece impressão do
   assert.match(pdfRenderer, /createValidationQrMatrix/);
   assert.match(pdfRenderer, /não contém dados clínicos/);
   assert.doesNotMatch(pdfRenderer, /googleapis|quickchart|api\.qrserver/i);
+});
+
+function vidaasPdfFixtures() {
+  const unsignedPdf = Buffer.from("%PDF-1.7\n1 0 obj\n<<>>\nendobj\n%%EOF\n", "ascii");
+  const signedPdf = Buffer.from(
+    "%PDF-1.7\n1 0 obj\n<<>>\nendobj\n2 0 obj\n<< /Type /Sig /ByteRange [0 10 20 30] /Contents <AABB> >>\nendobj\n%%EOF\n",
+    "ascii",
+  );
+  return { unsignedPdf, signedPdf };
+}
+
+test("extrator VIDaaS mantém compatibilidade quando raw_signature contém o PDF PAdES", () => {
+  const { unsignedPdf, signedPdf } = vidaasPdfFixtures();
+  const result = extractSignedPdfFromVidaasPayload({
+    signatures: [{ id: "doc", raw_signature: signedPdf.toString("base64") }],
+  }, unsignedPdf);
+  assert.deepEqual(result, signedPdf);
+});
+
+test("extrator VIDaaS ignora assinatura criptográfica isolada e seleciona o PDF assinado retornado", () => {
+  const { unsignedPdf, signedPdf } = vidaasPdfFixtures();
+  const cryptographicSignature = Buffer.from([0x30, 0x82, 0x01, 0x00, 0x7f, 0x01]).toString("base64");
+  const result = extractSignedPdfFromVidaasPayload({
+    signatures: [{
+      id: "doc",
+      raw_signature: cryptographicSignature,
+      signed_content: signedPdf.toString("base64"),
+    }],
+  }, unsignedPdf);
+  assert.deepEqual(result, signedPdf);
+});
+
+test("extrator VIDaaS nunca aceita o PDF original ecoado como se estivesse assinado", () => {
+  const { unsignedPdf } = vidaasPdfFixtures();
+  assert.throws(() => extractSignedPdfFromVidaasPayload({
+    signatures: [{
+      id: "doc",
+      raw_signature: Buffer.from("detached-signature", "utf8").toString("base64"),
+      base64_content: unsignedPdf.toString("base64"),
+    }],
+  }, unsignedPdf), /VIDAAS_SIGNED_DOCUMENT_INVALID/);
 });
