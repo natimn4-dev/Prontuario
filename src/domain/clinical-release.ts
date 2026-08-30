@@ -1,1 +1,1 @@
-export const CLINICAL_RELEASE_ID = "2026-08-30-medication-suspended-history-v1" as const;
+export const CLINICAL_RELEASE_ID = "2026-08-30-vidaas-signed-aga-v1" as const;
