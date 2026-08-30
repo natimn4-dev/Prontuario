@@ -1,6 +1,6 @@
 .panel {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) minmax(290px, 0.7fr);
+  grid-template-columns: minmax(0, 0.78fr) minmax(360px, 1.22fr);
   gap: 18px 24px;
   margin-top: 18px;
   padding: 18px;
@@ -13,6 +13,18 @@
 .copy h3 { margin: 4px 0 8px; }
 .copy p { margin: 0; color: var(--muted); line-height: 1.55; }
 .eyebrow { color: var(--primary-strong); font-size: 11px; font-weight: 800; letter-spacing: .06em; text-transform: uppercase; }
+.documentOptions { display: grid; gap: 12px; }
+.documentOption {
+  display: grid;
+  gap: 12px;
+  padding: 14px;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: var(--surface-soft, #faf8fb);
+}
+.documentOption > div:first-child { display: grid; gap: 4px; }
+.documentOption > div:first-child > strong { color: var(--primary-strong); }
+.documentOption p { margin: 0; color: var(--muted); font-size: 13px; line-height: 1.45; }
 .actions { display: grid; gap: 12px; align-content: start; }
 .review { display: flex; gap: 10px; align-items: flex-start; cursor: pointer; }
 .review input { margin-top: 3px; }
@@ -32,11 +44,11 @@
   cursor: pointer;
 }
 .actions button:disabled { opacity: .5; cursor: not-allowed; }
-.success { display: grid; gap: 10px; align-content: start; padding: 14px; border-radius: 10px; background: var(--surface-soft, #f8f5fa); }
+.success { display: grid; gap: 10px; align-content: start; padding: 12px; border-radius: 10px; background: #f1f8f4; }
 .error { grid-column: 1 / -1; margin: 0; color: var(--danger, #9b1c1c); font-weight: 700; }
 .privacy { grid-column: 1 / -1; }
 
-@media (max-width: 760px) {
+@media (max-width: 900px) {
   .panel { grid-template-columns: 1fr; }
 }
 
