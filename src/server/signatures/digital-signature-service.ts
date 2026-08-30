@@ -1,7 +1,7 @@
 import { randomBytes, randomUUID } from "node:crypto";
 import { buildProfessionalIdentity } from "@/domain/professional-identity";
 import { prisma } from "@/server/db";
-import { buildAgaReportPdf } from "./report-pdf";
+import { buildAgaReportPdf, type AgaSignedReportModel } from "./report-pdf";
 import {
   buildVidaasAuthorizationUrl,
   createPkcePair,
@@ -21,7 +21,6 @@ type SigningUser = {
 };
 
 type SnapshotContent = {
-  text?: unknown;
   report?: unknown;
 };
 
@@ -31,11 +30,33 @@ function appUrl(): string {
   return value;
 }
 
-function requireReportText(content: unknown): string {
-  if (!content || typeof content !== "object") throw new Error("REPORT_SNAPSHOT_INVALID");
-  const text = (content as SnapshotContent).text;
-  if (typeof text !== "string" || !text.trim()) throw new Error("REPORT_SNAPSHOT_INVALID");
-  return text;
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return Boolean(value) && typeof value === "object" && !Array.isArray(value);
+}
+
+function requireStructuredReport(
+  content: unknown,
+  expectedPatientId: string,
+  expectedConsultationId: string,
+): AgaSignedReportModel {
+  if (!isRecord(content)) throw new Error("REPORT_SNAPSHOT_INVALID");
+  const report = (content as SnapshotContent).report;
+  if (!isRecord(report)) throw new Error("REPORT_SNAPSHOT_INVALID");
+  if (report.patientId !== expectedPatientId || report.consultationId !== expectedConsultationId) {
+    throw new Error("REPORT_SNAPSHOT_CONTEXT_MISMATCH");
+  }
+  if (typeof report.patientName !== "string" || !report.patientName.trim()) throw new Error("REPORT_SNAPSHOT_INVALID");
+  if (!Array.isArray(report.assessedScales) || !Array.isArray(report.clinicalProblems) || !Array.isArray(report.geriatricProblems)) {
+    throw new Error("REPORT_SNAPSHOT_INVALID");
+  }
+  if (!isRecord(report.overview) || !isRecord(report.capacityHistory)) throw new Error("REPORT_SNAPSHOT_INVALID");
+  if (!Array.isArray(report.capacityHistory.consultations) || !Array.isArray(report.capacityHistory.dimensions)) {
+    throw new Error("REPORT_SNAPSHOT_INVALID");
+  }
+  if (!isRecord(report.vaccinationPrevention) || !isRecord(report.safetyGuidance) || !isRecord(report.medicationPlan)) {
+    throw new Error("REPORT_SNAPSHOT_INVALID");
+  }
+  return report as unknown as AgaSignedReportModel;
 }
 
 function signatureState(signatureId: string): string {
@@ -75,8 +96,9 @@ export async function beginAgaVidaasSignature(input: {
     email: input.user.email,
     brandOwnerEmail: process.env.PROFESSIONAL_BRAND_OWNER_EMAIL,
   });
+  const report = requireStructuredReport(snapshot.content, snapshot.patientId, snapshot.consultationId);
   const pdf = buildAgaReportPdf({
-    reportText: requireReportText(snapshot.content),
+    report,
     professionalIdentity,
     verificationUrl,
     snapshotVersion: snapshot.version,
