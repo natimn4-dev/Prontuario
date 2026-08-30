@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import { randomUUID } from "node:crypto";
 import test from "node:test";
 import { PrismaMariaDb } from "@prisma/adapter-mariadb";
-import { PrismaClient } from "../../src/generated/prisma/client.ts";
+import { PrismaClient, type Prisma } from "../../src/generated/prisma/client.ts";
 import { emptyAdvanceDirectiveTopics } from "../../src/domain/advance-directives.ts";
 import { advanceDirectiveWorkspaceContext } from "../../src/server/clinical/advance-directives-workspace-context.ts";
 
@@ -52,7 +52,7 @@ test("diretivas preservam versões, recarregamento e horizonte longitudinal do p
       recordedById: userId,
       protocolVersion: "advance-directives-conversation-2026-08-v1",
       priorities: [],
-      topics,
+      topics: topics as unknown as Prisma.InputJsonValue,
       documentStatus: "NOT_INFORMED",
       reviewTrigger: "WHEN_PERSON_WANTS_OR_CONDITION_CHANGES",
     };
