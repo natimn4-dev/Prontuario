@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import test from "node:test";
 import { routeAccessFor } from "../../src/domain/security/route-access.ts";
+import { buildAdvanceDirectivesPdf } from "../../src/server/signatures/advance-directives-pdf.ts";
 import { createValidationQrMatrix, validationQrLimits } from "../../src/server/signatures/validation-qr.ts";
 import {
   buildVidaasAuthorizationUrl,
@@ -15,6 +16,9 @@ const credentials = readFileSync(new URL("../../src/server/signatures/vidaas-cre
 const client = readFileSync(new URL("../../src/server/signatures/vidaas-client.ts", import.meta.url), "utf8");
 const panel = readFileSync(new URL("../../src/components/reports/vidaas-signature-panel.tsx", import.meta.url), "utf8");
 const pdfRenderer = readFileSync(new URL("../../src/server/signatures/report-pdf.ts", import.meta.url), "utf8");
+const directivesRenderer = readFileSync(new URL("../../src/server/signatures/advance-directives-pdf.ts", import.meta.url), "utf8");
+const callback = readFileSync(new URL("../../src/app/api/signatures/vidaas/callback/route.ts", import.meta.url), "utf8");
+const directivesRoute = readFileSync(new URL("../../src/app/api/consultations/[id]/reports/advance-directives/signatures/vidaas/route.ts", import.meta.url), "utf8");
 
 test("VIDaaS usa OAuth PKCE single_signature com redirect registrado", () => {
   const pair = createPkcePair();
@@ -56,6 +60,7 @@ test("somente a verificação tokenizada é pública; APIs e PDF permanecem prot
   assert.equal(routeAccessFor({ pathname: "/verificar/token", authenticated: false }), "public");
   assert.equal(routeAccessFor({ pathname: "/api/signed-documents/id/pdf", authenticated: false }), "unauthorized-api");
   assert.equal(routeAccessFor({ pathname: "/api/signatures/vidaas/callback", authenticated: false }), "unauthorized-api");
+  assert.equal(routeAccessFor({ pathname: "/api/consultations/id/reports/advance-directives/signatures/vidaas", authenticated: false }), "unauthorized-api");
 });
 
 test("persistência da assinatura não possui biometria, senha, chave privada ou access token", () => {
@@ -79,14 +84,17 @@ test("credenciais VIDaaS podem ser bootstrapadas sem expor client_secret em text
   assert.match(client, /VIDAAS_PRODUCTION_BASE_URL/);
 });
 
-test("fluxo clínico exige revisão, finaliza e só então oferece impressão do PDF assinado", () => {
-  assert.match(panel, /Confirmo a revisão clínica final/);
+test("fluxo clínico exige revisão separada e oferece assinatura do relatório e das diretivas", () => {
+  assert.match(panel, /Confirmo a revisão clínica final do relatório/);
+  assert.match(panel, /Confirmo a revisão final das diretivas antecipadas/);
+  assert.match(panel, /reports\/advance-directives\/signatures\/vidaas/);
   assert.match(panel, /Finalizar e assinar com VIDaaS/);
-  assert.match(panel, /disabled=\{!reviewConfirmed \|\| loading\}/);
   assert.match(panel, /Abrir \/ imprimir PDF assinado/);
-  assert.match(pdfRenderer, /createValidationQrMatrix/);
-  assert.match(pdfRenderer, /não contém dados clínicos/);
-  assert.doesNotMatch(pdfRenderer, /googleapis|quickchart|api\.qrserver/i);
+  assert.match(service, /beginAdvanceDirectivesVidaasSignature/);
+  assert.match(service, /buildAdvanceDirectivesPdf/);
+  assert.match(service, /vidaas-single-signature:\$\{input\.documentKind\}/);
+  assert.match(callback, /signedDocumentKind/);
+  assert.match(directivesRoute, /ADVANCE_DIRECTIVES_NOT_AVAILABLE/);
 });
 
 test("PDF destinado ao VIDaaS usa o relatório visual estruturado, não a exportação textual", () => {
@@ -98,6 +106,41 @@ test("PDF destinado ao VIDaaS usa o relatório visual estruturado, não a export
   assert.doesNotMatch(pdfRenderer, /reportText/);
   assert.doesNotMatch(pdfRenderer, /TABELA FINAL DE MEDICAMENTOS/);
   assert.doesNotMatch(pdfRenderer, /medicationPlan\.plan/);
+});
+
+test("PDF das diretivas é um documento próprio com QR local e conteúdo da seção revisada", () => {
+  const pdf = buildAdvanceDirectivesPdf({
+    patientName: "Paciente Teste",
+    professionalIdentity: {
+      displayName: "Dra. Teste",
+      roleLabel: "Médica Geriatra",
+      registrationLine: "CRM-XX 123",
+      personalizedBrand: false,
+    },
+    verificationUrl: `https://prontuario.example.test/verificar/${"b".repeat(43)}`,
+    section: {
+      sourceConsultationId: "consulta-origem",
+      sourceConsultationDate: "2026-08-30T12:00:00.000Z",
+      version: 3,
+      participation: "Paciente e familiar participaram da conversa.",
+      whatMatters: "Permanecer em casa quando seguro e possível.",
+      dignityAndComfort: "Priorizar conforto e dignidade.",
+      priorities: ["Alívio de sintomas e conforto", "Permanecer perto de pessoas importantes"],
+      topics: [{ code: "cpr", title: "Reanimação cardiopulmonar", status: "Não realizar" }],
+      trustedPerson: { name: "Pessoa de confiança", relation: "Filha" },
+      documentStatus: "Não possui",
+      reviewTrigger: "Quando a pessoa desejar ou o quadro mudar",
+      history: [],
+    },
+  });
+  assert.equal(pdf.subarray(0, 5).toString("ascii"), "%PDF-");
+  const source = pdf.toString("latin1");
+  assert.match(source, /Diretivas antecipadas/);
+  assert.match(source, /Paciente Teste/);
+  assert.match(source, /Documento destinado/);
+  assert.match(directivesRenderer, /createValidationQrMatrix/);
+  assert.match(directivesRenderer, /não contém dados clínicos/);
+  assert.doesNotMatch(directivesRenderer, /googleapis|quickchart|api\.qrserver/i);
 });
 
 function vidaasPdfFixtures() {
