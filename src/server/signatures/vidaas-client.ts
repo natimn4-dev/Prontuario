@@ -2,6 +2,7 @@ import { createHash, randomBytes } from "node:crypto";
 
 const SHA256_OID = "2.16.840.1.101.3.4.2.1";
 const MAX_DOCUMENT_BYTES = 7 * 1024 * 1024;
+const MAX_BASE64_DOCUMENT_CHARS = Math.ceil(MAX_DOCUMENT_BYTES / 3) * 4 + 16_384;
 const ALLOWED_PADES_FORMATS = new Set(["PAdES_AD_RB", "PAdES_AD_RT"]);
 const VIDAAS_HML_BASE_URL = "https://hml-certificado.vidaas.com.br";
 const VIDAAS_PRODUCTION_BASE_URL = "https://certificado.vidaas.com.br";
@@ -169,6 +170,76 @@ export async function exchangeVidaasAuthorizationCode(input: {
   return accessToken;
 }
 
+function decodeBase64DocumentCandidate(value: string): Buffer | null {
+  let normalized = value.trim();
+  const dataUriPrefix = /^data:application\/pdf;base64,/i;
+  if (dataUriPrefix.test(normalized)) normalized = normalized.replace(dataUriPrefix, "");
+  normalized = normalized.replace(/\s+/g, "");
+  if (!normalized || normalized.length > MAX_BASE64_DOCUMENT_CHARS) return null;
+  if (!/^[A-Za-z0-9+/_-]+={0,2}$/.test(normalized)) return null;
+  try {
+    return Buffer.from(normalized, "base64");
+  } catch {
+    return null;
+  }
+}
+
+function isSignedPdfCandidate(candidate: Buffer, unsignedPdf: Buffer): boolean {
+  if (candidate.length <= unsignedPdf.length || candidate.equals(unsignedPdf)) return false;
+  const headerWindow = candidate.subarray(0, Math.min(candidate.length, 1024));
+  if (headerWindow.indexOf(Buffer.from("%PDF-", "ascii")) < 0) return false;
+  const eofWindow = candidate.subarray(Math.max(0, candidate.length - 2048));
+  if (eofWindow.indexOf(Buffer.from("%%EOF", "ascii")) < 0) return false;
+  if (candidate.indexOf(Buffer.from("/ByteRange", "ascii")) < 0) return false;
+  if (candidate.indexOf(Buffer.from("/Contents", "ascii")) < 0) return false;
+  return true;
+}
+
+function collectResponseStrings(value: unknown, depth = 0, output: string[] = []): string[] {
+  if (output.length >= 64 || depth > 3 || value === null || value === undefined) return output;
+  if (typeof value === "string") {
+    output.push(value);
+    return output;
+  }
+  if (Array.isArray(value)) {
+    for (const item of value) {
+      collectResponseStrings(item, depth + 1, output);
+      if (output.length >= 64) break;
+    }
+    return output;
+  }
+  if (typeof value === "object") {
+    for (const item of Object.values(value as Record<string, unknown>)) {
+      collectResponseStrings(item, depth + 1, output);
+      if (output.length >= 64) break;
+    }
+  }
+  return output;
+}
+
+export function extractSignedPdfFromVidaasPayload(payload: Record<string, unknown>, unsignedPdf: Buffer): Buffer {
+  const signatures = payload.signatures;
+  if (!Array.isArray(signatures) || !signatures[0] || typeof signatures[0] !== "object") {
+    throw new Error("VIDAAS_SIGNED_DOCUMENT_MISSING");
+  }
+
+  const candidates = collectResponseStrings({
+    signature: signatures[0],
+    base64_content: payload.base64_content,
+    signed_content: payload.signed_content,
+    signed_document: payload.signed_document,
+    document: payload.document,
+    content: payload.content,
+  });
+  if (candidates.length === 0) throw new Error("VIDAAS_SIGNED_DOCUMENT_MISSING");
+
+  for (const encoded of candidates) {
+    const decoded = decodeBase64DocumentCandidate(encoded);
+    if (decoded && isSignedPdfCandidate(decoded, unsignedPdf)) return decoded;
+  }
+  throw new Error("VIDAAS_SIGNED_DOCUMENT_INVALID");
+}
+
 export async function signPdfWithVidaas(input: {
   config: VidaasConfig;
   accessToken: string;
@@ -199,17 +270,7 @@ export async function signPdfWithVidaas(input: {
     cache: "no-store",
   });
   const payload = await parseJsonResponse(response, "SIGNATURE");
-  const signatures = payload.signatures;
-  if (!Array.isArray(signatures) || !signatures[0] || typeof signatures[0] !== "object") {
-    throw new Error("VIDAAS_SIGNED_DOCUMENT_MISSING");
-  }
-  const rawSignature = (signatures[0] as Record<string, unknown>).raw_signature;
-  if (typeof rawSignature !== "string" || !rawSignature) throw new Error("VIDAAS_SIGNED_DOCUMENT_MISSING");
-
-  const signedPdf = Buffer.from(rawSignature.replace(/\r?\n/g, ""), "base64");
-  if (signedPdf.length < 5 || signedPdf.subarray(0, 5).toString("ascii") !== "%PDF-") {
-    throw new Error("VIDAAS_SIGNED_DOCUMENT_INVALID");
-  }
+  const signedPdf = extractSignedPdfFromVidaasPayload(payload, input.pdf);
   const certificateAlias = typeof payload.certificate_alias === "string" ? payload.certificate_alias : undefined;
   return { signedPdf, certificateAlias };
 }
