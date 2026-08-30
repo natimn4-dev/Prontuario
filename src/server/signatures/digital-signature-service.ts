@@ -1,6 +1,8 @@
 import { randomBytes, randomUUID } from "node:crypto";
 import { buildProfessionalIdentity } from "@/domain/professional-identity";
+import type { AgaAdvanceDirectivesReportSection } from "@/domain/report-overview";
 import { prisma } from "@/server/db";
+import { buildAdvanceDirectivesPdf } from "./advance-directives-pdf";
 import { buildAgaReportPdf, type AgaSignedReportModel } from "./report-pdf";
 import {
   buildVidaasAuthorizationUrl,
@@ -13,6 +15,8 @@ import { getVidaasConfigForUser } from "./vidaas-credentials";
 
 const PENDING_LIFETIME_MS = 5 * 60 * 1000;
 
+export type VidaasSignatureDocumentKind = "aga" | "advance-directives";
+
 type SigningUser = {
   id: string;
   name: string;
@@ -22,6 +26,10 @@ type SigningUser = {
 
 type SnapshotContent = {
   report?: unknown;
+};
+
+type StructuredSignedReport = AgaSignedReportModel & {
+  advanceDirectives?: AgaAdvanceDirectivesReportSection;
 };
 
 function appUrl(): string {
@@ -38,7 +46,7 @@ function requireStructuredReport(
   content: unknown,
   expectedPatientId: string,
   expectedConsultationId: string,
-): AgaSignedReportModel {
+): StructuredSignedReport {
   if (!isRecord(content)) throw new Error("REPORT_SNAPSHOT_INVALID");
   const report = (content as SnapshotContent).report;
   if (!isRecord(report)) throw new Error("REPORT_SNAPSHOT_INVALID");
@@ -56,17 +64,40 @@ function requireStructuredReport(
   if (!isRecord(report.vaccinationPrevention) || !isRecord(report.safetyGuidance) || !isRecord(report.medicationPlan)) {
     throw new Error("REPORT_SNAPSHOT_INVALID");
   }
-  return report as unknown as AgaSignedReportModel;
+  return report as unknown as StructuredSignedReport;
 }
 
-function signatureState(signatureId: string): string {
-  return `${signatureId}.${randomBytes(24).toString("base64url")}`;
+function requireAdvanceDirectives(report: StructuredSignedReport): AgaAdvanceDirectivesReportSection {
+  const section = report.advanceDirectives;
+  if (!section || !isRecord(section)) throw new Error("ADVANCE_DIRECTIVES_NOT_AVAILABLE");
+  if (
+    typeof section.sourceConsultationId !== "string"
+    || typeof section.sourceConsultationDate !== "string"
+    || typeof section.version !== "number"
+    || !Array.isArray(section.priorities)
+    || !Array.isArray(section.topics)
+    || !Array.isArray(section.history)
+    || typeof section.reviewTrigger !== "string"
+  ) {
+    throw new Error("ADVANCE_DIRECTIVES_SNAPSHOT_INVALID");
+  }
+  return section as unknown as AgaAdvanceDirectivesReportSection;
 }
 
-export async function beginAgaVidaasSignature(input: {
+function signatureState(signatureId: string, documentKind: VidaasSignatureDocumentKind): string {
+  return `${signatureId}.${documentKind}.${randomBytes(24).toString("base64url")}`;
+}
+
+function documentKindFromState(state: string): VidaasSignatureDocumentKind {
+  const part = state.split(".")[1];
+  return part === "advance-directives" ? "advance-directives" : "aga";
+}
+
+async function beginVidaasSignature(input: {
   consultationId: string;
   snapshotId: string;
   user: SigningUser;
+  documentKind: VidaasSignatureDocumentKind;
 }) {
   const snapshot = await prisma.documentSnapshot.findFirst({
     where: {
@@ -89,7 +120,7 @@ export async function beginAgaVidaasSignature(input: {
   const verificationToken = randomBytes(32).toString("base64url");
   const verificationUrl = `${appUrl()}/verificar/${verificationToken}`;
   const id = randomUUID();
-  const state = signatureState(id);
+  const state = signatureState(id, input.documentKind);
   const pkce = createPkcePair();
   const professionalIdentity = buildProfessionalIdentity({
     name: input.user.name,
@@ -97,12 +128,19 @@ export async function beginAgaVidaasSignature(input: {
     brandOwnerEmail: process.env.PROFESSIONAL_BRAND_OWNER_EMAIL,
   });
   const report = requireStructuredReport(snapshot.content, snapshot.patientId, snapshot.consultationId);
-  const pdf = buildAgaReportPdf({
-    report,
-    professionalIdentity,
-    verificationUrl,
-    snapshotVersion: snapshot.version,
-  });
+  const pdf = input.documentKind === "advance-directives"
+    ? buildAdvanceDirectivesPdf({
+        section: requireAdvanceDirectives(report),
+        patientName: report.patientName,
+        professionalIdentity,
+        verificationUrl,
+      })
+    : buildAgaReportPdf({
+        report,
+        professionalIdentity,
+        verificationUrl,
+        snapshotVersion: snapshot.version,
+      });
   const expiresAt = new Date(Date.now() + PENDING_LIFETIME_MS);
 
   await prisma.$transaction(async (tx) => {
@@ -130,7 +168,7 @@ export async function beginAgaVidaasSignature(input: {
         entityId: id,
         action: "digital_signature.start",
         outcome: "success",
-        reasonCode: "vidaas-single-signature",
+        reasonCode: `vidaas-single-signature:${input.documentKind}`,
       },
     });
   });
@@ -143,6 +181,22 @@ export async function beginAgaVidaasSignature(input: {
   };
 }
 
+export async function beginAgaVidaasSignature(input: {
+  consultationId: string;
+  snapshotId: string;
+  user: SigningUser;
+}) {
+  return beginVidaasSignature({ ...input, documentKind: "aga" });
+}
+
+export async function beginAdvanceDirectivesVidaasSignature(input: {
+  consultationId: string;
+  snapshotId: string;
+  user: SigningUser;
+}) {
+  return beginVidaasSignature({ ...input, documentKind: "advance-directives" });
+}
+
 export async function completeAgaVidaasSignature(input: {
   code: string;
   state: string;
@@ -151,6 +205,7 @@ export async function completeAgaVidaasSignature(input: {
 }) {
   const signatureId = input.state.split(".", 1)[0];
   if (!signatureId) throw new Error("VIDAAS_STATE_INVALID");
+  const documentKind = documentKindFromState(input.state);
 
   const record = await prisma.digitalSignature.findFirst({
     where: {
@@ -204,12 +259,12 @@ export async function completeAgaVidaasSignature(input: {
           entityId: record.id,
           action: "digital_signature.complete",
           outcome: "success",
-          reasonCode: record.signatureFormat,
+          reasonCode: `${record.signatureFormat}:${documentKind}`,
         },
       });
     });
 
-    return { signatureId: record.id, consultationId: record.consultationId };
+    return { signatureId: record.id, consultationId: record.consultationId, documentKind };
   } catch (error) {
     const errorCode = error instanceof Error ? error.message.slice(0, 180) : "VIDAAS_SIGNATURE_FAILED";
     await prisma.$transaction(async (tx) => {
