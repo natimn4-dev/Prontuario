@@ -1,6 +1,6 @@
 import type { ProfessionalIdentity } from "@/domain/professional-identity";
 import type { AgaAdvanceDirectivesReportSection } from "@/domain/report-overview";
-import { createValidationQrMatrix } from "./validation-qr";
+import { createValidationQrMatrix } from "./validation-qr.ts";
 
 const A4_WIDTH = 595;
 const A4_HEIGHT = 842;
