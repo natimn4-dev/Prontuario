@@ -83,6 +83,7 @@ model User {
   documents     DocumentSnapshot[] @relation("FinalizedDocuments")
   generatedDocuments DocumentSnapshot[] @relation("GeneratedDocuments")
   digitalSignatures DigitalSignature[]
+  integrationCredentials ExternalIntegrationCredential[]
   auditEvents   AuditEvent[]
   advanceDirectiveRecords AdvanceDirectiveRecord[]
   sessions      Session[]
@@ -462,6 +463,18 @@ model DigitalSignature {
   @@index([sourceSnapshotId])
   @@index([createdById, createdAt])
   @@index([status, expiresAt])
+}
+
+model ExternalIntegrationCredential {
+  id               String   @id @default(cuid())
+  provider         String   @unique
+  encryptedPayload String   @db.LongText
+  createdById      String
+  createdBy        User     @relation(fields: [createdById], references: [id], onDelete: Restrict)
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  @@index([createdById, createdAt])
 }
 
 model AuditEvent {
