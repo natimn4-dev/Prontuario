@@ -23,6 +23,8 @@ export class Program55Error extends Error {
 }
 
 type WorkflowStatus = "NOT_STARTED" | "IN_PROGRESS" | "COMPLETED" | "REVIEWED";
+type SafeJsonValue = string | number | boolean | null | SafeJsonObject | SafeJsonValue[];
+type SafeJsonObject = { [key: string]: SafeJsonValue };
 
 function finiteOrNull(value: unknown, field: string): number | null {
   if (value === null || value === undefined || value === "") return null;
@@ -48,12 +50,40 @@ function safeDate(value: unknown, fallback = new Date()): Date {
   return parsed;
 }
 
-function safeObject(value: unknown): Record<string, unknown> | undefined {
+function safeJsonValue(value: unknown, depth = 0): SafeJsonValue {
+  if (depth > 20) {
+    throw new Program55Error("INVALID_STRUCTURED_DATA", "Dados estruturados excedem a profundidade permitida.");
+  }
+  if (value === null) return null;
+  if (typeof value === "string" || typeof value === "boolean") return value;
+  if (typeof value === "number") {
+    if (!Number.isFinite(value)) {
+      throw new Program55Error("INVALID_STRUCTURED_DATA", "Dados estruturados contêm número inválido.");
+    }
+    return value;
+  }
+  if (Array.isArray(value)) return value.map((item) => safeJsonValue(item, depth + 1));
+  if (typeof value === "object") {
+    const prototype = Object.getPrototypeOf(value);
+    if (prototype !== Object.prototype && prototype !== null) {
+      throw new Program55Error("INVALID_STRUCTURED_DATA", "Dados estruturados precisam usar objetos JSON simples.");
+    }
+    const normalized: SafeJsonObject = {};
+    for (const [key, item] of Object.entries(value as Record<string, unknown>)) {
+      if (item === undefined) continue;
+      normalized[key] = safeJsonValue(item, depth + 1);
+    }
+    return normalized;
+  }
+  throw new Program55Error("INVALID_STRUCTURED_DATA", "Dados estruturados contêm valor não suportado.");
+}
+
+function safeObject(value: unknown): SafeJsonObject | undefined {
   if (value === null || value === undefined) return undefined;
   if (typeof value !== "object" || Array.isArray(value)) {
     throw new Program55Error("INVALID_STRUCTURED_DATA", "Dados estruturados inválidos.");
   }
-  return value as Record<string, unknown>;
+  return safeJsonValue(value) as SafeJsonObject;
 }
 
 async function authenticatedActor() {
