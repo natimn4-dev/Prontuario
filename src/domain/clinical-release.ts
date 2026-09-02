@@ -1,1 +1,1 @@
-export const CLINICAL_RELEASE_ID = "2026-08-31-three-physician-auth-resilience-v2" as const;
+export const CLINICAL_RELEASE_ID = "2026-09-02-program55-readonly-v1" as const;
