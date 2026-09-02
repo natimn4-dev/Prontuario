@@ -9,6 +9,7 @@ import {
   saveProgram55RestrictedPsychologyNote,
   startProgram55,
 } from "@/server/program55/service";
+import { updateProgram55CheckpointStatus, updateProgram55GoalStatus } from "@/server/program55/workflow";
 
 const DISCIPLINES = new Set<Program55Discipline>(["PHYSICIAN", "PHYSIOTHERAPY", "NUTRITION", "PSYCHOLOGY"]);
 
@@ -28,6 +29,15 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
     if (action === "START") {
       const result = await startProgram55(patientId, typeof body.startedAt === "string" ? body.startedAt : null);
       return NextResponse.json(result, { status: result.created ? 201 : 200 });
+    }
+
+    if (action === "CHECKPOINT_STATUS") {
+      const result = await updateProgram55CheckpointStatus(
+        patientId,
+        String(body.checkpointId ?? ""),
+        String(body.status ?? "") as "NOT_STARTED" | "IN_PROGRESS" | "COMPLETED" | "REVIEWED",
+      );
+      return NextResponse.json(result, { status: 200 });
     }
 
     if (action === "BODY_COMPOSITION") {
@@ -83,6 +93,15 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
         notes: body.notes,
       });
       return NextResponse.json(result, { status: 201 });
+    }
+
+    if (action === "GOAL_STATUS") {
+      const result = await updateProgram55GoalStatus(
+        patientId,
+        String(body.goalId ?? ""),
+        String(body.status ?? "") as "ACTIVE" | "ACHIEVED" | "PAUSED" | "CANCELLED",
+      );
+      return NextResponse.json(result, { status: 200 });
     }
 
     if (action === "MEMBERSHIP") {
