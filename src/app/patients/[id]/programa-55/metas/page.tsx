@@ -1,6 +1,7 @@
 import { notFound } from "next/navigation";
 import { GoalForm } from "@/components/program55/program55-forms";
 import { Program55Nav } from "@/components/program55/program55-nav";
+import { GoalStatusActions } from "@/components/program55/program55-workflow-actions";
 import { canWriteProgram55SharedData, type ExistingUserRole, type Program55Discipline } from "@/domain/program55/access";
 import { program55CheckpointLabel } from "@/domain/program55/checkpoints";
 import { isProgram55Eligible } from "@/domain/program55/eligibility";
@@ -42,7 +43,7 @@ export default async function Program55GoalsPage({ params }: { params: Promise<{
 
       <section className="panel" style={{ marginTop: 24 }} aria-labelledby="goals-list-title">
         <div className="section-heading"><div><p className="eyebrow">Objetivos pactuados</p><h2 id="goals-list-title">Metas registradas</h2></div><span className="muted">Status operacional</span></div>
-        {enrollment.goals.length ? <div className="grid">{enrollment.goals.map((goal) => <article className="card" key={goal.id}><p className="eyebrow">{goal.domain}</p><h2>{goal.objective}</h2><p><strong>{statusLabel[goal.status] ?? goal.status}</strong>{goal.dueDate ? ` · prazo ${date(goal.dueDate)}` : ""}</p><dl><dt className="muted">Indicador</dt><dd>{goal.indicator ?? "—"}</dd><dt className="muted">Baseline</dt><dd>{goal.baselineValue ?? "—"}</dd><dt className="muted">Meta</dt><dd>{goal.targetValue ?? "—"}</dd><dt className="muted">Responsável</dt><dd>{goal.responsibleDiscipline ? disciplineLabel[goal.responsibleDiscipline] : "Equipe"}</dd></dl>{goal.notes ? <p>{goal.notes}</p> : null}<p className="muted">Registrado por {goal.createdBy.name} em {date(goal.createdAt)}</p></article>)}</div> : <p className="muted">Nenhuma meta registrada.</p>}
+        {enrollment.goals.length ? <div className="grid">{enrollment.goals.map((goal) => <article className="card" key={goal.id}><p className="eyebrow">{goal.domain}</p><h2>{goal.objective}</h2><p><strong>{statusLabel[goal.status] ?? goal.status}</strong>{goal.dueDate ? ` · prazo ${date(goal.dueDate)}` : ""}</p><dl><dt className="muted">Indicador</dt><dd>{goal.indicator ?? "—"}</dd><dt className="muted">Baseline</dt><dd>{goal.baselineValue ?? "—"}</dd><dt className="muted">Meta</dt><dd>{goal.targetValue ?? "—"}</dd><dt className="muted">Responsável</dt><dd>{goal.responsibleDiscipline ? disciplineLabel[goal.responsibleDiscipline] : "Equipe"}</dd></dl>{goal.notes ? <p>{goal.notes}</p> : null}<p className="muted">Registrado por {goal.createdBy.name} em {date(goal.createdAt)}</p>{canWrite ? <GoalStatusActions patientId={patient.id} goalId={goal.id} status={goal.status} /> : null}</article>)}</div> : <p className="muted">Nenhuma meta registrada.</p>}
       </section>
     </main>
   );
