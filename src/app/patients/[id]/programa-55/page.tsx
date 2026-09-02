@@ -1,6 +1,7 @@
 import { notFound } from "next/navigation";
 import { StartProgram55Button } from "@/components/program55/program55-forms";
 import { Program55Nav } from "@/components/program55/program55-nav";
+import { CheckpointStatusActions } from "@/components/program55/program55-workflow-actions";
 import { program55CheckpointLabel } from "@/domain/program55/checkpoints";
 import { isProgram55Eligible } from "@/domain/program55/eligibility";
 import { isProgram55Enabled } from "@/domain/program55/feature";
@@ -71,6 +72,7 @@ export default async function Program55Page({ params }: { params: Promise<{ id: 
 
   if (!patient || !isProgram55Eligible(patient.birthDate)) notFound();
   const enrollment = patient.program55Enrollment;
+  const canManageCycle = user.role === "ADMIN" || user.role === "PHYSICIAN";
   const nextCheckpoint = enrollment?.checkpoints.find((checkpoint) => checkpoint.status !== "REVIEWED") ?? enrollment?.checkpoints.at(-1);
   const latestAssessmentByDiscipline = new Map<string, { status: string; updatedAt: Date }>();
   for (const checkpoint of enrollment?.checkpoints ?? []) {
@@ -95,7 +97,7 @@ export default async function Program55Page({ params }: { params: Promise<{ id: 
           <p className="eyebrow">Entrada no programa</p>
           <h2 id="program55-start-title">Iniciar ciclo longitudinal</h2>
           <p>Serão criados, de forma aditiva, os checkpoints Baseline, 90 dias, 180 dias e 12 meses. Nenhuma consulta, escala ou documento existente será duplicado.</p>
-          <StartProgram55Button patientId={patient.id} />
+          {canManageCycle ? <StartProgram55Button patientId={patient.id} /> : <p className="muted">Somente a coordenação médica autorizada pode iniciar o ciclo.</p>}
         </section>
       ) : (
         <>
@@ -103,18 +105,19 @@ export default async function Program55Page({ params }: { params: Promise<{ id: 
             <article><strong>{formatDate(enrollment.startedAt)}</strong><span>baseline do programa</span></article>
             <article><strong>{nextCheckpoint ? program55CheckpointLabel(nextCheckpoint.checkpointType) : "—"}</strong><span>próximo checkpoint · {formatDate(nextCheckpoint?.referenceDate)}</span></article>
             <article><strong>{enrollment.goals.length}</strong><span>metas ativas</span></article>
-            <article><strong>{enrollment.memberships.length + (enrollment.coordinatingPhysician ? 1 : 0)}</strong><span>participações registradas</span></article>
+            <article><strong>{enrollment.memberships.length}</strong><span>participações registradas</span></article>
           </section>
 
           <section className="panel" aria-labelledby="program55-cycle-title">
             <div className="section-heading"><div><p className="eyebrow">Ciclo longitudinal</p><h2 id="program55-cycle-title">Checkpoints</h2></div><span className="muted">Status operacional, não classificação clínica</span></div>
-            <div className="grid" style={{ gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))" }}>
+            <div className="grid" style={{ gridTemplateColumns: "repeat(auto-fit, minmax(190px, 1fr))" }}>
               {enrollment.checkpoints.map((checkpoint) => (
                 <article className="card" key={checkpoint.id}>
                   <h2>{program55CheckpointLabel(checkpoint.checkpointType)}</h2>
                   <p><strong>{formatDate(checkpoint.referenceDate)}</strong></p>
                   <p className="muted">{workflowLabel[checkpoint.status] ?? checkpoint.status}</p>
                   <p className="muted">Composição corporal: {checkpoint.bodyComposition.length ? "registrada" : "pendente"}</p>
+                  {canManageCycle ? <CheckpointStatusActions patientId={patient.id} checkpointId={checkpoint.id} status={checkpoint.status} /> : null}
                 </article>
               ))}
             </div>
