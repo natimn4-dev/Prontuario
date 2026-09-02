@@ -9,12 +9,14 @@ import {
 } from "@/domain/capacity-dimension-history";
 import { isProblemLogicalDeletionNote } from "@/domain/as-of-consultation";
 import type { ClinicalProblem } from "@/domain/problems";
+import { isProgram55Enabled } from "@/domain/program55/feature";
 import { requireAuthenticatedUser } from "@/server/auth/require-user";
 import { prisma } from "@/server/db";
 
 export default async function PatientPage({ params }: { params: Promise<{ id: string }> }) {
   await requireAuthenticatedUser("patient.read");
   const { id } = await params;
+  const program55Enabled = isProgram55Enabled(process.env.FEATURE_PROGRAM_55);
   const patient = await prisma.patient.findUnique({
     where: { id },
     select: {
@@ -153,10 +155,13 @@ export default async function PatientPage({ params }: { params: Promise<{ id: st
       <section className="panel">
         <div className="section-heading">
           <h2>Consultas</h2>
-          <CreateConsultationButton
-            patientId={patient.id}
-            baselineConsultationId={patient.baselineConsultationId}
-          />
+          <div className="no-print" style={{ display: "flex", alignItems: "center", justifyContent: "flex-end", gap: 14, flexWrap: "wrap" }}>
+            {program55Enabled ? <a href={`/patients/${patient.id}/programa-55`}>Programa 55+</a> : null}
+            <CreateConsultationButton
+              patientId={patient.id}
+              baselineConsultationId={patient.baselineConsultationId}
+            />
+          </div>
         </div>
         {patient.consultations.length ? (
           <ul className="clean-list">
