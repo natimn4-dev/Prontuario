@@ -48,8 +48,8 @@ function safeDate(value: unknown, fallback = new Date()): Date {
   return parsed;
 }
 
-function safeObject(value: unknown): Record<string, unknown> | null {
-  if (value === null || value === undefined) return null;
+function safeObject(value: unknown): Record<string, unknown> | undefined {
+  if (value === null || value === undefined) return undefined;
   if (typeof value !== "object" || Array.isArray(value)) {
     throw new Program55Error("INVALID_STRUCTURED_DATA", "Dados estruturados inválidos.");
   }
