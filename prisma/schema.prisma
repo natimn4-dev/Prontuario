@@ -71,6 +71,41 @@ enum PatientIdentifierType {
   OTHER
 }
 
+enum Program55EnrollmentStatus {
+  ACTIVE
+  COMPLETED
+  ENDED
+}
+
+enum Program55CheckpointType {
+  BASELINE
+  DAY_90
+  DAY_180
+  YEAR_1
+  CUSTOM
+}
+
+enum Program55WorkflowStatus {
+  NOT_STARTED
+  IN_PROGRESS
+  COMPLETED
+  REVIEWED
+}
+
+enum Program55ProfessionalDiscipline {
+  PHYSICIAN
+  PHYSIOTHERAPY
+  NUTRITION
+  PSYCHOLOGY
+}
+
+enum Program55GoalStatus {
+  ACTIVE
+  ACHIEVED
+  PAUSED
+  CANCELLED
+}
+
 model User {
   id            String         @id @default(cuid())
   email         String         @unique
@@ -86,11 +121,18 @@ model User {
   integrationCredentials ExternalIntegrationCredential[]
   auditEvents   AuditEvent[]
   advanceDirectiveRecords AdvanceDirectiveRecord[]
+  program55CoordinatedEnrollments Program55Enrollment[] @relation("Program55Coordinator")
+  program55Memberships Program55ProfessionalMembership[]
+  program55Assessments Program55ProfessionalAssessment[] @relation("Program55AssessmentAuthor")
+  program55BodyCompositionRecords Program55BodyComposition[] @relation("Program55BodyCompositionAuthor")
+  program55Goals Program55Goal[] @relation("Program55GoalAuthor")
+  program55RestrictedPsychologyNotes Program55RestrictedPsychologyNote[] @relation("Program55RestrictedNoteAuthor")
   sessions      Session[]
   accounts      Account[]
   createdAt     DateTime       @default(now())
   updatedAt     DateTime       @updatedAt
 }
+
 model Session {
   id        String   @id @default(cuid())
   userId    String
@@ -169,6 +211,12 @@ model Patient {
   digitalSignatures      DigitalSignature[]
   advanceDirectiveRecords AdvanceDirectiveRecord[]
   identifiers            PatientIdentifier[]
+  program55Enrollment    Program55Enrollment?
+  program55Checkpoints   Program55Checkpoint[]
+  program55BodyComposition Program55BodyComposition[]
+  program55ProfessionalAssessments Program55ProfessionalAssessment[]
+  program55Goals         Program55Goal[]
+  program55RestrictedPsychologyNotes Program55RestrictedPsychologyNote[]
   createdAt              DateTime            @default(now())
   updatedAt              DateTime            @updatedAt
 
@@ -212,6 +260,7 @@ model Consultation {
   documents         DocumentSnapshot[]
   digitalSignatures DigitalSignature[]
   advanceDirectiveRecords AdvanceDirectiveRecord[]
+  program55Checkpoints Program55Checkpoint[] @relation("Program55CoordinatingConsultation")
   createdAt         DateTime            @default(now())
   updatedAt         DateTime            @updatedAt
 
@@ -492,4 +541,158 @@ model AuditEvent {
   @@index([entityType, entityId, createdAt])
   @@index([userId, createdAt])
   @@index([requestId])
+}
+
+model Program55Enrollment {
+  id                      String                    @id @default(cuid())
+  patientId               String                    @unique
+  status                  Program55EnrollmentStatus @default(ACTIVE)
+  startedAt               DateTime
+  endedAt                 DateTime?
+  coordinatingPhysicianId String?
+  patient                 Patient                   @relation(fields: [patientId], references: [id], onDelete: Restrict)
+  coordinatingPhysician   User?                     @relation("Program55Coordinator", fields: [coordinatingPhysicianId], references: [id], onDelete: SetNull)
+  checkpoints             Program55Checkpoint[]
+  goals                   Program55Goal[]
+  memberships             Program55ProfessionalMembership[]
+  createdAt               DateTime                  @default(now())
+  updatedAt               DateTime                  @updatedAt
+
+  @@index([status, startedAt])
+  @@index([coordinatingPhysicianId])
+}
+
+model Program55Checkpoint {
+  id                       String                   @id @default(cuid())
+  enrollmentId             String
+  patientId                String
+  checkpointType           Program55CheckpointType
+  referenceDate            DateTime
+  status                   Program55WorkflowStatus @default(NOT_STARTED)
+  coordinatingConsultationId String?
+  enrollment               Program55Enrollment      @relation(fields: [enrollmentId], references: [id], onDelete: Restrict)
+  patient                  Patient                  @relation(fields: [patientId], references: [id], onDelete: Restrict)
+  coordinatingConsultation Consultation?            @relation("Program55CoordinatingConsultation", fields: [coordinatingConsultationId, patientId], references: [id, patientId], onDelete: Restrict)
+  bodyComposition          Program55BodyComposition[]
+  professionalAssessments  Program55ProfessionalAssessment[]
+  goals                    Program55Goal[]
+  createdAt                DateTime                 @default(now())
+  updatedAt                DateTime                 @updatedAt
+
+  @@unique([enrollmentId, checkpointType, referenceDate])
+  @@index([patientId, referenceDate])
+  @@index([status, referenceDate])
+  @@index([coordinatingConsultationId, patientId])
+}
+
+model Program55ProfessionalMembership {
+  id           String                          @id @default(cuid())
+  enrollmentId String
+  userId       String
+  discipline   Program55ProfessionalDiscipline
+  active       Boolean                         @default(true)
+  enrollment   Program55Enrollment             @relation(fields: [enrollmentId], references: [id], onDelete: Restrict)
+  user         User                            @relation(fields: [userId], references: [id], onDelete: Restrict)
+  createdAt    DateTime                        @default(now())
+  updatedAt    DateTime                        @updatedAt
+
+  @@unique([enrollmentId, userId, discipline])
+  @@index([userId, active])
+  @@index([enrollmentId, discipline, active])
+}
+
+model Program55BodyComposition {
+  id               String    @id @default(cuid())
+  checkpointId     String
+  patientId        String
+  measuredAt       DateTime
+  weightKg         Decimal?  @db.Decimal(7, 2)
+  heightCm         Decimal?  @db.Decimal(6, 2)
+  bmi              Decimal?  @db.Decimal(6, 2)
+  waistCm          Decimal?  @db.Decimal(6, 2)
+  bodyFatPercent   Decimal?  @db.Decimal(6, 2)
+  fatMassKg        Decimal?  @db.Decimal(7, 2)
+  fatFreeMassKg    Decimal?  @db.Decimal(7, 2)
+  muscleMassKg     Decimal?  @db.Decimal(7, 2)
+  additionalMetrics Json?
+  sourceLabel      String?
+  deviceLabel      String?
+  notes            String?   @db.Text
+  createdById      String
+  checkpoint       Program55Checkpoint @relation(fields: [checkpointId], references: [id], onDelete: Restrict)
+  patient          Patient   @relation(fields: [patientId], references: [id], onDelete: Restrict)
+  createdBy        User      @relation("Program55BodyCompositionAuthor", fields: [createdById], references: [id], onDelete: Restrict)
+  createdAt        DateTime  @default(now())
+  updatedAt        DateTime  @updatedAt
+
+  @@index([checkpointId, measuredAt])
+  @@index([patientId, measuredAt])
+  @@index([createdById, createdAt])
+}
+
+model Program55ProfessionalAssessment {
+  id             String                          @id @default(cuid())
+  checkpointId   String
+  patientId      String
+  discipline     Program55ProfessionalDiscipline
+  status         Program55WorkflowStatus         @default(IN_PROGRESS)
+  structuredData Json?
+  sharedSummary  String?                         @db.Text
+  authorUserId   String
+  assessedAt     DateTime                        @default(now())
+  checkpoint     Program55Checkpoint             @relation(fields: [checkpointId], references: [id], onDelete: Restrict)
+  patient        Patient                         @relation(fields: [patientId], references: [id], onDelete: Restrict)
+  author         User                            @relation("Program55AssessmentAuthor", fields: [authorUserId], references: [id], onDelete: Restrict)
+  restrictedPsychologyNote Program55RestrictedPsychologyNote?
+  createdAt      DateTime                        @default(now())
+  updatedAt      DateTime                        @updatedAt
+
+  @@unique([checkpointId, discipline])
+  @@index([patientId, assessedAt])
+  @@index([authorUserId, assessedAt])
+  @@index([discipline, status])
+}
+
+model Program55RestrictedPsychologyNote {
+  id             String   @id @default(cuid())
+  assessmentId   String   @unique
+  patientId      String
+  authorUserId   String
+  content        String   @db.LongText
+  assessment     Program55ProfessionalAssessment @relation(fields: [assessmentId], references: [id], onDelete: Restrict)
+  patient        Patient  @relation(fields: [patientId], references: [id], onDelete: Restrict)
+  author         User     @relation("Program55RestrictedNoteAuthor", fields: [authorUserId], references: [id], onDelete: Restrict)
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  @@index([patientId, createdAt])
+  @@index([authorUserId, createdAt])
+}
+
+model Program55Goal {
+  id                    String                          @id @default(cuid())
+  enrollmentId          String
+  checkpointId          String?
+  patientId             String
+  domain                String
+  objective             String                          @db.Text
+  indicator             String?
+  baselineValue         String?
+  targetValue           String?
+  dueDate               DateTime?
+  status                Program55GoalStatus             @default(ACTIVE)
+  responsibleDiscipline Program55ProfessionalDiscipline?
+  notes                 String?                         @db.Text
+  createdById           String
+  enrollment            Program55Enrollment             @relation(fields: [enrollmentId], references: [id], onDelete: Restrict)
+  checkpoint            Program55Checkpoint?            @relation(fields: [checkpointId], references: [id], onDelete: Restrict)
+  patient               Patient                         @relation(fields: [patientId], references: [id], onDelete: Restrict)
+  createdBy             User                            @relation("Program55GoalAuthor", fields: [createdById], references: [id], onDelete: Restrict)
+  createdAt             DateTime                        @default(now())
+  updatedAt             DateTime                        @updatedAt
+
+  @@index([enrollmentId, status, dueDate])
+  @@index([patientId, createdAt])
+  @@index([checkpointId])
+  @@index([createdById, createdAt])
 }
