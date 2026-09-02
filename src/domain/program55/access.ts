@@ -20,8 +20,7 @@ export function canWriteProgram55Discipline(
   actor: Program55ActorAccess,
   discipline: Program55Discipline,
 ): boolean {
-  if (actor.role === "ADMIN") return true;
-  if (actor.role === "PHYSICIAN" && discipline === "PHYSICIAN") return true;
+  if ((actor.role === "ADMIN" || actor.role === "PHYSICIAN") && discipline === "PHYSICIAN") return true;
   return actor.memberships.some((membership) => membership.active && membership.discipline === discipline);
 }
 
@@ -38,5 +37,5 @@ export function canReadRestrictedPsychologyNote(
 }
 
 export function canWriteRestrictedPsychologyNote(actor: Program55ActorAccess): boolean {
-  return canWriteProgram55Discipline(actor, "PSYCHOLOGY");
+  return actor.memberships.some((membership) => membership.active && membership.discipline === "PSYCHOLOGY");
 }
