@@ -108,6 +108,17 @@ const ASSESSMENT_FIELDS: Record<Program55Discipline, readonly [string, string][]
   NUTRITION: [
     ["nutritionAssessment", "Avaliação nutricional"], ["foodPattern", "Alimentação"], ["proteinIntake", "Ingestão proteica quando registrada"],
     ["hydration", "Hidratação"], ["anthropometry", "Antropometria"], ["nutritionGoals", "Objetivos nutricionais"],
+    ["bioimpedanceFat", "Bioimpedância — Gordura"],
+    ["bioimpedanceLeanMuscleMass", "Bioimpedância — Massa magra e muscular"],
+    ["bioimpedanceMuscleFatRatio", "Bioimpedância — Razão músculo-gordura"],
+    ["bioimpedanceHydration", "Bioimpedância — Hidratação"],
+    ["bioimpedanceIntraExtracellularWater", "Bioimpedância — Água intra e extracelular"],
+    ["bioimpedanceBmiBmr", "Bioimpedância — IMC e TMB"],
+    ["bioimpedanceCellAnalysisPhaseAngle", "Bioimpedância — Análise celular e ângulo de fase"],
+    ["handgripStrengthBilateral", "Avaliação muscular — Força de preensão manual bilateral"],
+    ["immet", "Avaliação muscular — IMMET"],
+    ["muscleFollowUp", "Avaliação muscular — Acompanhamento"],
+    ["sarcopenia", "Avaliação muscular — Sarcopenia"],
     ["glimClinicianConclusion", "GLIM — conclusão registrada pelo profissional (sem cálculo automático)"],
   ],
   PSYCHOLOGY: [
@@ -140,6 +151,12 @@ export function ProfessionalAssessmentForm({ patientId, checkpointId, discipline
   }
   return (
     <form className="patient-form" onSubmit={submit}>
+      {discipline === "NUTRITION" ? (
+        <div className="notice">
+          <strong>Bioimpedância e avaliação muscular</strong>
+          <span>Registrar os valores, classificações e observações exatamente como fornecidos pelo equipamento ou laudo. O prontuário não interpreta automaticamente métricas proprietárias não documentadas.</span>
+        </div>
+      ) : null}
       {ASSESSMENT_FIELDS[discipline].map(([key, label]) => (
         <label key={key}>{label}<textarea name={key} rows={2} defaultValue={typeof initialData[key] === "string" ? String(initialData[key]) : ""} /></label>
       ))}
