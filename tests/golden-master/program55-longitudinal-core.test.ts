@@ -63,8 +63,8 @@ test("nota restrita de psicologia só é acessível ao autor ou psicologia autor
 test("migration do núcleo 55+ é aditiva e não altera tabelas clínicas existentes", () => {
   const migration = readFileSync("prisma/migrations/20260902192000_program55_longitudinal_core/migration.sql", "utf8");
   for (const table of ["User", "Patient", "Consultation", "ScaleAssessment", "Medication", "DocumentSnapshot", "AuditEvent"]) {
-    assert.doesNotMatch(migration, new RegExp(`ALTER TABLE \\`${table}\\``));
-    assert.doesNotMatch(migration, new RegExp(`DROP TABLE \\`${table}\\``));
+    assert.doesNotMatch(migration, new RegExp("ALTER TABLE `" + table + "`"));
+    assert.doesNotMatch(migration, new RegExp("DROP TABLE `" + table + "`"));
   }
   assert.match(migration, /CREATE TABLE `Program55Enrollment`/);
   assert.match(migration, /CREATE TABLE `Program55Checkpoint`/);
