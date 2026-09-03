@@ -29,6 +29,15 @@ export const SOURCE_PROVENANCE: Record<string, ClinicalSourceProvenance> = {
     note:
       "A publicação original sustenta a ISI como instrumento breve de rastreio/quantificação, e a validação brasileira de 2011 avaliou a versão em português em amostra adulta da cidade de São Paulo. As quatro faixas 0-7, 8-14, 15-21 e 22-28 são preservadas como referência operacional; o software não deve convertê-las em diagnóstico. A redação literal dos sete itens e alternativas permanece fora do código até confirmação documental da versão brasileira autorizada e da licença eletrônica aplicável via Mapi Research Trust.",
   },
+  eat10: {
+    scaleId: "eat10",
+    status: "confirmed-primary",
+    legacyVersion: "EAT-10-total-score-BR-2014-2023-v1",
+    primaryReference:
+      "Belafsky PC et al. Ann Otol Rhinol Laryngol. 2008;117(12):919-924. PMID 19140539; Gonçalves MIR et al. Codas. 2013/2014. PMID 24626972; Dantas RO et al. Dysphagia. 2023;38(6):1609-1614. PMID 37272949.",
+    note:
+      "A publicação original descreve o EAT-10 como instrumento de 10 itens, total 0-40, e sugere ≥3 como anormal. A adaptação cultural brasileira preservou a estrutura e o ponto de corte ≥3; estudo brasileiro de 2023 confirmou esse limiar para detectar disfagia autorreferida. O escore é rastreio e não confirma diagnóstico. O formulário literal permanece fora do código porque o EAT-10 é protegido por copyright e distribuído pela Mapi Research Trust em nome da Société des Produits Nestlé S.A.; a implementação eletrônica completa depende de confirmação documental das condições de uso e da versão brasileira autorizada.",
+  },
   ecog: {
     scaleId: "ecog",
     status: "confirmed-primary",
