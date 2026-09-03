@@ -1,7 +1,16 @@
 "use client";
 
 import { useState, type FormEvent } from "react";
+import { GlimAssessmentSection } from "@/components/program55/glim-assessment-section";
 import type { Program55Discipline } from "@/domain/program55/access";
+import {
+  evaluateGlim,
+  GLIM_IMPLEMENTATION_VERSION,
+  type GlimClinicianDecision,
+  type GlimTriState,
+  type GlimWeightLossPeriod,
+  type StoredGlimRecord,
+} from "@/domain/program55/glim";
 
 type SaveState = "idle" | "saving" | "saved" | "error";
 
@@ -119,7 +128,7 @@ const ASSESSMENT_FIELDS: Record<Program55Discipline, readonly [string, string][]
     ["immet", "Avaliação muscular — IMMET"],
     ["muscleFollowUp", "Avaliação muscular — Acompanhamento"],
     ["sarcopenia", "Avaliação muscular — Sarcopenia"],
-    ["glimClinicianConclusion", "GLIM — conclusão registrada pelo profissional (sem cálculo automático)"],
+    ["glimClinicianConclusion", "GLIM — observação clínica complementar / registro legado"],
   ],
   PSYCHOLOGY: [
     ["mood", "Humor"], ["anxiety", "Ansiedade quando avaliada"], ["healthPerception", "Percepção de saúde"],
@@ -127,19 +136,75 @@ const ASSESSMENT_FIELDS: Record<Program55Discipline, readonly [string, string][]
   ],
 };
 
-export function ProfessionalAssessmentForm({ patientId, checkpointId, discipline, initialSummary = "", initialData = {}, initialStatus = "IN_PROGRESS" }: {
+function formText(form: FormData, name: string): string | null {
+  return String(form.get(name) ?? "").trim() || null;
+}
+
+function formNumber(form: FormData, name: string): number | null {
+  const raw = formText(form, name);
+  if (raw === null) return null;
+  const parsed = Number(raw);
+  if (!Number.isFinite(parsed)) throw new Error(`Valor numérico inválido em ${name}.`);
+  return parsed;
+}
+
+function formTriState(form: FormData, name: string): GlimTriState {
+  const value = formText(form, name);
+  return value === "YES" || value === "NO" ? value : "NOT_ASSESSED";
+}
+
+function formWeightLossPeriod(form: FormData): GlimWeightLossPeriod {
+  const value = formText(form, "glimWeightLossPeriod");
+  return value === "WITHIN_6_MONTHS" || value === "BEYOND_6_MONTHS" ? value : "NOT_ASSESSED";
+}
+
+function formClinicianDecision(form: FormData): GlimClinicianDecision {
+  const value = formText(form, "glimClinicianDecision");
+  return value === "CONFIRMED" || value === "NOT_CONFIRMED" ? value : "PENDING";
+}
+
+function buildStoredGlimRecord(form: FormData, ageYears: number): StoredGlimRecord {
+  const weightLossPercent = formNumber(form, "glimWeightLossPercent");
+  const weightLossPeriod = formWeightLossPeriod(form);
+  const bmi = formNumber(form, "glimBmi");
+  const reducedMuscleMass = formTriState(form, "glimReducedMuscleMass");
+  const reducedFoodIntakeOrAssimilation = formTriState(form, "glimReducedFoodIntakeOrAssimilation");
+  const inflammationOrDiseaseBurden = formTriState(form, "glimInflammationOrDiseaseBurden");
+  const result = evaluateGlim({ ageYears, weightLossPercent, weightLossPeriod, bmi, reducedMuscleMass, reducedFoodIntakeOrAssimilation, inflammationOrDiseaseBurden });
+
+  return {
+    implementationVersion: GLIM_IMPLEMENTATION_VERSION,
+    screeningRisk: formTriState(form, "glimScreeningRisk"),
+    weightLossPercent,
+    weightLossPeriod,
+    bmi,
+    reducedMuscleMass,
+    muscleMassMethod: formText(form, "glimMuscleMassMethod"),
+    reducedFoodIntakeOrAssimilation,
+    inflammationOrDiseaseBurden,
+    etiologicNotes: formText(form, "glimEtiologicNotes"),
+    result,
+    clinicianDecision: formClinicianDecision(form),
+    clinicianNote: formText(form, "glimClinicianNote"),
+  };
+}
+
+export function ProfessionalAssessmentForm({ patientId, checkpointId, discipline, initialSummary = "", initialData = {}, initialStatus = "IN_PROGRESS", patientAgeYears, initialBmi = null }: {
   patientId: string;
   checkpointId: string;
   discipline: Program55Discipline;
   initialSummary?: string;
   initialData?: Record<string, unknown>;
   initialStatus?: string;
+  patientAgeYears?: number;
+  initialBmi?: number | null;
 }) {
   const save = useSaveState();
   async function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     const form = new FormData(event.currentTarget);
-    const structuredData = Object.fromEntries(ASSESSMENT_FIELDS[discipline].map(([key]) => [key, String(form.get(key) ?? "").trim()]).filter(([, value]) => value));
+    const structuredData: Record<string, unknown> = Object.fromEntries(ASSESSMENT_FIELDS[discipline].map(([key]) => [key, String(form.get(key) ?? "").trim()]).filter(([, value]) => value));
+    if (discipline === "NUTRITION" && patientAgeYears !== undefined) structuredData.glim = buildStoredGlimRecord(form, patientAgeYears);
     await save.run(() => postProgram55(patientId, {
       action: "ASSESSMENT",
       checkpointId,
@@ -157,6 +222,7 @@ export function ProfessionalAssessmentForm({ patientId, checkpointId, discipline
           <span>Registrar os valores, classificações e observações exatamente como fornecidos pelo equipamento ou laudo. O prontuário não interpreta automaticamente métricas proprietárias não documentadas.</span>
         </div>
       ) : null}
+      {discipline === "NUTRITION" && patientAgeYears !== undefined ? <GlimAssessmentSection ageYears={patientAgeYears} initialBmi={initialBmi} initialData={initialData} /> : null}
       {ASSESSMENT_FIELDS[discipline].map(([key, label]) => (
         <label key={key}>{label}<textarea name={key} rows={2} defaultValue={typeof initialData[key] === "string" ? String(initialData[key]) : ""} /></label>
       ))}
