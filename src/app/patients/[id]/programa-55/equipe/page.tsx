@@ -10,7 +10,7 @@ import {
   type Program55Discipline,
 } from "@/domain/program55/access";
 import { program55CheckpointLabel } from "@/domain/program55/checkpoints";
-import { isProgram55Eligible } from "@/domain/program55/eligibility";
+import { ageOnDate, isProgram55Eligible } from "@/domain/program55/eligibility";
 import { isProgram55Enabled } from "@/domain/program55/feature";
 import { requireAuthenticatedUser } from "@/server/auth/require-user";
 import { prisma } from "@/server/db";
@@ -37,6 +37,7 @@ export default async function Program55TeamPage({ params }: { params: Promise<{ 
             orderBy: { referenceDate: "asc" },
             select: {
               id: true, checkpointType: true, referenceDate: true, status: true,
+              bodyComposition: { orderBy: { measuredAt: "desc" }, take: 1, select: { bmi: true } },
               professionalAssessments: {
                 select: { id: true, discipline: true, status: true, structuredData: true, sharedSummary: true, authorUserId: true, assessedAt: true, updatedAt: true, author: { select: { name: true } } },
               },
@@ -46,7 +47,7 @@ export default async function Program55TeamPage({ params }: { params: Promise<{ 
       },
     },
   });
-  if (!patient || !isProgram55Eligible(patient.birthDate) || !patient.program55Enrollment) notFound();
+  if (!patient || !patient.birthDate || !isProgram55Eligible(patient.birthDate) || !patient.program55Enrollment) notFound();
   const enrollment = patient.program55Enrollment;
   const actor: Program55ActorAccess = {
     userId: user.id,
@@ -55,6 +56,9 @@ export default async function Program55TeamPage({ params }: { params: Promise<{ 
   };
   const currentCheckpoint = enrollment.checkpoints.find((item) => item.status !== "REVIEWED") ?? enrollment.checkpoints[0];
   if (!currentCheckpoint) notFound();
+  const patientAgeYears = ageOnDate(patient.birthDate, currentCheckpoint.referenceDate);
+  const checkpointBmi = currentCheckpoint.bodyComposition[0]?.bmi;
+  const initialBmi = checkpointBmi === null || checkpointBmi === undefined ? null : Number(checkpointBmi.toString());
   const byDiscipline = new Map(currentCheckpoint.professionalAssessments.map((assessment) => [assessment.discipline as Program55Discipline, assessment]));
   const psychAssessment = byDiscipline.get("PSYCHOLOGY");
   const canReadPsychRestricted = psychAssessment ? canReadRestrictedPsychologyNote(actor, psychAssessment.authorUserId) : false;
@@ -85,7 +89,7 @@ export default async function Program55TeamPage({ params }: { params: Promise<{ 
         return (
           <section className="panel" style={{ marginTop: 24 }} key={discipline} aria-labelledby={`domain-${discipline}`}>
             <div className="section-heading"><div><p className="eyebrow">Domínio profissional</p><h2 id={`domain-${discipline}`}>{labels[discipline]}</h2></div><span className="muted">{assessment ? `${statusLabels[assessment.status] ?? assessment.status} · ${formatDate(assessment.assessedAt)}` : "Pendente"}</span></div>
-            {writable ? <ProfessionalAssessmentForm patientId={patient.id} checkpointId={currentCheckpoint.id} discipline={discipline} initialSummary={assessment?.sharedSummary ?? ""} initialData={objectData(assessment?.structuredData)} initialStatus={assessment?.status ?? "IN_PROGRESS"} /> : assessment ? <div><p><strong>Resumo compartilhável</strong></p><p>{assessment.sharedSummary || "Sem resumo compartilhável registrado."}</p><p className="muted">Responsável: {assessment.author.name}</p></div> : <p className="muted">Seu perfil pode visualizar o status, mas não editar este domínio.</p>}
+            {writable ? <ProfessionalAssessmentForm patientId={patient.id} checkpointId={currentCheckpoint.id} discipline={discipline} initialSummary={assessment?.sharedSummary ?? ""} initialData={objectData(assessment?.structuredData)} initialStatus={assessment?.status ?? "IN_PROGRESS"} patientAgeYears={discipline === "NUTRITION" ? patientAgeYears : undefined} initialBmi={discipline === "NUTRITION" ? initialBmi : null} /> : assessment ? <div><p><strong>Resumo compartilhável</strong></p><p>{assessment.sharedSummary || "Sem resumo compartilhável registrado."}</p><p className="muted">Responsável: {assessment.author.name}</p></div> : <p className="muted">Seu perfil pode visualizar o status, mas não editar este domínio.</p>}
 
             {discipline === "PSYCHOLOGY" && psychAssessment && canWriteProgram55Discipline(actor, "PSYCHOLOGY") ? <div style={{ marginTop: 20 }}><PsychologyRestrictedNoteForm patientId={patient.id} assessmentId={psychAssessment.id} initialContent={restrictedPsychologyNote?.authorUserId === user.id ? restrictedPsychologyNote.content : ""} /></div> : null}
             {discipline === "PSYCHOLOGY" && psychAssessment && canReadPsychRestricted && restrictedPsychologyNote && restrictedPsychologyNote.authorUserId !== user.id ? <div className="notice" style={{ marginTop: 20 }}><strong>Nota restrita de psicologia disponível</strong><span>Visível somente a profissional(is) de psicologia autorizada(s). Conteúdo: {restrictedPsychologyNote.content}</span></div> : null}
