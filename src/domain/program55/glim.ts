@@ -45,6 +45,7 @@ export interface GlimEvaluationResult {
 
 export interface StoredGlimRecord {
   implementationVersion: typeof GLIM_IMPLEMENTATION_VERSION;
+  ageYears: number;
   screeningRisk: GlimTriState;
   weightLossPercent: number | null;
   weightLossPeriod: GlimWeightLossPeriod;
@@ -160,18 +161,87 @@ function asObject(value: unknown): Record<string, unknown> | null {
   return value && typeof value === "object" && !Array.isArray(value) ? value as Record<string, unknown> : null;
 }
 
+function isTriState(value: unknown): value is GlimTriState {
+  return value === "YES" || value === "NO" || value === "NOT_ASSESSED";
+}
+
+function isWeightLossPeriod(value: unknown): value is GlimWeightLossPeriod {
+  return value === "WITHIN_6_MONTHS" || value === "BEYOND_6_MONTHS" || value === "NOT_ASSESSED";
+}
+
+function isClinicianDecision(value: unknown): value is GlimClinicianDecision {
+  return value === "PENDING" || value === "CONFIRMED" || value === "NOT_CONFIRMED";
+}
+
+function finiteNumberOrNull(value: unknown, options: { positive?: boolean } = {}): number | null | undefined {
+  if (value === null) return null;
+  if (typeof value !== "number" || !Number.isFinite(value)) return undefined;
+  if (options.positive ? value <= 0 : value < 0) return undefined;
+  return value;
+}
+
+function stringOrNull(value: unknown): string | null | undefined {
+  return value === null ? null : typeof value === "string" ? value : undefined;
+}
+
 export function storedGlimRecordFromStructuredData(structuredData: unknown): StoredGlimRecord | null {
   const root = asObject(structuredData);
   const glim = asObject(root?.glim);
-  const result = asObject(glim?.result);
-  if (!glim || !result) return null;
-  if (glim.implementationVersion !== GLIM_IMPLEMENTATION_VERSION) return null;
-  const clinicianDecision = glim.clinicianDecision;
-  if (clinicianDecision !== "PENDING" && clinicianDecision !== "CONFIRMED" && clinicianDecision !== "NOT_CONFIRMED") return null;
-  const severity = result.severity;
-  if (severity !== null && severity !== "STAGE_1" && severity !== "STAGE_2" && severity !== "NOT_GRADABLE") return null;
-  if (typeof result.decisionSupportLabel !== "string" || typeof result.diagnosticCriteriaMet !== "boolean") return null;
-  return glim as unknown as StoredGlimRecord;
+  if (!glim || glim.implementationVersion !== GLIM_IMPLEMENTATION_VERSION) return null;
+
+  const ageYears = finiteNumberOrNull(glim.ageYears);
+  const weightLossPercent = finiteNumberOrNull(glim.weightLossPercent);
+  const bmi = finiteNumberOrNull(glim.bmi, { positive: true });
+  const muscleMassMethod = stringOrNull(glim.muscleMassMethod);
+  const etiologicNotes = stringOrNull(glim.etiologicNotes);
+  const clinicianNote = stringOrNull(glim.clinicianNote);
+
+  if (
+    ageYears === null || ageYears === undefined ||
+    weightLossPercent === undefined ||
+    bmi === undefined ||
+    muscleMassMethod === undefined ||
+    etiologicNotes === undefined ||
+    clinicianNote === undefined ||
+    !isTriState(glim.screeningRisk) ||
+    !isWeightLossPeriod(glim.weightLossPeriod) ||
+    !isTriState(glim.reducedMuscleMass) ||
+    !isTriState(glim.reducedFoodIntakeOrAssimilation) ||
+    !isTriState(glim.inflammationOrDiseaseBurden) ||
+    !isClinicianDecision(glim.clinicianDecision)
+  ) return null;
+
+  let result: GlimEvaluationResult;
+  try {
+    result = evaluateGlim({
+      ageYears,
+      weightLossPercent,
+      weightLossPeriod: glim.weightLossPeriod,
+      bmi,
+      reducedMuscleMass: glim.reducedMuscleMass,
+      reducedFoodIntakeOrAssimilation: glim.reducedFoodIntakeOrAssimilation,
+      inflammationOrDiseaseBurden: glim.inflammationOrDiseaseBurden,
+    });
+  } catch {
+    return null;
+  }
+
+  return {
+    implementationVersion: GLIM_IMPLEMENTATION_VERSION,
+    ageYears,
+    screeningRisk: glim.screeningRisk,
+    weightLossPercent,
+    weightLossPeriod: glim.weightLossPeriod,
+    bmi,
+    reducedMuscleMass: glim.reducedMuscleMass,
+    muscleMassMethod,
+    reducedFoodIntakeOrAssimilation: glim.reducedFoodIntakeOrAssimilation,
+    inflammationOrDiseaseBurden: glim.inflammationOrDiseaseBurden,
+    etiologicNotes,
+    result,
+    clinicianDecision: glim.clinicianDecision,
+    clinicianNote,
+  };
 }
 
 export function confirmedGlimSummaryFromStructuredData(structuredData: unknown): string | null {
