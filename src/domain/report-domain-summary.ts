@@ -34,6 +34,7 @@ const DIMENSION_LABELS: Readonly<Record<string, string>> = {
   fragilidade: "Fragilidade",
   mobilidade: "Locomoção e equilíbrio",
   nutricao: "Nutrição e vitalidade",
+  disfagia: "Deglutição / disfagia",
   medicamentos: "Medicamentos",
   "suporte-social": "Família e rede de apoio",
   oncogeriatria: "Oncogeriatria",
@@ -49,6 +50,7 @@ const DIMENSION_ORDER = [
   "fragilidade",
   "mobilidade",
   "nutricao",
+  "disfagia",
   "medicamentos",
   "suporte-social",
   "oncogeriatria",
@@ -95,6 +97,26 @@ const DOMAIN_GUIDANCE: Readonly<Partial<Record<string, DomainGuidance>>> = {
       url: "https://pubmed.ncbi.nlm.nih.gov/34409961/",
       relevance: "Consenso internacional: programas multicomponentes e individualizados apoiam função, mobilidade e manejo da fragilidade.",
     }],
+  },
+  disfagia: {
+    actions: [
+      "O rastreio de deglutição veio alterado. Combine com a equipe uma avaliação clínica da deglutição, preferencialmente com fonoaudiologia; a necessidade de exames instrumentais e de tratamento deve ser definida individualmente.",
+      "Não mude por conta própria a textura dos alimentos nem use espessantes para líquidos. Mantenha higiene oral regular e avise a equipe se houver tosse ou engasgos recorrentes nas refeições, redução da ingestão ou perda de peso.",
+    ],
+    evidenceReferences: [
+      {
+        label: "Diretriz clínica para disfagia orofaríngea",
+        pmid: "37501570",
+        url: "https://pubmed.ncbi.nlm.nih.gov/37501570/",
+        relevance: "Diretriz baseada em GRADE recomenda rastreio/avaliação precoce, reabilitação individualizada, intervenção nutricional e programa de cuidados orais.",
+      },
+      {
+        label: "Revisão sistemática sobre alimentos modificados e líquidos espessados",
+        pmid: "35623866",
+        url: "https://pubmed.ncbi.nlm.nih.gov/35623866/",
+        relevance: "Atualização de revisão sistemática mostra evidência limitada para espessamento e reforça que mudanças de consistência devem ser individualizadas, não automatizadas pelo rastreio.",
+      },
+    ],
   },
   medicamentos: {
     actions: [
@@ -234,7 +256,9 @@ export function buildReportDomainSummaries(
     const intrinsicGuidance = intrinsicCode
       ? intrinsicCapacityGuidanceForDomain(intrinsicCode)
       : undefined;
-    const domainGuidance = DOMAIN_GUIDANCE[dimension];
+    const domainGuidance = dimension === "disfagia" && state === "preserved"
+      ? undefined
+      : DOMAIN_GUIDANCE[dimension];
     const genericGuidance = unique([
       ...(alteredIntrinsicGuidance?.actions ?? intrinsicGuidance?.actions ?? domainGuidance?.actions ?? []),
     ]);
