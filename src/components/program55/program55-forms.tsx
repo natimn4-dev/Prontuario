@@ -174,6 +174,7 @@ function buildStoredGlimRecord(form: FormData, ageYears: number): StoredGlimReco
 
   return {
     implementationVersion: GLIM_IMPLEMENTATION_VERSION,
+    ageYears,
     screeningRisk: formTriState(form, "glimScreeningRisk"),
     weightLossPercent,
     weightLossPeriod,
