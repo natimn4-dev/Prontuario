@@ -6,6 +6,7 @@ export const CLINICAL_SCALE_DOMAIN_ORDER = [
   "Locomoção e desempenho físico",
   "Fragilidade",
   "Vitalidade e nutrição",
+  "Disfagia",
   "Medicamentos e risco de quedas",
   "Família",
   "Rede e suporte social",
@@ -41,6 +42,7 @@ const DIMENSION_DOMAIN: Record<string, ClinicalScaleDomain> = {
   mobilidade: "Locomoção e desempenho físico",
   fragilidade: "Fragilidade",
   nutricao: "Vitalidade e nutrição",
+  disfagia: "Disfagia",
   medicamentos: "Medicamentos e risco de quedas",
   familia: "Família",
   suporte_social: "Rede e suporte social",
@@ -52,6 +54,7 @@ const DIMENSION_DOMAIN: Record<string, ClinicalScaleDomain> = {
 
 const CODE_DOMAIN: Record<string, ClinicalScaleDomain> = {
   isi: "Sono",
+  eat10: "Disfagia",
   apgar_familiar: "Família",
   family_apgar_br_elderly: "Família",
   mos_sss_br_19: "Rede e suporte social",
