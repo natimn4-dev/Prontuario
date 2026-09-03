@@ -161,16 +161,16 @@ function asObject(value: unknown): Record<string, unknown> | null {
   return value && typeof value === "object" && !Array.isArray(value) ? value as Record<string, unknown> : null;
 }
 
-function isTriState(value: unknown): value is GlimTriState {
-  return value === "YES" || value === "NO" || value === "NOT_ASSESSED";
+function triStateOrUndefined(value: unknown): GlimTriState | undefined {
+  return value === "YES" || value === "NO" || value === "NOT_ASSESSED" ? value : undefined;
 }
 
-function isWeightLossPeriod(value: unknown): value is GlimWeightLossPeriod {
-  return value === "WITHIN_6_MONTHS" || value === "BEYOND_6_MONTHS" || value === "NOT_ASSESSED";
+function weightLossPeriodOrUndefined(value: unknown): GlimWeightLossPeriod | undefined {
+  return value === "WITHIN_6_MONTHS" || value === "BEYOND_6_MONTHS" || value === "NOT_ASSESSED" ? value : undefined;
 }
 
-function isClinicianDecision(value: unknown): value is GlimClinicianDecision {
-  return value === "PENDING" || value === "CONFIRMED" || value === "NOT_CONFIRMED";
+function clinicianDecisionOrUndefined(value: unknown): GlimClinicianDecision | undefined {
+  return value === "PENDING" || value === "CONFIRMED" || value === "NOT_CONFIRMED" ? value : undefined;
 }
 
 function finiteNumberOrNull(value: unknown, options: { positive?: boolean } = {}): number | null | undefined {
@@ -195,12 +195,12 @@ export function storedGlimRecordFromStructuredData(structuredData: unknown): Sto
   const muscleMassMethod = stringOrNull(glim.muscleMassMethod);
   const etiologicNotes = stringOrNull(glim.etiologicNotes);
   const clinicianNote = stringOrNull(glim.clinicianNote);
-  const screeningRisk = glim.screeningRisk;
-  const weightLossPeriod = glim.weightLossPeriod;
-  const reducedMuscleMass = glim.reducedMuscleMass;
-  const reducedFoodIntakeOrAssimilation = glim.reducedFoodIntakeOrAssimilation;
-  const inflammationOrDiseaseBurden = glim.inflammationOrDiseaseBurden;
-  const clinicianDecision = glim.clinicianDecision;
+  const screeningRisk = triStateOrUndefined(glim.screeningRisk);
+  const weightLossPeriod = weightLossPeriodOrUndefined(glim.weightLossPeriod);
+  const reducedMuscleMass = triStateOrUndefined(glim.reducedMuscleMass);
+  const reducedFoodIntakeOrAssimilation = triStateOrUndefined(glim.reducedFoodIntakeOrAssimilation);
+  const inflammationOrDiseaseBurden = triStateOrUndefined(glim.inflammationOrDiseaseBurden);
+  const clinicianDecision = clinicianDecisionOrUndefined(glim.clinicianDecision);
 
   if (
     ageYears === null || ageYears === undefined ||
@@ -209,12 +209,12 @@ export function storedGlimRecordFromStructuredData(structuredData: unknown): Sto
     muscleMassMethod === undefined ||
     etiologicNotes === undefined ||
     clinicianNote === undefined ||
-    !isTriState(screeningRisk) ||
-    !isWeightLossPeriod(weightLossPeriod) ||
-    !isTriState(reducedMuscleMass) ||
-    !isTriState(reducedFoodIntakeOrAssimilation) ||
-    !isTriState(inflammationOrDiseaseBurden) ||
-    !isClinicianDecision(clinicianDecision)
+    screeningRisk === undefined ||
+    weightLossPeriod === undefined ||
+    reducedMuscleMass === undefined ||
+    reducedFoodIntakeOrAssimilation === undefined ||
+    inflammationOrDiseaseBurden === undefined ||
+    clinicianDecision === undefined
   ) return null;
 
   let result: GlimEvaluationResult;
