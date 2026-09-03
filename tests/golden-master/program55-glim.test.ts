@@ -4,6 +4,7 @@ import {
   confirmedGlimSummaryFromStructuredData,
   evaluateGlim,
   GLIM_IMPLEMENTATION_VERSION,
+  storedGlimRecordFromStructuredData,
   type StoredGlimRecord,
 } from "../../src/domain/program55/glim.ts";
 
@@ -86,6 +87,7 @@ test("MAPA 55+ só compartilha resultado GLIM após confirmação profissional e
   const result = evaluateGlim({ ...base, bmi: 18.2, reducedFoodIntakeOrAssimilation: "YES" });
   const record: StoredGlimRecord = {
     implementationVersion: GLIM_IMPLEMENTATION_VERSION,
+    ageYears: 65,
     screeningRisk: "YES",
     weightLossPercent: null,
     weightLossPeriod: "NOT_ASSESSED",
@@ -102,4 +104,27 @@ test("MAPA 55+ só compartilha resultado GLIM após confirmação profissional e
   assert.equal(confirmedGlimSummaryFromStructuredData({ glim: record }), null);
   record.clinicianDecision = "CONFIRMED";
   assert.match(confirmedGlimSummaryFromStructuredData({ glim: record }) ?? "", /desnutrição grave/i);
+});
+
+test("leitura persistida valida campos e recalcula o resultado em vez de confiar em resultado armazenado", () => {
+  const stored = {
+    implementationVersion: GLIM_IMPLEMENTATION_VERSION,
+    ageYears: 70,
+    screeningRisk: "YES",
+    weightLossPercent: null,
+    weightLossPeriod: "NOT_ASSESSED",
+    bmi: 19.5,
+    reducedMuscleMass: "NOT_ASSESSED",
+    muscleMassMethod: null,
+    reducedFoodIntakeOrAssimilation: "YES",
+    inflammationOrDiseaseBurden: "NO",
+    etiologicNotes: null,
+    clinicianDecision: "CONFIRMED",
+    clinicianNote: null,
+    result: { decisionSupportLabel: "resultado adulterado", diagnosticCriteriaMet: false },
+  };
+  const parsed = storedGlimRecordFromStructuredData({ glim: stored });
+  assert.equal(parsed?.result.severity, "STAGE_2");
+  assert.match(parsed?.result.decisionSupportLabel ?? "", /desnutrição grave/i);
+  assert.doesNotMatch(parsed?.result.decisionSupportLabel ?? "", /adulterado/i);
 });
