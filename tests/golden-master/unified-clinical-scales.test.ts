@@ -17,6 +17,7 @@ test("unified clinical scale workspace preserves the approved domain order", () 
     "Locomoção e desempenho físico",
     "Fragilidade",
     "Vitalidade e nutrição",
+    "Disfagia",
     "Medicamentos e risco de quedas",
     "Família",
     "Rede e suporte social",
@@ -37,9 +38,10 @@ test("workspace hides detailed MEEM/MoCA duplicates and preserves simplified ent
   assert.deepEqual(options.map((item) => item.code).sort(), ["meem", "moca"]);
 });
 
-test("workspace deduplicates codes and maps sleep, family, social, caregiver, vitality and prognosis correctly", () => {
+test("workspace deduplicates codes and maps sleep, dysphagia, family, social, caregiver, vitality and prognosis correctly", () => {
   const options = buildClinicalScaleOptions([
     { source: "complementary", code: "isi", name: "ISI", dimension: "sono" },
+    { source: "complementary", code: "eat10", name: "EAT-10", dimension: "disfagia" },
     { source: "core", code: "family_apgar_br_elderly", name: "APGAR familiar", dimension: "familia" },
     { source: "core", code: "mos_sss_br_19", name: "MOS-SSS", dimension: "suporte_social" },
     { source: "core", code: "zarit_br_22", name: "Zarit", dimension: "sobrecarga_cuidador" },
@@ -50,6 +52,7 @@ test("workspace deduplicates codes and maps sleep, family, social, caregiver, vi
   ]);
   const byCode = new Map(options.map((item) => [item.code, item.domain]));
   assert.equal(byCode.get("isi"), "Sono");
+  assert.equal(byCode.get("eat10"), "Disfagia");
   assert.equal(byCode.get("family_apgar_br_elderly"), "Família");
   assert.equal(byCode.get("mos_sss_br_19"), "Rede e suporte social");
   assert.equal(byCode.get("zarit_br_22"), "Sobrecarga do cuidador");
@@ -79,6 +82,7 @@ test("all approved dimension labels resolve explicitly", () => {
     ["mobilidade", "Locomoção e desempenho físico"],
     ["fragilidade", "Fragilidade"],
     ["nutricao", "Vitalidade e nutrição"],
+    ["disfagia", "Disfagia"],
     ["medicamentos", "Medicamentos e risco de quedas"],
     ["familia", "Família"],
     ["suporte_social", "Rede e suporte social"],
