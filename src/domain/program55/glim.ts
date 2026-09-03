@@ -195,6 +195,12 @@ export function storedGlimRecordFromStructuredData(structuredData: unknown): Sto
   const muscleMassMethod = stringOrNull(glim.muscleMassMethod);
   const etiologicNotes = stringOrNull(glim.etiologicNotes);
   const clinicianNote = stringOrNull(glim.clinicianNote);
+  const screeningRisk = glim.screeningRisk;
+  const weightLossPeriod = glim.weightLossPeriod;
+  const reducedMuscleMass = glim.reducedMuscleMass;
+  const reducedFoodIntakeOrAssimilation = glim.reducedFoodIntakeOrAssimilation;
+  const inflammationOrDiseaseBurden = glim.inflammationOrDiseaseBurden;
+  const clinicianDecision = glim.clinicianDecision;
 
   if (
     ageYears === null || ageYears === undefined ||
@@ -203,12 +209,12 @@ export function storedGlimRecordFromStructuredData(structuredData: unknown): Sto
     muscleMassMethod === undefined ||
     etiologicNotes === undefined ||
     clinicianNote === undefined ||
-    !isTriState(glim.screeningRisk) ||
-    !isWeightLossPeriod(glim.weightLossPeriod) ||
-    !isTriState(glim.reducedMuscleMass) ||
-    !isTriState(glim.reducedFoodIntakeOrAssimilation) ||
-    !isTriState(glim.inflammationOrDiseaseBurden) ||
-    !isClinicianDecision(glim.clinicianDecision)
+    !isTriState(screeningRisk) ||
+    !isWeightLossPeriod(weightLossPeriod) ||
+    !isTriState(reducedMuscleMass) ||
+    !isTriState(reducedFoodIntakeOrAssimilation) ||
+    !isTriState(inflammationOrDiseaseBurden) ||
+    !isClinicianDecision(clinicianDecision)
   ) return null;
 
   let result: GlimEvaluationResult;
@@ -216,11 +222,11 @@ export function storedGlimRecordFromStructuredData(structuredData: unknown): Sto
     result = evaluateGlim({
       ageYears,
       weightLossPercent,
-      weightLossPeriod: glim.weightLossPeriod,
+      weightLossPeriod,
       bmi,
-      reducedMuscleMass: glim.reducedMuscleMass,
-      reducedFoodIntakeOrAssimilation: glim.reducedFoodIntakeOrAssimilation,
-      inflammationOrDiseaseBurden: glim.inflammationOrDiseaseBurden,
+      reducedMuscleMass,
+      reducedFoodIntakeOrAssimilation,
+      inflammationOrDiseaseBurden,
     });
   } catch {
     return null;
@@ -229,17 +235,17 @@ export function storedGlimRecordFromStructuredData(structuredData: unknown): Sto
   return {
     implementationVersion: GLIM_IMPLEMENTATION_VERSION,
     ageYears,
-    screeningRisk: glim.screeningRisk,
+    screeningRisk,
     weightLossPercent,
-    weightLossPeriod: glim.weightLossPeriod,
+    weightLossPeriod,
     bmi,
-    reducedMuscleMass: glim.reducedMuscleMass,
+    reducedMuscleMass,
     muscleMassMethod,
-    reducedFoodIntakeOrAssimilation: glim.reducedFoodIntakeOrAssimilation,
-    inflammationOrDiseaseBurden: glim.inflammationOrDiseaseBurden,
+    reducedFoodIntakeOrAssimilation,
+    inflammationOrDiseaseBurden,
     etiologicNotes,
     result,
-    clinicianDecision: glim.clinicianDecision,
+    clinicianDecision,
     clinicianNote,
   };
 }
