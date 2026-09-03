@@ -24,6 +24,11 @@ import {
   scoreCornellStructured,
 } from "@/domain/cornell-structured";
 import {
+  EAT10_CODE,
+  EAT10_QUICK_DEFINITION,
+  scoreEat10,
+} from "@/domain/eat10";
+import {
   ISI_CODE,
   ISI_QUICK_DEFINITION,
   scoreIsi,
@@ -60,7 +65,7 @@ import { saveScaleAssessment } from "@/server/clinical/persistence";
 import { prisma } from "@/server/db";
 
 const QUICK_CODES = new Set<CognitiveQuickCode>(COGNITIVE_QUICK_DEFINITIONS.map((item) => item.code));
-type RequestScaleCode = ComplementaryScoreScaleCode | typeof ISI_CODE;
+type RequestScaleCode = ComplementaryScoreScaleCode | typeof ISI_CODE | typeof EAT10_CODE;
 const DEFINITIONS = [
   ...COMPLEMENTARY_SCORE_SCALES
     .filter((item) => !QUICK_CODES.has(item.code as CognitiveQuickCode))
@@ -79,6 +84,7 @@ const DEFINITIONS = [
     .map((item) => withStructuredScaleEntry(item)),
   ...COGNITIVE_QUICK_DEFINITIONS,
   ISI_QUICK_DEFINITION,
+  EAT10_QUICK_DEFINITION,
 ];
 const SUPPORTED = new Set<string>(DEFINITIONS.map((item) => item.code));
 
@@ -127,7 +133,7 @@ function failure(error: unknown) {
   const code = error instanceof Error ? error.message : "UNKNOWN";
   if (code === "CONSULTATION_NOT_FOUND") return NextResponse.json({ code, message: "Consulta não encontrada." }, { status: 404 });
   if (code === "INVALID_REQUEST" || code === "UNSUPPORTED_SCALE") return NextResponse.json({ code, message: "Requisição de escala complementar inválida." }, { status: 400 });
-  if (error instanceof Error && /Valor inválido|Escala complementar|interpretar|Escolaridade|Pontuação|campo não permitido|ISI_|10-CS|SARC-F|STOPPFall|Cornell|CAM|LACE/i.test(error.message)) {
+  if (error instanceof Error && /Valor inválido|Escala complementar|interpretar|Escolaridade|Pontuação|campo não permitido|ISI_|EAT10_|10-CS|SARC-F|STOPPFall|Cornell|CAM|LACE/i.test(error.message)) {
     return NextResponse.json({ code: "INVALID_SCALE_ANSWERS", message: error.message }, { status: 400 });
   }
   return NextResponse.json({ code: "COMPLEMENTARY_SCALE_FAILED", message: "Não foi possível processar a escala complementar." }, { status: 500 });
@@ -213,9 +219,11 @@ export async function POST(request: Request, context: { params: Promise<{ id: st
                       ? scoreLaceStructured(answers)
                       : scaleCode === ISI_CODE
                         ? scoreIsi(answers)
-                        : QUICK_CODES.has(scaleCode as CognitiveQuickCode)
-                          ? scoreCognitiveQuickEntry(scaleCode as CognitiveQuickCode, answers)
-                          : scoreComplementaryScale(scaleCode as ComplementaryScoreScaleCode, answers);
+                        : scaleCode === EAT10_CODE
+                          ? scoreEat10(answers)
+                          : QUICK_CODES.has(scaleCode as CognitiveQuickCode)
+                            ? scoreCognitiveQuickEntry(scaleCode as CognitiveQuickCode, answers)
+                            : scoreComplementaryScale(scaleCode as ComplementaryScoreScaleCode, answers);
     const assessment = await saveScaleAssessment({
       consultationId: id,
       scaleCode,
