@@ -1,6 +1,6 @@
 # Licenciamento de escalas em formato eletrônico
 
-Atualizado em 2026-08-21.
+Atualizado em 2026-09-02.
 
 Este documento trata de **permissão de reprodução/uso eletrônico**, não de validade clínica. Quando o aplicativo reproduz um instrumento protegido, o formulário web permanece fail-closed enquanto a permissão aplicável não estiver confirmada.
 
@@ -31,6 +31,25 @@ Referências clínicas registradas para a interpretação do escore:
 - Bastien CH, Vallières A, Morin CM. *Validation of the Insomnia Severity Index as an outcome measure for insomnia research*. Sleep Med. 2001;2(4):297-307. PMID: 11438246.
 - Castro LS. *Adaptação e validação do Índice de Gravidade de Insônia (IGI): Caracterização Populacional, Valores Normativos e Aspectos Associados*. Universidade Federal de São Paulo, 2011. Validação da versão em português em amostra adulta da cidade de São Paulo.
 
+## EAT-10 — Eating Assessment Tool / rastreio de disfagia
+
+O EAT-10 é protegido por copyright (© Société des Produits Nestlé S.A.) e é distribuído/licenciado pela Mapi Research Trust. O catálogo e materiais oficiais informam condições de uso, preservação do formulário e processo de solicitação de permissão conforme o contexto. Por segurança jurídica e de versão, o prontuário **não incorpora nesta etapa os dez itens, alternativas nem uma reprodução eletrônica do formulário**.
+
+A implementação atual permite somente **registro do escore total de 0 a 40 de um EAT-10 previamente aplicado por meio autorizado**. O cálculo clínico usa o ponto de corte brasileiro documentado: **3 pontos ou mais = rastreio positivo para risco/sintomas de disfagia**, sem converter o resultado em diagnóstico.
+
+Antes de habilitar a administração eletrônica completa solicitada para o aplicativo, confirmar documentalmente com a Mapi Research Trust, em nome do titular:
+- permissão para uso eletrônico/web/EHR no contexto clínico do serviço;
+- versão oficial `Portuguese for Brazil` aplicável;
+- exigências de layout, ordem, logos, referências e demais elementos que não podem ser modificados;
+- eventuais requisitos de licença, registro ou taxa para o escopo de uso.
+
+A confirmação é uma etapa humana/jurídica. Até ela ocorrer, os itens fornecidos no pedido funcional **não devem ser copiados para o código** apenas com base na utilidade clínica.
+
+Referências clínicas para escore e ponto de corte:
+- Belafsky PC et al. *Validity and reliability of the Eating Assessment Tool (EAT-10).* Ann Otol Rhinol Laryngol. 2008;117(12):919-924. PMID: 19140539.
+- Gonçalves MIR et al. *Cross-cultural adaptation of the Brazilian version of the Eating Assessment Tool - EAT-10.* PMID: 24626972.
+- Dantas RO et al. *Eating Assessment Tool (EAT-10) Scores to Detect Self-Reported Dysphagia in Brazilians.* Dysphagia. 2023;38(6):1609-1614. PMID: 37272949.
+
 ## Regra operacional
 
 1. Nunca definir uma flag de reprodução eletrônica como `true` apenas porque o instrumento é clinicamente útil ou está reproduzido em livro/artigo.
@@ -38,7 +57,7 @@ Referências clínicas registradas para a interpretação do escore:
 3. Somente depois da autorização aplicável, definir a flag correspondente no ambiente de produção e reiniciar a aplicação.
 4. O endpoint server-side também deve verificar a licença quando houver administração eletrônica protegida. Não é suficiente esconder o formulário no React.
 5. Avaliações históricas já persistidas não são apagadas/reclassificadas por gates de licença.
-6. Registros **score-only**, como MEEM/MoCA simplificados e ISI nesta implementação, não podem conter itens, alternativas ou instruções protegidas do instrumento original.
+6. Registros **score-only**, como MEEM/MoCA simplificados, ISI e EAT-10 nesta implementação, não podem conter itens, alternativas ou instruções protegidas do instrumento original.
 
 ## Comportamento da interface
 
