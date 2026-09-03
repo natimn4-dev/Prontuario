@@ -4,6 +4,7 @@ import { Program55Nav } from "@/components/program55/program55-nav";
 import { program55CheckpointLabel } from "@/domain/program55/checkpoints";
 import { isProgram55Eligible } from "@/domain/program55/eligibility";
 import { isProgram55Enabled } from "@/domain/program55/feature";
+import { confirmedGlimSummaryFromStructuredData } from "@/domain/program55/glim";
 import { requireAuthenticatedUser } from "@/server/auth/require-user";
 import { prisma } from "@/server/db";
 
@@ -28,7 +29,7 @@ export default async function Program55MapaPage({ params }: { params: Promise<{ 
             select: {
               id: true, checkpointType: true, referenceDate: true, status: true,
               bodyComposition: { orderBy: { measuredAt: "desc" }, take: 1, select: { measuredAt: true, weightKg: true, bmi: true, waistCm: true, bodyFatPercent: true, fatMassKg: true, fatFreeMassKg: true, muscleMassKg: true, sourceLabel: true } },
-              professionalAssessments: { select: { discipline: true, status: true, sharedSummary: true, assessedAt: true, author: { select: { name: true } } } },
+              professionalAssessments: { select: { discipline: true, status: true, structuredData: true, sharedSummary: true, assessedAt: true, author: { select: { name: true } } } },
             },
           },
           goals: { orderBy: [{ status: "asc" }, { dueDate: "asc" }], select: { id: true, domain: true, objective: true, indicator: true, baselineValue: true, targetValue: true, dueDate: true, status: true, responsibleDiscipline: true } },
@@ -48,6 +49,7 @@ export default async function Program55MapaPage({ params }: { params: Promise<{ 
   const latestBody = [...checkpoints].reverse().find((item) => item.bodyComposition.length)?.bodyComposition[0];
   const latestProfessional = new Map<string, (typeof checkpoints)[number]["professionalAssessments"][number]>();
   for (const checkpoint of checkpoints) for (const assessment of checkpoint.professionalAssessments) latestProfessional.set(assessment.discipline, assessment);
+  const confirmedGlimSummary = confirmedGlimSummaryFromStructuredData(latestProfessional.get("NUTRITION")?.structuredData);
   const activeGoals = enrollment.goals.filter((goal) => goal.status === "ACTIVE");
   const achievedGoals = enrollment.goals.filter((goal) => goal.status === "ACHIEVED");
 
@@ -78,7 +80,7 @@ export default async function Program55MapaPage({ params }: { params: Promise<{ 
       {["NUTRITION", "PHYSIOTHERAPY", "PSYCHOLOGY"].map((discipline) => {
         const assessment = latestProfessional.get(discipline);
         const title = discipline === "NUTRITION" ? "Saúde nutricional" : discipline === "PHYSIOTHERAPY" ? "Mobilidade e força" : "Humor e bem-estar";
-        return <section className="panel" style={{ marginTop: 20 }} key={discipline}><h2>{title}</h2><p>{assessment?.sharedSummary || "Sem resumo compartilhável registrado."}</p>{assessment ? <p className="muted">{disciplineLabel[discipline]} · {assessment.author.name} · {date(assessment.assessedAt)}</p> : null}</section>;
+        return <section className="panel" style={{ marginTop: 20 }} key={discipline}><h2>{title}</h2>{discipline === "NUTRITION" && confirmedGlimSummary ? <div className="notice"><strong>GLIM confirmado pela equipe</strong><span>{confirmedGlimSummary}</span></div> : null}<p>{assessment?.sharedSummary || "Sem resumo compartilhável registrado."}</p>{assessment ? <p className="muted">{disciplineLabel[discipline]} · {assessment.author.name} · {date(assessment.assessedAt)}</p> : null}</section>;
       })}
 
       <section className="panel" style={{ marginTop: 20 }}><h2>Cognição</h2>{patient.scaleAssessments.filter((assessment) => (assessment.scaleDefinition?.dimension ?? "").normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().includes("cogni")).length ? <ul>{patient.scaleAssessments.filter((assessment) => (assessment.scaleDefinition?.dimension ?? "").normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().includes("cogni")).map((assessment) => <li key={assessment.id}>{assessment.scaleDefinition?.name ?? assessment.scaleCode}: {assessment.scoreNumeric?.toString() ?? assessment.scoreText ?? "—"}{assessment.classification ? ` · ${assessment.classification}` : ""} ({date(assessment.appliedAt)})</li>)}</ul> : <p>Sem avaliação cognitiva registrada nesta visão.</p>}</section>
