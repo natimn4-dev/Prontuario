@@ -6,6 +6,7 @@ import {
   type PrimarySourceCoverage,
   type SourceMigrationStatus,
 } from "./clinical-config/scale-source-policy.ts";
+import { EAT10_VERSION } from "./eat10.ts";
 import { LEGACY_INTERVENTIONS } from "./interventions.ts";
 import { ISI_VERSION } from "./isi.ts";
 import { CRASH_MNA_SF_VERSION, ECOG_VERSION } from "./oncogeriatric-scales.ts";
@@ -17,6 +18,7 @@ export type GeriatricDimension =
   | "fragilidade"
   | "mobilidade"
   | "nutricao"
+  | "disfagia"
   | "medicamentos"
   | "suporte-social"
   | "sono"
@@ -61,6 +63,7 @@ const METADATA = {
   polifarmacia: ["Polifarmácia / MPI", "Polifarmácia", "medicamentos"],
   stoppfall: ["STOPPFall", "STOPPFall", "medicamentos"],
   isi: ["ISI — Índice de Gravidade de Insônia", "ISI", "sono"],
+  eat10: ["EAT-10 — rastreio de disfagia", "EAT-10", "disfagia"],
   kps: ["Karnofsky Performance Status", "KPS", "prognostico"],
   lace: ["LACE", "LACE", "prognostico"],
   g8: ["G8", "G8", "oncogeriatria"],
@@ -91,7 +94,9 @@ export const SCALE_CATALOG: Readonly<Record<string, ScaleCatalogEntry>> = Object
             ? CRASH_MNA_SF_VERSION
             : code === "isi"
               ? ISI_VERSION
-              : LEGACY_CONFIG_VERSION,
+              : code === "eat10"
+                ? EAT10_VERSION
+                : LEGACY_CONFIG_VERSION,
       name,
       shortName,
       dimension,
