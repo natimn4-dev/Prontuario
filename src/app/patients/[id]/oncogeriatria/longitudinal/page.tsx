@@ -4,6 +4,7 @@ import { CapacityDimensionHistoryChart } from "@/components/reports/capacity-dim
 import { ClinicalMetricTrendChart } from "@/components/reports/clinical-metric-trend-chart";
 import { SCALE_DIRECTIONS } from "@/domain/longitudinal-scales";
 import { buildOncogeriatricDelta, groupComparableObservations } from "@/domain/oncogeriatria/longitudinal";
+import { oncogeriatricCheckpointTypeLabel } from "@/domain/oncogeriatria/presentation-labels";
 import { scaleCatalogEntry } from "@/domain/scale-catalog";
 import { capacityHistoryForOncogeriatricEpisode, formatClinicalDate, loadEpisodeWorkspace, loadOncogeriatricPatient, readStructuredRecord, requireOncogeriatricReadAccess, resolveOncogeriatricEpisode } from "@/server/oncogeriatria/read";
 
@@ -29,7 +30,7 @@ export default async function OncogeriatricLongitudinalPage({ params, searchPara
   const query = await searchParams;
   const patient = await loadOncogeriatricPatient(patientId);
   const episode = await resolveOncogeriatricEpisode(patientId, query.episode);
-  if (!episode) return <main className="shell"><p>Inicie um episódio oncogeriátrico para visualizar a trajetória.</p></main>;
+  if (!episode) return <main className="shell"><p>Inicie um acompanhamento oncogeriátrico para visualizar a evolução.</p></main>;
   const workspace = await loadEpisodeWorkspace(patientId, episode.id);
   const capacityHistory = capacityHistoryForOncogeriatricEpisode(patientId, workspace);
   const linkedConsultationIds = new Set(workspace.checkpoints.flatMap((checkpoint) => checkpoint.consultationId ? [checkpoint.consultationId] : []));
@@ -42,7 +43,7 @@ export default async function OncogeriatricLongitudinalPage({ params, searchPara
     if (!current.includes(label)) eventsByDay.set(key, [...current, label]);
   };
   workspace.courses.forEach((course) => addEvent(course.actualStartAt, `Início ${course.regimenName}`));
-  workspace.checkpoints.forEach((checkpoint) => addEvent(checkpoint.occurredAt, checkpoint.type === "CYCLE" ? `Ciclo ${checkpoint.cycleNumber ?? ""}`.trim() : checkpoint.type));
+  workspace.checkpoints.forEach((checkpoint) => addEvent(checkpoint.occurredAt, checkpoint.type === "CYCLE" ? `Ciclo ${checkpoint.cycleNumber ?? ""}`.trim() : oncogeriatricCheckpointTypeLabel(checkpoint.type)));
   workspace.toxicities.filter((item) => item.hospitalizationAssociated).forEach((item) => addEvent(item.occurredAt, "Hospitalização"));
   workspace.problemMilestones.forEach((milestone) => addEvent(consultationDateById.get(milestone.consultationId) ?? new Date(milestone.recordedAt), `${milestone.title}${milestone.note ? ` — ${milestone.note}` : ""}`));
 
@@ -63,17 +64,17 @@ export default async function OncogeriatricLongitudinalPage({ params, searchPara
   const chartGroups = scaleGroups.filter((group) => group.observations.length >= 1).slice(0, 8);
   return (
     <main className="shell">
-      <header className="hero compact-hero"><p className="eyebrow">Oncogeriatria · longitudinal</p><h1>Δ geriátrico</h1><p>{patient.fullName} · baseline → tratamento → eventos → intervenção → recuperação. Comparações são feitas apenas entre o mesmo código e a mesma versão do instrumento.</p></header>
+      <header className="hero compact-hero"><p className="eyebrow">Oncogeriatria · etapa 6</p><h1>Evolução geriátrica</h1><p>{patient.fullName} · avaliação inicial → tratamento → eventos → intervenção → recuperação. Comparações são feitas apenas entre o mesmo código e a mesma versão do instrumento.</p></header>
       <OncogeriatricNav patientId={patientId} episodeId={episode.id} />
 
       <OncogeriatricDomainStatusSummary history={capacityHistory} />
-      <section className="panel" aria-label="Trajetória persistente por domínio no episódio oncogeriátrico">
-        <div className="section-heading"><div><p className="eyebrow">Domínios</p><h2>Trajetória geriátrica vinculada ao episódio</h2></div><span className="muted">Consultas não vinculadas ao episódio não entram nesta visão.</span></div>
+      <section className="panel" aria-label="Trajetória persistente por domínio no acompanhamento oncogeriátrico">
+        <div className="section-heading"><div><p className="eyebrow">Domínios</p><h2>Trajetória geriátrica vinculada ao acompanhamento</h2></div><span className="muted">Consultas não vinculadas não entram nesta visão.</span></div>
         <CapacityDimensionHistoryChart history={capacityHistory} context="patient-home" />
       </section>
 
-      <section className="panel"><div className="section-heading"><div><p className="eyebrow">Mudança temporal</p><h2>Baseline → atual</h2></div><span className="muted">Mudança numérica não é rotulada automaticamente como clinicamente significativa.</span></div>
-        {deltas.length ? <div className="evolution-list">{deltas.map((delta) => delta ? <article className="evolution-card" key={`${delta.code}-${delta.version}`}><div><h3>{scaleCatalogEntry(delta.code).name}</h3><p className="dimension">versão {delta.version}</p><p className="trend">Δ numérico: {delta.delta > 0 ? "+" : ""}{delta.delta} · {trendLabel(delta.trend)}</p></div><div className="score-block"><span>Baseline</span><strong>{delta.baseline}</strong></div><div className="score-arrow">→</div><div className="score-block current-score"><span>Atual</span><strong>{delta.current}</strong></div><div className="score-block"><span>Período</span><strong>{formatClinicalDate(delta.currentAt)}</strong></div></article> : null)}</div> : <p className="muted">Dados insuficientes para comparação de escalas com código e versão compatíveis.</p>}
+      <section className="panel"><div className="section-heading"><div><p className="eyebrow">Mudança temporal</p><h2>Avaliação inicial → atual</h2></div><span className="muted">Mudança numérica não é rotulada automaticamente como clinicamente significativa.</span></div>
+        {deltas.length ? <div className="evolution-list">{deltas.map((delta) => delta ? <article className="evolution-card" key={`${delta.code}-${delta.version}`}><div><h3>{scaleCatalogEntry(delta.code).name}</h3><p className="dimension">versão {delta.version}</p><p className="trend">Mudança numérica: {delta.delta > 0 ? "+" : ""}{delta.delta} · {trendLabel(delta.trend)}</p></div><div className="score-block"><span>Inicial</span><strong>{delta.baseline}</strong></div><div className="score-arrow">→</div><div className="score-block current-score"><span>Atual</span><strong>{delta.current}</strong></div><div className="score-block"><span>Data atual</span><strong>{formatClinicalDate(delta.currentAt)}</strong></div></article> : null)}</div> : <p className="muted">Dados insuficientes para comparação de escalas com código e versão compatíveis.</p>}
       </section>
 
       <section className="panel"><h2>Linha temporal oncológica</h2>{eventsByDay.size ? <ul className="clean-list">{[...eventsByDay.entries()].sort(([a], [b]) => a.localeCompare(b)).map(([date, labels]) => <li key={date}><strong>{date.split("-").reverse().join("/")}</strong><span>{labels.join(" · ")}</span></li>)}</ul> : <p className="muted">Sem eventos temporais registrados.</p>}</section>
