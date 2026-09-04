@@ -24,7 +24,7 @@ test("oncogeriatria segue fluxo clínico em etapas e oferece acesso explícito �
   for (const label of [
     "1. Antes do tratamento",
     "2. Tratamento oncológico",
-    "3. Durante do tratamento".replace("do", "o"),
+    "3. Durante o tratamento",
     "4. Plano geriátrico",
     "5. Escalas clínicas",
     "6. Evolução longitudinal",
