@@ -1,6 +1,7 @@
 import { OncogeriatricNav } from "@/components/oncogeriatria/oncogeriatric-nav";
 import { OncogeriatricReportActions } from "@/components/oncogeriatria/report-actions";
 import { latestRecoveryAssessmentsByDomain } from "@/domain/oncogeriatria/longitudinal";
+import { oncogeriatricCheckpointTypeLabel, oncogeriatricCourseStatusLabel, oncogeriatricDomainLabel, oncogeriatricIntentLabel, oncogeriatricModalityLabel, oncogeriatricRecoveryStatusLabel } from "@/domain/oncogeriatria/presentation-labels";
 import { buildProfessionalIdentity } from "@/domain/professional-identity";
 import { formatClinicalDate, loadEpisodeWorkspace, loadOncogeriatricPatient, readStructuredRecord, requireOncogeriatricReadAccess, resolveOncogeriatricEpisode } from "@/server/oncogeriatria/read";
 
@@ -44,24 +45,13 @@ function summarizeCheckpointChanges(value: unknown): string[] {
   return changes;
 }
 
-function recoveryLabel(status: string): string {
-  const labels: Record<string, string> = {
-    RECOVERED: "recuperado",
-    RECOVERING: "em recuperação",
-    PERSISTENT_DEFICIT: "déficit persistente",
-    NEW_DEFICIT: "novo déficit",
-    NOT_ASSESSED: "não avaliado",
-  };
-  return labels[status] ?? status;
-}
-
 export default async function OncogeriatricReportPage({ params, searchParams }: { params: Promise<{ id: string }>; searchParams: Promise<{ episode?: string }> }) {
   const { user } = await requireOncogeriatricReadAccess();
   const { id: patientId } = await params;
   const query = await searchParams;
   const patient = await loadOncogeriatricPatient(patientId);
   const episode = await resolveOncogeriatricEpisode(patientId, query.episode);
-  if (!episode) return <main className="shell"><p>Inicie um episódio oncogeriátrico antes de gerar o relatório.</p></main>;
+  if (!episode) return <main className="shell"><p>Inicie um acompanhamento oncogeriátrico antes de gerar o relatório.</p></main>;
 
   const workspace = await loadEpisodeWorkspace(patientId, episode.id);
   const professional = buildProfessionalIdentity({ name: user.name, email: user.email, brandOwnerEmail: process.env.PROFESSIONAL_BRAND_OWNER_EMAIL });
@@ -112,9 +102,9 @@ export default async function OncogeriatricReportPage({ params, searchParams }: 
   return (
     <main className="shell">
       <header className="hero compact-hero no-print">
-        <p className="eyebrow">Oncogeriatria · comunicação médica</p>
+        <p className="eyebrow">Oncogeriatria · etapa 8</p>
         <h1>Relatório oncogeriátrico</h1>
-        <p>Documento específico da linha oncológica, com trajetória geriátrica, vulnerabilidades, recomendações registradas, eventos durante o tratamento e recuperação. A revisão clínica é obrigatória antes de copiar, imprimir ou gerar snapshot.</p>
+        <p>Documento específico da linha oncológica, com trajetória geriátrica, vulnerabilidades, recomendações registradas, eventos durante o tratamento e recuperação. A revisão clínica é obrigatória antes de copiar, imprimir ou arquivar uma versão.</p>
       </header>
       <div className="no-print"><OncogeriatricNav patientId={patientId} episodeId={episode.id} /></div>
       <OncogeriatricReportActions patientId={patientId} episodeId={episode.id} content={snapshotContent} />
@@ -130,8 +120,8 @@ export default async function OncogeriatricReportPage({ params, searchParams }: 
         <section>
           <h2>1. Contexto oncológico</h2>
           <p><strong>Diagnóstico:</strong> {episode.diagnosis}{episode.primarySite ? ` · sítio: ${episode.primarySite}` : ""}{episode.histology ? ` · histologia: ${episode.histology}` : ""}{episode.stage ? ` · estágio: ${episode.stage}` : ""}{episode.diseaseStatus ? ` · situação: ${episode.diseaseStatus}` : ""}</p>
-          <p><strong>Tratamento:</strong> {currentCourse ? `${currentCourse.regimenName} · ${currentCourse.modality} · intenção ${currentCourse.intent} · ${currentCourse.therapyLine ?? "linha não registrada"} · ${currentCourse.status}` : "Tratamento não registrado"}</p>
-          <p><strong>Último checkpoint:</strong> {latestCheckpoint ? `${latestCheckpoint.type} · ${formatClinicalDate(latestCheckpoint.occurredAt)}${latestCheckpoint.cycleNumber ? ` · ciclo ${latestCheckpoint.cycleNumber}` : ""}` : "Não registrado"}</p>
+          <p><strong>Tratamento:</strong> {currentCourse ? `${currentCourse.regimenName} · ${oncogeriatricModalityLabel(currentCourse.modality)} · intenção ${oncogeriatricIntentLabel(currentCourse.intent)} · ${currentCourse.therapyLine ?? "linha não registrada"} · ${oncogeriatricCourseStatusLabel(currentCourse.status)}` : "Tratamento não registrado"}</p>
+          <p><strong>Última avaliação:</strong> {latestCheckpoint ? `${oncogeriatricCheckpointTypeLabel(latestCheckpoint.type)} · ${formatClinicalDate(latestCheckpoint.occurredAt)}${latestCheckpoint.cycleNumber ? ` · ciclo ${latestCheckpoint.cycleNumber}` : ""}` : "Não registrada"}</p>
         </section>
 
         <section className="two-columns">
@@ -143,12 +133,12 @@ export default async function OncogeriatricReportPage({ params, searchParams }: 
           <div>
             <h2>3. CARG</h2>
             {carg ? <p>{carg.scoreText ?? "sem escore"} · {carg.classification ?? "sem classificação"} <span className="muted">(resultado histórico previamente registrado)</span></p> : <p>Não calculado nesta versão.</p>}
-            <p className="muted">Implementação eletrônica local temporariamente bloqueada enquanto se aguarda autorização formal de copyright/licenciamento. Nenhuma PHI é enviada a calculadoras externas.</p>
+            <p className="muted">A implementação eletrônica local permanece bloqueada enquanto se aguarda liberação formal das condições de uso. Nenhuma informação clínica é enviada a calculadoras externas.</p>
           </div>
         </section>
 
         <section>
-          <h2>4. Trajetória geriátrica — baseline → avaliação atual</h2>
+          <h2>4. Trajetória geriátrica — avaliação inicial → avaliação atual</h2>
           <table>
             <thead><tr><th scope="col">Domínio / instrumento</th><th scope="col">Trajetória</th></tr></thead>
             <tbody>
@@ -171,19 +161,19 @@ export default async function OncogeriatricReportPage({ params, searchParams }: 
             <ol>
               {activeInterventions.map((item) => (
                 <li key={item.id}>
-                  <strong>{item.domain}:</strong> {item.description}
+                  <strong>{oncogeriatricDomainLabel(item.domain)}:</strong> {item.description}
                   {item.intervention ? <> — <strong>recomendação:</strong> {item.intervention}</> : ""}
                   {item.responsibleProfessional ? <> · <strong>responsável:</strong> {item.responsibleProfessional}</> : ""}
                   {item.dueAt ? <> · <strong>prazo:</strong> {formatClinicalDate(item.dueAt)}</> : ""}
                 </li>
               ))}
             </ol>
-          ) : <p>Sem recomendação geriátrica ativa registrada neste episódio.</p>}
-          {completedInterventions.length ? <><h3>Intervenções concluídas previamente</h3><ul>{completedInterventions.map((item) => <li key={item.id}><strong>{item.domain}:</strong> {item.intervention ?? item.description}{item.result ? ` · resultado: ${item.result}` : ""}</li>)}</ul></> : null}
+          ) : <p>Sem recomendação geriátrica ativa registrada neste acompanhamento.</p>}
+          {completedInterventions.length ? <><h3>Intervenções concluídas previamente</h3><ul>{completedInterventions.map((item) => <li key={item.id}><strong>{oncogeriatricDomainLabel(item.domain)}:</strong> {item.intervention ?? item.description}{item.result ? ` · resultado: ${item.result}` : ""}</li>)}</ul></> : null}
         </section>
 
         <section>
-          <h2>6. Mudanças e sinais de atenção desde o último checkpoint</h2>
+          <h2>6. Mudanças e sinais de atenção desde a última avaliação</h2>
           {changes.length ? <ul>{changes.map((item, index) => <li key={`${item}-${index}`}>{item}</li>)}</ul> : <p>Sem mudança estruturada registrada.</p>}
           <p className="muted">Os itens acima são fatos registrados para reavaliação clínica; não geram ajuste automático do tratamento antineoplásico.</p>
         </section>
@@ -195,7 +185,7 @@ export default async function OncogeriatricReportPage({ params, searchParams }: 
 
         <section>
           <h2>8. Recuperação e pós-tratamento</h2>
-          {latestRecoveryByDomain.length ? <ul>{latestRecoveryByDomain.map((item) => <li key={item.id}><strong>{item.domain}:</strong> {recoveryLabel(item.status)} · {formatClinicalDate(item.assessedAt)}{item.notes ? ` · ${item.notes}` : ""}</li>)}</ul> : <p>Ainda sem avaliação de recuperação registrada.</p>}
+          {latestRecoveryByDomain.length ? <ul>{latestRecoveryByDomain.map((item) => <li key={item.id}><strong>{oncogeriatricDomainLabel(item.domain)}:</strong> {oncogeriatricRecoveryStatusLabel(item.status).toLocaleLowerCase("pt-BR")} · {formatClinicalDate(item.assessedAt)}{item.notes ? ` · ${item.notes}` : ""}</li>)}</ul> : <p>Ainda sem avaliação de recuperação registrada.</p>}
         </section>
 
         <section>
