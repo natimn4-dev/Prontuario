@@ -19,13 +19,13 @@ export function OncogeriatricDomainStatusSummary({ history }: { history: Capacit
     <section className="panel" aria-label="Avaliação geriátrica persistente por domínio">
       <div className="section-heading">
         <div>
-          <p className="eyebrow">Persistência longitudinal</p>
+          <p className="eyebrow">Acompanhamento longitudinal</p>
           <h2>Avaliação geriátrica por domínio</h2>
         </div>
-        <span className="muted">Mesmo motor metodológico do Prontuário Aprimorado</span>
+        <span className="muted">Mesmo sistema de avaliação do prontuário geriátrico geral</span>
       </div>
       <p className="muted">
-        Entram nesta visão apenas consultas explicitamente vinculadas a checkpoints deste episódio oncogeriátrico. Uma consulta posterior sem reaplicação não apaga o último estado registrado do domínio.
+        Entram nesta visão apenas consultas explicitamente vinculadas a avaliações deste acompanhamento oncogeriátrico. Uma consulta posterior sem reaplicação não apaga o último estado registrado do domínio.
       </p>
       {evaluated.length ? (
         <div className="evolution-list">
@@ -49,7 +49,7 @@ export function OncogeriatricDomainStatusSummary({ history }: { history: Capacit
           ))}
         </div>
       ) : (
-        <p className="muted">Nenhuma escala mapeada por domínio foi registrada em consulta vinculada a este episódio.</p>
+        <p className="muted">Nenhuma escala mapeada por domínio foi registrada em consulta vinculada a este acompanhamento.</p>
       )}
     </section>
   );
