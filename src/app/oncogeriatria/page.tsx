@@ -73,12 +73,12 @@ export default async function OncogeriatriaHome({ searchParams }: { searchParams
       <header className="hero compact-hero">
         <p className="eyebrow">Linha de cuidado dedicada</p>
         <h1>Oncogeriatria</h1>
-        <p>Avaliação geriátrica antes, durante e após o tratamento oncológico, integrada ao mesmo prontuário clínico e ao mesmo Patient.id.</p>
+        <p>Avaliação geriátrica antes, durante e após o tratamento oncológico, integrada ao mesmo prontuário e ao mesmo cadastro do paciente.</p>
       </header>
 
       <section className="notice">
-        <strong>Ingresso médico explícito</strong>
-        <span>Nenhum paciente é incluído automaticamente por idade. A busca abaixo apenas localiza o cadastro existente para que o médico decida iniciar — ou não — um episódio oncogeriátrico.</span>
+        <strong>Inclusão médica explícita</strong>
+        <span>Nenhum paciente é incluído automaticamente por idade. A busca abaixo apenas localiza o cadastro existente para que o médico decida iniciar — ou não — um acompanhamento oncogeriátrico.</span>
       </section>
 
       <section className="panel">
@@ -97,20 +97,20 @@ export default async function OncogeriatriaHome({ searchParams }: { searchParams
       </section>
 
       <section className="panel">
-        <div className="section-heading"><div><p className="eyebrow">Em acompanhamento</p><h2>{rows.length} episódio(s) oncogeriátrico(s)</h2></div><span className="muted">Máximo de 100 episódios recentes nesta visão</span></div>
+        <div className="section-heading"><div><p className="eyebrow">Em acompanhamento</p><h2>{rows.length} acompanhamento(s) oncogeriátrico(s)</h2></div><span className="muted">Máximo de 100 acompanhamentos recentes nesta visão</span></div>
         {rows.length ? <div className="evolution-list">{rows.map((row) => (
           <article className="evolution-card" key={row.episode.id}>
             <div>
               <h3><a href={`/patients/${row.episode.patientId}/oncogeriatria?episode=${row.episode.id}`}>{row.patient?.fullName ?? "Paciente"}</a></h3>
               <p className="dimension">{row.episode.primarySite ?? row.episode.diagnosis}</p>
-              <p className="trend">{phaseLabels[row.phase] ?? row.phase}{row.alert ? " · mudança relevante registrada" : ""}</p>
+              <p className="trend">{phaseLabels[row.phase] ?? "Fase não informada"}{row.alert ? " · mudança relevante registrada" : ""}</p>
             </div>
             <div className="score-block"><span>Tratamento</span><strong>{row.currentCourse?.regimenName ?? "—"}</strong></div>
             <div className="score-arrow" aria-hidden="true">→</div>
-            <div className="score-block"><span>Último</span><strong>{row.latest ? formatClinicalDate(row.latest.occurredAt) : "—"}</strong></div>
-            <div className="score-block"><span>Próximo</span><strong>{row.next?.scheduledAt ? formatClinicalDate(row.next.scheduledAt) : "—"}</strong></div>
+            <div className="score-block"><span>Última avaliação</span><strong>{row.latest ? formatClinicalDate(row.latest.occurredAt) : "—"}</strong></div>
+            <div className="score-block"><span>Próxima avaliação</span><strong>{row.next?.scheduledAt ? formatClinicalDate(row.next.scheduledAt) : "—"}</strong></div>
           </article>
-        ))}</div> : <p className="muted">Nenhum episódio oncogeriátrico corresponde ao filtro atual.</p>}
+        ))}</div> : <p className="muted">Nenhum acompanhamento oncogeriátrico corresponde ao filtro atual.</p>}
       </section>
     </main>
   );
