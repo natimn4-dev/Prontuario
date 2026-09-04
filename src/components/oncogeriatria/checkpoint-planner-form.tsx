@@ -5,11 +5,11 @@ import { useState, type FormEvent } from "react";
 
 const types = [
   ["PERIODIC_REASSESSMENT", "Reavaliação ampliada"],
-  ["EVENT_DRIVEN", "Reavaliação por evento"],
-  ["END_OF_TREATMENT", "Final do tratamento"],
-  ["POST_3_MONTHS", "Seguimento 3 meses"],
-  ["POST_6_MONTHS", "Seguimento 6 meses"],
-  ["POST_12_MONTHS", "Seguimento 12 meses"],
+  ["EVENT_DRIVEN", "Reavaliação por mudança clínica"],
+  ["END_OF_TREATMENT", "Avaliação ao final do tratamento"],
+  ["POST_3_MONTHS", "Seguimento em 3 meses"],
+  ["POST_6_MONTHS", "Seguimento em 6 meses"],
+  ["POST_12_MONTHS", "Seguimento em 12 meses"],
 ] as const;
 
 export interface CheckpointConsultationOption {
@@ -47,21 +47,21 @@ export function CheckpointPlannerForm({
         }),
       });
       const result = await response.json() as { message?: string };
-      if (!response.ok) throw new Error(result.message ?? "Não foi possível registrar checkpoint.");
-      setMessage("Checkpoint registrado. Nenhuma consulta foi criada automaticamente; quando selecionada, a consulta existente integra sua avaliação por domínio à trajetória oncogeriátrica.");
+      if (!response.ok) throw new Error(result.message ?? "Não foi possível registrar a reavaliação.");
+      setMessage("Reavaliação registrada. Nenhuma consulta foi criada automaticamente; quando uma consulta existente é selecionada, sua avaliação por domínio integra a trajetória oncogeriátrica.");
       router.refresh();
-    } catch (error) { setMessage(error instanceof Error ? error.message : "Não foi possível registrar checkpoint."); }
+    } catch (error) { setMessage(error instanceof Error ? error.message : "Não foi possível registrar a reavaliação."); }
     finally { setPending(false); }
   }
   return (
     <form className="patient-form" onSubmit={submit}>
-      <label>Tipo<select name="type">{types.map(([value, label]) => <option key={value} value={value}>{label}</option>)}</select></label>
+      <label>Tipo de reavaliação<select name="type">{types.map(([value, label]) => <option key={value} value={value}>{label}</option>)}</select></label>
       <label>Data de referência<input type="date" name="occurredAt" required /></label>
-      <label>Consulta existente para avaliação por domínio<select name="consultationId" defaultValue=""><option value="">Sem vínculo por enquanto</option>{consultations.map((item) => <option key={item.id} value={item.id}>{item.label}</option>)}</select></label>
-      <p className="muted">O vínculo reaproveita os resultados já persistidos no Prontuário. Nenhuma escala é copiada, recalculada ou preenchida automaticamente.</p>
-      <label>Próximo checkpoint previsto (opcional)<input type="date" name="scheduledAt" /></label>
-      <label>Gatilho/observação<input name="trigger" placeholder="Ex.: pós-hospitalização, nova perda funcional" /></label>
-      <button type="submit" disabled={pending}>{pending ? "Salvando…" : "Registrar checkpoint"}</button>
+      <label>Consulta existente para escalas e avaliação por domínio<select name="consultationId" defaultValue=""><option value="">Sem vínculo por enquanto</option>{consultations.map((item) => <option key={item.id} value={item.id}>{item.label}</option>)}</select></label>
+      <p className="muted">O vínculo reaproveita os resultados já registrados no prontuário geral. Nenhuma escala é copiada, recalculada ou preenchida automaticamente.</p>
+      <label>Próxima avaliação prevista (opcional)<input type="date" name="scheduledAt" /></label>
+      <label>Motivo/observação<input name="trigger" placeholder="Ex.: pós-hospitalização, nova perda funcional" /></label>
+      <button type="submit" disabled={pending}>{pending ? "Salvando…" : "Registrar reavaliação"}</button>
       {message ? <p role="status" className="muted">{message}</p> : null}
     </form>
   );
