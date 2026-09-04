@@ -3,7 +3,11 @@
 import { useState } from "react";
 import type { AgaScaleReportSection } from "@/domain/aga-report";
 import { proportionalAxisPosition } from "@/domain/chart-geometry";
-import { buildScaleChartPresentation } from "@/domain/scale-chart-presentation";
+import {
+  buildScaleChartPresentation,
+  isOrdinalScaleChart,
+  resolveScaleChartAxisRange,
+} from "@/domain/scale-chart-presentation";
 import { selectScaleChartWindow, type ScaleChartWindow } from "@/domain/scale-chart-window";
 import styles from "./scale-history-chart.module.css";
 
@@ -55,8 +59,12 @@ export function ScaleHistoryChart({ scale }: { scale: AgaScaleReportSection }) {
 
   const points = chartSeries.points;
   const numeric = points.filter((point): point is typeof point & { score: number } => point.score !== null);
-  const min = presentation.canPlot ? Math.min(...numeric.map((point) => point.score)) : 0;
-  const max = presentation.canPlot ? Math.max(...numeric.map((point) => point.score)) : 0;
+  const axisRange = presentation.canPlot
+    ? resolveScaleChartAxisRange(scale.code, numeric.map((point) => point.score))
+    : { min: 0, max: 0, source: "observed" as const };
+  const min = axisRange.min;
+  const max = axisRange.max;
+  const ordinal = isOrdinalScaleChart(scale.code);
   const width = chartWidth(points.length);
   const times = points.map((point) => new Date(point.appliedAt).getTime());
   const minTime = Math.min(...times);
@@ -92,7 +100,11 @@ export function ScaleHistoryChart({ scale }: { scale: AgaScaleReportSection }) {
         </div>
       ) : null}
 
-      {presentation.canPlot ? (
+      {ordinal ? (
+        <p className={styles.emptyState}>
+          FAST é um estadiamento ordinal. Para não sugerir que a distância numérica entre estágios representa uma magnitude clínica proporcional, a trajetória é apresentada na tabela cronológica abaixo, sem linha contínua.
+        </p>
+      ) : presentation.canPlot ? (
         <div
           className={styles.chartWrap}
           tabIndex={0}
@@ -101,6 +113,7 @@ export function ScaleHistoryChart({ scale }: { scale: AgaScaleReportSection }) {
           <svg
             className={styles.chart}
             data-time-scale="proportional"
+            data-score-range-source={axisRange.source}
             viewBox={`0 0 ${width} ${HEIGHT}`}
             width={width}
             role="img"
