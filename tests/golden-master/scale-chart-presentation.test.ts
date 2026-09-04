@@ -1,6 +1,10 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { buildScaleChartPresentation } from "../../src/domain/scale-chart-presentation.ts";
+import {
+  buildScaleChartPresentation,
+  isOrdinalScaleChart,
+  resolveScaleChartAxisRange,
+} from "../../src/domain/scale-chart-presentation.ts";
 import type { ScaleChartSeries } from "../../src/domain/scale-chart-series.ts";
 
 function series(scores: readonly (number | null)[], baselineIndex = 0): ScaleChartSeries {
@@ -64,4 +68,38 @@ test("alvo inválido de rótulos falha antes de projetar a apresentação", () =
     () => buildScaleChartPresentation(series([1, 2]), 1),
     /maior ou igual a 2/,
   );
+});
+
+test("eixo vertical usa a amplitude configurada da escala em vez de amplificar pequena variação observada", () => {
+  assert.deepEqual(resolveScaleChartAxisRange("katz", [5, 6]), {
+    min: 0,
+    max: 6,
+    source: "configured",
+  });
+  assert.deepEqual(resolveScaleChartAxisRange("pfeffer", [5, 6]), {
+    min: 0,
+    max: 33,
+    source: "configured",
+  });
+});
+
+test("valor histórico fora da faixa atual permanece visível no eixo", () => {
+  assert.deepEqual(resolveScaleChartAxisRange("katz", [-1, 5]), {
+    min: -1,
+    max: 6,
+    source: "configured",
+  });
+});
+
+test("instrumento sem amplitude finita configurada mantém fallback observado", () => {
+  assert.deepEqual(resolveScaleChartAxisRange("preensao", [16, 17]), {
+    min: 16,
+    max: 17,
+    source: "observed",
+  });
+});
+
+test("FAST é explicitamente tratado como estadiamento ordinal", () => {
+  assert.equal(isOrdinalScaleChart("fast"), true);
+  assert.equal(isOrdinalScaleChart("katz"), false);
 });
