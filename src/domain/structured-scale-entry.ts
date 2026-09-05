@@ -21,10 +21,14 @@ export type StructuredEntryResult<T extends StructuredEntryDefinition> = Omit<T,
   fields: readonly StructuredEntryField[];
 };
 
-const RAW_NUMERIC_ENTRY_CODES = new Set([
+const CONTINUOUS_MEASUREMENT_CODES = new Set([
   "preensao",
   "velocidade_marcha",
   "sentar_levantar_5x",
+]);
+
+const RAW_NUMERIC_ENTRY_CODES = new Set([
+  ...CONTINUOUS_MEASUREMENT_CODES,
   "g8",
   "esas",
 ]);
@@ -83,5 +87,5 @@ export function withStructuredScaleEntry<T extends StructuredEntryDefinition>(de
 }
 
 export function usesContinuousMeasurementEntry(code: string): boolean {
-  return RAW_NUMERIC_ENTRY_CODES.has(code);
+  return CONTINUOUS_MEASUREMENT_CODES.has(code);
 }
