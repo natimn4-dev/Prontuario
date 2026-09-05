@@ -127,6 +127,8 @@ try {
   if (login.status !== 200) blocked(`/login respondeu HTTP ${login.status}.`);
   const loginHtml = await login.text();
   if (!loginHtml.includes("Entrar com Google")) blocked("/login não contém a ação de autenticação Google.");
+  if (!loginHtml.includes('href="/auth/google"')) blocked("/login não contém o link navegável vigente para autenticação Google.");
+  if (!loginHtml.includes("Se o prontuário estiver aberto dentro de outro aplicativo")) blocked("/login não corresponde à interface de acesso vigente.");
 
   await startGoogleOAuth(base);
   await startGoogleOAuthViaPublicEntrypoint(base);
@@ -151,7 +153,7 @@ console.log(`- Programa 55+ confirmado ativo para ${PROGRAM55_MIN_AGE}–${PROGR
 console.log(`- Oncogeriatria confirmada ativa, schema pronto e versão ${ONCOGERIATRIA_VERSION}`);
 console.log("- /api/health/auth confirmou prontidão estática do OAuth");
 console.log("- CSS e JavaScript do Next.js presentes e entregues com HTTP 200");
-console.log("- /login contém ação de autenticação Google");
+console.log("- /login contém o link navegável e a interface de acesso vigentes");
 console.log("- endpoint canônico do Better Auth iniciou Google OAuth com state e Set-Cookie");
 console.log("- /auth/google exige gesto explícito, sem auto-redirecionamento, e preserva state/PKCE");
 console.log("- /auth/google oferece fallback de novo contexto para navegadores internos");
