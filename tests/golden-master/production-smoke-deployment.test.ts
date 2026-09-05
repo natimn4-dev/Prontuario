@@ -19,6 +19,11 @@ test("production smoke waits for managed-host redeploy without an overly short r
   assert.match(workflow, /sleep 30/);
 });
 
+test("production smoke rejeita interface de login antiga mesmo quando a release responde saudável", () => {
+  assert.match(smoke, /href="\/auth\/google"/);
+  assert.match(smoke, /Se o prontuário estiver aberto dentro de outro aplicativo/);
+});
+
 test("production smoke fails bounded network calls instead of hanging indefinitely", () => {
   assert.match(smoke, /REQUEST_TIMEOUT_MS = 15_000/);
   const timeoutCalls = smoke.match(/AbortSignal\.timeout\(REQUEST_TIMEOUT_MS\)/g) ?? [];
