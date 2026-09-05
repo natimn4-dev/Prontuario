@@ -1,4 +1,4 @@
-import { classifyRange } from "./clinical-engine.ts";
+import { classifyRange, type ScoreRange } from "./clinical-engine.ts";
 import { CHARLSON_RANGES, ESAS, G8 } from "./clinical-config/legacy-core.ts";
 import {
   calculateG8,
@@ -155,12 +155,14 @@ const esasFields = [
   { id: "wellbeing", label: "Bem-estar prejudicado" },
 ] as const;
 
+const ESAS_CHOICES = Array.from({ length: 11 }, (_, value) => ({ value, label: String(value) }));
+
 export const ESAS_STRUCTURED_DEFINITION = {
   code: ESAS_STRUCTURED_CODE,
   version: VERSION,
   name: "ESAS — Escala de Avaliação de Sintomas de Edmonton",
   dimension: "sintomas",
-  instruction: "Pontue cada um dos nove sintomas de 0 a 10. O sistema soma automaticamente o total de 0 a 90 e destaca na interpretação os sintomas com intensidade ≥7.",
+  instruction: "Pontue cada um dos nove sintomas de 0 a 10. Todos os valores ficam visíveis; o sistema soma automaticamente o total de 0 a 90 e destaca na interpretação os sintomas com intensidade ≥7.",
   applicationGuide: [
     { title: "Escala de intensidade", items: ["0 = ausência ou melhor situação possível; 10 = pior intensidade possível.", "Registre todos os nove itens para permitir comparação longitudinal segura."] },
     { title: "Regra preservada do prontuário", items: ["Total 0–9: carga leve; 10–29: moderada; 30–90: alta.", "Sintoma individual ≥7 recebe destaque clínico independente do total."] },
@@ -169,7 +171,8 @@ export const ESAS_STRUCTURED_DEFINITION = {
   fields: esasFields.map((item) => ({
     id: item.id,
     label: item.label,
-    number: { min: 0, max: 10, step: 1, help: "0 = ausência/melhor; 10 = pior intensidade possível." },
+    choices: ESAS_CHOICES,
+    display: "score10" as const,
   })),
 } as const;
 
@@ -185,7 +188,7 @@ function requiredNumber(raw: Record<string, unknown>, id: string, min: number, m
   return value;
 }
 
-function resultFromScore(score: number, ranges: typeof CHARLSON_RANGES) {
+function resultFromScore(score: number, ranges: ScoreRange[]) {
   const classification = classifyRange(ranges, score);
   return {
     score,
