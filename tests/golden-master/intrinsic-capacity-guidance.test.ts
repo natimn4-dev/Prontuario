@@ -20,7 +20,7 @@ test("gera orientações somente para domínios alterados e avaliados na consult
   assert.ok(guidance.alteredDomains.every((domain) => domain.evidenceReferences.every((reference) => reference.url === `https://pubmed.ncbi.nlm.nih.gov/${reference.pmid}/`)));
 });
 
-test("MNA-SF é indicador proxy de vitalidade e FRAIL-BR permanece contextual", () => {
+test("MNA-SF sinaliza vitalidade sem representá-la isoladamente e FRAIL-BR permanece contextual", () => {
   const guidance = buildIntrinsicCapacityGuidance([
     { scaleId: "mna_sf", scaleName: "MNA-SF", color: "vermelho", assessedInTargetConsultation: true },
     { scaleId: "frail_br", scaleName: "FRAIL-BR", color: "amarelo", assessedInTargetConsultation: true },
@@ -30,7 +30,8 @@ test("MNA-SF é indicador proxy de vitalidade e FRAIL-BR permanece contextual", 
   assert.ok(vitality);
   assert.deepEqual(vitality.triggeredBy, ["MNA-SF"]);
   assert.ok(!guidance.alteredDomains.some((domain) => domain.triggeredBy.includes("FRAIL-BR")));
-  assert.match(vitality.whyItMatters, /indicador/i);
+  assert.match(vitality.whyItMatters, /estado nutricional é um dos sinais acompanhados/i);
+  assert.match(vitality.whyItMatters, /junto com força, funcionalidade e condições clínicas/i);
 });
 
 test("FRAIL-BR isolado não define automaticamente locomoção ou vitalidade", () => {
