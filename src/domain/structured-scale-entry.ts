@@ -16,6 +16,7 @@ export type StructuredEntryField = {
 export type StructuredEntryDefinition = {
   code: string;
   fields: readonly StructuredEntryField[];
+  preserveNumericEntry?: boolean;
 };
 export type StructuredEntryResult<T extends StructuredEntryDefinition> = Omit<T, "fields"> & {
   fields: readonly StructuredEntryField[];
@@ -25,12 +26,6 @@ const CONTINUOUS_MEASUREMENT_CODES = new Set([
   "preensao",
   "velocidade_marcha",
   "sentar_levantar_5x",
-]);
-
-const RAW_NUMERIC_ENTRY_CODES = new Set([
-  ...CONTINUOUS_MEASUREMENT_CODES,
-  "g8",
-  "esas",
 ]);
 
 function decimalPlaces(value: number): number {
@@ -63,15 +58,15 @@ function numericChoices(rule: StructuredEntryNumericRule): StructuredEntryChoice
  * Converte escores numéricos discretos em listas de seleção para a interface clínica.
  *
  * A regra não altera o algoritmo de pontuação: o valor selecionado continua chegando
- * ao servidor como número. Medidas físicas contínuas, campos numéricos estruturais
- * do G8 e os nove itens 0–10 da ESAS permanecem numéricos porque o valor bruto é o
- * dado clínico necessário para o histórico longitudinal.
+ * ao servidor como número. Medidas físicas contínuas permanecem numéricas. Formulários
+ * já estruturados que precisam preservar valores brutos podem declarar
+ * `preserveNumericEntry: true`, sem mudar o comportamento histórico por código.
  *
  * MEEM, MoCA e ISI não passam por este adaptador: seus registros rápidos são anexados
  * separadamente no endpoint e permanecem score-only por regra de licenciamento/UX.
  */
 export function withStructuredScaleEntry<T extends StructuredEntryDefinition>(definition: T): StructuredEntryResult<T> {
-  if (RAW_NUMERIC_ENTRY_CODES.has(definition.code)) {
+  if (CONTINUOUS_MEASUREMENT_CODES.has(definition.code) || definition.preserveNumericEntry === true) {
     return definition as StructuredEntryResult<T>;
   }
 
