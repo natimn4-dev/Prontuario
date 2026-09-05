@@ -16,7 +16,6 @@ export type StructuredEntryField = {
 export type StructuredEntryDefinition = {
   code: string;
   fields: readonly StructuredEntryField[];
-  preserveNumericEntry?: boolean;
 };
 export type StructuredEntryResult<T extends StructuredEntryDefinition> = Omit<T, "fields"> & {
   fields: readonly StructuredEntryField[];
@@ -27,6 +26,8 @@ const CONTINUOUS_MEASUREMENT_CODES = new Set([
   "velocidade_marcha",
   "sentar_levantar_5x",
 ]);
+
+const STRUCTURED_RAW_NUMERIC_CODES = new Set(["g8", "esas"]);
 
 function decimalPlaces(value: number): number {
   const text = String(value);
@@ -54,19 +55,25 @@ function numericChoices(rule: StructuredEntryNumericRule): StructuredEntryChoice
   return choices;
 }
 
+function isAlreadyStructuredRawEntry(definition: StructuredEntryDefinition): boolean {
+  return STRUCTURED_RAW_NUMERIC_CODES.has(definition.code)
+    && definition.fields.length > 1
+    && !definition.fields.some((field) => field.id === "score");
+}
+
 /**
  * Converte escores numéricos discretos em listas de seleção para a interface clínica.
  *
  * A regra não altera o algoritmo de pontuação: o valor selecionado continua chegando
- * ao servidor como número. Medidas físicas contínuas permanecem numéricas. Formulários
- * já estruturados que precisam preservar valores brutos podem declarar
- * `preserveNumericEntry: true`, sem mudar o comportamento histórico por código.
+ * ao servidor como número. Medidas físicas contínuas permanecem numéricas. Os novos
+ * formulários itemizados de G8 e ESAS também preservam seus valores brutos, enquanto
+ * os registros legados de escore total continuam seguindo o comportamento histórico.
  *
  * MEEM, MoCA e ISI não passam por este adaptador: seus registros rápidos são anexados
  * separadamente no endpoint e permanecem score-only por regra de licenciamento/UX.
  */
 export function withStructuredScaleEntry<T extends StructuredEntryDefinition>(definition: T): StructuredEntryResult<T> {
-  if (CONTINUOUS_MEASUREMENT_CODES.has(definition.code) || definition.preserveNumericEntry === true) {
+  if (CONTINUOUS_MEASUREMENT_CODES.has(definition.code) || isAlreadyStructuredRawEntry(definition)) {
     return definition as StructuredEntryResult<T>;
   }
 
