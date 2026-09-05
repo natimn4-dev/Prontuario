@@ -1,5 +1,6 @@
+import { G8ChecklistForm } from "@/components/oncogeriatria/checklist-scales";
 import { OncogeriatricDomainStatusSummary } from "@/components/oncogeriatria/domain-status-summary";
-import { BaselineCheckpointForm, G8Form } from "@/components/oncogeriatria/oncogeriatric-forms";
+import { BaselineCheckpointForm } from "@/components/oncogeriatria/oncogeriatric-forms";
 import { OncogeriatricNav } from "@/components/oncogeriatria/oncogeriatric-nav";
 import { CONSULTATION_STATUS_LABELS, type ConsultationContextStatus } from "@/domain/consultation-context";
 import { oncogeriatricCheckpointStatusLabel, oncogeriatricCourseStatusLabel } from "@/domain/oncogeriatria/presentation-labels";
@@ -33,7 +34,7 @@ export default async function OncogeriatricBaselinePage({ params, searchParams }
       </section>
       <OncogeriatricDomainStatusSummary history={capacityHistory} />
       {current ? <section className="two-columns">
-        <article className="panel">{current.consultationId ? <><G8Form patientId={patientId} episodeId={episode.id} checkpointId={current.id} /><p><a href={`/consultations/${current.consultationId}#escalas`}>Abrir todas as escalas clínicas desta consulta →</a></p></> : <p className="clinical-caution">Para registrar o G8 no sistema único de escalas, a avaliação inicial precisa estar vinculada a uma consulta existente. O sistema não cria consulta artificialmente.</p>}</article>
+        <article className="panel">{current.consultationId ? <><G8ChecklistForm patientId={patientId} episodeId={episode.id} checkpointId={current.id} /><p><a href={`/consultations/${current.consultationId}#escalas`}>Abrir todas as escalas clínicas desta consulta →</a></p></> : <p className="clinical-caution">Para registrar o G8 no sistema único de escalas, a avaliação inicial precisa estar vinculada a uma consulta existente. O sistema não cria consulta artificialmente.</p>}</article>
         <article className="panel"><h3>CARG — indisponível nesta versão</h3><p className="clinical-caution">A implementação eletrônica local permanece bloqueada até a liberação formal das condições de uso da ferramenta. O restante da oncogeriatria e todas as demais escalas continuam disponíveis.</p><p className="muted">Nenhuma informação clínica é enviada a calculadoras externas.</p></article>
       </section> : null}
     </main>

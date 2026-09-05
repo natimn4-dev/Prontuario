@@ -1,0 +1,325 @@
+.scaleForm {
+  display: grid;
+  gap: 16px;
+}
+
+.scaleHeader {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.scaleHeader h3 {
+  margin: 4px 0 6px;
+  color: var(--ink);
+  font-size: 21px;
+}
+
+.scaleHeader p {
+  margin: 0;
+  color: var(--muted);
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+.badge {
+  flex: 0 0 auto;
+  padding: 7px 10px;
+  border: 1px solid #dfd2ec;
+  border-radius: 999px;
+  background: var(--primary-soft);
+  color: var(--primary-strong);
+  font-size: 11px;
+  font-weight: 800;
+}
+
+.question {
+  min-width: 0;
+  margin: 0;
+  padding: 14px;
+  border: 1px solid #e8e1ee;
+  border-radius: 14px;
+  background: #fdfcff;
+}
+
+.question legend {
+  max-width: calc(100% - 12px);
+  padding: 0 6px;
+  color: var(--ink);
+  font-size: 13px;
+  font-weight: 800;
+  line-height: 1.4;
+}
+
+.optionGrid,
+.checkboxGrid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.optionCard,
+.optionSelected,
+.checkboxCard,
+.checkboxSelected,
+.ageToggle,
+.ageToggleSelected {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  gap: 10px;
+  align-items: center;
+  min-height: 48px;
+  padding: 10px 12px;
+  border: 1px solid #e6ddeb;
+  border-radius: 12px;
+  background: #fff;
+  color: var(--ink);
+  cursor: pointer;
+}
+
+.optionSelected,
+.checkboxSelected,
+.ageToggleSelected {
+  border-color: var(--primary);
+  background: var(--primary-soft);
+}
+
+.optionCard input,
+.optionSelected input,
+.checkboxCard input,
+.checkboxSelected input,
+.ageToggle input,
+.ageToggleSelected input {
+  width: 18px;
+  height: 18px;
+  margin: 0;
+  accent-color: var(--primary);
+}
+
+.optionCard span,
+.optionSelected span,
+.checkboxCard span,
+.checkboxSelected span {
+  font-size: 12px;
+  line-height: 1.4;
+}
+
+.optionCard strong,
+.optionSelected strong,
+.checkboxCard strong,
+.checkboxSelected strong {
+  color: var(--primary-strong);
+  font-size: 11px;
+  white-space: nowrap;
+}
+
+.numericGrid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.numericField {
+  display: grid;
+  gap: 7px;
+  padding: 14px;
+  border: 1px solid #e8e1ee;
+  border-radius: 14px;
+  background: #fdfcff;
+}
+
+.numericField > span {
+  color: var(--ink);
+  font-size: 13px;
+  font-weight: 800;
+}
+
+.numericField input {
+  width: 100%;
+  min-height: 42px;
+  padding: 8px 10px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: #fff;
+  color: var(--ink);
+  font: inherit;
+}
+
+.numericField small,
+.ageToggle small,
+.ageToggleSelected small {
+  color: var(--muted);
+  font-size: 11px;
+  line-height: 1.4;
+}
+
+.ageToggle,
+.ageToggleSelected {
+  grid-template-columns: auto minmax(0, 1fr);
+}
+
+.ageToggle span,
+.ageToggleSelected span {
+  display: grid;
+  gap: 3px;
+}
+
+.ageToggle strong,
+.ageToggleSelected strong {
+  color: var(--ink);
+  font-size: 12px;
+}
+
+.ageOptions {
+  margin-top: 12px;
+}
+
+.ageOptions .question {
+  padding: 0;
+  border: 0;
+  background: transparent;
+}
+
+.resultBar {
+  display: grid;
+  gap: 8px;
+  padding: 14px 16px;
+  border: 1px solid #d8c9e6;
+  border-radius: 14px;
+  background: var(--primary-soft);
+}
+
+.resultBar > div:not(.scoreBreakdown) {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.resultBar span {
+  color: var(--primary-strong);
+  font-size: 11px;
+  font-weight: 800;
+}
+
+.resultBar strong {
+  color: var(--primary-strong);
+  font-size: 20px;
+}
+
+.resultBar p {
+  margin: 0;
+  color: var(--ink);
+  font-size: 12px;
+  line-height: 1.5;
+}
+
+.scoreBreakdown {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.scoreBreakdown span {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 9px 10px;
+  border-radius: 10px;
+  background: rgb(255 255 255 / 72%);
+}
+
+.scoreBreakdown strong {
+  font-size: 18px;
+}
+
+.actions {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+}
+
+.actions span,
+.hint {
+  margin: 0;
+  color: var(--muted);
+  font-size: 11px;
+  line-height: 1.4;
+}
+
+.actions button {
+  min-height: 42px;
+  padding: 9px 14px;
+  border: 0;
+  border-radius: 10px;
+  background: var(--primary);
+  color: #fff;
+  font: inherit;
+  font-size: 12px;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.actions button:disabled {
+  cursor: not-allowed;
+  opacity: 0.55;
+}
+
+.success,
+.error {
+  margin: 0;
+  padding: 10px 12px;
+  border-radius: 10px;
+  font-size: 12px;
+  line-height: 1.45;
+}
+
+.success {
+  border: 1px solid #b9ddc2;
+  background: #edf8f0;
+  color: #275c35;
+}
+
+.error {
+  border: 1px solid #e6c1c1;
+  background: #fff2f2;
+  color: #8a2d2d;
+}
+
+.optionCard input:focus-visible,
+.optionSelected input:focus-visible,
+.checkboxCard input:focus-visible,
+.checkboxSelected input:focus-visible,
+.ageToggle input:focus-visible,
+.ageToggleSelected input:focus-visible,
+.numericField input:focus-visible,
+.actions button:focus-visible {
+  outline: 3px solid rgb(107 85 217 / 22%);
+  outline-offset: 2px;
+}
+
+@media (max-width: 760px) {
+  .scaleHeader,
+  .actions {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .optionGrid,
+  .checkboxGrid,
+  .numericGrid,
+  .scoreBreakdown {
+    grid-template-columns: 1fr;
+  }
+
+  .badge {
+    align-self: flex-start;
+  }
+
+  .actions button {
+    width: 100%;
+  }
+}

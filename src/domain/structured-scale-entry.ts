@@ -11,6 +11,7 @@ export type StructuredEntryField = {
   label: string;
   number?: StructuredEntryNumericRule;
   choices?: readonly StructuredEntryChoice[];
+  display?: "checkbox" | "score10";
 };
 export type StructuredEntryDefinition = {
   code: string;
@@ -25,6 +26,8 @@ const CONTINUOUS_MEASUREMENT_CODES = new Set([
   "velocidade_marcha",
   "sentar_levantar_5x",
 ]);
+
+const STRUCTURED_RAW_NUMERIC_CODES = new Set(["g8", "esas"]);
 
 function decimalPlaces(value: number): number {
   const text = String(value);
@@ -52,18 +55,25 @@ function numericChoices(rule: StructuredEntryNumericRule): StructuredEntryChoice
   return choices;
 }
 
+function isAlreadyStructuredRawEntry(definition: StructuredEntryDefinition): boolean {
+  return STRUCTURED_RAW_NUMERIC_CODES.has(definition.code)
+    && definition.fields.length > 1
+    && !definition.fields.some((field) => field.id === "score");
+}
+
 /**
  * Converte escores numéricos discretos em listas de seleção para a interface clínica.
  *
  * A regra não altera o algoritmo de pontuação: o valor selecionado continua chegando
- * ao servidor como número. Medidas físicas contínuas permanecem numéricas porque o
- * valor bruto (kg, m/s, segundos) é o próprio dado clínico longitudinal.
+ * ao servidor como número. Medidas físicas contínuas permanecem numéricas. Os novos
+ * formulários itemizados de G8 e ESAS também preservam seus valores brutos, enquanto
+ * os registros legados de escore total continuam seguindo o comportamento histórico.
  *
  * MEEM, MoCA e ISI não passam por este adaptador: seus registros rápidos são anexados
  * separadamente no endpoint e permanecem score-only por regra de licenciamento/UX.
  */
 export function withStructuredScaleEntry<T extends StructuredEntryDefinition>(definition: T): StructuredEntryResult<T> {
-  if (CONTINUOUS_MEASUREMENT_CODES.has(definition.code)) {
+  if (CONTINUOUS_MEASUREMENT_CODES.has(definition.code) || isAlreadyStructuredRawEntry(definition)) {
     return definition as StructuredEntryResult<T>;
   }
 

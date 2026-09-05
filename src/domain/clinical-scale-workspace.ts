@@ -59,6 +59,7 @@ const CODE_DOMAIN: Record<string, ClinicalScaleDomain> = {
   zarit_paliativo_7_ms2013: "Sobrecarga do cuidador",
   zarit_br_22: "Sobrecarga do cuidador",
   mna_sf: "Vitalidade e nutrição",
+  sarcf: "Vitalidade e nutrição",
   pps: "Prognóstico e cuidados paliativos",
   kps: "Prognóstico e cuidados paliativos",
   lace: "Prognóstico e cuidados paliativos",
