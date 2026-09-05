@@ -26,6 +26,7 @@ const RAW_NUMERIC_ENTRY_CODES = new Set([
   "velocidade_marcha",
   "sentar_levantar_5x",
   "g8",
+  "esas",
 ]);
 
 function decimalPlaces(value: number): number {
@@ -58,8 +59,9 @@ function numericChoices(rule: StructuredEntryNumericRule): StructuredEntryChoice
  * Converte escores numéricos discretos em listas de seleção para a interface clínica.
  *
  * A regra não altera o algoritmo de pontuação: o valor selecionado continua chegando
- * ao servidor como número. Medidas físicas contínuas e campos numéricos estruturais
- * do G8 permanecem numéricos porque o valor bruto é o dado clínico necessário.
+ * ao servidor como número. Medidas físicas contínuas, campos numéricos estruturais
+ * do G8 e os nove itens 0–10 da ESAS permanecem numéricos porque o valor bruto é o
+ * dado clínico necessário para o histórico longitudinal.
  *
  * MEEM, MoCA e ISI não passam por este adaptador: seus registros rápidos são anexados
  * separadamente no endpoint e permanecem score-only por regra de licenciamento/UX.
