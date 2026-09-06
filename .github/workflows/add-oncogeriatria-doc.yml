@@ -1,0 +1,40 @@
+name: Add oncogeriatria document
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - '._transfer/oncogeriatria/chunk4.txt'
+
+permissions:
+  contents: write
+
+jobs:
+  assemble-document:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Rebuild and verify DOCX
+        shell: bash
+        run: |
+          set -euo pipefail
+          cat ._transfer/oncogeriatria/chunk1.txt \
+              ._transfer/oncogeriatria/chunk2.txt \
+              ._transfer/oncogeriatria/chunk3.txt \
+              ._transfer/oncogeriatria/chunk4.txt \
+            | tr -d '\r\n' \
+            | base64 --decode > 'PLANO DE ACOMPANHAMENTO EM ONCOGERIATRIA.docx'
+          echo '70cd247c0d9585046eb3c2a9b3480ed7d66598d1583f4b332cb526d3454c496c  PLANO DE ACOMPANHAMENTO EM ONCOGERIATRIA.docx' | sha256sum --check --strict
+      - name: Commit final document and remove transfer files
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git rm -r ._transfer/oncogeriatria
+          git rm .github/workflows/add-oncogeriatria-doc.yml
+          git add 'PLANO DE ACOMPANHAMENTO EM ONCOGERIATRIA.docx'
+          git commit -m 'docs: adicionar plano de acompanhamento em oncogeriatria'
+          git push origin HEAD:main
