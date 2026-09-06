@@ -4,7 +4,7 @@ on:
   push:
     branches: [main]
     paths:
-      - '._transfer/oncogeriatria/chunk4.txt'
+      - '._transfer/oncogeriatria/chunk1d.txt'
 
 permissions:
   contents: write
@@ -20,7 +20,10 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          cat ._transfer/oncogeriatria/chunk1.txt \
+          cat ._transfer/oncogeriatria/chunk1a.txt \
+              ._transfer/oncogeriatria/chunk1b.txt \
+              ._transfer/oncogeriatria/chunk1c.txt \
+              ._transfer/oncogeriatria/chunk1d.txt \
               ._transfer/oncogeriatria/chunk2.txt \
               ._transfer/oncogeriatria/chunk3.txt \
               ._transfer/oncogeriatria/chunk4.txt \
