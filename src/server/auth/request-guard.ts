@@ -15,8 +15,10 @@ export function createRequestGuard(validateSession: SessionValidator) {
   return async function guardRequest(request: NextRequest): Promise<NextResponse> {
     const pathname = request.nextUrl.pathname;
 
-    // Rotas públicas não consultam sessão nem banco de autenticação.
-    if (isPublicRoute(pathname)) return NextResponse.next();
+    // Rotas públicas não consultam sessão nem banco de autenticação, mas também
+    // não podem ser armazenadas por cache compartilhado. O login e o bootstrap
+    // OAuth mudam com a release e precisam sempre chegar ao origin.
+    if (isPublicRoute(pathname)) return preventSharedCaching(NextResponse.next());
 
     let authenticated = false;
     try {
