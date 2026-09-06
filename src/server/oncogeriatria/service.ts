@@ -333,9 +333,9 @@ export async function saveCarg(patientId: string, input: Record<string, unknown>
       scaleVersion: CARG_SCALE_VERSION,
       answers: answers as never,
       scoreNumeric: result.score,
-      scoreText: String(result.score),
+      scoreText: `${result.score}/23`,
       classification: category,
-      interpretation: `${result.decisionSupportMessage} O resultado não indica, contraindica, reduz, suspende ou modifica tratamento antineoplásico.`,
+      interpretation: `${result.decisionSupportMessage}${result.populationNote ? ` ${result.populationNote}` : ""} O resultado não indica, contraindica, reduz, suspende ou modifica tratamento antineoplásico.`,
       appliedAt: checkpoint.occurredAt,
     };
     const saved = checkpoint.cargAssessmentId

@@ -99,7 +99,7 @@ export default async function OncogeriatricPatientPage({ params, searchParams }:
         <div className="section-heading"><div><p className="eyebrow">Resumo oncogeriátrico</p><h2>Estado atual</h2></div><a href={`/patients/${patientId}/oncogeriatria/longitudinal?episode=${episode.id}`}>Ver evolução geriátrica →</a></div>
         <div className="metrics">
           <article><span>G8</span><strong>{g8?.scoreText ?? "Não avaliado"}</strong><small>{g8?.classification ?? "Sem classificação"}</small></article>
-          <article><span>CARG</span><strong>{carg?.scoreText ?? "Indisponível nesta versão"}</strong><small>{carg?.classification ?? "Aguardando liberação formal para implementação"}</small></article>
+          <article><span>CARG</span><strong>{carg?.scoreText ?? "Não avaliado"}</strong><small>{carg?.classification ?? "Sem classificação"}</small></article>
           <article><span>Eventos</span><strong>{workspace.toxicities.length}</strong><small>{latestRelevantEvent ? `${latestRelevantEvent.toxicityType} · ${formatClinicalDate(latestRelevantEvent.occurredAt)}` : "Nenhum evento registrado"}</small></article>
           <article><span>Intervenções</span><strong>{workspace.interventions.filter((item) => item.status !== "COMPLETED").length}</strong><small>ativas ou pendentes</small></article>
         </div>
@@ -109,7 +109,7 @@ export default async function OncogeriatricPatientPage({ params, searchParams }:
 
       <section className="two-columns">
         <article className="panel"><h2>Avaliação mais recente</h2>{latestCheckpoint ? <><p><strong>{oncogeriatricCheckpointTypeLabel(latestCheckpoint.type)}</strong> · {formatClinicalDate(latestCheckpoint.occurredAt)}</p><p className="muted">Situação: {oncogeriatricCheckpointStatusLabel(latestCheckpoint.status)}. Consulte “Durante o tratamento” para os detalhes estruturados.</p>{latestCheckpoint.consultationId ? <p><a href={`/consultations/${latestCheckpoint.consultationId}#escalas`}>Abrir escalas clínicas desta consulta →</a></p> : null}</> : <p className="muted">Sem dados registrados.</p>}</article>
-        <article className="panel"><h2>Princípio de decisão</h2><p>G8, CARG histórico, tendências e alertas são apoio à decisão clínica compartilhada. O sistema não indica, contraindica, reduz, suspende nem modifica esquema antineoplásico.</p></article>
+        <article className="panel"><h2>Princípio de decisão</h2><p>G8, CARG, tendências e alertas são apoio à decisão clínica compartilhada. O sistema não indica, contraindica, reduz, suspende nem modifica esquema antineoplásico.</p></article>
       </section>
     </main>
   );

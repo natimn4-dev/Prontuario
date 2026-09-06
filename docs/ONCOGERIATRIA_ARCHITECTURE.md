@@ -69,18 +69,19 @@ Fonte principal: Bellera CA et al. *Annals of Oncology*. 2012;23(8):2166-2172. d
 
 Referência científica: Hurria A et al. *Journal of Clinical Oncology*. 2011;29(25):3457-3465. doi:10.1200/JCO.2011.34.7625.
 
-A implementação eletrônica local do CARG está **bloqueada nesta release** enquanto se aguarda autorização formal de copyright/licenciamento para reprodução e uso eletrônico do instrumento.
+A implementação eletrônica local do CARG foi liberada pelo Responsável pelo Produto no documento técnico de transferência v1.0, de 06/09/2026.
 
-Regras de segurança nesta versão:
+Regras consolidadas nesta versão:
 
-- `ScaleDefinition` `CARG / HURRIA_2011` permanece inativa com `LICENSE_REVIEW_REQUIRED`;
-- o questionário CARG não é reproduzido na interface;
-- o algoritmo CARG não é executado;
-- o endpoint de gravação responde `CARG_LICENSE_REVIEW_REQUIRED`;
-- nenhuma PHI é enviada a calculadoras externas;
-- eventual resultado histórico previamente registrado pode ser exibido apenas como histórico, sem novo cálculo.
-
-Após autorização formal, a ativação deverá ocorrer em PR próprio com termos de uso documentados, versão/tradução autorizada, golden masters e revisão clínica.
+- `ScaleDefinition` `CARG / HURRIA_2011` permanece como fonte única e volta a ficar ativa por migration aditiva;
+- os 11 fatores e os pontos ficam visíveis para conferência;
+- o algoritmo é executado no domínio clínico e recalculado no servidor antes da persistência;
+- a pontuação teórica é 0–23; a faixa observada na coorte original foi 0–19;
+- as faixas são 0–5, 6–9 e 10–23, com frequências observadas de toxicidade grau 3–5 de 30%, 52% e 83%;
+- as frequências de grupo não são apresentadas como probabilidade individual;
+- paciente fora da população original recebe nota informativa sem bloqueio;
+- nenhuma informação clínica é enviada a calculadoras externas;
+- o resultado nunca gera ajuste, suspensão ou escolha automática de tratamento.
 
 ## Δ geriátrico
 
@@ -122,7 +123,7 @@ O relatório final é específico da Oncogeriatria e consolida:
 
 - contexto oncológico e fase do tratamento;
 - G8;
-- status do CARG enquanto licenciamento está pendente;
+- CARG, quando aplicado, com escore, faixa e interpretação contextual;
 - trajetória geriátrica baseline → atual;
 - vulnerabilidades e recomendações geriátricas registradas;
 - mudanças e sinais de atenção desde o último checkpoint;

@@ -1,13 +1,29 @@
-import { G8ChecklistForm } from "@/components/oncogeriatria/checklist-scales";
+import { CargChecklistForm, G8ChecklistForm } from "@/components/oncogeriatria/checklist-scales";
 import { OncogeriatricDomainStatusSummary } from "@/components/oncogeriatria/domain-status-summary";
 import { BaselineCheckpointForm } from "@/components/oncogeriatria/oncogeriatric-forms";
 import { OncogeriatricNav } from "@/components/oncogeriatria/oncogeriatric-nav";
 import { CONSULTATION_STATUS_LABELS, type ConsultationContextStatus } from "@/domain/consultation-context";
 import { oncogeriatricCheckpointStatusLabel, oncogeriatricCourseStatusLabel } from "@/domain/oncogeriatria/presentation-labels";
-import { capacityHistoryForOncogeriatricEpisode, formatClinicalDate, loadEpisodeWorkspace, loadOncogeriatricPatient, requireOncogeriatricReadAccess, resolveOncogeriatricEpisode } from "@/server/oncogeriatria/read";
+import { capacityHistoryForOncogeriatricEpisode, formatClinicalDate, loadEpisodeWorkspace, loadOncogeriatricPatient, readStructuredRecord, requireOncogeriatricReadAccess, resolveOncogeriatricEpisode } from "@/server/oncogeriatria/read";
 
 function consultationStatusLabel(value: string): string {
   return CONSULTATION_STATUS_LABELS[value as ConsultationContextStatus] ?? "Situação não informada";
+}
+
+function ageOnDate(birthDate: Date | null, referenceDate: Date): number | undefined {
+  if (!birthDate) return undefined;
+  let years = referenceDate.getUTCFullYear() - birthDate.getUTCFullYear();
+  const beforeBirthday = referenceDate.getUTCMonth() < birthDate.getUTCMonth()
+    || (referenceDate.getUTCMonth() === birthDate.getUTCMonth() && referenceDate.getUTCDate() < birthDate.getUTCDate());
+  if (beforeBirthday) years -= 1;
+  return years >= 0 ? years : undefined;
+}
+
+function cargReferenceSex(value: string | null): "FEMALE" | "MALE" | undefined {
+  const normalized = value?.trim().toLocaleLowerCase("pt-BR");
+  if (normalized === "feminino" || normalized === "female" || normalized === "f") return "FEMALE";
+  if (normalized === "masculino" || normalized === "male" || normalized === "m") return "MALE";
+  return undefined;
 }
 
 export default async function OncogeriatricBaselinePage({ params, searchParams }: { params: Promise<{ id: string }>; searchParams: Promise<{ episode?: string }> }) {
@@ -23,6 +39,9 @@ export default async function OncogeriatricBaselinePage({ params, searchParams }
   const current = initialAssessments[initialAssessments.length - 1];
   const consultationOptions = workspace.consultations.map((item) => ({ id: item.id, label: `${formatClinicalDate(item.occurredAt)} · ${consultationStatusLabel(item.status)}` }));
   const courseOptions = workspace.courses.map((item) => ({ id: item.id, label: `${item.regimenName} · ${oncogeriatricCourseStatusLabel(item.status)}` }));
+  const currentAge = current ? ageOnDate(patient.birthDate, current.occurredAt) : undefined;
+  const g8Assessment = current?.g8AssessmentId ? workspace.scaleAssessments.find((item) => item.id === current.g8AssessmentId) : null;
+  const cargAssessment = current?.cargAssessmentId ? workspace.scaleAssessments.find((item) => item.id === current.cargAssessmentId) : null;
 
   return (
     <main className="shell">
@@ -33,10 +52,13 @@ export default async function OncogeriatricBaselinePage({ params, searchParams }
         <article className="panel"><h2>Histórico antes do tratamento</h2>{initialAssessments.length ? <ul className="clean-list">{initialAssessments.map((item) => <li key={item.id}><strong>{formatClinicalDate(item.occurredAt)}</strong><span>{oncogeriatricCheckpointStatusLabel(item.status)} · {item.consultationId ? "vinculada a uma consulta e aos domínios registrados nela" : "sem consulta vinculada"}</span>{item.consultationId ? <a href={`/consultations/${item.consultationId}#escalas`}>Abrir escalas desta consulta →</a> : null}</li>)}</ul> : <p className="muted">Ainda não há avaliação inicial registrada.</p>}</article>
       </section>
       <OncogeriatricDomainStatusSummary history={capacityHistory} />
-      {current ? <section className="two-columns">
-        <article className="panel">{current.consultationId ? <><G8ChecklistForm patientId={patientId} episodeId={episode.id} checkpointId={current.id} /><p><a href={`/consultations/${current.consultationId}#escalas`}>Abrir todas as escalas clínicas desta consulta →</a></p></> : <p className="clinical-caution">Para registrar o G8 no sistema único de escalas, a avaliação inicial precisa estar vinculada a uma consulta existente. O sistema não cria consulta artificialmente.</p>}</article>
-        <article className="panel"><h3>CARG — indisponível nesta versão</h3><p className="clinical-caution">A implementação eletrônica local permanece bloqueada até a liberação formal das condições de uso da ferramenta. O restante da oncogeriatria e todas as demais escalas continuam disponíveis.</p><p className="muted">Nenhuma informação clínica é enviada a calculadoras externas.</p></article>
-      </section> : null}
+      {current ? current.consultationId ? (
+        <section className="oncogeriatric-scale-stack" aria-label="Instrumentos oncogeriátricos da avaliação inicial">
+          <article className="panel"><G8ChecklistForm patientId={patientId} episodeId={episode.id} checkpointId={current.id} initialAgeYears={currentAge} initialAnswers={readStructuredRecord(g8Assessment?.answers)} /></article>
+          <article className="panel"><CargChecklistForm patientId={patientId} episodeId={episode.id} checkpointId={current.id} initialAgeYears={currentAge} initialBiologicalSex={cargReferenceSex(patient.sex)} initialAnswers={readStructuredRecord(cargAssessment?.answers)} /></article>
+          <p><a href={`/consultations/${current.consultationId}#escalas`}>Abrir as demais escalas clínicas desta consulta →</a></p>
+        </section>
+      ) : <section className="panel"><p className="clinical-caution">Para registrar G8 e CARG no sistema único de escalas, a avaliação inicial precisa estar vinculada a uma consulta existente. O sistema não cria consulta artificialmente.</p></section> : null}
     </main>
   );
 }
