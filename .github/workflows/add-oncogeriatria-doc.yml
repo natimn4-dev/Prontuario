@@ -16,6 +16,33 @@ jobs:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
+      - name: Verify transfer segments
+        shell: bash
+        run: |
+          set -euo pipefail
+          check_blob() {
+            local file="$1" expected="$2" actual
+            actual="$(git hash-object "$file")"
+            if [ "$actual" != "$expected" ]; then
+              echo "::error::$file integrity mismatch: expected $expected, got $actual"
+              exit 1
+            fi
+          }
+          check_blob ._transfer/oncogeriatria/chunk1a1.txt ee8fc0730378a27e126ef7f1ebac3a18e0b7d1b4
+          check_blob ._transfer/oncogeriatria/chunk1a2.txt fb28386d7edc3dea52dfdbac9ec973343c2a0b97
+          check_blob ._transfer/oncogeriatria/chunk1a3.txt 013773031a08ff241e583e42f1473fd6047aa32d
+          check_blob ._transfer/oncogeriatria/chunk1a4.txt 5fdacad30a9ff42cff33a069008fb89a2589e62b
+          check_blob ._transfer/oncogeriatria/chunk1a5.txt 7bd41c9424d216c27bcfdff206e4d35c0552c14d
+          check_blob ._transfer/oncogeriatria/chunk1b.txt 96cba557d0294974c1a5280d27aa989f64f6fa32
+          check_blob ._transfer/oncogeriatria/chunk1c.txt 3f5babdb2ea40492a33572df96a4cac772a92877
+          check_blob ._transfer/oncogeriatria/chunk1d1.txt 5d5c5f94150933d3eedb7c8c198f9ebee2c2626a
+          check_blob ._transfer/oncogeriatria/chunk1d2.txt 52eb5165b3c1b06941634f4299967a3b0aa77bf7
+          check_blob ._transfer/oncogeriatria/chunk1d3.txt 5218e5641d04617f216d027b0b6cca08fa192a83
+          check_blob ._transfer/oncogeriatria/chunk1d4.txt 72f983a36da765f9a87a16292a6a4e61b9450d5d
+          check_blob ._transfer/oncogeriatria/chunk1d5.txt a38c3f81564dbf9583e0323cf96bfc764ee8b28a
+          check_blob ._transfer/oncogeriatria/chunk2.txt 3bfd899a42f87977aefeab3a4ef8495d0099d902
+          check_blob ._transfer/oncogeriatria/chunk3.txt 8d053273648498b273ed8f70c3c74e38fca2ac94
+          check_blob ._transfer/oncogeriatria/chunk4.txt b5bbe6c01c482b6af64492c64e0da0fd871d1fd3
       - name: Rebuild and verify DOCX
         shell: bash
         run: |
@@ -38,6 +65,7 @@ jobs:
             | tr -d '\r\n' \
             | base64 --decode > 'PLANO DE ACOMPANHAMENTO EM ONCOGERIATRIA.docx'
           echo '70cd247c0d9585046eb3c2a9b3480ed7d66598d1583f4b332cb526d3454c496c  PLANO DE ACOMPANHAMENTO EM ONCOGERIATRIA.docx' | sha256sum --check --strict
+          test "$(git hash-object 'PLANO DE ACOMPANHAMENTO EM ONCOGERIATRIA.docx')" = 'abf6f418b5ac9ca24eb27a29f397fc150b7d372f'
       - name: Commit final document and remove transfer files
         shell: bash
         run: |
