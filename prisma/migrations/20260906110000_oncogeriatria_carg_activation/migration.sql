@@ -4,9 +4,16 @@
 UPDATE `ScaleDefinition`
 SET
   `name` = 'CARG — risco de toxicidade da quimioterapia',
-  `active` = true,
+  `sourceStatus` = 'REVIEWED',
+  `isActive` = true,
   `sourceNote` = 'Modelo CARG de Hurria et al. (2011), implementado localmente e versionado para estimar faixas de toxicidade grau 3 a 5. O resultado apoia a decisão clínica e não prescreve ajuste, suspensão ou escolha de tratamento.',
-  `structuredSchema` = JSON_OBJECT(
+  `interpretationConfig` = JSON_OBJECT(
+    'lowMax', 5,
+    'intermediateMax', 9,
+    'highMin', 10,
+    'observedGradeThreeToFiveToxicityPercent', JSON_OBJECT('low', 30, 'intermediate', 52, 'high', 83)
+  ),
+  `config` = JSON_OBJECT(
     'calculator', 'domain:oncogeriatria/calculateCarg',
     'implementationStatus', 'AVAILABLE',
     'theoreticalScoreMax', 23,
