@@ -18,7 +18,7 @@ test("páginas protegidas sem leitura dinâmica não podem ser prerenderizadas p
   }
 });
 
-test("login, autenticação e health permanecem públicos sem consultar sessão", async () => {
+test("login, autenticação e health permanecem públicos, sem sessão e sem cache compartilhado", async () => {
   let validationCalls = 0;
   const guard = createRequestGuard(async () => {
     validationCalls += 1;
@@ -30,6 +30,10 @@ test("login, autenticação e health permanecem públicos sem consultar sessão"
     const response = await guard(new NextRequest(`https://prontuario.test${pathname}`));
     assert.equal(response.status, 200);
     assert.equal(response.headers.get("location"), null);
+    assert.match(response.headers.get("cache-control") ?? "", /private/);
+    assert.match(response.headers.get("cache-control") ?? "", /no-store/);
+    assert.match(response.headers.get("pragma") ?? "", /no-cache/);
+    assert.match(response.headers.get("vary") ?? "", /Cookie/);
   }
   assert.equal(validationCalls, 0);
 });
