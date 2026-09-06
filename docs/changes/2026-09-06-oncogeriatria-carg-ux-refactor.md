@@ -1,7 +1,7 @@
 # Refatoração da Oncogeriatria — CARG e continuidade de preenchimento
 
-Data: 06/09/2026  
-Documento de origem: Documento Técnico de Transferência — Módulo de Oncogeriatria Longitudinal, v1.0  
+Data: 06/09/2026
+Documento de origem: Documento Técnico de Transferência — Módulo de Oncogeriatria Longitudinal, v1.0
 Baseline: `main` em `6171143`
 
 ## Decisão
