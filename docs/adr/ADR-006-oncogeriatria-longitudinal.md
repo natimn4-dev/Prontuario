@@ -1,6 +1,6 @@
 # ADR-006 — Oncogeriatria: episódio, curso, checkpoint e decisão clínica humana
 
-Status: proposto no PR #173
+Status: aceito; decisão do CARG atualizada em 06/09/2026
 Data: 2026-09-02
 
 ## Contexto
@@ -23,23 +23,24 @@ O Prontuário Aprimorado já possui identidade canônica em `Patient.id`, consul
 
 G8 permanece em `ScaleDefinition`/`ScaleAssessment`. O checkpoint guarda apenas o ID do assessment correspondente. Nenhuma segunda tabela de pontuações é criada.
 
-O CARG possui apenas um slot estrutural reservado para futura ativação. A definição `CARG / HURRIA_2011` fica inativa com `LICENSE_REVIEW_REQUIRED`; não há questionário, tradução ou algoritmo operacional nesta release.
+O CARG reutiliza `ScaleDefinition`/`ScaleAssessment` e o vínculo `cargAssessmentId` do checkpoint. A definição `CARG / HURRIA_2011` é ativada por migration aditiva após liberação clínica documentada pelo Responsável pelo Produto.
 
 ## Decisão 5 — cálculo clínico fora do React
 
-A regra G8 fica em `src/domain/oncogeriatria/calculators.ts`, coberta por golden masters. Componentes React somente coletam respostas estruturadas e exibem resultados persistidos. O CARG permanece deliberadamente bloqueado até autorização formal de uso eletrônico.
+A regra G8 e a regra CARG ficam em `src/domain/oncogeriatria/calculators.ts`, cobertas por golden masters. Componentes React coletam respostas e solicitam a prévia ao domínio, mas o servidor sempre recalcula o resultado antes de persistir.
 
-## Decisão 6 — CARG bloqueado por governança de copyright/licenciamento
+## Decisão 6 — CARG liberado com rastreabilidade e decisão humana
 
-Enquanto não houver autorização documentada do Cancer and Aging Research Group/CARinG para reprodução e implementação eletrônica, o sistema:
+O documento técnico de transferência v1.0, de 06/09/2026, registra a liberação clínica do CARG para o escopo do projeto. O sistema:
 
-- não reproduz o questionário CARG;
-- não calcula o escore localmente;
-- não disponibiliza endpoint funcional de gravação CARG;
-- não envia PHI a calculadoras externas;
-- preserva apenas eventual resultado histórico já existente, claramente identificado como histórico.
-
-Após licença formal, a ativação deverá ocorrer em PR próprio, com fonte, versão, tradução autorizada, golden masters e revisão clínica.
+- implementa os 11 fatores do modelo de Hurria et al. (2011) no domínio versionado;
+- mostra a composição do escore para conferência;
+- recalcula no servidor e persiste no motor único de escalas;
+- diferencia máximo teórico de 23 da faixa 0–19 observada no estudo original;
+- apresenta 30%, 52% e 83% como frequências observadas nas faixas de derivação, não como risco individual determinístico;
+- sinaliza uso fora da população original sem impedir decisão clínica humana;
+- não envia dados a calculadoras externas;
+- não prescreve alteração de dose, esquema, intervalo ou suspensão.
 
 ## Decisão 7 — comparabilidade longitudinal versionada
 

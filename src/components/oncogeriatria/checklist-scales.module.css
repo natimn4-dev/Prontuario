@@ -43,6 +43,21 @@
   background: #fdfcff;
 }
 
+.formSection {
+  display: grid;
+  gap: 14px;
+  padding: 16px;
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  background: var(--surface-subtle);
+}
+
+.formSection h4 {
+  margin: 0;
+  color: var(--primary-strong);
+  font-size: 15px;
+}
+
 .question legend {
   max-width: calc(100% - 12px);
   padding: 0 6px;
@@ -222,17 +237,46 @@
 }
 
 .scoreBreakdown span {
-  display: flex;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
   align-items: baseline;
-  justify-content: space-between;
   gap: 8px;
   padding: 9px 10px;
   border-radius: 10px;
   background: rgb(255 255 255 / 72%);
 }
 
+.scoreBreakdown span {
+  color: var(--ink);
+  font-weight: 650;
+  line-height: 1.35;
+}
+
 .scoreBreakdown strong {
   font-size: 18px;
+}
+
+.breakdownDetails {
+  border-top: 1px solid #d8c9e6;
+  padding-top: 10px;
+}
+
+.breakdownDetails summary {
+  color: var(--primary-strong);
+  cursor: pointer;
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.breakdownDetails .scoreBreakdown {
+  margin-top: 10px;
+}
+
+.populationNote {
+  padding: 9px 10px;
+  border: 1px solid #e1b75f;
+  border-radius: 10px;
+  background: var(--warning-soft);
 }
 
 .actions {

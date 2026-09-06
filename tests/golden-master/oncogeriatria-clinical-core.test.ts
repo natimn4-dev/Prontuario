@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import { buildOncogeriatricCapacityHistory, latestOncogeriatricDomainStates } from "../../src/domain/oncogeriatria/capacity-history.ts";
-import { calculateG8, cargAvailability } from "../../src/domain/oncogeriatria/calculators.ts";
+import { calculateCarg, calculateG8, cargAvailability } from "../../src/domain/oncogeriatria/calculators.ts";
 import { buildOncogeriatricDelta, latestRecoveryAssessmentsByDomain } from "../../src/domain/oncogeriatria/longitudinal.ts";
 
 test("G8 original: cenário máximo resulta 17 e triagem não vulnerável", () => {
@@ -35,10 +35,73 @@ test("G8 original: cutoff 14 permanece triagem vulnerável", () => {
   assert.equal(result.classification, "VULNERABLE_SCREEN");
 });
 
-test("CARG permanece bloqueado quando licenciamento eletrônico não está resolvido", () => {
+test("CARG está disponível após liberação clínica documentada", () => {
   const availability = cargAvailability();
-  assert.equal(availability.status, "LICENSE_REVIEW_REQUIRED");
-  assert.match(availability.message, /licenciamento/i);
+  assert.equal(availability.status, "AVAILABLE");
+  assert.match(availability.message, /cálculo local versionado/i);
+});
+
+test("CARG reproduz as três faixas e percentuais observados no estudo de derivação", () => {
+  const base = {
+    ageYears: 70,
+    cancerType: "OTHER" as const,
+    standardDose: false,
+    multipleChemotherapyAgents: false,
+    biologicalSex: "FEMALE" as const,
+    hemoglobinGdl: 12,
+    creatinineClearanceMlMin: 60,
+    hearing: "EXCELLENT_GOOD" as const,
+    oneOrMoreFallsLastSixMonths: false,
+    needsHelpTakingMedications: false,
+    limitedWalkingOneBlock: false,
+    decreasedSocialActivity: false,
+  };
+  const low = calculateCarg(base);
+  const intermediate = calculateCarg({ ...base, ageYears: 72, cancerType: "GI_GU", standardDose: true });
+  const high = calculateCarg({ ...base, ageYears: 72, cancerType: "GI_GU", standardDose: true, multipleChemotherapyAgents: true, oneOrMoreFallsLastSixMonths: true });
+
+  assert.deepEqual({ score: low.score, category: low.category, percent: low.observedGradeThreeToFiveToxicityPercent }, { score: 0, category: "LOW", percent: 30 });
+  assert.deepEqual({ score: intermediate.score, category: intermediate.category, percent: intermediate.observedGradeThreeToFiveToxicityPercent }, { score: 6, category: "INTERMEDIATE", percent: 52 });
+  assert.deepEqual({ score: high.score, category: high.category, percent: high.observedGradeThreeToFiveToxicityPercent }, { score: 11, category: "HIGH", percent: 83 });
+});
+
+test("CARG usa limiares laboratoriais por sexo e preserva máximo teórico de 23", () => {
+  const maximum = calculateCarg({
+    ageYears: 72,
+    cancerType: "GI_GU",
+    standardDose: true,
+    multipleChemotherapyAgents: true,
+    biologicalSex: "MALE",
+    hemoglobinGdl: 10.9,
+    creatinineClearanceMlMin: 33.9,
+    hearing: "FAIR_OR_WORSE",
+    oneOrMoreFallsLastSixMonths: true,
+    needsHelpTakingMedications: true,
+    limitedWalkingOneBlock: true,
+    decreasedSocialActivity: true,
+  });
+  assert.equal(maximum.score, 23);
+  assert.equal(maximum.theoreticalMaximum, 23);
+  assert.equal(maximum.observedOriginalRangeMaximum, 19);
+  assert.equal(maximum.components.reduce((sum, component) => sum + component.points, 0), 23);
+});
+
+test("CARG sinaliza uso fora da faixa etária original sem impedir cálculo", () => {
+  const result = calculateCarg({
+    ageYears: 60,
+    cancerType: "OTHER",
+    standardDose: false,
+    multipleChemotherapyAgents: false,
+    biologicalSex: "FEMALE",
+    hemoglobinGdl: 12,
+    creatinineClearanceMlMin: 60,
+    hearing: "EXCELLENT_GOOD",
+    oneOrMoreFallsLastSixMonths: false,
+    needsHelpTakingMedications: false,
+    limitedWalkingOneBlock: false,
+    decreasedSocialActivity: false,
+  });
+  assert.match(result.populationNote ?? "", /65 anos ou mais/);
 });
 
 test("delta geriátrico nunca mistura versões diferentes", () => {

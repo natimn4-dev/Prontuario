@@ -47,6 +47,7 @@ test("rótulos técnicos permanecem como valores internos, mas são apresentados
   assert.equal(oncogeriatricRecoveryStatusLabel("RECOVERING"), "Em recuperação");
   assert.match(forms, /value=\{item\.value\}/);
   assert.match(forms, /action: "G8_SAVE"/);
+  assert.match(readFileSync("src/components/oncogeriatria/checklist-scales.tsx", "utf8"), /action: "CARG_SAVE"/);
   assert.match(checkForm, /type: "CYCLE"/);
 });
 
@@ -72,4 +73,15 @@ test("ponte de escalas preserva vínculo explícito e não cria consulta artific
   assert.match(scalesPage, /só entram na trajetória oncogeriátrica após o vínculo explícito/);
   assert.doesNotMatch(scalesPage, /prisma\.consultation\.create/);
   assert.doesNotMatch(scalesPage, /ClinicalScalesWorkspace/);
+});
+
+test("CARG liberado permanece transparente, local e sem conduta automática", () => {
+  const checklist = readFileSync("src/components/oncogeriatria/checklist-scales.tsx", "utf8");
+  const route = readFileSync("src/app/api/oncogeriatria/patients/[id]/route.ts", "utf8");
+  assert.match(checklist, /Conferir composição do escore/);
+  assert.match(checklist, /não define conduta antineoplásica/);
+  assert.match(route, /saveCarg/);
+  assert.doesNotMatch(route, /CARG_LICENSE_REVIEW_REQUIRED/);
+  assert.doesNotMatch(patientPage, /Aguardando liberação formal/);
+  assert.doesNotMatch(reportPage, /resultado histórico previamente registrado/);
 });

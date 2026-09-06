@@ -59,6 +59,7 @@ export async function loadEpisodeWorkspace(patientId: string, episodeId: string)
         scoreText: true,
         classification: true,
         interpretation: true,
+        answers: true,
         clinicalColor: true,
         appliedAt: true,
         consultationId: true,

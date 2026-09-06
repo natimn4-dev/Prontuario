@@ -70,7 +70,9 @@ export default async function OncogeriatricScalesPage({ params, searchParams }: 
         </article>
         <article className="panel">
           <h2>CARG</h2>
-          <p className="clinical-caution">A implementação eletrônica local permanece bloqueada até a liberação formal das condições de uso. O bloqueio não impede o uso das demais escalas clínicas.</p>
+          <p>O CARG está disponível na avaliação antes do tratamento, com os 11 fatores visíveis, composição auditável e cálculo local versionado.</p>
+          <p className="muted">O resultado estima faixas de toxicidade da quimioterapia e não define dose, esquema, adiamento ou suspensão.</p>
+          <a href={`/patients/${patientId}/oncogeriatria/basal?episode=${encodeURIComponent(episode.id)}`}>Ir para CARG na avaliação inicial →</a>
         </article>
       </section>
     </main>

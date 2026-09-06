@@ -5,7 +5,7 @@ import { oncogeriatricCheckpointTypeLabel, oncogeriatricCourseStatusLabel, oncog
 import { buildProfessionalIdentity } from "@/domain/professional-identity";
 import { formatClinicalDate, loadEpisodeWorkspace, loadOncogeriatricPatient, readStructuredRecord, requireOncogeriatricReadAccess, resolveOncogeriatricEpisode } from "@/server/oncogeriatria/read";
 
-function latestAssessmentByIds(ids: (string | null)[], assessments: { id: string; scaleCode: string; scoreText: string | null; classification: string | null; appliedAt: Date }[]) {
+function latestAssessmentByIds(ids: (string | null)[], assessments: { id: string; scaleCode: string; scoreText: string | null; classification: string | null; interpretation: string | null; appliedAt: Date }[]) {
   for (const id of ids.filter(Boolean).reverse()) {
     const found = assessments.find((item) => item.id === id);
     if (found) return found;
@@ -81,15 +81,15 @@ export default async function OncogeriatricReportPage({ params, searchParams }: 
   };
 
   const snapshotContent = {
-    schemaVersion: "oncogeriatria-report-v2",
+    schemaVersion: "oncogeriatria-report-v3",
     generatedAt: reportDate.toISOString(),
     patientId,
     episodeId: episode.id,
     diagnosis: { diagnosis: episode.diagnosis, primarySite: episode.primarySite, histology: episode.histology, stage: episode.stage, diseaseStatus: episode.diseaseStatus },
     treatment: currentCourse ? { regimenName: currentCourse.regimenName, modality: currentCourse.modality, intent: currentCourse.intent, therapyLine: currentCourse.therapyLine, status: currentCourse.status } : null,
     g8: g8 ? { score: g8.scoreText, classification: g8.classification } : null,
-    carg: carg ? { score: carg.scoreText, classification: carg.classification, historicalResult: true } : null,
-    cargImplementationStatus: "LICENSE_REVIEW_REQUIRED",
+    carg: carg ? { score: carg.scoreText, classification: carg.classification, interpretation: carg.interpretation } : null,
+    cargImplementationStatus: "AVAILABLE",
     trajectories,
     changes,
     activeInterventions: activeInterventions.map((item) => ({ domain: item.domain, vulnerability: item.description, recommendation: item.intervention, responsibleProfessional: item.responsibleProfessional, dueAt: item.dueAt?.toISOString() ?? null, status: item.status })),
@@ -132,8 +132,8 @@ export default async function OncogeriatricReportPage({ params, searchParams }: 
           </div>
           <div>
             <h2>3. CARG</h2>
-            {carg ? <p>{carg.scoreText ?? "sem escore"} · {carg.classification ?? "sem classificação"} <span className="muted">(resultado histórico previamente registrado)</span></p> : <p>Não calculado nesta versão.</p>}
-            <p className="muted">A implementação eletrônica local permanece bloqueada enquanto se aguarda liberação formal das condições de uso. Nenhuma informação clínica é enviada a calculadoras externas.</p>
+            {carg ? <><p>{carg.scoreText ?? "sem escore"} · {carg.classification ?? "sem classificação"}</p><p className="muted">{carg.interpretation ?? "Estimativa de risco de toxicidade grau 3 a 5; interpretar no contexto clínico."}</p></> : <p>Não avaliado.</p>}
+            <p className="muted">O cálculo é local e versionado. O resultado apoia a discussão clínica e não determina tratamento antineoplásico.</p>
           </div>
         </section>
 
