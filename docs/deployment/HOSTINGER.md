@@ -71,7 +71,7 @@ O endpoint público de health check deve responder HTTP 200 e incluir:
 
 - `status: "ok"`
 - `database: "ok"`
-- `releaseId: "2026-08-26-prontuario-refactor-v1"`
+- `releaseId: "2026-09-07-oncogeriatria-workspace-ux-v2"`
 
 Nesta release, a reconciliação de medicamentos passa a representar frequência diária, semanal, mensal e “se necessário” de forma estruturada, com programação explícita quando aplicável. Frequências semanais ou mensais incompletas permanecem salvas para revisão, mas bloqueiam a emissão do plano de medicamentos até a programação ser confirmada. O relatório para paciente/família também reforça a separação entre orientações educativas e condutas médicas/profissionais.
 
