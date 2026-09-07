@@ -1,5 +1,6 @@
 import { OncogeriatricDomainStatusSummary } from "@/components/oncogeriatria/domain-status-summary";
-import { OncogeriatricNav, OncogeriatricQuickActions, OncogeriatricStepActions } from "@/components/oncogeriatria/oncogeriatric-nav";
+import { OncogeriatricNav, OncogeriatricQuickActions, OncogeriatricStepActions, OncogeriatricWorkspaceHeader } from "@/components/oncogeriatria/oncogeriatric-nav";
+import styles from "./oncogeriatric-overview.module.css";
 import { StartEpisodeForm } from "@/components/oncogeriatria/oncogeriatric-forms";
 import {
   oncogeriatricCheckpointStatusLabel,
@@ -63,44 +64,49 @@ export default async function OncogeriatricPatientPage({ params, searchParams }:
 
   return (
     <main className="shell">
-      <header className="hero compact-hero">
-        <p className="eyebrow">Oncogeriatria · acompanhamento longitudinal</p>
-        <h1>{patient.fullName}</h1>
-        <p>O mesmo cadastro do paciente acompanha toda a trajetória oncológica. A área organiza vulnerabilidades e mudanças ao longo do tratamento sem decidir conduta antineoplásica.</p>
-      </header>
+      <OncogeriatricWorkspaceHeader
+        patientId={patientId}
+        patientName={patient.fullName}
+        episodeLabel={episode.diagnosis}
+        currentStep="overview"
+        title="Visão geral do acompanhamento"
+        description="Consulte o estado atual, identifique sinais de atenção e escolha o próximo passo clínico sem alterar automaticamente a conduta antineoplásica."
+      />
 
       <OncogeriatricNav patientId={patientId} episodeId={episode.id} />
+
+      {activeAlerts.length ? <section className="visible-alerts" role="status"><strong>Mudança clinicamente relevante registrada. Reavaliação médica indicada.</strong><ul>{activeAlerts.map((alert) => <li key={alert}>{alert}</li>)}</ul></section> : null}
+
+      <section className={`panel ${styles.summaryPanel}`} aria-labelledby="clinical-summary-title">
+        <div className="section-heading"><div><p className="eyebrow">Leitura rápida</p><h2 id="clinical-summary-title">Situação clínica atual</h2></div><a href={`/patients/${patientId}/oncogeriatria/longitudinal?episode=${episode.id}`}>Ver evolução geriátrica →</a></div>
+        <div className={styles.summaryGroup}>
+          <div className={styles.groupHeading}><strong>Contexto oncológico</strong><a href={`/patients/${patientId}/oncogeriatria/tratamento?episode=${episode.id}`}>Editar tratamento</a></div>
+          <dl className={styles.summaryGrid}>
+            <div><dt>Diagnóstico</dt><dd>{episode.primarySite ?? episode.diagnosis}</dd><small>{episode.histology ?? "Histologia não registrada"} · {episode.stage ?? "Estágio não registrado"}</small></div>
+            <div><dt>Tratamento</dt><dd>{currentCourse?.regimenName ?? "Não registrado"}</dd><small>{currentCourse ? `${oncogeriatricIntentLabel(currentCourse.intent)} · ${oncogeriatricCourseStatusLabel(currentCourse.status)}` : "Sem tratamento registrado"}</small></div>
+            <div><dt>Última avaliação</dt><dd>{latestCheckpoint ? formatClinicalDate(latestCheckpoint.occurredAt) : "Não registrada"}</dd><small>{latestCheckpoint ? oncogeriatricCheckpointTypeLabel(latestCheckpoint.type) : "Nenhuma avaliação registrada"}</small></div>
+            <div><dt>Ciclo atual</dt><dd>{latestCheckpoint?.cycleNumber ?? "Não registrado"}</dd><small>{currentCourse?.plannedCycles ? `de ${currentCourse.plannedCycles} previstos` : "Ciclos previstos não registrados"}</small></div>
+          </dl>
+        </div>
+        <div className={styles.summaryGroup}>
+          <div className={styles.groupHeading}><strong>Estado oncogeriátrico</strong></div>
+          <dl className={styles.summaryGrid}>
+            <div><dt>G8</dt><dd>{g8?.scoreText ?? "Não avaliado"}</dd><small>{g8?.classification ?? "Sem classificação"}</small></div>
+            <div><dt>CARG</dt><dd>{carg?.scoreText ?? "Não avaliado"}</dd><small>{carg?.classification ?? "Sem classificação"}</small></div>
+            <div><dt>Eventos registrados</dt><dd>{workspace.toxicities.length}</dd><small>{latestRelevantEvent ? `${latestRelevantEvent.toxicityType} · ${formatClinicalDate(latestRelevantEvent.occurredAt)}` : "Nenhum evento registrado"}</small></div>
+            <div><dt>Intervenções ativas</dt><dd>{workspace.interventions.filter((item) => item.status !== "COMPLETED").length}</dd><small>ativas ou pendentes</small></div>
+          </dl>
+        </div>
+      </section>
 
       <section className="panel">
         <div className="section-heading"><div><p className="eyebrow">Ações frequentes</p><h2>Próximo passo clínico</h2></div><span className="muted">Escolha apenas o que faz sentido nesta consulta.</span></div>
         <OncogeriatricQuickActions patientId={patientId} episodeId={episode.id} />
       </section>
 
-      {episodes.length > 1 ? <section className="panel"><div className="section-heading"><div><p className="eyebrow">Histórico</p><h2>História oncológica</h2></div></div><ul className="clean-list">{episodes.map((item) => <li key={item.id}><a href={`/patients/${patientId}/oncogeriatria?episode=${item.id}`}>{item.diagnosis}</a><span>{item.primarySite ?? "Sítio não registrado"} · {oncogeriatricEpisodeStatusLabel(item.status)} · iniciado em {formatClinicalDate(item.createdAt)}</span></li>)}</ul></section> : null}
-
-      <section className="panel" aria-labelledby="oncologic-block-title">
-        <div className="section-heading"><div><p className="eyebrow">Contexto oncológico</p><h2 id="oncologic-block-title">Diagnóstico e tratamento</h2></div><a href={`/patients/${patientId}/oncogeriatria/tratamento?episode=${episode.id}`}>Editar tratamento →</a></div>
-        <div className="metrics">
-          <article><span>Diagnóstico</span><strong>{episode.primarySite ?? episode.diagnosis}</strong><small>{episode.histology ?? "Histologia não registrada"} · {episode.stage ?? "Estágio não registrado"}</small></article>
-          <article><span>Tratamento</span><strong>{currentCourse?.regimenName ?? "Não registrado"}</strong><small>{currentCourse ? `${oncogeriatricIntentLabel(currentCourse.intent)} · ${oncogeriatricCourseStatusLabel(currentCourse.status)}` : "Sem tratamento registrado"}</small></article>
-          <article><span>Última avaliação</span><strong>{latestCheckpoint ? formatClinicalDate(latestCheckpoint.occurredAt) : "—"}</strong><small>{latestCheckpoint ? oncogeriatricCheckpointTypeLabel(latestCheckpoint.type) : "Nenhuma avaliação registrada"}</small></article>
-          <article><span>Ciclo atual</span><strong>{latestCheckpoint?.cycleNumber ?? "—"}</strong><small>{currentCourse?.plannedCycles ? `de ${currentCourse.plannedCycles} previstos` : "Ciclos previstos não registrados"}</small></article>
-        </div>
-      </section>
-
-      {activeAlerts.length ? <section className="visible-alerts" role="status"><strong>Mudança clinicamente relevante registrada. Reavaliação médica indicada.</strong><ul>{activeAlerts.map((alert) => <li key={alert}>{alert}</li>)}</ul></section> : null}
-
-      <section className="panel">
-        <div className="section-heading"><div><p className="eyebrow">Resumo oncogeriátrico</p><h2>Estado atual</h2></div><a href={`/patients/${patientId}/oncogeriatria/longitudinal?episode=${episode.id}`}>Ver evolução geriátrica →</a></div>
-        <div className="metrics">
-          <article><span>G8</span><strong>{g8?.scoreText ?? "Não avaliado"}</strong><small>{g8?.classification ?? "Sem classificação"}</small></article>
-          <article><span>CARG</span><strong>{carg?.scoreText ?? "Não avaliado"}</strong><small>{carg?.classification ?? "Sem classificação"}</small></article>
-          <article><span>Eventos</span><strong>{workspace.toxicities.length}</strong><small>{latestRelevantEvent ? `${latestRelevantEvent.toxicityType} · ${formatClinicalDate(latestRelevantEvent.occurredAt)}` : "Nenhum evento registrado"}</small></article>
-          <article><span>Intervenções</span><strong>{workspace.interventions.filter((item) => item.status !== "COMPLETED").length}</strong><small>ativas ou pendentes</small></article>
-        </div>
-      </section>
-
       <OncogeriatricDomainStatusSummary history={capacityHistory} />
+
+      {episodes.length > 1 ? <section className="panel"><div className="section-heading"><div><p className="eyebrow">Histórico</p><h2>História oncológica</h2></div></div><ul className="clean-list">{episodes.map((item) => <li key={item.id}><a href={`/patients/${patientId}/oncogeriatria?episode=${item.id}`}>{item.diagnosis}</a><span>{item.primarySite ?? "Sítio não registrado"} · {oncogeriatricEpisodeStatusLabel(item.status)} · iniciado em {formatClinicalDate(item.createdAt)}</span></li>)}</ul></section> : null}
 
       <section className="two-columns">
         <article className="panel"><h2>Avaliação mais recente</h2>{latestCheckpoint ? <><p><strong>{oncogeriatricCheckpointTypeLabel(latestCheckpoint.type)}</strong> · {formatClinicalDate(latestCheckpoint.occurredAt)}</p><p className="muted">Situação: {oncogeriatricCheckpointStatusLabel(latestCheckpoint.status)}. Consulte “Durante o tratamento” para os detalhes estruturados.</p>{latestCheckpoint.consultationId ? <p><a href={`/consultations/${latestCheckpoint.consultationId}#escalas`}>Abrir escalas clínicas desta consulta →</a></p> : null}</> : <p className="muted">Sem dados registrados.</p>}</article>

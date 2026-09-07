@@ -1,4 +1,4 @@
-import { OncogeriatricNav, OncogeriatricStepActions } from "@/components/oncogeriatria/oncogeriatric-nav";
+import { OncogeriatricNav, OncogeriatricStepActions, OncogeriatricWorkspaceHeader } from "@/components/oncogeriatria/oncogeriatric-nav";
 import { OncogeriatricReportActions } from "@/components/oncogeriatria/report-actions";
 import { latestRecoveryAssessmentsByDomain } from "@/domain/oncogeriatria/longitudinal";
 import { oncogeriatricCheckpointTypeLabel, oncogeriatricCourseStatusLabel, oncogeriatricDomainLabel, oncogeriatricIntentLabel, oncogeriatricModalityLabel, oncogeriatricRecoveryStatusLabel } from "@/domain/oncogeriatria/presentation-labels";
@@ -101,11 +101,7 @@ export default async function OncogeriatricReportPage({ params, searchParams }: 
 
   return (
     <main className="shell">
-      <header className="hero compact-hero no-print">
-        <p className="eyebrow">Oncogeriatria · etapa 8</p>
-        <h1>Relatório oncogeriátrico</h1>
-        <p>Documento específico da linha oncológica, com trajetória geriátrica, vulnerabilidades, recomendações registradas, eventos durante o tratamento e recuperação. A revisão clínica é obrigatória antes de copiar, imprimir ou arquivar uma versão.</p>
-      </header>
+      <div className="no-print"><OncogeriatricWorkspaceHeader patientId={patientId} patientName={patient.fullName} episodeLabel={episode.diagnosis} currentStep="relatorio" title="Relatório oncogeriátrico" description="Revise trajetória geriátrica, vulnerabilidades, recomendações registradas, eventos e recuperação antes de copiar, imprimir ou arquivar uma versão." /></div>
       <div className="no-print"><OncogeriatricNav patientId={patientId} episodeId={episode.id} /></div>
       <OncogeriatricReportActions patientId={patientId} episodeId={episode.id} content={snapshotContent} />
 

@@ -6,6 +6,7 @@ const navigationPath = "src/components/oncogeriatria/oncogeriatric-nav.tsx";
 const navigation = readFileSync(navigationPath, "utf8");
 const navigationStyles = readFileSync("src/components/oncogeriatria/oncogeriatric-nav.module.css", "utf8");
 const overview = readFileSync("src/app/patients/[id]/oncogeriatria/page.tsx", "utf8");
+const overviewStyles = readFileSync("src/app/patients/[id]/oncogeriatria/oncogeriatric-overview.module.css", "utf8");
 
 const stages = [
   ["basal", "Antes do tratamento"],
@@ -24,6 +25,7 @@ test("acompanhamento oncogeriátrico mantém uma rota independente por etapa", (
     assert.equal(existsSync(pagePath), true, `página ausente para ${label}`);
     const page = readFileSync(pagePath, "utf8");
     assert.match(page, /OncogeriatricStepActions/);
+    assert.match(page, /OncogeriatricWorkspaceHeader/);
     assert.ok(page.includes(`currentStep="${stage}"`), `rodapé de fluxo ausente em ${label}`);
   }
 });
@@ -44,9 +46,10 @@ test("menu não pré-carrega todas as áreas e preserva acessibilidade responsiv
   assert.match(navigation, /prefetch=\{false\}/);
   assert.match(navigation, /aria-current=\{active \? "step"/);
   assert.match(navigation, /aria-label="Ações da etapa"/);
-  assert.match(navigation, /Cada etapa abre em uma página independente/);
+  assert.match(navigation, /scrollIntoView\(\{ block: "nearest", inline: "center" \}\)/);
+  assert.match(navigation, /aria-label="Retorno e contexto do paciente"/);
   assert.match(navigationStyles, /overflow-x: auto/);
-  assert.match(navigationStyles, /min-height: 48px/);
+  assert.match(navigationStyles, /scroll-snap-type: x proximity/);
   assert.match(navigationStyles, /@media \(max-width: 760px\)/);
   assert.match(navigationStyles, /@media print/);
 });
@@ -59,4 +62,21 @@ test("atalhos frequentes permanecem separados, legíveis e sem pré-carregamento
   assert.match(navigationStyles, /\.quickActions \{/);
   assert.match(navigationStyles, /grid-template-columns: repeat\(4, minmax\(0, 1fr\)\)/);
   assert.match(navigationStyles, /gap: 10px/);
+});
+
+test("cabeçalho clínico prioriza identidade, tarefa e retorno sem hero repetitivo", () => {
+  assert.match(navigation, /Paciente em acompanhamento/);
+  assert.match(navigation, /Tarefa atual/);
+  assert.match(navigation, /Prontuário do paciente/);
+  assert.match(navigationStyles, /\.clinicalHeader \{/);
+  assert.match(navigationStyles, /grid-template-columns: minmax\(0, \.9fr\) minmax\(0, 1\.1fr\)/);
+});
+
+test("visão geral usa resumo semântico compacto e apresenta alertas antes das ações", () => {
+  assert.match(overview, /<dl className=\{styles\.summaryGrid\}>/);
+  assert.doesNotMatch(overview, /<div className="metrics">/);
+  assert.ok(overview.indexOf("activeAlerts.length") < overview.indexOf("<OncogeriatricQuickActions"));
+  assert.match(overviewStyles, /\.summaryGrid dt/);
+  assert.match(overviewStyles, /font-size: 17px/);
+  assert.match(overviewStyles, /@media \(max-width: 560px\)/);
 });

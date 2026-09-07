@@ -1,5 +1,5 @@
 import { OncogeriatricDomainStatusSummary } from "@/components/oncogeriatria/domain-status-summary";
-import { OncogeriatricNav, OncogeriatricStepActions } from "@/components/oncogeriatria/oncogeriatric-nav";
+import { OncogeriatricNav, OncogeriatricStepActions, OncogeriatricWorkspaceHeader } from "@/components/oncogeriatria/oncogeriatric-nav";
 import { CapacityDimensionHistoryChart } from "@/components/reports/capacity-dimension-history-chart";
 import { ClinicalMetricTrendChart } from "@/components/reports/clinical-metric-trend-chart";
 import { SCALE_DIRECTIONS } from "@/domain/longitudinal-scales";
@@ -64,7 +64,7 @@ export default async function OncogeriatricLongitudinalPage({ params, searchPara
   const chartGroups = scaleGroups.filter((group) => group.observations.length >= 1).slice(0, 8);
   return (
     <main className="shell">
-      <header className="hero compact-hero"><p className="eyebrow">Oncogeriatria · etapa 6</p><h1>Evolução geriátrica</h1><p>{patient.fullName} · avaliação inicial → tratamento → eventos → intervenção → recuperação. Comparações são feitas apenas entre o mesmo código e a mesma versão do instrumento.</p></header>
+      <OncogeriatricWorkspaceHeader patientId={patientId} patientName={patient.fullName} episodeLabel={episode.diagnosis} currentStep="longitudinal" title="Evolução geriátrica" description="Acompanhe avaliação inicial, tratamento, eventos, intervenções e recuperação. Comparações usam somente o mesmo instrumento e a mesma versão." />
       <OncogeriatricNav patientId={patientId} episodeId={episode.id} />
 
       <OncogeriatricDomainStatusSummary history={capacityHistory} />

@@ -1,7 +1,7 @@
 import { DomainLinkedOncogeriatricCheckForm } from "@/components/oncogeriatria/domain-linked-check-form";
 import { OncogeriatricDomainStatusSummary } from "@/components/oncogeriatria/domain-status-summary";
 import { ToxicityForm } from "@/components/oncogeriatria/oncogeriatric-forms";
-import { OncogeriatricNav, OncogeriatricStepActions } from "@/components/oncogeriatria/oncogeriatric-nav";
+import { OncogeriatricNav, OncogeriatricStepActions, OncogeriatricWorkspaceHeader } from "@/components/oncogeriatria/oncogeriatric-nav";
 import { CONSULTATION_STATUS_LABELS, type ConsultationContextStatus } from "@/domain/consultation-context";
 import { oncogeriatricCheckpointTypeLabel, oncogeriatricCourseStatusLabel } from "@/domain/oncogeriatria/presentation-labels";
 import { capacityHistoryForOncogeriatricEpisode, formatClinicalDate, hasRelevantCheckpointAlert, loadEpisodeWorkspace, loadOncogeriatricPatient, readStructuredRecord, requireOncogeriatricReadAccess, resolveOncogeriatricEpisode } from "@/server/oncogeriatria/read";
@@ -24,7 +24,7 @@ export default async function OncogeriatricCheckPage({ params, searchParams }: {
   const consultationOptions = workspace.consultations.map((item) => ({ id: item.id, label: `${formatClinicalDate(item.occurredAt)} · ${consultationStatusLabel(item.status)}` }));
   return (
     <main className="shell">
-      <header className="hero compact-hero"><p className="eyebrow">Oncogeriatria · etapa 3</p><h1>Reavaliação durante o tratamento</h1><p>{patient.fullName}. Registre mudanças desde a última avaliação sem substituir uma reavaliação geriátrica ampliada quando ela for necessária.</p></header>
+      <OncogeriatricWorkspaceHeader patientId={patientId} patientName={patient.fullName} episodeLabel={episode.diagnosis} currentStep="check" title="Reavaliação durante o tratamento" description="Registre mudanças desde a última avaliação sem substituir uma reavaliação geriátrica ampliada quando ela for necessária." />
       <OncogeriatricNav patientId={patientId} episodeId={episode.id} />
       <section className="two-columns">
         <article className="panel"><h2>Nova reavaliação</h2><DomainLinkedOncogeriatricCheckForm patientId={patientId} episodeId={episode.id} courses={courseOptions} consultations={consultationOptions} /></article>

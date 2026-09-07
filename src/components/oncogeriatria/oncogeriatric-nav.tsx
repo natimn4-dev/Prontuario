@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { useEffect, useRef } from "react";
 import styles from "./oncogeriatric-nav.module.css";
 
 const steps = [
@@ -25,28 +26,67 @@ function stepHref(patientId: string, path: string, episodeId?: string | null): s
   return `/patients/${patientId}/oncogeriatria${path}${episodeSuffix(episodeId)}`;
 }
 
+export function OncogeriatricWorkspaceHeader({
+  patientId,
+  patientName,
+  episodeLabel,
+  currentStep,
+  title,
+  description,
+}: {
+  patientId: string;
+  patientName: string;
+  episodeLabel: string;
+  currentStep: OncogeriatricStepId;
+  title: string;
+  description: string;
+}) {
+  const stepIndex = currentStep === "overview" ? -1 : steps.findIndex((step) => step.id === currentStep);
+
+  return (
+    <header className={styles.clinicalHeader}>
+      <div className={styles.identityBlock}>
+        <nav className={styles.breadcrumbs} aria-label="Retorno e contexto do paciente">
+          <Link href="/oncogeriatria" prefetch={false}>Oncogeriatria</Link>
+          <span aria-hidden="true">›</span>
+          <Link href={`/patients/${patientId}`} prefetch={false}>Prontuário do paciente</Link>
+        </nav>
+        <p className={styles.identityLabel}>Paciente em acompanhamento</p>
+        <h1>{patientName}</h1>
+        <p className={styles.episodeLabel}>{episodeLabel}</p>
+      </div>
+      <div className={styles.taskBlock}>
+        <span className={styles.stepBadge}>
+          {stepIndex >= 0 ? `Etapa ${stepIndex + 1} de ${steps.length}` : "Visão geral"}
+        </span>
+        <p className={styles.taskLabel}>Tarefa atual</p>
+        <h2>{title}</h2>
+        <p>{description}</p>
+      </div>
+    </header>
+  );
+}
+
 export function OncogeriatricNav({ patientId, episodeId }: { patientId: string; episodeId?: string | null }) {
   const pathname = usePathname();
+  const activeLinkRef = useRef<HTMLAnchorElement>(null);
   const overviewPath = `/patients/${patientId}/oncogeriatria`;
   const activeIndex = steps.findIndex((step) => pathname === `${overviewPath}${step.path}`);
   const activeStep = activeIndex >= 0 ? steps[activeIndex] : null;
   const overviewActive = pathname === overviewPath;
 
+  useEffect(() => {
+    activeLinkRef.current?.scrollIntoView({ block: "nearest", inline: "center" });
+  }, [pathname]);
+
   return (
     <nav className={styles.workspaceNav} aria-label="Etapas do acompanhamento oncogeriátrico">
-      <div className={styles.navHeader}>
+      <div className={styles.railHeader}>
         <div>
-          <p className="eyebrow">Acompanhamento em etapas</p>
-          <div className={styles.currentStep}>
-            <h2>{activeStep?.label ?? "Visão geral"}</h2>
-            <strong>{activeStep ? `Etapa ${activeIndex + 1} de ${steps.length}` : "Resumo do acompanhamento"}</strong>
-          </div>
-          <p>{activeStep?.description ?? "Consulte o estado atual e escolha o próximo passo clínico."}</p>
+          <p className="eyebrow">Jornada de cuidado</p>
+          <strong>{activeStep ? `${activeStep.label} · etapa ${activeIndex + 1} de ${steps.length}` : "Visão geral do acompanhamento"}</strong>
         </div>
-        <div className={styles.exitLinks} aria-label="Saídas rápidas">
-          <Link href="/" prefetch={false}>Página inicial</Link>
-          <Link href={`/patients/${patientId}`} prefetch={false}>Prontuário do paciente</Link>
-        </div>
+        <span>Abra somente a etapa necessária nesta consulta.</span>
       </div>
 
       <progress
@@ -60,6 +100,7 @@ export function OncogeriatricNav({ patientId, episodeId }: { patientId: string; 
         <Link
           href={`${overviewPath}${episodeSuffix(episodeId)}`}
           prefetch={false}
+          ref={overviewActive ? activeLinkRef : undefined}
           className={`${styles.overviewLink} ${overviewActive ? styles.active : ""}`}
           aria-current={overviewActive ? "page" : undefined}
         >
@@ -76,6 +117,7 @@ export function OncogeriatricNav({ patientId, episodeId }: { patientId: string; 
                 <Link
                   href={stepHref(patientId, step.path, episodeId)}
                   prefetch={false}
+                  ref={active ? activeLinkRef : undefined}
                   className={active ? styles.active : undefined}
                   aria-current={active ? "step" : undefined}
                 >
@@ -87,7 +129,6 @@ export function OncogeriatricNav({ patientId, episodeId }: { patientId: string; 
           })}
         </ol>
       </div>
-      <p className={styles.performanceNote}>Cada etapa abre em uma página independente para reduzir o carregamento do prontuário.</p>
     </nav>
   );
 }
@@ -100,17 +141,20 @@ export function OncogeriatricQuickActions({
   episodeId?: string | null;
 }) {
   const actions = [
-    { label: "Avaliação antes do tratamento", path: "/basal" },
-    { label: "Reavaliar durante o tratamento", path: "/check" },
-    { label: "Aplicar ou revisar escalas", path: "/escalas" },
-    { label: "Revisar relatório", path: "/relatorio" },
+    { step: "Etapa 1", label: "Avaliação antes do tratamento", path: "/basal" },
+    { step: "Etapa 3", label: "Reavaliar durante o tratamento", path: "/check" },
+    { step: "Etapa 5", label: "Aplicar ou revisar escalas", path: "/escalas" },
+    { step: "Etapa 8", label: "Revisar relatório", path: "/relatorio" },
   ] as const;
 
   return (
     <nav className={styles.quickActions} aria-label="Ações clínicas frequentes">
       {actions.map((action) => (
         <Link key={action.path} href={stepHref(patientId, action.path, episodeId)} prefetch={false}>
-          <span>{action.label}</span>
+          <span className={styles.quickActionCopy}>
+            <small>{action.step}</small>
+            <strong>{action.label}</strong>
+          </span>
           <span aria-hidden="true">→</span>
         </Link>
       ))}
@@ -155,7 +199,7 @@ export function OncogeriatricStepActions({
           </Link>
         ) : (
           <Link href="/" prefetch={false} className={styles.primaryAction}>
-            <span>Concluir navegação</span>
+            <span>Não encerra o episódio clínico</span>
             <strong>Finalizar e voltar à página inicial</strong>
           </Link>
         )}
