@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import test from "node:test";
 import { resolve4, resolve6, resolveCname } from "node:dns/promises";
 import { spawnSync } from "node:child_process";
+import { networkInterfaces } from "node:os";
 
 const host = "prontuario.nataliamendesgeriatra.com";
 const loginUrl = `https://${host}/login`;
@@ -23,6 +24,14 @@ function chromeBinary(): string | null {
     if (found) return found;
   }
   return null;
+}
+
+function runnerHasGlobalIpv6(): boolean {
+  return Object.values(networkInterfaces()).some((addresses) => addresses?.some((item) => {
+    if (item.family !== "IPv6" || item.internal) return false;
+    const address = item.address.toLowerCase();
+    return !address.startsWith("fe80:") && !address.startsWith("fc") && !address.startsWith("fd");
+  }));
 }
 
 async function dnsSnapshot() {
@@ -68,7 +77,13 @@ test("diagnóstico de produção identifica cada endpoint DNS e valida /login em
 
   const endpointResults: Array<{ family: 4 | 6; address: string; healthy: boolean }> = [];
   for (const record of a) endpointResults.push({ family: 4, address: record.address, healthy: pinnedCurl(record.address, 4) });
-  for (const record of aaaa) endpointResults.push({ family: 6, address: record.address, healthy: pinnedCurl(record.address, 6) });
+  const ipv6Capable = runnerHasGlobalIpv6();
+  console.log("PROD_DIAG_IPV6_RUNNER_CAPABILITY", JSON.stringify({ ipv6Capable }));
+  if (ipv6Capable) {
+    for (const record of aaaa) endpointResults.push({ family: 6, address: record.address, healthy: pinnedCurl(record.address, 6) });
+  } else if (aaaa.length) {
+    console.log("PROD_DIAG_IPV6_SKIPPED", "O executor não possui endereço IPv6 global; os registros AAAA permanecem visíveis no snapshot DNS.");
+  }
   console.log("PROD_DIAG_ENDPOINT_SUMMARY", JSON.stringify(endpointResults));
 
   const defaultCurl = command("curl", [
@@ -77,6 +92,8 @@ test("diagnóstico de produção identifica cada endpoint DNS e valida /login em
     loginUrl,
   ], 15_000);
   console.log("PROD_DIAG_CURL_DEFAULT", JSON.stringify({ ...defaultCurl, stdout: defaultCurl.stdout.slice(0, 3000) }));
+  assert.equal(defaultCurl.status, 0, "A rota padrão não conseguiu acessar /login.");
+  assert.match(defaultCurl.stdout, /Entrar com Google/, "A rota padrão não recebeu a página real de login.");
 
   const chrome = chromeBinary();
   if (chrome) {
@@ -93,8 +110,11 @@ test("diagnóstico de produção identifica cada endpoint DNS e valida /login em
     console.log("PROD_DIAG_CHROME_STATUS", result.status, result.signal, result.error ?? "");
     console.log("PROD_DIAG_CHROME_STDERR", result.stderr.slice(-4000));
     console.log("PROD_DIAG_CHROME_DOM", result.stdout.slice(0, 6000));
+    assert.equal(result.status, 0, "O Chrome real não conseguiu abrir /login.");
+    assert.match(result.stdout, /Entrar com Google/, "O Chrome real não recebeu a página de login esperada.");
   }
 
+  assert.ok(endpointResults.length > 0, "Nenhum endpoint pôde ser testado a partir deste executor.");
   assert.ok(endpointResults.some((item) => item.healthy), "Nenhum endpoint DNS publicado conseguiu servir a página real de login.");
   assert.ok(endpointResults.every((item) => item.healthy), "Há endpoint DNS publicado sem conseguir servir /login; a produção está inconsistente entre rotas/IPs.");
 });

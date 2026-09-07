@@ -175,6 +175,39 @@
   font-size: 11px;
 }
 
+.quickActions {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.quickActions a {
+  min-height: 48px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 10px 12px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: var(--surface-subtle);
+  color: var(--primary-strong);
+  font-size: 12px;
+  font-weight: 750;
+  line-height: 1.35;
+  text-decoration: none;
+}
+
+.quickActions a:hover {
+  border-color: #d8c4e8;
+  background: var(--primary-soft);
+}
+
+.quickActions a:focus-visible {
+  outline: 3px solid rgb(95 42 145 / 24%);
+  outline-offset: 2px;
+}
+
 .actionBar {
   display: flex;
   align-items: center;
@@ -277,6 +310,10 @@
 
   .exitLinks a {
     min-height: 44px;
+  }
+
+  .quickActions {
+    grid-template-columns: 1fr;
   }
 
   .secondaryActions,
