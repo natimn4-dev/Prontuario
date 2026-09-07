@@ -1,7 +1,7 @@
 import { DomainLinkedOncogeriatricCheckForm } from "@/components/oncogeriatria/domain-linked-check-form";
 import { OncogeriatricDomainStatusSummary } from "@/components/oncogeriatria/domain-status-summary";
 import { ToxicityForm } from "@/components/oncogeriatria/oncogeriatric-forms";
-import { OncogeriatricNav } from "@/components/oncogeriatria/oncogeriatric-nav";
+import { OncogeriatricNav, OncogeriatricStepActions } from "@/components/oncogeriatria/oncogeriatric-nav";
 import { CONSULTATION_STATUS_LABELS, type ConsultationContextStatus } from "@/domain/consultation-context";
 import { oncogeriatricCheckpointTypeLabel, oncogeriatricCourseStatusLabel } from "@/domain/oncogeriatria/presentation-labels";
 import { capacityHistoryForOncogeriatricEpisode, formatClinicalDate, hasRelevantCheckpointAlert, loadEpisodeWorkspace, loadOncogeriatricPatient, readStructuredRecord, requireOncogeriatricReadAccess, resolveOncogeriatricEpisode } from "@/server/oncogeriatria/read";
@@ -37,6 +37,7 @@ export default async function OncogeriatricCheckPage({ params, searchParams }: {
         return <li key={checkpoint.id}><strong>{formatClinicalDate(checkpoint.occurredAt)} · {oncogeriatricCheckpointTypeLabel(checkpoint.type)}{checkpoint.cycleNumber ? ` · ciclo ${checkpoint.cycleNumber}` : ""}</strong><span>{hasRelevantCheckpointAlert(checkpoint.structuredData) ? "Mudança relevante registrada — reavaliação médica indicada." : "Sem sinal estruturado de mudança registrado."}{checkpoint.consultationId ? " · avaliação por domínio vinculada à consulta" : " · sem consulta vinculada para os domínios"}{notes ? ` · ${notes}` : ""}</span>{checkpoint.consultationId ? <a href={`/consultations/${checkpoint.consultationId}#escalas`}>Abrir escalas desta consulta →</a> : null}</li>;
       })}</ul> : <p className="muted">Nenhuma reavaliação registrada.</p>}</section>
       <section className="panel"><h2>Eventos de toxicidade</h2>{workspace.toxicities.length ? <ul className="clean-list">{workspace.toxicities.map((event) => <li key={event.id}><strong>{event.toxicityType} · {formatClinicalDate(event.occurredAt)}</strong><span>grau: {event.grade ?? "não registrado"} · hospitalização: {event.hospitalizationAssociated ? "sim" : "não"} · atraso de ciclo: {event.cycleDelayAssociated ? "sim" : "não"}{event.treatmentModificationRecorded ? ` · modificação previamente registrada: ${event.treatmentModificationRecorded}` : ""}</span></li>)}</ul> : <p className="muted">Nenhuma toxicidade registrada.</p>}</section>
+      <OncogeriatricStepActions patientId={patientId} episodeId={episode.id} currentStep="check" />
     </main>
   );
 }

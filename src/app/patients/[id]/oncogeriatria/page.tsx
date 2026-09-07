@@ -1,5 +1,5 @@
 import { OncogeriatricDomainStatusSummary } from "@/components/oncogeriatria/domain-status-summary";
-import { OncogeriatricNav } from "@/components/oncogeriatria/oncogeriatric-nav";
+import { OncogeriatricNav, OncogeriatricStepActions } from "@/components/oncogeriatria/oncogeriatric-nav";
 import { StartEpisodeForm } from "@/components/oncogeriatria/oncogeriatric-forms";
 import {
   oncogeriatricCheckpointStatusLabel,
@@ -111,6 +111,7 @@ export default async function OncogeriatricPatientPage({ params, searchParams }:
         <article className="panel"><h2>Avaliação mais recente</h2>{latestCheckpoint ? <><p><strong>{oncogeriatricCheckpointTypeLabel(latestCheckpoint.type)}</strong> · {formatClinicalDate(latestCheckpoint.occurredAt)}</p><p className="muted">Situação: {oncogeriatricCheckpointStatusLabel(latestCheckpoint.status)}. Consulte “Durante o tratamento” para os detalhes estruturados.</p>{latestCheckpoint.consultationId ? <p><a href={`/consultations/${latestCheckpoint.consultationId}#escalas`}>Abrir escalas clínicas desta consulta →</a></p> : null}</> : <p className="muted">Sem dados registrados.</p>}</article>
         <article className="panel"><h2>Princípio de decisão</h2><p>G8, CARG, tendências e alertas são apoio à decisão clínica compartilhada. O sistema não indica, contraindica, reduz, suspende nem modifica esquema antineoplásico.</p></article>
       </section>
+      <OncogeriatricStepActions patientId={patientId} episodeId={episode.id} currentStep="overview" />
     </main>
   );
 }

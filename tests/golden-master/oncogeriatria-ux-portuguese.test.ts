@@ -22,14 +22,14 @@ const homePage = readFileSync("src/app/oncogeriatria/page.tsx", "utf8");
 
 test("oncogeriatria segue fluxo clínico em etapas e oferece acesso explícito às escalas", () => {
   for (const label of [
-    "1. Antes do tratamento",
-    "2. Tratamento oncológico",
-    "3. Durante o tratamento",
-    "4. Plano geriátrico",
-    "5. Escalas clínicas",
-    "6. Evolução longitudinal",
-    "7. Pós-tratamento",
-    "8. Relatório",
+    "Antes do tratamento",
+    "Tratamento oncológico",
+    "Durante o tratamento",
+    "Plano geriátrico",
+    "Escalas clínicas",
+    "Evolução longitudinal",
+    "Pós-tratamento",
+    "Relatório",
   ]) {
     assert.ok(nav.includes(label), `etapa ausente na navegação: ${label}`);
   }

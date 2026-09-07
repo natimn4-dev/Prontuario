@@ -1,4 +1,4 @@
-import { OncogeriatricNav } from "@/components/oncogeriatria/oncogeriatric-nav";
+import { OncogeriatricNav, OncogeriatricStepActions } from "@/components/oncogeriatria/oncogeriatric-nav";
 import { CONSULTATION_STATUS_LABELS, type ConsultationContextStatus } from "@/domain/consultation-context";
 import { formatClinicalDate, loadEpisodeWorkspace, loadOncogeriatricPatient, requireOncogeriatricReadAccess, resolveOncogeriatricEpisode } from "@/server/oncogeriatria/read";
 
@@ -75,6 +75,7 @@ export default async function OncogeriatricScalesPage({ params, searchParams }: 
           <a href={`/patients/${patientId}/oncogeriatria/basal?episode=${encodeURIComponent(episode.id)}`}>Ir para CARG na avaliação inicial →</a>
         </article>
       </section>
+      <OncogeriatricStepActions patientId={patientId} episodeId={episode.id} currentStep="escalas" />
     </main>
   );
 }

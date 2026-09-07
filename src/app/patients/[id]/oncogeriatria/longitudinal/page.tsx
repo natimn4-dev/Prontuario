@@ -1,5 +1,5 @@
 import { OncogeriatricDomainStatusSummary } from "@/components/oncogeriatria/domain-status-summary";
-import { OncogeriatricNav } from "@/components/oncogeriatria/oncogeriatric-nav";
+import { OncogeriatricNav, OncogeriatricStepActions } from "@/components/oncogeriatria/oncogeriatric-nav";
 import { CapacityDimensionHistoryChart } from "@/components/reports/capacity-dimension-history-chart";
 import { ClinicalMetricTrendChart } from "@/components/reports/clinical-metric-trend-chart";
 import { SCALE_DIRECTIONS } from "@/domain/longitudinal-scales";
@@ -83,6 +83,7 @@ export default async function OncogeriatricLongitudinalPage({ params, searchPara
         <ClinicalMetricTrendChart title="Peso" unit="kg" points={weightPoints.map((point, index) => ({ id: `weight-${point.at.toISOString()}-${index}`, at: point.at, value: point.value, context: point.label }))} />
         {chartGroups.map((group) => <ClinicalMetricTrendChart key={`${group.code}-${group.version}`} title={`${scaleCatalogEntry(group.code).name} · versão ${group.version}`} directionLabel={directionLabel(group.code)} points={group.observations.map((item, index) => ({ id: item.id ?? `${group.code}-${item.occurredAt.toISOString()}-${index}`, at: item.occurredAt, value: item.value, context: (eventsByDay.get(dayKey(item.occurredAt)) ?? []).join(" · ") }))} />)}
       </section>
+      <OncogeriatricStepActions patientId={patientId} episodeId={episode.id} currentStep="longitudinal" />
     </main>
   );
 }
