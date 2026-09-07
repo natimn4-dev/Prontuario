@@ -1,4 +1,4 @@
-import { OncogeriatricNav } from "@/components/oncogeriatria/oncogeriatric-nav";
+import { OncogeriatricNav, OncogeriatricStepActions } from "@/components/oncogeriatria/oncogeriatric-nav";
 import { OncogeriatricReportActions } from "@/components/oncogeriatria/report-actions";
 import { latestRecoveryAssessmentsByDomain } from "@/domain/oncogeriatria/longitudinal";
 import { oncogeriatricCheckpointTypeLabel, oncogeriatricCourseStatusLabel, oncogeriatricDomainLabel, oncogeriatricIntentLabel, oncogeriatricModalityLabel, oncogeriatricRecoveryStatusLabel } from "@/domain/oncogeriatria/presentation-labels";
@@ -202,6 +202,7 @@ export default async function OncogeriatricReportPage({ params, searchParams }: 
           <p className="muted">Documento de apoio à comunicação médica, longitudinal e específico para Oncogeriatria. Deve ser revisado clinicamente antes de compartilhamento.</p>
         </footer>
       </article>
+      <div className="no-print"><OncogeriatricStepActions patientId={patientId} episodeId={episode.id} currentStep="relatorio" /></div>
     </main>
   );
 }

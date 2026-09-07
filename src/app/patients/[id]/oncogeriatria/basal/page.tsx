@@ -1,7 +1,7 @@
 import { CargChecklistForm, G8ChecklistForm } from "@/components/oncogeriatria/checklist-scales";
 import { OncogeriatricDomainStatusSummary } from "@/components/oncogeriatria/domain-status-summary";
 import { BaselineCheckpointForm } from "@/components/oncogeriatria/oncogeriatric-forms";
-import { OncogeriatricNav } from "@/components/oncogeriatria/oncogeriatric-nav";
+import { OncogeriatricNav, OncogeriatricStepActions } from "@/components/oncogeriatria/oncogeriatric-nav";
 import { CONSULTATION_STATUS_LABELS, type ConsultationContextStatus } from "@/domain/consultation-context";
 import { oncogeriatricCheckpointStatusLabel, oncogeriatricCourseStatusLabel } from "@/domain/oncogeriatria/presentation-labels";
 import { capacityHistoryForOncogeriatricEpisode, formatClinicalDate, loadEpisodeWorkspace, loadOncogeriatricPatient, readStructuredRecord, requireOncogeriatricReadAccess, resolveOncogeriatricEpisode } from "@/server/oncogeriatria/read";
@@ -59,6 +59,7 @@ export default async function OncogeriatricBaselinePage({ params, searchParams }
           <p><a href={`/consultations/${current.consultationId}#escalas`}>Abrir as demais escalas clínicas desta consulta →</a></p>
         </section>
       ) : <section className="panel"><p className="clinical-caution">Para registrar G8 e CARG no sistema único de escalas, a avaliação inicial precisa estar vinculada a uma consulta existente. O sistema não cria consulta artificialmente.</p></section> : null}
+      <OncogeriatricStepActions patientId={patientId} episodeId={episode.id} currentStep="basal" />
     </main>
   );
 }

@@ -1,38 +1,138 @@
 "use client";
 
+import Link from "next/link";
 import { usePathname } from "next/navigation";
+import styles from "./oncogeriatric-nav.module.css";
 
-const links = [
-  ["Visão geral", ""],
-  ["1. Antes do tratamento", "/basal"],
-  ["2. Tratamento oncológico", "/tratamento"],
-  ["3. Durante o tratamento", "/check"],
-  ["4. Plano geriátrico", "/intervencoes"],
-  ["5. Escalas clínicas", "/escalas"],
-  ["6. Evolução longitudinal", "/longitudinal"],
-  ["7. Pós-tratamento", "/pos-tratamento"],
-  ["8. Relatório", "/relatorio"],
+const steps = [
+  { id: "basal", label: "Antes do tratamento", path: "/basal", description: "Avaliação geriátrica inicial" },
+  { id: "tratamento", label: "Tratamento oncológico", path: "/tratamento", description: "Trajetória antineoplásica" },
+  { id: "check", label: "Durante o tratamento", path: "/check", description: "Reavaliações e eventos" },
+  { id: "intervencoes", label: "Plano geriátrico", path: "/intervencoes", description: "Intervenções e responsáveis" },
+  { id: "escalas", label: "Escalas clínicas", path: "/escalas", description: "Instrumentos escolhidos pelo geriatra" },
+  { id: "longitudinal", label: "Evolução longitudinal", path: "/longitudinal", description: "Trajetória por domínio" },
+  { id: "pos-tratamento", label: "Pós-tratamento", path: "/pos-tratamento", description: "Recuperação e seguimento" },
+  { id: "relatorio", label: "Relatório", path: "/relatorio", description: "Revisão clínica e documento" },
 ] as const;
+
+export type OncogeriatricStepId = "overview" | (typeof steps)[number]["id"];
+
+function episodeSuffix(episodeId?: string | null): string {
+  return episodeId ? `?episode=${encodeURIComponent(episodeId)}` : "";
+}
+
+function stepHref(patientId: string, path: string, episodeId?: string | null): string {
+  return `/patients/${patientId}/oncogeriatria${path}${episodeSuffix(episodeId)}`;
+}
 
 export function OncogeriatricNav({ patientId, episodeId }: { patientId: string; episodeId?: string | null }) {
   const pathname = usePathname();
-  const suffix = episodeId ? `?episode=${encodeURIComponent(episodeId)}` : "";
+  const overviewPath = `/patients/${patientId}/oncogeriatria`;
+  const activeIndex = steps.findIndex((step) => pathname === `${overviewPath}${step.path}`);
+  const activeStep = activeIndex >= 0 ? steps[activeIndex] : null;
+  const overviewActive = pathname === overviewPath;
+
   return (
-    <nav className="panel" aria-label="Etapas do acompanhamento oncogeriátrico">
-      <div className="section-heading">
+    <nav className={styles.workspaceNav} aria-label="Etapas do acompanhamento oncogeriátrico">
+      <div className={styles.navHeader}>
         <div>
-          <p className="eyebrow">Fluxo clínico</p>
-          <h2>Acompanhamento em etapas</h2>
+          <p className="eyebrow">Acompanhamento em etapas</p>
+          <div className={styles.currentStep}>
+            <h2>{activeStep?.label ?? "Visão geral"}</h2>
+            <strong>{activeStep ? `Etapa ${activeIndex + 1} de ${steps.length}` : "Resumo do acompanhamento"}</strong>
+          </div>
+          <p>{activeStep?.description ?? "Consulte o estado atual e escolha o próximo passo clínico."}</p>
         </div>
-        <span className="muted">Use somente as etapas necessárias para esta paciente.</span>
+        <div className={styles.exitLinks} aria-label="Saídas rápidas">
+          <Link href="/" prefetch={false}>Página inicial</Link>
+          <Link href={`/patients/${patientId}`} prefetch={false}>Prontuário do paciente</Link>
+        </div>
       </div>
-      <p className="muted">A ordem acompanha a prática clínica: avaliação inicial, tratamento, reavaliações, intervenções, escalas, evolução e relatório. Nenhuma escala é escolhida ou preenchida automaticamente.</p>
-      <div className="program55-nav oncogeriatric-nav">
-        {links.map(([label, path]) => {
-          const basePath = `/patients/${patientId}/oncogeriatria${path}`;
-          const active = path ? pathname === basePath : pathname === `/patients/${patientId}/oncogeriatria`;
-          return <a key={label} href={`${basePath}${suffix}`} className={active ? "active" : undefined} aria-current={active ? "page" : undefined}>{label}</a>;
-        })}
+
+      <progress
+        className={styles.progress}
+        max={steps.length}
+        value={activeIndex + 1}
+        aria-label={activeStep ? `Etapa ${activeIndex + 1} de ${steps.length}` : "Visão geral do acompanhamento"}
+      />
+
+      <div className={styles.stepScroller}>
+        <Link
+          href={`${overviewPath}${episodeSuffix(episodeId)}`}
+          prefetch={false}
+          className={`${styles.overviewLink} ${overviewActive ? styles.active : ""}`}
+          aria-current={overviewActive ? "page" : undefined}
+        >
+          <svg aria-hidden="true" viewBox="0 0 24 24" fill="none">
+            <path d="M3 11.5 12 4l9 7.5M5.5 10v9h13v-9M9.5 19v-5h5v5" />
+          </svg>
+          <strong>Visão geral</strong>
+        </Link>
+        <ol className={styles.stepList}>
+          {steps.map((step, index) => {
+            const active = activeIndex === index;
+            return (
+              <li key={step.id}>
+                <Link
+                  href={stepHref(patientId, step.path, episodeId)}
+                  prefetch={false}
+                  className={active ? styles.active : undefined}
+                  aria-current={active ? "step" : undefined}
+                >
+                  <span className={styles.stepNumber}>{index + 1}</span>
+                  <strong>{step.label}</strong>
+                </Link>
+              </li>
+            );
+          })}
+        </ol>
+      </div>
+      <p className={styles.performanceNote}>Cada etapa abre em uma página independente para reduzir o carregamento do prontuário.</p>
+    </nav>
+  );
+}
+
+export function OncogeriatricStepActions({
+  patientId,
+  episodeId,
+  currentStep,
+}: {
+  patientId: string;
+  episodeId?: string | null;
+  currentStep: OncogeriatricStepId;
+}) {
+  const currentIndex = currentStep === "overview" ? -1 : steps.findIndex((step) => step.id === currentStep);
+  const previous = currentIndex > 0 ? steps[currentIndex - 1] : null;
+  const next = currentIndex < steps.length - 1 ? steps[currentIndex + 1] : null;
+  const previousHref = previous
+    ? stepHref(patientId, previous.path, episodeId)
+    : `/patients/${patientId}/oncogeriatria${episodeSuffix(episodeId)}`;
+
+  return (
+    <nav className={styles.actionBar} aria-label="Ações da etapa">
+      <div className={styles.secondaryActions}>
+        <Link href="/" prefetch={false} className={styles.homeAction}>Página inicial</Link>
+        {currentStep !== "overview" ? (
+          <Link href={previousHref} prefetch={false} className={styles.previousAction}>
+            <span>Página anterior</span>
+            <strong>{previous?.label ?? "Visão geral"}</strong>
+          </Link>
+        ) : null}
+      </div>
+
+      <div className={styles.primaryActionGroup}>
+        <small>Salve os formulários desta página antes de continuar.</small>
+        {next ? (
+          <Link href={stepHref(patientId, next.path, episodeId)} prefetch={false} className={styles.primaryAction}>
+            <span>{currentStep === "overview" ? "Iniciar acompanhamento" : "Próxima etapa"}</span>
+            <strong>{next.label} →</strong>
+          </Link>
+        ) : (
+          <Link href="/" prefetch={false} className={styles.primaryAction}>
+            <span>Concluir navegação</span>
+            <strong>Finalizar e voltar à página inicial</strong>
+          </Link>
+        )}
       </div>
     </nav>
   );

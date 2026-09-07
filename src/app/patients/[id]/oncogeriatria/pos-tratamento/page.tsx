@@ -1,7 +1,7 @@
 import { CheckpointPlannerForm } from "@/components/oncogeriatria/checkpoint-planner-form";
 import { OncogeriatricDomainStatusSummary } from "@/components/oncogeriatria/domain-status-summary";
 import { RecoveryForm } from "@/components/oncogeriatria/oncogeriatric-forms";
-import { OncogeriatricNav } from "@/components/oncogeriatria/oncogeriatric-nav";
+import { OncogeriatricNav, OncogeriatricStepActions } from "@/components/oncogeriatria/oncogeriatric-nav";
 import { CONSULTATION_STATUS_LABELS, type ConsultationContextStatus } from "@/domain/consultation-context";
 import { oncogeriatricCheckpointStatusLabel, oncogeriatricCheckpointTypeLabel, oncogeriatricDomainLabel, oncogeriatricRecoveryStatusLabel } from "@/domain/oncogeriatria/presentation-labels";
 import { capacityHistoryForOncogeriatricEpisode, formatClinicalDate, loadEpisodeWorkspace, loadOncogeriatricPatient, requireOncogeriatricReadAccess, resolveOncogeriatricEpisode } from "@/server/oncogeriatria/read";
@@ -35,6 +35,7 @@ export default async function OncogeriatricPostTreatmentPage({ params, searchPar
         <article className="panel"><h2>Avaliações de transição e seguimento</h2>{followUps.length ? <ul className="clean-list">{followUps.map((item) => <li key={item.id}><strong>{oncogeriatricCheckpointTypeLabel(item.type)}</strong><span>referência: {formatClinicalDate(item.occurredAt)} · próxima prevista: {formatClinicalDate(item.scheduledAt)} · {oncogeriatricCheckpointStatusLabel(item.status)}{item.consultationId ? " · avaliação por domínio vinculada" : " · sem consulta vinculada para os domínios"}</span>{item.consultationId ? <a href={`/consultations/${item.consultationId}#escalas`}>Abrir escalas desta consulta →</a> : null}</li>)}</ul> : <p className="muted">Ainda não há avaliações de final de tratamento, 3, 6 ou 12 meses registradas.</p>}</article>
       </section>
       <section className="notice"><strong>Duas informações complementares, sem inferência automática</strong><span>A avaliação persistente por domínio vem das escalas registradas no prontuário; o mapa de recuperação permanece uma avaliação clínica explícita do profissional. O sistema não converte uma delas automaticamente na outra e não altera tratamento oncológico.</span></section>
+      <OncogeriatricStepActions patientId={patientId} episodeId={episode.id} currentStep="pos-tratamento" />
     </main>
   );
 }

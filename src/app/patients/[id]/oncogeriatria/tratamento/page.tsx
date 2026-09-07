@@ -1,5 +1,5 @@
 import { TreatmentCourseForm } from "@/components/oncogeriatria/oncogeriatric-forms";
-import { OncogeriatricNav } from "@/components/oncogeriatria/oncogeriatric-nav";
+import { OncogeriatricNav, OncogeriatricStepActions } from "@/components/oncogeriatria/oncogeriatric-nav";
 import { oncogeriatricCourseStatusLabel, oncogeriatricIntentLabel, oncogeriatricModalityLabel, oncogeriatricRiskFlagLabel } from "@/domain/oncogeriatria/presentation-labels";
 import { formatClinicalDate, loadEpisodeWorkspace, loadOncogeriatricPatient, readStructuredRecord, requireOncogeriatricReadAccess, resolveOncogeriatricEpisode } from "@/server/oncogeriatria/read";
 
@@ -24,6 +24,7 @@ export default async function OncogeriatricTreatmentPage({ params, searchParams 
         })}</ul> : <p className="muted">Nenhum tratamento registrado.</p>}</article>
       </section>
       <section className="notice"><strong>Proteção de decisão clínica</strong><span>Riscos dependentes do tratamento são selecionados manualmente nesta versão. O sistema não infere toxicidade pelo nome do antineoplásico e não escolhe, reduz, suspende ou troca esquema.</span></section>
+      <OncogeriatricStepActions patientId={patientId} episodeId={episode.id} currentStep="tratamento" />
     </main>
   );
 }

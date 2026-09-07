@@ -1,0 +1,51 @@
+import assert from "node:assert/strict";
+import { existsSync, readFileSync } from "node:fs";
+import test from "node:test";
+
+const navigationPath = "src/components/oncogeriatria/oncogeriatric-nav.tsx";
+const navigation = readFileSync(navigationPath, "utf8");
+const navigationStyles = readFileSync("src/components/oncogeriatria/oncogeriatric-nav.module.css", "utf8");
+
+const stages = [
+  ["basal", "Antes do tratamento"],
+  ["tratamento", "Tratamento oncológico"],
+  ["check", "Durante o tratamento"],
+  ["intervencoes", "Plano geriátrico"],
+  ["escalas", "Escalas clínicas"],
+  ["longitudinal", "Evolução longitudinal"],
+  ["pos-tratamento", "Pós-tratamento"],
+  ["relatorio", "Relatório"],
+] as const;
+
+test("acompanhamento oncogeriátrico mantém uma rota independente por etapa", () => {
+  for (const [stage, label] of stages) {
+    const pagePath = `src/app/patients/[id]/oncogeriatria/${stage}/page.tsx`;
+    assert.equal(existsSync(pagePath), true, `página ausente para ${label}`);
+    const page = readFileSync(pagePath, "utf8");
+    assert.match(page, /OncogeriatricStepActions/);
+    assert.ok(page.includes(`currentStep="${stage}"`), `rodapé de fluxo ausente em ${label}`);
+  }
+});
+
+test("navegação oferece orientação, retorno e finalização sem alterar regras clínicas", () => {
+  assert.match(navigation, /Etapa \$\{activeIndex \+ 1\} de \$\{steps\.length\}/);
+  assert.match(navigation, /<progress/);
+  assert.match(navigation, /Página inicial/);
+  assert.match(navigation, /Prontuário do paciente/);
+  assert.match(navigation, /Página anterior/);
+  assert.match(navigation, /Próxima etapa/);
+  assert.match(navigation, /Finalizar e voltar à página inicial/);
+  assert.match(navigation, /Salve os formulários desta página antes de continuar/);
+  assert.doesNotMatch(navigation, /fetch\(|POST|PATCH|DELETE/);
+});
+
+test("menu não pré-carrega todas as áreas e preserva acessibilidade responsiva", () => {
+  assert.match(navigation, /prefetch=\{false\}/);
+  assert.match(navigation, /aria-current=\{active \? "step"/);
+  assert.match(navigation, /aria-label="Ações da etapa"/);
+  assert.match(navigation, /Cada etapa abre em uma página independente/);
+  assert.match(navigationStyles, /overflow-x: auto/);
+  assert.match(navigationStyles, /min-height: 48px/);
+  assert.match(navigationStyles, /@media \(max-width: 760px\)/);
+  assert.match(navigationStyles, /@media print/);
+});
