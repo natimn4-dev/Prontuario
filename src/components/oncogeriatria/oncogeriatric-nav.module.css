@@ -1,71 +1,129 @@
-.workspaceNav {
-  margin: 20px 0;
-  padding: 20px 22px 16px;
+.clinicalHeader {
+  display: grid;
+  grid-template-columns: minmax(0, .9fr) minmax(0, 1.1fr);
+  overflow: hidden;
   border: 1px solid var(--line);
-  border-radius: var(--radius-md);
+  border-radius: var(--radius-lg);
   background: var(--surface);
   box-shadow: var(--shadow-sm);
 }
 
-.navHeader {
-  display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
-  gap: 24px;
+.identityBlock,
+.taskBlock {
+  padding: 24px 26px;
 }
 
-.navHeader h2,
-.navHeader p {
+.identityBlock {
+  background: var(--surface-subtle);
+}
+
+.breadcrumbs {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 7px;
+  margin-bottom: 20px;
+  color: var(--muted);
+  font-size: 12px;
+}
+
+.breadcrumbs a {
+  color: var(--primary-strong);
+  text-decoration: none;
+}
+
+.identityLabel,
+.taskLabel {
+  margin: 0 0 5px;
+  color: var(--muted);
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+}
+
+.identityBlock h1 {
+  font-size: clamp(25px, 3vw, 34px);
+  line-height: 1.08;
+}
+
+.episodeLabel {
+  margin: 8px 0 0;
+  color: var(--muted);
+  font-size: 13px;
+  line-height: 1.45;
+}
+
+.taskBlock {
+  position: relative;
+  border-left: 1px solid var(--line);
+}
+
+.stepBadge {
+  position: absolute;
+  top: 20px;
+  right: 22px;
+  padding: 5px 8px;
+  border: 1px solid #d8c4e8;
+  border-radius: 8px;
+  background: var(--primary-soft);
+  color: var(--primary-strong);
+  font-size: 10px;
+  font-weight: 800;
+}
+
+.taskBlock h2 {
+  max-width: calc(100% - 88px);
+  margin: 0;
+  color: var(--ink);
+  font-size: clamp(20px, 2.2vw, 27px);
+  line-height: 1.15;
+}
+
+.taskBlock > p:last-child {
+  max-width: 640px;
+  margin: 10px 0 0;
+  color: var(--muted);
+  font-size: 14px;
+  line-height: 1.55;
+}
+
+.workspaceNav {
+  margin: 14px 0 24px;
+  padding: 16px 18px 12px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-md);
+  background: var(--surface);
+}
+
+.railHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.railHeader p {
   margin: 0;
 }
 
-.navHeader > div:first-child > p:last-child {
-  margin-top: 5px;
-  color: var(--muted);
+.railHeader strong {
+  display: block;
+  margin-top: 2px;
+  color: var(--ink);
   font-size: 13px;
 }
 
-.currentStep {
-  display: flex;
-  align-items: baseline;
-  gap: 12px;
-}
-
-.currentStep h2 {
-  color: var(--ink);
-  font-size: 20px;
-}
-
-.currentStep strong {
-  color: var(--primary-strong);
-  font-size: 12px;
-  white-space: nowrap;
-}
-
-.exitLinks {
-  display: flex;
-  flex-wrap: wrap;
-  justify-content: flex-end;
-  gap: 8px;
-}
-
-.exitLinks a {
-  min-height: 40px;
-  display: inline-flex;
-  align-items: center;
-  padding: 8px 12px;
-  border: 1px solid var(--line);
-  border-radius: 9px;
-  background: var(--surface-subtle);
-  font-size: 12px;
-  text-decoration: none;
+.railHeader > span {
+  color: var(--muted);
+  font-size: 11px;
 }
 
 .progress {
   display: block;
   width: 100%;
   height: 4px;
-  margin: 18px 0 14px;
+  margin: 14px 0 12px;
   overflow: hidden;
   border: 0;
   border-radius: 999px;
@@ -92,7 +150,9 @@
   display: flex;
   gap: 8px;
   overflow-x: auto;
-  padding: 2px 2px 8px;
+  padding: 2px 2px 6px;
+  scroll-snap-type: x proximity;
+  overscroll-behavior-inline: contain;
   scrollbar-width: thin;
 }
 
@@ -109,6 +169,7 @@
   font-size: 11px;
   line-height: 1.25;
   text-decoration: none;
+  scroll-snap-align: center;
 }
 
 .overviewLink {
@@ -169,12 +230,6 @@
   color: #fff;
 }
 
-.performanceNote {
-  margin: 2px 0 0;
-  color: var(--muted);
-  font-size: 11px;
-}
-
 .quickActions {
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
@@ -182,7 +237,7 @@
 }
 
 .quickActions a {
-  min-height: 48px;
+  min-height: 64px;
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -192,10 +247,22 @@
   border-radius: 10px;
   background: var(--surface-subtle);
   color: var(--primary-strong);
-  font-size: 12px;
-  font-weight: 750;
+  font-size: 13px;
   line-height: 1.35;
   text-decoration: none;
+}
+
+.quickActionCopy {
+  display: grid;
+  gap: 3px;
+}
+
+.quickActionCopy small {
+  color: var(--muted);
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: .07em;
+  text-transform: uppercase;
 }
 
 .quickActions a:hover {
@@ -214,8 +281,11 @@
   justify-content: space-between;
   gap: 20px;
   margin-top: 28px;
-  padding: 18px 0 0;
-  border-top: 1px solid var(--line);
+  padding: 16px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-md);
+  background: var(--surface);
+  box-shadow: var(--shadow-sm);
 }
 
 .secondaryActions,
@@ -288,28 +358,46 @@
 }
 
 @media (max-width: 760px) {
-  .workspaceNav {
-    padding: 18px 16px 12px;
+  .clinicalHeader {
+    grid-template-columns: 1fr;
   }
 
-  .navHeader,
+  .identityBlock,
+  .taskBlock {
+    padding: 20px;
+  }
+
+  .breadcrumbs {
+    margin-bottom: 16px;
+  }
+
+  .taskBlock {
+    border-top: 1px solid var(--line);
+    border-left: 0;
+  }
+
+  .stepBadge {
+    top: 18px;
+    right: 18px;
+  }
+
+  .taskBlock h2 {
+    max-width: calc(100% - 78px);
+  }
+
+  .workspaceNav {
+    margin-top: 10px;
+    padding: 14px 12px 10px;
+  }
+
+  .railHeader,
   .actionBar {
     align-items: stretch;
     flex-direction: column;
   }
 
-  .currentStep {
-    align-items: flex-start;
-    flex-direction: column;
-    gap: 3px;
-  }
-
-  .exitLinks {
-    justify-content: flex-start;
-  }
-
-  .exitLinks a {
-    min-height: 44px;
+  .railHeader > span {
+    display: none;
   }
 
   .quickActions {
@@ -335,6 +423,7 @@
 }
 
 @media print {
+  .clinicalHeader,
   .workspaceNav,
   .actionBar {
     display: none !important;

@@ -1,4 +1,4 @@
-import { OncogeriatricNav, OncogeriatricStepActions } from "@/components/oncogeriatria/oncogeriatric-nav";
+import { OncogeriatricNav, OncogeriatricStepActions, OncogeriatricWorkspaceHeader } from "@/components/oncogeriatria/oncogeriatric-nav";
 import { CONSULTATION_STATUS_LABELS, type ConsultationContextStatus } from "@/domain/consultation-context";
 import { formatClinicalDate, loadEpisodeWorkspace, loadOncogeriatricPatient, requireOncogeriatricReadAccess, resolveOncogeriatricEpisode } from "@/server/oncogeriatria/read";
 
@@ -33,11 +33,7 @@ export default async function OncogeriatricScalesPage({ params, searchParams }: 
 
   return (
     <main className="shell">
-      <header className="hero compact-hero">
-        <p className="eyebrow">Oncogeriatria · escalas clínicas</p>
-        <h1>Aplicar e revisar escalas</h1>
-        <p>{patient.fullName}. Esta etapa abre o mesmo sistema de escalas do prontuário geriátrico geral, evitando duplicidade de dados, resultados divergentes ou instrumentos paralelos.</p>
-      </header>
+      <OncogeriatricWorkspaceHeader patientId={patientId} patientName={patient.fullName} episodeLabel={episode.diagnosis} currentStep="escalas" title="Aplicar e revisar escalas" description="Abra o mesmo sistema de escalas do prontuário geriátrico geral, evitando duplicidade de dados, resultados divergentes ou instrumentos paralelos." />
 
       <OncogeriatricNav patientId={patientId} episodeId={episode.id} />
 

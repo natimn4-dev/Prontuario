@@ -1,7 +1,7 @@
 import { CheckpointPlannerForm } from "@/components/oncogeriatria/checkpoint-planner-form";
 import { OncogeriatricDomainStatusSummary } from "@/components/oncogeriatria/domain-status-summary";
 import { RecoveryForm } from "@/components/oncogeriatria/oncogeriatric-forms";
-import { OncogeriatricNav, OncogeriatricStepActions } from "@/components/oncogeriatria/oncogeriatric-nav";
+import { OncogeriatricNav, OncogeriatricStepActions, OncogeriatricWorkspaceHeader } from "@/components/oncogeriatria/oncogeriatric-nav";
 import { CONSULTATION_STATUS_LABELS, type ConsultationContextStatus } from "@/domain/consultation-context";
 import { oncogeriatricCheckpointStatusLabel, oncogeriatricCheckpointTypeLabel, oncogeriatricDomainLabel, oncogeriatricRecoveryStatusLabel } from "@/domain/oncogeriatria/presentation-labels";
 import { capacityHistoryForOncogeriatricEpisode, formatClinicalDate, loadEpisodeWorkspace, loadOncogeriatricPatient, requireOncogeriatricReadAccess, resolveOncogeriatricEpisode } from "@/server/oncogeriatria/read";
@@ -23,7 +23,7 @@ export default async function OncogeriatricPostTreatmentPage({ params, searchPar
   const consultationOptions = workspace.consultations.map((item) => ({ id: item.id, label: `${formatClinicalDate(item.occurredAt)} · ${consultationStatusLabel(item.status)}` }));
   return (
     <main className="shell">
-      <header className="hero compact-hero"><p className="eyebrow">Oncogeriatria · etapa 7</p><h1>Pós-tratamento e recuperação</h1><p>{patient.fullName}. Compare o estado atual com a avaliação inicial e registre a recuperação por domínio sob julgamento profissional.</p></header>
+      <OncogeriatricWorkspaceHeader patientId={patientId} patientName={patient.fullName} episodeLabel={episode.diagnosis} currentStep="pos-tratamento" title="Pós-tratamento e recuperação" description="Compare o estado atual com a avaliação inicial e registre a recuperação por domínio sob julgamento profissional." />
       <OncogeriatricNav patientId={patientId} episodeId={episode.id} />
       <section className="two-columns">
         <article className="panel"><h2>Mapa de recuperação</h2><RecoveryForm patientId={patientId} episodeId={episode.id} /></article>

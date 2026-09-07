@@ -1,5 +1,5 @@
 import { TreatmentCourseForm } from "@/components/oncogeriatria/oncogeriatric-forms";
-import { OncogeriatricNav, OncogeriatricStepActions } from "@/components/oncogeriatria/oncogeriatric-nav";
+import { OncogeriatricNav, OncogeriatricStepActions, OncogeriatricWorkspaceHeader } from "@/components/oncogeriatria/oncogeriatric-nav";
 import { oncogeriatricCourseStatusLabel, oncogeriatricIntentLabel, oncogeriatricModalityLabel, oncogeriatricRiskFlagLabel } from "@/domain/oncogeriatria/presentation-labels";
 import { formatClinicalDate, loadEpisodeWorkspace, loadOncogeriatricPatient, readStructuredRecord, requireOncogeriatricReadAccess, resolveOncogeriatricEpisode } from "@/server/oncogeriatria/read";
 
@@ -13,7 +13,7 @@ export default async function OncogeriatricTreatmentPage({ params, searchParams 
   const workspace = await loadEpisodeWorkspace(patientId, episode.id);
   return (
     <main className="shell">
-      <header className="hero compact-hero"><p className="eyebrow">Oncogeriatria · etapa 2</p><h1>Tratamento oncológico</h1><p>{patient.fullName} · {episode.diagnosis}. Registre a trajetória antineoplásica separadamente das medicações crônicas do paciente.</p></header>
+      <OncogeriatricWorkspaceHeader patientId={patientId} patientName={patient.fullName} episodeLabel={episode.diagnosis} currentStep="tratamento" title="Tratamento oncológico" description="Registre a trajetória antineoplásica separadamente das medicações crônicas do paciente." />
       <OncogeriatricNav patientId={patientId} episodeId={episode.id} />
       <section className="two-columns">
         <article className="panel"><h2>Registrar tratamento</h2><TreatmentCourseForm patientId={patientId} episodeId={episode.id} /></article>

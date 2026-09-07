@@ -1,5 +1,5 @@
 import { InterventionForm } from "@/components/oncogeriatria/oncogeriatric-forms";
-import { OncogeriatricNav, OncogeriatricStepActions } from "@/components/oncogeriatria/oncogeriatric-nav";
+import { OncogeriatricNav, OncogeriatricStepActions, OncogeriatricWorkspaceHeader } from "@/components/oncogeriatria/oncogeriatric-nav";
 import { oncogeriatricDomainLabel, oncogeriatricInterventionStatusLabel } from "@/domain/oncogeriatria/presentation-labels";
 import { formatClinicalDate, loadEpisodeWorkspace, loadOncogeriatricPatient, requireOncogeriatricReadAccess, resolveOncogeriatricEpisode } from "@/server/oncogeriatria/read";
 
@@ -13,7 +13,7 @@ export default async function OncogeriatricInterventionsPage({ params, searchPar
   const workspace = await loadEpisodeWorkspace(patientId, episode.id);
   return (
     <main className="shell">
-      <header className="hero compact-hero"><p className="eyebrow">Oncogeriatria · etapa 4</p><h1>Plano geriátrico</h1><p>{patient.fullName}. Registre vulnerabilidades, intervenção revisada, responsável, prazo e resultado. O sistema não transforma achados em condutas clínicas automáticas.</p></header>
+      <OncogeriatricWorkspaceHeader patientId={patientId} patientName={patient.fullName} episodeLabel={episode.diagnosis} currentStep="intervencoes" title="Plano geriátrico" description="Registre vulnerabilidades, intervenção revisada, responsável, prazo e resultado. Achados não são transformados em condutas automáticas." />
       <OncogeriatricNav patientId={patientId} episodeId={episode.id} />
       <section className="two-columns">
         <article className="panel"><h2>Nova intervenção</h2><InterventionForm patientId={patientId} episodeId={episode.id} /></article>
