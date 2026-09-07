@@ -1,1 +1,1 @@
-export const CLINICAL_RELEASE_ID = "2026-09-05-hostinger-clean-build-v2" as const;
+export const CLINICAL_RELEASE_ID = "2026-09-07-oncogeriatria-etapas-consolidated-v1" as const;
