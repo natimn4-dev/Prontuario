@@ -1,5 +1,5 @@
 import { OncogeriatricDomainStatusSummary } from "@/components/oncogeriatria/domain-status-summary";
-import { OncogeriatricNav, OncogeriatricStepActions } from "@/components/oncogeriatria/oncogeriatric-nav";
+import { OncogeriatricNav, OncogeriatricQuickActions, OncogeriatricStepActions } from "@/components/oncogeriatria/oncogeriatric-nav";
 import { StartEpisodeForm } from "@/components/oncogeriatria/oncogeriatric-forms";
 import {
   oncogeriatricCheckpointStatusLabel,
@@ -73,12 +73,7 @@ export default async function OncogeriatricPatientPage({ params, searchParams }:
 
       <section className="panel">
         <div className="section-heading"><div><p className="eyebrow">Ações frequentes</p><h2>Próximo passo clínico</h2></div><span className="muted">Escolha apenas o que faz sentido nesta consulta.</span></div>
-        <div className="program55-nav">
-          <a href={`/patients/${patientId}/oncogeriatria/basal?episode=${episode.id}`}>Avaliação antes do tratamento</a>
-          <a href={`/patients/${patientId}/oncogeriatria/check?episode=${episode.id}`}>Reavaliar durante o tratamento</a>
-          <a href={`/patients/${patientId}/oncogeriatria/escalas?episode=${episode.id}`}>Aplicar/revisar escalas</a>
-          <a href={`/patients/${patientId}/oncogeriatria/relatorio?episode=${episode.id}`}>Revisar relatório</a>
-        </div>
+        <OncogeriatricQuickActions patientId={patientId} episodeId={episode.id} />
       </section>
 
       {episodes.length > 1 ? <section className="panel"><div className="section-heading"><div><p className="eyebrow">Histórico</p><h2>História oncológica</h2></div></div><ul className="clean-list">{episodes.map((item) => <li key={item.id}><a href={`/patients/${patientId}/oncogeriatria?episode=${item.id}`}>{item.diagnosis}</a><span>{item.primarySite ?? "Sítio não registrado"} · {oncogeriatricEpisodeStatusLabel(item.status)} · iniciado em {formatClinicalDate(item.createdAt)}</span></li>)}</ul></section> : null}
