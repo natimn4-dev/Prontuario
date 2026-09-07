@@ -5,6 +5,7 @@ import test from "node:test";
 const navigationPath = "src/components/oncogeriatria/oncogeriatric-nav.tsx";
 const navigation = readFileSync(navigationPath, "utf8");
 const navigationStyles = readFileSync("src/components/oncogeriatria/oncogeriatric-nav.module.css", "utf8");
+const overview = readFileSync("src/app/patients/[id]/oncogeriatria/page.tsx", "utf8");
 
 const stages = [
   ["basal", "Antes do tratamento"],
@@ -48,4 +49,14 @@ test("menu não pré-carrega todas as áreas e preserva acessibilidade responsiv
   assert.match(navigationStyles, /min-height: 48px/);
   assert.match(navigationStyles, /@media \(max-width: 760px\)/);
   assert.match(navigationStyles, /@media print/);
+});
+
+test("atalhos frequentes permanecem separados, legíveis e sem pré-carregamento", () => {
+  assert.match(overview, /<OncogeriatricQuickActions patientId=\{patientId\} episodeId=\{episode\.id\} \/>/);
+  assert.doesNotMatch(overview, /program55-nav/);
+  assert.match(navigation, /aria-label="Ações clínicas frequentes"/);
+  assert.match(navigation, /Aplicar ou revisar escalas/);
+  assert.match(navigationStyles, /\.quickActions \{/);
+  assert.match(navigationStyles, /grid-template-columns: repeat\(4, minmax\(0, 1fr\)\)/);
+  assert.match(navigationStyles, /gap: 10px/);
 });

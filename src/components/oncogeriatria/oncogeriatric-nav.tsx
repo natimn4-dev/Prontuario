@@ -92,6 +92,32 @@ export function OncogeriatricNav({ patientId, episodeId }: { patientId: string; 
   );
 }
 
+export function OncogeriatricQuickActions({
+  patientId,
+  episodeId,
+}: {
+  patientId: string;
+  episodeId?: string | null;
+}) {
+  const actions = [
+    { label: "Avaliação antes do tratamento", path: "/basal" },
+    { label: "Reavaliar durante o tratamento", path: "/check" },
+    { label: "Aplicar ou revisar escalas", path: "/escalas" },
+    { label: "Revisar relatório", path: "/relatorio" },
+  ] as const;
+
+  return (
+    <nav className={styles.quickActions} aria-label="Ações clínicas frequentes">
+      {actions.map((action) => (
+        <Link key={action.path} href={stepHref(patientId, action.path, episodeId)} prefetch={false}>
+          <span>{action.label}</span>
+          <span aria-hidden="true">→</span>
+        </Link>
+      ))}
+    </nav>
+  );
+}
+
 export function OncogeriatricStepActions({
   patientId,
   episodeId,
