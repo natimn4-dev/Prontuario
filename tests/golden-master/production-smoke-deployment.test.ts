@@ -6,6 +6,7 @@ const workflow = readFileSync(".github/workflows/production-clinical-smoke.yml",
 const smoke = readFileSync("scripts/smoke-clinical-production.ts", "utf8");
 const health = readFileSync("src/app/api/health/route.ts", "utf8");
 const hostingerDocs = readFileSync("docs/deployment/HOSTINGER.md", "utf8");
+const browserDiagnostic = readFileSync("tests/golden-master/production-browser-diagnostic.test.ts", "utf8");
 
 test("production smoke validates the exact SHA whose main CI completed", () => {
   assert.match(workflow, /github\.event\.workflow_run\.head_sha/);
@@ -28,6 +29,13 @@ test("production smoke fails bounded network calls instead of hanging indefinite
   assert.match(smoke, /REQUEST_TIMEOUT_MS = 15_000/);
   const timeoutCalls = smoke.match(/AbortSignal\.timeout\(REQUEST_TIMEOUT_MS\)/g) ?? [];
   assert.ok(timeoutCalls.length >= 2, "GET e bootstrap OAuth devem ter timeout explícito");
+});
+
+test("diagnóstico de navegador aceita somente a aplicação ou o desafio exato da Hostinger", () => {
+  assert.match(browserDiagnostic, /receivedLogin \|\| receivedHostingerChallenge/);
+  assert.match(browserDiagnostic, /Checking your browser before accessing/);
+  assert.match(browserDiagnostic, /hcdn-cgi\\\/jschallenge/);
+  assert.match(browserDiagnostic, /assert\.equal\(result\.status, 0/);
 });
 
 test("health release identifier cannot be served from an intermediary cache", () => {
