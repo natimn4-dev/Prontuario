@@ -1,9 +1,12 @@
+import { OncogeriatricTrajectoryTable } from "@/components/oncogeriatria/clinical-continuity";
 import { OncogeriatricNav, OncogeriatricStepActions, OncogeriatricWorkspaceHeader } from "@/components/oncogeriatria/oncogeriatric-nav";
 import { OncogeriatricReportActions } from "@/components/oncogeriatria/report-actions";
+import { CapacityDimensionHistoryChart } from "@/components/reports/capacity-dimension-history-chart";
+import { buildOncogeriatricReportGuidance } from "@/domain/oncogeriatria/domain-review";
 import { latestRecoveryAssessmentsByDomain } from "@/domain/oncogeriatria/longitudinal";
-import { oncogeriatricCheckpointTypeLabel, oncogeriatricCourseStatusLabel, oncogeriatricDomainLabel, oncogeriatricIntentLabel, oncogeriatricModalityLabel, oncogeriatricRecoveryStatusLabel } from "@/domain/oncogeriatria/presentation-labels";
+import { oncogeriatricCheckpointTypeLabel, oncogeriatricCourseStatusLabel, oncogeriatricDomainLabel, oncogeriatricIntentLabel, oncogeriatricModalityLabel, oncogeriatricRecoveryStatusLabel, oncogeriatricRiskFlagLabel } from "@/domain/oncogeriatria/presentation-labels";
 import { buildProfessionalIdentity } from "@/domain/professional-identity";
-import { formatClinicalDate, loadEpisodeWorkspace, loadOncogeriatricPatient, readStructuredRecord, requireOncogeriatricReadAccess, resolveOncogeriatricEpisode } from "@/server/oncogeriatria/read";
+import { capacityHistoryForOncogeriatricEpisode, formatClinicalDate, loadEpisodeWorkspace, loadOncogeriatricPatient, readStructuredRecord, requireOncogeriatricReadAccess, resolveOncogeriatricEpisode } from "@/server/oncogeriatria/read";
 
 function latestAssessmentByIds(ids: (string | null)[], assessments: { id: string; scaleCode: string; scoreText: string | null; classification: string | null; interpretation: string | null; appliedAt: Date }[]) {
   for (const id of ids.filter(Boolean).reverse()) {
@@ -54,8 +57,17 @@ export default async function OncogeriatricReportPage({ params, searchParams }: 
   if (!episode) return <main className="shell"><p>Inicie um acompanhamento oncogeriátrico antes de gerar o relatório.</p></main>;
 
   const workspace = await loadEpisodeWorkspace(patientId, episode.id);
+  const capacityHistory = capacityHistoryForOncogeriatricEpisode(patientId, workspace);
+  const domainGuidance = buildOncogeriatricReportGuidance(capacityHistory);
   const professional = buildProfessionalIdentity({ name: user.name, email: user.email, brandOwnerEmail: process.env.PROFESSIONAL_BRAND_OWNER_EMAIL });
   const currentCourse = workspace.courses.find((item) => item.status === "ACTIVE") ?? workspace.courses[0];
+  const currentCourseRiskData = readStructuredRecord(currentCourse?.riskFlags);
+  const selectedRiskFlags = Array.isArray(currentCourseRiskData.selected)
+    ? currentCourseRiskData.selected.filter((item): item is string => typeof item === "string").map(oncogeriatricRiskFlagLabel)
+    : [];
+  const clinicianRegimenGuidance = typeof currentCourseRiskData.clinicianGuidance === "string"
+    ? currentCourseRiskData.clinicianGuidance.trim()
+    : "";
   const latestCheckpoint = workspace.checkpoints[workspace.checkpoints.length - 1];
   const g8 = latestAssessmentByIds(workspace.checkpoints.map((item) => item.g8AssessmentId), workspace.scaleAssessments);
   const carg = latestAssessmentByIds(workspace.checkpoints.map((item) => item.cargAssessmentId), workspace.scaleAssessments);
@@ -69,6 +81,7 @@ export default async function OncogeriatricReportPage({ params, searchParams }: 
   const changes = summarizeCheckpointChanges(latestCheckpoint?.structuredData);
   const reportDate = new Date();
   const latestRecoveryByDomain = latestRecoveryAssessmentsByDomain(workspace.recovery);
+  const plannedFollowUps = workspace.checkpoints.filter((item) => item.type === "END_OF_TREATMENT" || item.type.startsWith("POST_"));
   const trajectories = {
     abvd: scaleTrajectory("ABVD", workspace.scaleAssessments),
     aivd: scaleTrajectory("AIVD", workspace.scaleAssessments),
@@ -87,6 +100,7 @@ export default async function OncogeriatricReportPage({ params, searchParams }: 
     episodeId: episode.id,
     diagnosis: { diagnosis: episode.diagnosis, primarySite: episode.primarySite, histology: episode.histology, stage: episode.stage, diseaseStatus: episode.diseaseStatus },
     treatment: currentCourse ? { regimenName: currentCourse.regimenName, modality: currentCourse.modality, intent: currentCourse.intent, therapyLine: currentCourse.therapyLine, status: currentCourse.status } : null,
+    regimenSafety: { selectedRiskFlags, clinicianGuidance: clinicianRegimenGuidance || null },
     g8: g8 ? { score: g8.scoreText, classification: g8.classification } : null,
     carg: carg ? { score: carg.scoreText, classification: carg.classification, interpretation: carg.interpretation } : null,
     cargImplementationStatus: "AVAILABLE",
@@ -95,6 +109,8 @@ export default async function OncogeriatricReportPage({ params, searchParams }: 
     activeInterventions: activeInterventions.map((item) => ({ domain: item.domain, vulnerability: item.description, recommendation: item.intervention, responsibleProfessional: item.responsibleProfessional, dueAt: item.dueAt?.toISOString() ?? null, status: item.status })),
     completedInterventions: completedInterventions.map((item) => ({ domain: item.domain, vulnerability: item.description, recommendation: item.intervention, responsibleProfessional: item.responsibleProfessional, result: item.result, status: item.status })),
     recentEvents: recentEvents.map((item) => ({ type: item.toxicityType, occurredAt: item.occurredAt.toISOString(), grade: item.grade, hospitalizationAssociated: item.hospitalizationAssociated, cycleDelayAssociated: item.cycleDelayAssociated })),
+    domainGuidance,
+    plannedFollowUps: plannedFollowUps.map((item) => ({ type: item.type, occurredAt: item.occurredAt.toISOString(), scheduledAt: item.scheduledAt?.toISOString() ?? null, status: item.status, consultationId: item.consultationId })),
     recovery: latestRecoveryByDomain.map((item) => ({ domain: item.domain, status: item.status, notes: item.notes, assessedAt: item.assessedAt.toISOString() })),
     whatMatters,
   };
@@ -135,24 +151,29 @@ export default async function OncogeriatricReportPage({ params, searchParams }: 
 
         <section>
           <h2>4. Trajetória geriátrica — avaliação inicial → avaliação atual</h2>
-          <table>
-            <thead><tr><th scope="col">Domínio / instrumento</th><th scope="col">Trajetória</th></tr></thead>
-            <tbody>
-              <tr><th scope="row">ABVD</th><td>{trajectories.abvd}</td></tr>
-              <tr><th scope="row">AIVD</th><td>{trajectories.aivd}</td></tr>
-              <tr><th scope="row">Nutrição — MNA</th><td>{trajectories.nutrition}</td></tr>
-              <tr><th scope="row">Fragilidade — FRAIL</th><td>{trajectories.frailty}</td></tr>
-              <tr><th scope="row">Mobilidade — 10-CS</th><td>{trajectories.mobility}</td></tr>
-              <tr><th scope="row">Cognição — MEEM</th><td>{trajectories.cognitionMeem}</td></tr>
-              <tr><th scope="row">Cognição — MoCA</th><td>{trajectories.cognitionMoca}</td></tr>
-              <tr><th scope="row">Sintomas — ESAS</th><td>{trajectories.symptoms}</td></tr>
-            </tbody>
-          </table>
+          <OncogeriatricTrajectoryTable history={capacityHistory} />
           <p className="muted">Comparações usam somente versões compatíveis do mesmo instrumento. A significância clínica da mudança permanece sob julgamento médico.</p>
+          <CapacityDimensionHistoryChart history={capacityHistory} context="final-report" />
         </section>
 
         <section>
-          <h2>5. Vulnerabilidades e recomendações geriátricas registradas</h2>
+          <h2>5. Vulnerabilidades e recomendações geriátricas</h2>
+          <h3>Orientações educativas relacionadas aos domínios alterados</h3>
+          {domainGuidance.length ? (
+            <div className="scale-report-list">
+              {domainGuidance.map((item) => (
+                <article className="scale-report-card" key={item.code}>
+                  <p className="eyebrow">{item.stateLabel}</p>
+                  <h3>{item.label}</h3>
+                  <p><strong>Base registrada:</strong> {item.triggeredBy.join(" · ")}</p>
+                  <ul>{item.actions.map((action) => <li key={action}>{action}</li>)}</ul>
+                  {item.attentionSigns.map((sign) => <p key={sign}><strong>Sinal de atenção:</strong> {sign}</p>)}
+                  <p className="muted">Sugestão educativa sujeita à revisão clínica. Fontes: {item.evidenceReferences.map((source, index) => <span key={source.pmid}>{index ? "; " : ""}<a href={source.url}>PubMed {source.pmid}</a></span>)}.</p>
+                </article>
+              ))}
+            </div>
+          ) : <p>Nenhum domínio alterado, em atenção ou discordante foi identificado nas avaliações vinculadas.</p>}
+          <h3>Condutas profissionais registradas</h3>
           {activeInterventions.length ? (
             <ol>
               {activeInterventions.map((item) => (
@@ -169,28 +190,38 @@ export default async function OncogeriatricReportPage({ params, searchParams }: 
         </section>
 
         <section>
-          <h2>6. Mudanças e sinais de atenção desde a última avaliação</h2>
+          <h2>6. Orientações específicas do esquema e dos eventos registrados</h2>
+          <p><strong>Esquema:</strong> {currentCourse?.regimenName ?? "Não registrado"}</p>
+          <p><strong>Riscos relacionados ao tratamento selecionados pelo médico:</strong> {selectedRiskFlags.length ? selectedRiskFlags.join(", ") : "Nenhum risco específico selecionado"}</p>
+          {clinicianRegimenGuidance ? <p><strong>Orientações confirmadas pela equipe oncológica:</strong> {clinicianRegimenGuidance}</p> : <p>Sem orientação específica do esquema confirmada e registrada. O sistema não infere conduta pelo nome do antineoplásico.</p>}
+          <p className="muted">Dose, intervalo, adiamento, suspensão ou substituição do tratamento não são gerados automaticamente.</p>
+        </section>
+
+        <section>
+          <h2>7. Mudanças e sinais de atenção desde a última avaliação</h2>
           {changes.length ? <ul>{changes.map((item, index) => <li key={`${item}-${index}`}>{item}</li>)}</ul> : <p>Sem mudança estruturada registrada.</p>}
           <p className="muted">Os itens acima são fatos registrados para reavaliação clínica; não geram ajuste automático do tratamento antineoplásico.</p>
         </section>
 
         <section>
-          <h2>7. Eventos durante o tratamento</h2>
+          <h2>8. Eventos durante o tratamento</h2>
           {recentEvents.length ? <ul>{recentEvents.map((event) => <li key={event.id}>{formatClinicalDate(event.occurredAt)} · {event.toxicityType}{event.grade ? ` · grau ${event.grade}` : ""}{event.hospitalizationAssociated ? " · hospitalização associada" : ""}{event.cycleDelayAssociated ? " · atraso de ciclo registrado" : ""}{event.treatmentModificationRecorded ? ` · modificação documentada: ${event.treatmentModificationRecorded}` : ""}</li>)}</ul> : <p>Nenhum evento relevante registrado.</p>}
         </section>
 
         <section>
-          <h2>8. Recuperação e pós-tratamento</h2>
+          <h2>9. Planejamento e recuperação</h2>
+          {plannedFollowUps.length ? <><h3>Próximas avaliações</h3><ul>{plannedFollowUps.map((item) => <li key={item.id}><strong>{oncogeriatricCheckpointTypeLabel(item.type)}:</strong> prevista para {formatClinicalDate(item.scheduledAt)} · {item.consultationId ? "consulta vinculada" : "consulta ainda não vinculada"}</li>)}</ul></> : <p>Sem próxima avaliação planejada.</p>}
+          <h3>Recuperação por domínio</h3>
           {latestRecoveryByDomain.length ? <ul>{latestRecoveryByDomain.map((item) => <li key={item.id}><strong>{oncogeriatricDomainLabel(item.domain)}:</strong> {oncogeriatricRecoveryStatusLabel(item.status).toLocaleLowerCase("pt-BR")} · {formatClinicalDate(item.assessedAt)}{item.notes ? ` · ${item.notes}` : ""}</li>)}</ul> : <p>Ainda sem avaliação de recuperação registrada.</p>}
         </section>
 
         <section>
-          <h2>9. Objetivo prioritário informado pelo paciente</h2>
+          <h2>10. Objetivo prioritário informado pelo paciente</h2>
           <p>{whatMatters}</p>
         </section>
 
         <section>
-          <h2>10. Integração com a equipe oncológica</h2>
+          <h2>11. Integração com a equipe oncológica</h2>
           <p>Este relatório organiza vulnerabilidades geriátricas, intervenções e mudanças longitudinais para apoiar a discussão entre geriatria e oncologia. Escolha de esquema, dose, intervalo, adiamento, suspensão ou modificação do tratamento antineoplásico permanecem decisões clínicas humanas.</p>
         </section>
 

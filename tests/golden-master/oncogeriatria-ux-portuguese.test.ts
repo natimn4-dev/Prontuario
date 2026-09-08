@@ -28,7 +28,7 @@ test("oncogeriatria segue fluxo clínico em etapas e oferece acesso explícito �
     "Plano geriátrico",
     "Escalas clínicas",
     "Evolução longitudinal",
-    "Pós-tratamento",
+    "Planejamento",
     "Relatório",
   ]) {
     assert.ok(nav.includes(label), `etapa ausente na navegação: ${label}`);
@@ -73,6 +73,25 @@ test("ponte de escalas preserva vínculo explícito e não cria consulta artific
   assert.match(scalesPage, /só entram na trajetória oncogeriátrica após o vínculo explícito/);
   assert.doesNotMatch(scalesPage, /prisma\.consultation\.create/);
   assert.doesNotMatch(scalesPage, /ClinicalScalesWorkspace/);
+  assert.match(scalesPage, /Abrir escalas clínicas desta consulta/);
+  assert.match(scalesPage, /Próxima página: Evolução longitudinal/);
+});
+
+test("domínios alterados mostram instrumentos anteriores sem seleção automática", () => {
+  const continuity = readFileSync("src/components/oncogeriatria/clinical-continuity.tsx", "utf8");
+  const planPage = readFileSync("src/app/patients/[id]/oncogeriatria/intervencoes/page.tsx", "utf8");
+  assert.match(checkPage, /OncogeriatricDomainReview/);
+  assert.match(planPage, /OncogeriatricDomainReview/);
+  assert.match(continuity, /As escalas exibidas são as preenchidas na avaliação anterior mais recente do domínio/);
+  assert.match(continuity, /A reaplicação continua sendo decisão do geriatra/);
+});
+
+test("relatório oncogeriátrico reúne tabela, gráfico, orientação por domínio e segurança do esquema", () => {
+  assert.match(reportPage, /OncogeriatricTrajectoryTable/);
+  assert.match(reportPage, /CapacityDimensionHistoryChart/);
+  assert.match(reportPage, /buildOncogeriatricReportGuidance/);
+  assert.match(reportPage, /Orientações específicas do esquema e dos eventos registrados/);
+  assert.match(reportPage, /O sistema não infere conduta pelo nome do antineoplásico/);
 });
 
 test("CARG liberado permanece transparente, local e sem conduta automática", () => {

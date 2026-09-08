@@ -1,6 +1,7 @@
+import { OncogeriatricClinicalContinuity } from "@/components/oncogeriatria/clinical-continuity";
 import { OncogeriatricNav, OncogeriatricStepActions, OncogeriatricWorkspaceHeader } from "@/components/oncogeriatria/oncogeriatric-nav";
 import { CONSULTATION_STATUS_LABELS, type ConsultationContextStatus } from "@/domain/consultation-context";
-import { formatClinicalDate, loadEpisodeWorkspace, loadOncogeriatricPatient, requireOncogeriatricReadAccess, resolveOncogeriatricEpisode } from "@/server/oncogeriatria/read";
+import { formatClinicalDate, loadEpisodeWorkspace, loadOncogeriatricPatient, requireOncogeriatricReadAccess, resolveOncogeriatricEpisode, selectOncogeriatricWorkingConsultation } from "@/server/oncogeriatria/read";
 
 function consultationStatusLabel(value: string): string {
   return CONSULTATION_STATUS_LABELS[value as ConsultationContextStatus] ?? "Situação não informada";
@@ -19,13 +20,15 @@ export default async function OncogeriatricScalesPage({ params, searchParams }: 
   const ordered = [...workspace.consultations].sort((a, b) => b.occurredAt.getTime() - a.occurredAt.getTime());
   const linked = ordered.filter((item) => linkedIds.has(item.id));
   const available = ordered.filter((item) => !linkedIds.has(item.id));
+  const workingConsultation = selectOncogeriatricWorkingConsultation(workspace, linked[0]?.id);
 
   const consultationList = (items: typeof ordered, linkedToEpisode: boolean) => (
     <ul className="clean-list">
       {items.map((consultation) => (
         <li key={consultation.id}>
-          <a href={`/consultations/${consultation.id}#escalas`}><strong>{formatClinicalDate(consultation.occurredAt)} · {consultationStatusLabel(consultation.status)}</strong></a>
+          <strong>{formatClinicalDate(consultation.occurredAt)} · {consultationStatusLabel(consultation.status)}</strong>
           <span>{linkedToEpisode ? "Consulta vinculada: os resultados elegíveis integram a trajetória oncogeriátrica." : "Consulta ainda não vinculada: é possível preencher as escalas, mas elas só entram na trajetória oncogeriátrica após o vínculo explícito."}</span>
+          <a href={`/consultations/${consultation.id}#escalas`}>Abrir escalas clínicas desta consulta →</a>
         </li>
       ))}
     </ul>
@@ -36,6 +39,8 @@ export default async function OncogeriatricScalesPage({ params, searchParams }: 
       <OncogeriatricWorkspaceHeader patientId={patientId} patientName={patient.fullName} episodeLabel={episode.diagnosis} currentStep="escalas" title="Aplicar e revisar escalas" description="Abra o mesmo sistema de escalas do prontuário geriátrico geral, evitando duplicidade de dados, resultados divergentes ou instrumentos paralelos." />
 
       <OncogeriatricNav patientId={patientId} episodeId={episode.id} />
+
+      <OncogeriatricClinicalContinuity patientId={patientId} consultation={workingConsultation} />
 
       <section className="notice">
         <strong>Como funciona</strong>
@@ -70,6 +75,10 @@ export default async function OncogeriatricScalesPage({ params, searchParams }: 
           <p className="muted">O resultado estima faixas de toxicidade da quimioterapia e não define dose, esquema, adiamento ou suspensão.</p>
           <a href={`/patients/${patientId}/oncogeriatria/basal?episode=${encodeURIComponent(episode.id)}`}>Ir para CARG na avaliação inicial →</a>
         </article>
+      </section>
+      <section className="notice">
+        <strong>Próxima página: Evolução longitudinal</strong>
+        <span>Depois de salvar as escalas, use o botão “Próxima etapa” abaixo para conferir a trajetória por domínio e os gráficos do acompanhamento.</span>
       </section>
       <OncogeriatricStepActions patientId={patientId} episodeId={episode.id} currentStep="escalas" />
     </main>

@@ -1,10 +1,11 @@
 import { CargChecklistForm, G8ChecklistForm } from "@/components/oncogeriatria/checklist-scales";
+import { OncogeriatricClinicalContinuity } from "@/components/oncogeriatria/clinical-continuity";
 import { OncogeriatricDomainStatusSummary } from "@/components/oncogeriatria/domain-status-summary";
 import { BaselineCheckpointForm } from "@/components/oncogeriatria/oncogeriatric-forms";
 import { OncogeriatricNav, OncogeriatricStepActions, OncogeriatricWorkspaceHeader } from "@/components/oncogeriatria/oncogeriatric-nav";
 import { CONSULTATION_STATUS_LABELS, type ConsultationContextStatus } from "@/domain/consultation-context";
 import { oncogeriatricCheckpointStatusLabel, oncogeriatricCourseStatusLabel } from "@/domain/oncogeriatria/presentation-labels";
-import { capacityHistoryForOncogeriatricEpisode, formatClinicalDate, loadEpisodeWorkspace, loadOncogeriatricPatient, readStructuredRecord, requireOncogeriatricReadAccess, resolveOncogeriatricEpisode } from "@/server/oncogeriatria/read";
+import { capacityHistoryForOncogeriatricEpisode, formatClinicalDate, loadEpisodeWorkspace, loadOncogeriatricPatient, readStructuredRecord, requireOncogeriatricReadAccess, resolveOncogeriatricEpisode, selectOncogeriatricWorkingConsultation } from "@/server/oncogeriatria/read";
 
 function consultationStatusLabel(value: string): string {
   return CONSULTATION_STATUS_LABELS[value as ConsultationContextStatus] ?? "Situação não informada";
@@ -40,6 +41,7 @@ export default async function OncogeriatricBaselinePage({ params, searchParams }
   const consultationOptions = workspace.consultations.map((item) => ({ id: item.id, label: `${formatClinicalDate(item.occurredAt)} · ${consultationStatusLabel(item.status)}` }));
   const courseOptions = workspace.courses.map((item) => ({ id: item.id, label: `${item.regimenName} · ${oncogeriatricCourseStatusLabel(item.status)}` }));
   const currentAge = current ? ageOnDate(patient.birthDate, current.occurredAt) : undefined;
+  const workingConsultation = selectOncogeriatricWorkingConsultation(workspace, current?.consultationId);
   const g8Assessment = current?.g8AssessmentId ? workspace.scaleAssessments.find((item) => item.id === current.g8AssessmentId) : null;
   const cargAssessment = current?.cargAssessmentId ? workspace.scaleAssessments.find((item) => item.id === current.cargAssessmentId) : null;
 
@@ -47,6 +49,7 @@ export default async function OncogeriatricBaselinePage({ params, searchParams }
     <main className="shell">
       <OncogeriatricWorkspaceHeader patientId={patientId} patientName={patient.fullName} episodeLabel={episode.diagnosis} currentStep="basal" title="Avaliação antes do tratamento" description="Registre o estado geriátrico inicial e aplique somente as escalas pertinentes, escolhidas pelo geriatra." />
       <OncogeriatricNav patientId={patientId} episodeId={episode.id} />
+      <OncogeriatricClinicalContinuity patientId={patientId} consultation={workingConsultation} />
       <section className="two-columns">
         <article className="panel"><h2>Registrar avaliação inicial</h2><BaselineCheckpointForm patientId={patientId} episodeId={episode.id} consultations={consultationOptions} courses={courseOptions} /></article>
         <article className="panel"><h2>Histórico antes do tratamento</h2>{initialAssessments.length ? <ul className="clean-list">{initialAssessments.map((item) => <li key={item.id}><strong>{formatClinicalDate(item.occurredAt)}</strong><span>{oncogeriatricCheckpointStatusLabel(item.status)} · {item.consultationId ? "vinculada a uma consulta e aos domínios registrados nela" : "sem consulta vinculada"}</span>{item.consultationId ? <a href={`/consultations/${item.consultationId}#escalas`}>Abrir escalas desta consulta →</a> : null}</li>)}</ul> : <p className="muted">Ainda não há avaliação inicial registrada.</p>}</article>
