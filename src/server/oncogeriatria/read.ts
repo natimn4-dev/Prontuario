@@ -107,6 +107,20 @@ export async function loadEpisodeWorkspace(patientId: string, episodeId: string)
 
 export type OncogeriatricEpisodeWorkspace = Awaited<ReturnType<typeof loadEpisodeWorkspace>>;
 
+export function selectOncogeriatricWorkingConsultation(
+  workspace: OncogeriatricEpisodeWorkspace,
+  preferredConsultationId?: string | null,
+) {
+  const preferred = preferredConsultationId
+    ? workspace.consultations.find((consultation) => consultation.id === preferredConsultationId)
+    : undefined;
+  return (preferred?.status !== "FINALIZED" ? preferred : undefined)
+    ?? workspace.consultations.find((consultation) => consultation.status !== "FINALIZED")
+    ?? preferred
+    ?? workspace.consultations[0]
+    ?? null;
+}
+
 export function capacityHistoryForOncogeriatricEpisode(
   patientId: string,
   workspace: OncogeriatricEpisodeWorkspace,

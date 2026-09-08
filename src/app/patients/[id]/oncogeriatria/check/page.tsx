@@ -1,10 +1,11 @@
 import { DomainLinkedOncogeriatricCheckForm } from "@/components/oncogeriatria/domain-linked-check-form";
+import { OncogeriatricClinicalContinuity, OncogeriatricDomainReview } from "@/components/oncogeriatria/clinical-continuity";
 import { OncogeriatricDomainStatusSummary } from "@/components/oncogeriatria/domain-status-summary";
 import { ToxicityForm } from "@/components/oncogeriatria/oncogeriatric-forms";
 import { OncogeriatricNav, OncogeriatricStepActions, OncogeriatricWorkspaceHeader } from "@/components/oncogeriatria/oncogeriatric-nav";
 import { CONSULTATION_STATUS_LABELS, type ConsultationContextStatus } from "@/domain/consultation-context";
 import { oncogeriatricCheckpointTypeLabel, oncogeriatricCourseStatusLabel } from "@/domain/oncogeriatria/presentation-labels";
-import { capacityHistoryForOncogeriatricEpisode, formatClinicalDate, hasRelevantCheckpointAlert, loadEpisodeWorkspace, loadOncogeriatricPatient, readStructuredRecord, requireOncogeriatricReadAccess, resolveOncogeriatricEpisode } from "@/server/oncogeriatria/read";
+import { capacityHistoryForOncogeriatricEpisode, formatClinicalDate, hasRelevantCheckpointAlert, loadEpisodeWorkspace, loadOncogeriatricPatient, readStructuredRecord, requireOncogeriatricReadAccess, resolveOncogeriatricEpisode, selectOncogeriatricWorkingConsultation } from "@/server/oncogeriatria/read";
 
 function consultationStatusLabel(value: string): string {
   return CONSULTATION_STATUS_LABELS[value as ConsultationContextStatus] ?? "Situação não informada";
@@ -22,10 +23,14 @@ export default async function OncogeriatricCheckPage({ params, searchParams }: {
   const checks = workspace.checkpoints.filter((item) => item.type === "CYCLE" || item.type === "PERIODIC_REASSESSMENT" || item.type === "EVENT_DRIVEN").reverse();
   const courseOptions = workspace.courses.map((item) => ({ id: item.id, label: `${item.regimenName} · ${oncogeriatricCourseStatusLabel(item.status)}` }));
   const consultationOptions = workspace.consultations.map((item) => ({ id: item.id, label: `${formatClinicalDate(item.occurredAt)} · ${consultationStatusLabel(item.status)}` }));
+  const latestCheckConsultationId = checks.find((item) => item.consultationId)?.consultationId;
+  const workingConsultation = selectOncogeriatricWorkingConsultation(workspace, latestCheckConsultationId);
   return (
     <main className="shell">
       <OncogeriatricWorkspaceHeader patientId={patientId} patientName={patient.fullName} episodeLabel={episode.diagnosis} currentStep="check" title="Reavaliação durante o tratamento" description="Registre mudanças desde a última avaliação sem substituir uma reavaliação geriátrica ampliada quando ela for necessária." />
       <OncogeriatricNav patientId={patientId} episodeId={episode.id} />
+      <OncogeriatricClinicalContinuity patientId={patientId} consultation={workingConsultation} />
+      <OncogeriatricDomainReview history={capacityHistory} workingConsultation={workingConsultation} mode="reassessment" />
       <section className="two-columns">
         <article className="panel"><h2>Nova reavaliação</h2><DomainLinkedOncogeriatricCheckForm patientId={patientId} episodeId={episode.id} courses={courseOptions} consultations={consultationOptions} /></article>
         <article className="panel"><h2>Registrar toxicidade relevante</h2><ToxicityForm patientId={patientId} episodeId={episode.id} courses={courseOptions} /></article>

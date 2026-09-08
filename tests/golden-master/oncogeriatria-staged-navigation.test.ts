@@ -15,7 +15,7 @@ const stages = [
   ["intervencoes", "Plano geriátrico"],
   ["escalas", "Escalas clínicas"],
   ["longitudinal", "Evolução longitudinal"],
-  ["pos-tratamento", "Pós-tratamento"],
+  ["pos-tratamento", "Planejamento"],
   ["relatorio", "Relatório"],
 ] as const;
 
@@ -70,6 +70,25 @@ test("cabeçalho clínico prioriza identidade, tarefa e retorno sem hero repetit
   assert.match(navigation, /Prontuário do paciente/);
   assert.match(navigationStyles, /\.clinicalHeader \{/);
   assert.match(navigationStyles, /grid-template-columns: minmax\(0, \.9fr\) minmax\(0, 1\.1fr\)/);
+});
+
+test("etapas clínicas reutilizam medicamentos, SOAP, vacinas, condutas e escalas sem duplicar persistência", () => {
+  const continuity = readFileSync("src/components/oncogeriatria/clinical-continuity.tsx", "utf8");
+  for (const stage of ["basal", "tratamento", "check", "pos-tratamento"]) {
+    const page = readFileSync(`src/app/patients/[id]/oncogeriatria/${stage}/page.tsx`, "utf8");
+    assert.match(page, /OncogeriatricClinicalContinuity/);
+  }
+  for (const anchor of ["medicamentos", "soap", "escalas", "relatorio"]) assert.ok(continuity.includes(`hash: "${anchor}"`));
+  assert.match(continuity, /Evolução, vacinas e condutas/);
+  assert.match(continuity, /não cria registros clínicos paralelos/);
+});
+
+test("planejamento substitui o rótulo pós-tratamento sem apagar recuperação e seguimento", () => {
+  const planning = readFileSync("src/app/patients/[id]/oncogeriatria/pos-tratamento/page.tsx", "utf8");
+  assert.match(navigation, /label: "Planejamento"/);
+  assert.match(planning, /Planejamento das próximas consultas/);
+  assert.match(planning, /CheckpointPlannerForm/);
+  assert.match(planning, /RecoveryForm/);
 });
 
 test("visão geral usa resumo semântico compacto e apresenta alertas antes das ações", () => {

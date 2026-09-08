@@ -12,7 +12,7 @@ const steps = [
   { id: "intervencoes", label: "Plano geriátrico", path: "/intervencoes", description: "Intervenções e responsáveis" },
   { id: "escalas", label: "Escalas clínicas", path: "/escalas", description: "Instrumentos escolhidos pelo geriatra" },
   { id: "longitudinal", label: "Evolução longitudinal", path: "/longitudinal", description: "Trajetória por domínio" },
-  { id: "pos-tratamento", label: "Pós-tratamento", path: "/pos-tratamento", description: "Recuperação e seguimento" },
+  { id: "pos-tratamento", label: "Planejamento", path: "/pos-tratamento", description: "Próximas consultas e recuperação" },
   { id: "relatorio", label: "Relatório", path: "/relatorio", description: "Revisão clínica e documento" },
 ] as const;
 
