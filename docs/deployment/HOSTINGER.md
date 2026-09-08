@@ -71,9 +71,9 @@ O endpoint público de health check deve responder HTTP 200 e incluir:
 
 - `status: "ok"`
 - `database: "ok"`
-- `releaseId: "2026-09-07-oncogeriatria-workspace-ux-v2"`
+- `releaseId: "2026-09-08-oncogeriatria-domain-workflow-v3"`
 
-Nesta release, a reconciliação de medicamentos passa a representar frequência diária, semanal, mensal e “se necessário” de forma estruturada, com programação explícita quando aplicável. Frequências semanais ou mensais incompletas permanecem salvas para revisão, mas bloqueiam a emissão do plano de medicamentos até a programação ser confirmada. O relatório para paciente/família também reforça a separação entre orientações educativas e condutas médicas/profissionais.
+Nesta release, a Oncogeriatria passa a priorizar, nos domínios alterados, os instrumentos preenchidos na avaliação anterior; reutiliza a consulta clínica geral para medicamentos, SOAP, vacinas, condutas e escalas; reorganiza o planejamento geriátrico; e amplia o relatório final com trajetória por domínio. Nenhuma escala ou conduta antineoplásica é selecionada automaticamente.
 
 O `releaseId` é deliberadamente servido com `Cache-Control: no-store`; uma CDN ou proxy não deve reutilizar um identificador antigo para declarar a implantação como atual. O smoke também exige esse header antes de aceitar a resposta de health.
 
