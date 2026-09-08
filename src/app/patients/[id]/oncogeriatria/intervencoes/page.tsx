@@ -18,8 +18,8 @@ export default async function OncogeriatricInterventionsPage({ params, searchPar
     <main className="shell">
       <OncogeriatricWorkspaceHeader patientId={patientId} patientName={patient.fullName} episodeLabel={episode.diagnosis} currentStep="intervencoes" title="Plano geriátrico por vulnerabilidade" description="Revise o domínio e a escala que fundamentam cada prioridade; depois registre objetivo, ação, responsável, prazo e resultado." />
       <OncogeriatricNav patientId={patientId} episodeId={episode.id} />
-      <OncogeriatricClinicalContinuity patientId={patientId} consultation={workingConsultation} />
-      <OncogeriatricDomainReview history={capacityHistory} workingConsultation={workingConsultation} mode="care-plan" />
+      <OncogeriatricClinicalContinuity patientId={patientId} consultation={workingConsultation} episodeId={episode.id} returnStage="intervencoes" />
+      <OncogeriatricDomainReview history={capacityHistory} workingConsultation={workingConsultation} mode="care-plan" episodeId={episode.id} returnStage="intervencoes" />
       <section className="two-columns">
         <article className="panel"><h2>Registrar ação do plano</h2><InterventionForm patientId={patientId} episodeId={episode.id} /></article>
         <article className="panel"><h2>Plano consolidado</h2>{workspace.interventions.length ? <ul className="clean-list">{workspace.interventions.map((item) => <li key={item.id}><strong>{oncogeriatricDomainLabel(item.domain)} · {oncogeriatricInterventionStatusLabel(item.status)}</strong><span>{item.description}{item.intervention ? ` · ação: ${item.intervention}` : ""}{item.responsibleProfessional ? ` · responsável: ${item.responsibleProfessional}` : ""}{item.dueAt ? ` · prevista: ${formatClinicalDate(item.dueAt)}` : ""}{item.result ? ` · resultado: ${item.result}` : ""}</span></li>)}</ul> : <p className="muted">Nenhuma ação registrada no plano.</p>}</article>

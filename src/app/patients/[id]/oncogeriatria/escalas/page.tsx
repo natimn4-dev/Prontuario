@@ -1,6 +1,7 @@
 import { OncogeriatricClinicalContinuity } from "@/components/oncogeriatria/clinical-continuity";
 import { OncogeriatricNav, OncogeriatricStepActions, OncogeriatricWorkspaceHeader } from "@/components/oncogeriatria/oncogeriatric-nav";
 import { CONSULTATION_STATUS_LABELS, type ConsultationContextStatus } from "@/domain/consultation-context";
+import { buildOncogeriatricConsultationHref } from "@/domain/oncogeriatria/return-navigation";
 import { formatClinicalDate, loadEpisodeWorkspace, loadOncogeriatricPatient, requireOncogeriatricReadAccess, resolveOncogeriatricEpisode, selectOncogeriatricWorkingConsultation } from "@/server/oncogeriatria/read";
 
 function consultationStatusLabel(value: string): string {
@@ -28,7 +29,7 @@ export default async function OncogeriatricScalesPage({ params, searchParams }: 
         <li key={consultation.id}>
           <strong>{formatClinicalDate(consultation.occurredAt)} · {consultationStatusLabel(consultation.status)}</strong>
           <span>{linkedToEpisode ? "Consulta vinculada: os resultados elegíveis integram a trajetória oncogeriátrica." : "Consulta ainda não vinculada: é possível preencher as escalas, mas elas só entram na trajetória oncogeriátrica após o vínculo explícito."}</span>
-          <a href={`/consultations/${consultation.id}#escalas`}>Abrir escalas clínicas desta consulta →</a>
+          <a href={buildOncogeriatricConsultationHref({ consultationId: consultation.id, section: "escalas", episodeId: episode.id, returnStage: "escalas" })}>Abrir escalas clínicas desta consulta →</a>
         </li>
       ))}
     </ul>
@@ -40,7 +41,7 @@ export default async function OncogeriatricScalesPage({ params, searchParams }: 
 
       <OncogeriatricNav patientId={patientId} episodeId={episode.id} />
 
-      <OncogeriatricClinicalContinuity patientId={patientId} consultation={workingConsultation} />
+      <OncogeriatricClinicalContinuity patientId={patientId} consultation={workingConsultation} episodeId={episode.id} returnStage="escalas" />
 
       <section className="notice">
         <strong>Como funciona</strong>

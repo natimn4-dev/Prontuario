@@ -17,7 +17,7 @@ export default async function OncogeriatricTreatmentPage({ params, searchParams 
     <main className="shell">
       <OncogeriatricWorkspaceHeader patientId={patientId} patientName={patient.fullName} episodeLabel={episode.diagnosis} currentStep="tratamento" title="Tratamento oncológico" description="Registre a trajetória antineoplásica separadamente das medicações crônicas do paciente." />
       <OncogeriatricNav patientId={patientId} episodeId={episode.id} />
-      <OncogeriatricClinicalContinuity patientId={patientId} consultation={workingConsultation} />
+      <OncogeriatricClinicalContinuity patientId={patientId} consultation={workingConsultation} episodeId={episode.id} returnStage="tratamento" />
       <section className="two-columns">
         <article className="panel"><h2>Registrar tratamento</h2><TreatmentCourseForm patientId={patientId} episodeId={episode.id} /></article>
         <article className="panel"><h2>Tratamentos registrados</h2>{workspace.courses.length ? <ul className="clean-list">{workspace.courses.map((course) => {

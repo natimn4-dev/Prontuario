@@ -5,6 +5,7 @@ import { BaselineCheckpointForm } from "@/components/oncogeriatria/oncogeriatric
 import { OncogeriatricNav, OncogeriatricStepActions, OncogeriatricWorkspaceHeader } from "@/components/oncogeriatria/oncogeriatric-nav";
 import { CONSULTATION_STATUS_LABELS, type ConsultationContextStatus } from "@/domain/consultation-context";
 import { oncogeriatricCheckpointStatusLabel, oncogeriatricCourseStatusLabel } from "@/domain/oncogeriatria/presentation-labels";
+import { buildOncogeriatricConsultationHref } from "@/domain/oncogeriatria/return-navigation";
 import { capacityHistoryForOncogeriatricEpisode, formatClinicalDate, loadEpisodeWorkspace, loadOncogeriatricPatient, readStructuredRecord, requireOncogeriatricReadAccess, resolveOncogeriatricEpisode, selectOncogeriatricWorkingConsultation } from "@/server/oncogeriatria/read";
 
 function consultationStatusLabel(value: string): string {
@@ -49,17 +50,17 @@ export default async function OncogeriatricBaselinePage({ params, searchParams }
     <main className="shell">
       <OncogeriatricWorkspaceHeader patientId={patientId} patientName={patient.fullName} episodeLabel={episode.diagnosis} currentStep="basal" title="Avaliação antes do tratamento" description="Registre o estado geriátrico inicial e aplique somente as escalas pertinentes, escolhidas pelo geriatra." />
       <OncogeriatricNav patientId={patientId} episodeId={episode.id} />
-      <OncogeriatricClinicalContinuity patientId={patientId} consultation={workingConsultation} />
+      <OncogeriatricClinicalContinuity patientId={patientId} consultation={workingConsultation} episodeId={episode.id} returnStage="basal" />
       <section className="two-columns">
         <article className="panel"><h2>Registrar avaliação inicial</h2><BaselineCheckpointForm patientId={patientId} episodeId={episode.id} consultations={consultationOptions} courses={courseOptions} /></article>
-        <article className="panel"><h2>Histórico antes do tratamento</h2>{initialAssessments.length ? <ul className="clean-list">{initialAssessments.map((item) => <li key={item.id}><strong>{formatClinicalDate(item.occurredAt)}</strong><span>{oncogeriatricCheckpointStatusLabel(item.status)} · {item.consultationId ? "vinculada a uma consulta e aos domínios registrados nela" : "sem consulta vinculada"}</span>{item.consultationId ? <a href={`/consultations/${item.consultationId}#escalas`}>Abrir escalas desta consulta →</a> : null}</li>)}</ul> : <p className="muted">Ainda não há avaliação inicial registrada.</p>}</article>
+        <article className="panel"><h2>Histórico antes do tratamento</h2>{initialAssessments.length ? <ul className="clean-list">{initialAssessments.map((item) => <li key={item.id}><strong>{formatClinicalDate(item.occurredAt)}</strong><span>{oncogeriatricCheckpointStatusLabel(item.status)} · {item.consultationId ? "vinculada a uma consulta e aos domínios registrados nela" : "sem consulta vinculada"}</span>{item.consultationId ? <a href={buildOncogeriatricConsultationHref({ consultationId: item.consultationId, section: "escalas", episodeId: episode.id, returnStage: "basal" })}>Abrir escalas desta consulta →</a> : null}</li>)}</ul> : <p className="muted">Ainda não há avaliação inicial registrada.</p>}</article>
       </section>
       <OncogeriatricDomainStatusSummary history={capacityHistory} />
       {current ? current.consultationId ? (
         <section className="oncogeriatric-scale-stack" aria-label="Instrumentos oncogeriátricos da avaliação inicial">
           <article className="panel"><G8ChecklistForm patientId={patientId} episodeId={episode.id} checkpointId={current.id} initialAgeYears={currentAge} initialAnswers={readStructuredRecord(g8Assessment?.answers)} /></article>
           <article className="panel"><CargChecklistForm patientId={patientId} episodeId={episode.id} checkpointId={current.id} initialAgeYears={currentAge} initialBiologicalSex={cargReferenceSex(patient.sex)} initialAnswers={readStructuredRecord(cargAssessment?.answers)} /></article>
-          <p><a href={`/consultations/${current.consultationId}#escalas`}>Abrir as demais escalas clínicas desta consulta →</a></p>
+          <p><a href={buildOncogeriatricConsultationHref({ consultationId: current.consultationId, section: "escalas", episodeId: episode.id, returnStage: "basal" })}>Abrir as demais escalas clínicas desta consulta →</a></p>
         </section>
       ) : <section className="panel"><p className="clinical-caution">Para registrar G8 e CARG no sistema único de escalas, a avaliação inicial precisa estar vinculada a uma consulta existente. O sistema não cria consulta artificialmente.</p></section> : null}
       <OncogeriatricStepActions patientId={patientId} episodeId={episode.id} currentStep="basal" />

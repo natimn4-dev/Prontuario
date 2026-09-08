@@ -1,5 +1,6 @@
 import type { CapacityDimensionHistory } from "@/domain/capacity-dimension-history";
 import { buildOncogeriatricDomainReviewPriorities } from "@/domain/oncogeriatria/domain-review";
+import { buildOncogeriatricConsultationHref, type OncogeriatricReturnStage } from "@/domain/oncogeriatria/return-navigation";
 import type { ReactNode } from "react";
 import styles from "./clinical-continuity.module.css";
 
@@ -19,9 +20,13 @@ function clinicalDate(value: Date | string): string {
 export function OncogeriatricClinicalContinuity({
   patientId,
   consultation,
+  episodeId,
+  returnStage,
 }: {
   patientId: string;
   consultation: OncogeriatricWorkingConsultation | null;
+  episodeId: string;
+  returnStage: OncogeriatricReturnStage;
 }) {
   if (!consultation) {
     return (
@@ -37,7 +42,6 @@ export function OncogeriatricClinicalContinuity({
   }
 
   const readOnly = consultation.status === "FINALIZED";
-  const base = `/consultations/${consultation.id}`;
   const actions = [
     { hash: "medicamentos", label: "Medicamentos", detail: "Reconciliação, via, frequência e horários" },
     { hash: "soap", label: "Evolução, vacinas e condutas", detail: "SOAP, exames, prevenção e plano por problema" },
@@ -59,7 +63,7 @@ export function OncogeriatricClinicalContinuity({
       </div>
       <nav className={styles.actionGrid} aria-label="Campos clínicos da consulta de trabalho">
         {actions.map((action) => (
-          <a key={action.hash} href={`${base}#${action.hash}`}>
+          <a key={action.hash} href={buildOncogeriatricConsultationHref({ consultationId: consultation.id, section: action.hash, episodeId, returnStage })}>
             <strong>{action.label}</strong>
             <span>{action.detail}</span>
             <small>{readOnly ? "Revisar registro →" : "Abrir e preencher →"}</small>
@@ -74,10 +78,14 @@ export function OncogeriatricDomainReview({
   history,
   workingConsultation,
   mode,
+  episodeId,
+  returnStage,
 }: {
   history: CapacityDimensionHistory;
   workingConsultation: OncogeriatricWorkingConsultation | null;
   mode: "reassessment" | "care-plan";
+  episodeId: string;
+  returnStage: OncogeriatricReturnStage;
 }) {
   const priorities = buildOncogeriatricDomainReviewPriorities(history);
   const title = mode === "reassessment"
@@ -114,12 +122,12 @@ export function OncogeriatricDomainReview({
               </div>
               <div className={styles.priorityActions}>
                 {workingConsultation ? (
-                  <a className={styles.primaryLink} href={`/consultations/${workingConsultation.id}#escalas`}>
+                  <a className={styles.primaryLink} href={buildOncogeriatricConsultationHref({ consultationId: workingConsultation.id, section: "escalas", episodeId, returnStage })}>
                     {workingConsultation.status === "FINALIZED" ? "Revisar escalas da consulta" : "Abrir escalas na consulta de trabalho"} →
                   </a>
                 ) : null}
                 {workingConsultation?.id !== priority.consultationId ? (
-                  <a href={`/consultations/${priority.consultationId}#escalas`}>Revisar resultado anterior →</a>
+                  <a href={buildOncogeriatricConsultationHref({ consultationId: priority.consultationId, section: "escalas", episodeId, returnStage })}>Revisar resultado anterior →</a>
                 ) : null}
               </div>
             </article>

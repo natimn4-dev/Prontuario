@@ -1,12 +1,27 @@
 import { notFound } from "next/navigation";
 import { ConsultationWorkspace } from "@/components/consultations/consultation-workspace";
 import { buildConsultationContextViewModel } from "@/domain/consultation-context";
+import {
+  buildOncogeriatricReturnPath,
+  oncogeriatricReturnLabel,
+  parseOncogeriatricReturnStage,
+} from "@/domain/oncogeriatria/return-navigation";
 import { buildProfessionalIdentity } from "@/domain/professional-identity";
 import { requireAuthenticatedUser } from "@/server/auth/require-user";
 import { prisma } from "@/server/db";
 import styles from "./page.module.css";
 
-export default async function ConsultationPage({ params }: { params: Promise<{ id: string }> }) {
+function firstQueryValue(value: string | string[] | undefined): string | undefined {
+  return Array.isArray(value) ? value[0] : value;
+}
+
+export default async function ConsultationPage({
+  params,
+  searchParams,
+}: {
+  params: Promise<{ id: string }>;
+  searchParams: Promise<{ oncogeriatriaReturn?: string | string[]; episode?: string | string[] }>;
+}) {
   const { user } = await requireAuthenticatedUser("patient.read");
   const professionalIdentity = buildProfessionalIdentity({
     name: user.name,
@@ -40,6 +55,25 @@ export default async function ConsultationPage({ params }: { params: Promise<{ i
     occurredAt: consultation.occurredAt,
     patient: consultation.patient,
   });
+  const query = await searchParams;
+  const returnStage = parseOncogeriatricReturnStage(firstQueryValue(query.oncogeriatriaReturn));
+  const episodeId = firstQueryValue(query.episode);
+  const returnEpisode = returnStage && episodeId
+    ? await prisma.oncogeriatricEpisode.findFirst({
+      where: { id: episodeId, patientId: context.patientId },
+      select: { id: true },
+    })
+    : null;
+  const returnContext = returnStage && returnEpisode
+    ? {
+      href: buildOncogeriatricReturnPath({
+        patientId: context.patientId,
+        episodeId: returnEpisode.id,
+        stage: returnStage,
+      }),
+      label: oncogeriatricReturnLabel(returnStage),
+    }
+    : undefined;
 
   return (
     <main className={`shell consultation-shell ${styles.consultationShell}`}>
@@ -99,6 +133,7 @@ export default async function ConsultationPage({ params }: { params: Promise<{ i
           consultationId={id}
           patientName={context.patientName}
           professionalIdentity={professionalIdentity}
+          returnContext={returnContext}
         />
       </div>
     </main>

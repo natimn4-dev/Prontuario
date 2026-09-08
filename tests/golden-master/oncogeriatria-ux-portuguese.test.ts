@@ -33,7 +33,8 @@ test("oncogeriatria segue fluxo clínico em etapas e oferece acesso explícito �
   ]) {
     assert.ok(nav.includes(label), `etapa ausente na navegação: ${label}`);
   }
-  assert.match(scalesPage, /\/consultations\/\$\{consultation\.id\}#escalas/);
+  assert.match(scalesPage, /buildOncogeriatricConsultationHref/);
+  assert.match(scalesPage, /section: "escalas", episodeId: episode\.id, returnStage: "escalas"/);
   assert.match(scalesPage, /O geriatra continua decidindo quais instrumentos aplicar/);
   assert.match(scalesPage, /Nenhuma escala é selecionada, preenchida ou interpretada automaticamente/);
 });
