@@ -36,7 +36,7 @@
     "@prisma/client": "^7.7.0",
     "better-auth": "^1.6.0",
     "dotenv": "^17.0.0",
-    "next": "16.3.1",
+    "next": "16.3.4",
     "react": "19.2.0",
     "react-dom": "19.2.0"
   },
@@ -56,6 +56,6 @@
     "sharp@0.34.5": true
   },
   "optionalDependencies": {
-    "@next/swc-wasm-nodejs": "16.3.1"
+    "@next/swc-wasm-nodejs": "16.3.4"
   }
 }
