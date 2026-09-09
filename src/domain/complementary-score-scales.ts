@@ -32,6 +32,7 @@ import {
   TEN_CS,
   VES13,
 } from "./clinical-config/legacy-core.ts";
+import { KPS_OPTIONS } from "./performance-status-options.ts";
 
 export type ComplementaryScoreScaleCode =
   | "moca"
@@ -135,20 +136,7 @@ const PPS_CHOICES: readonly ComplementaryChoice[] = [
   { value: 10, label: "10% — Totalmente acamado; cuidado total; apenas cuidados de boca" },
 ];
 
-const KPS_CHOICES: readonly ComplementaryChoice[] = [
-  { value: 100, label: "100% — Normal, sem queixas ou evidência de doença" },
-  { value: 90, label: "90% — Atividade normal; sinais ou sintomas leves" },
-  { value: 80, label: "80% — Atividade normal com esforço; alguns sinais ou sintomas" },
-  { value: 70, label: "70% — Cuida de si, mas não mantém atividade ou trabalho habitual" },
-  { value: 60, label: "60% — Ajuda ocasional, mas atende à maioria das necessidades" },
-  { value: 50, label: "50% — Ajuda considerável e cuidados médicos frequentes" },
-  { value: 40, label: "40% — Incapacitado; requer cuidado e assistência especiais" },
-  { value: 30, label: "30% — Muito incapacitado; hospitalização pode estar indicada" },
-  { value: 20, label: "20% — Muito doente; necessita cuidado ativo de suporte" },
-  { value: 10, label: "10% — Moribundo; rápida progressão do processo fatal" },
-];
-
-const KPS_ALLOWED_VALUES = KPS_CHOICES.map((choice) => Number(choice.value));
+const KPS_ALLOWED_VALUES = KPS_OPTIONS.map((choice) => Number(choice.value));
 
 export const COMPLEMENTARY_SCORE_SCALES: readonly ComplementaryScoreScaleDefinition[] = [
   {
@@ -221,7 +209,7 @@ export const COMPLEMENTARY_SCORE_SCALES: readonly ComplementaryScoreScaleDefinit
     { title: "Classes a conferir", items: ["Anticolinérgicos; diuréticos; alfa-bloqueadores usados como anti-hipertensivos; opioides.", "Antidepressivos; antipsicóticos; antiepilépticos; benzodiazepínicos; fármacos relacionados aos benzodiazepínicos.", "Anti-hipertensivos de ação central; alfa-bloqueadores para hiperplasia prostática; anti-histamínicos.", "Vasodilatadores usados em doenças cardíacas; fármacos para bexiga hiperativa ou incontinência de urgência."] },
     { title: "Como registrar", items: ["Conte classes, não o número de comprimidos ou princípios ativos da mesma classe.", "0: nenhuma classe; 1–2: atenção; 3–14: alerta alto no protocolo atual.", "A presença de uma classe não determina retirada automática: revisar indicação, sintomas, quedas e risco de retirada com a equipe."] },
   ], sourceNote: "Classes baseadas no consenso STOPPFall (PMID 33349863); faixas 0 / 1–2 / 3–14 preservadas do golden master.", fields: [scoreField(14, "Informe o número de classes de risco identificadas, de 0 a 14.")] },
-  { code: "kps", version: LEGACY_SCORE_VERSION, name: "Karnofsky Performance Status", dimension: "prognostico", instruction: "Escolha o nível que melhor descreve atividade, autocuidado e necessidade de assistência.", sourceNote: "Faixas históricas do aplicativo preservadas; use o nível predominante no período avaliado.", fields: [{ id: "score", label: "KPS — valor e significado", choices: KPS_CHOICES }] },
+  { code: "kps", version: LEGACY_SCORE_VERSION, name: "Karnofsky Performance Status", dimension: "prognostico", instruction: "Escolha o nível que melhor descreve atividade, autocuidado e necessidade de assistência.", sourceNote: "Faixas históricas do aplicativo preservadas; use o nível predominante no período avaliado.", fields: [{ id: "score", label: "KPS — valor e significado", choices: KPS_OPTIONS }] },
   { code: "lace", version: LEGACY_SCORE_VERSION, name: "LACE — risco de reinternação", dimension: "prognostico", instruction: "Calcule os quatro componentes referentes à alta e registre o total.", applicationGuide: [
     { title: "L — tempo de internação", items: ["1 dia = 1; 2 dias = 2; 3 dias = 3; 4–6 dias = 4; 7–13 dias = 5; 14 dias ou mais = 7."] },
     { title: "A, C e E", items: ["A — admissão aguda pelo pronto atendimento: sim = 3; não = 0.", "C — comorbidade pelo Charlson: 0 = 0; 1 = 1; 2 = 2; 3 = 3; 4 ou mais = 5.", "E — visitas ao pronto atendimento nos seis meses anteriores: 0 a 4 pontos, com máximo de 4."] },

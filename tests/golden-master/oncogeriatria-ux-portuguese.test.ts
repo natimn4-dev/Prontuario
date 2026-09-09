@@ -51,6 +51,15 @@ test("rótulos técnicos permanecem como valores internos, mas são apresentados
   assert.match(checkForm, /type: "CYCLE"/);
 });
 
+test("avaliação inicial oferece cada grau ECOG e KPS com descrição clínica", () => {
+  assert.match(forms, /<select name="ecogKps" defaultValue="">/);
+  assert.match(forms, /ECOG_OPTIONS\.map/);
+  assert.match(forms, /KPS_OPTIONS\.map/);
+  assert.match(forms, /ECOG — graus de 0 a 5/);
+  assert.match(forms, /KPS — níveis de 10% a 100%/);
+  assert.doesNotMatch(forms, /<input name="ecogKps"/);
+});
+
 test("camada visível da oncogeriatria não reintroduz jargões ingleses auditados", () => {
   const visibleSources = [nav, forms, checkForm, checkPage, patientPage, reportPage, reportActions, homePage].join("\n");
   for (const forbidden of [

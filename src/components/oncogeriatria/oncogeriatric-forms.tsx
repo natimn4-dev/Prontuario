@@ -2,6 +2,7 @@
 
 import { useRouter } from "next/navigation";
 import { useState, type FormEvent } from "react";
+import { ECOG_OPTIONS } from "@/domain/oncogeriatric-scales";
 import {
   ONCOGERIATRIC_COURSE_STATUS_OPTIONS,
   ONCOGERIATRIC_INTENT_OPTIONS,
@@ -9,6 +10,7 @@ import {
   ONCOGERIATRIC_RECOVERY_DOMAIN_OPTIONS,
   ONCOGERIATRIC_RECOVERY_STATUS_OPTIONS,
 } from "@/domain/oncogeriatria/presentation-labels";
+import { KPS_OPTIONS } from "@/domain/performance-status-options";
 
 async function postAction(patientId: string, payload: Record<string, unknown>) {
   const response = await fetch(`/api/oncogeriatria/patients/${patientId}`, {
@@ -148,7 +150,19 @@ export function BaselineCheckpointForm({ patientId, episodeId, consultations, co
       <label>Consulta existente para aplicar e recuperar escalas<select name="consultationId" defaultValue=""><option value="">Sem vínculo por enquanto</option>{consultations.map((item) => <option key={item.id} value={item.id}>{item.label}</option>)}</select></label>
       <p className="muted">Vincule uma consulta para usar as mesmas escalas do prontuário geral e manter um único resultado por instrumento.</p>
       <label>Tratamento relacionado<select name="treatmentCourseId" defaultValue=""><option value="">Ainda não definido</option>{courses.map((item) => <option key={item.id} value={item.id}>{item.label}</option>)}</select></label>
-      <label>ECOG/KPS informado pelo médico<input name="ecogKps" /></label>
+      <label>
+        ECOG ou KPS informado pelo médico
+        <select name="ecogKps" defaultValue="">
+          <option value="">Selecione a escala e o grau</option>
+          <optgroup label="ECOG — graus de 0 a 5">
+            {ECOG_OPTIONS.map((option) => <option key={`ecog-${option.value}`} value={`ECOG ${option.value}`}>ECOG {option.value} — {option.label}</option>)}
+          </optgroup>
+          <optgroup label="KPS — níveis de 10% a 100%">
+            {KPS_OPTIONS.map((option) => <option key={`kps-${option.value}`} value={`KPS ${option.value}%`}>{option.label}</option>)}
+          </optgroup>
+        </select>
+      </label>
+      <p className="muted">Selecione o grau já avaliado pelo médico. O sistema apenas registra a escolha e não infere conduta.</p>
       <label>O que importa para o paciente<textarea name="whatMatters" rows={3} /></label>
       <button disabled={state.pending} type="submit">Criar avaliação inicial</button>
       <Feedback message={state.message} />
