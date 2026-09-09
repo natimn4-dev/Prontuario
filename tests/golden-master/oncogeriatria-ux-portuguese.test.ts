@@ -25,7 +25,6 @@ test("oncogeriatria segue fluxo clínico em etapas e oferece acesso explícito �
     "Antes do tratamento",
     "Tratamento oncológico",
     "Durante o tratamento",
-    "Plano geriátrico",
     "Escalas clínicas",
     "Evolução longitudinal",
     "Planejamento",
@@ -33,7 +32,8 @@ test("oncogeriatria segue fluxo clínico em etapas e oferece acesso explícito �
   ]) {
     assert.ok(nav.includes(label), `etapa ausente na navegação: ${label}`);
   }
-  assert.match(scalesPage, /\/consultations\/\$\{consultation\.id\}#escalas/);
+  assert.match(scalesPage, /buildOncogeriatricConsultationHref/);
+  assert.match(scalesPage, /section: "escalas", episodeId: episode\.id, returnStage: "escalas"/);
   assert.match(scalesPage, /O geriatra continua decidindo quais instrumentos aplicar/);
   assert.match(scalesPage, /Nenhuma escala é selecionada, preenchida ou interpretada automaticamente/);
 });
@@ -81,7 +81,8 @@ test("domínios alterados mostram instrumentos anteriores sem seleção automát
   const continuity = readFileSync("src/components/oncogeriatria/clinical-continuity.tsx", "utf8");
   const planPage = readFileSync("src/app/patients/[id]/oncogeriatria/intervencoes/page.tsx", "utf8");
   assert.match(checkPage, /OncogeriatricDomainReview/);
-  assert.match(planPage, /OncogeriatricDomainReview/);
+  assert.doesNotMatch(planPage, /OncogeriatricDomainReview|InterventionForm/);
+  assert.match(planPage, /oncogeriatria\/escalas/);
   assert.match(continuity, /As escalas exibidas são as preenchidas na avaliação anterior mais recente do domínio/);
   assert.match(continuity, /A reaplicação continua sendo decisão do geriatra/);
 });

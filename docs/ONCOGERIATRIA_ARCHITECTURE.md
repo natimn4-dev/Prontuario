@@ -17,7 +17,7 @@ O módulo não cria cadastro paralelo e não depende da participação no Progra
 - `/patients/[id]/oncogeriatria/basal` — avaliação pré-tratamento;
 - `/patients/[id]/oncogeriatria/tratamento` — cursos terapêuticos;
 - `/patients/[id]/oncogeriatria/check` — Oncogeriatric Check e toxicidade;
-- `/patients/[id]/oncogeriatria/intervencoes` — vulnerabilidades/intervenções;
+- `/patients/[id]/oncogeriatria/intervencoes` — rota legada que redireciona para as escalas clínicas; não integra mais a navegação visível;
 - `/patients/[id]/oncogeriatria/longitudinal` — Δ geriátrico, timeline e gráficos;
 - `/patients/[id]/oncogeriatria/pos-tratamento` — recuperação e seguimento;
 - `/patients/[id]/oncogeriatria/relatorio` — relatório oncogeriátrico específico e imprimível.

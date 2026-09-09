@@ -9,7 +9,6 @@ const steps = [
   { id: "basal", label: "Antes do tratamento", path: "/basal", description: "Avaliação geriátrica inicial" },
   { id: "tratamento", label: "Tratamento oncológico", path: "/tratamento", description: "Trajetória antineoplásica" },
   { id: "check", label: "Durante o tratamento", path: "/check", description: "Reavaliações e eventos" },
-  { id: "intervencoes", label: "Plano geriátrico", path: "/intervencoes", description: "Intervenções e responsáveis" },
   { id: "escalas", label: "Escalas clínicas", path: "/escalas", description: "Instrumentos escolhidos pelo geriatra" },
   { id: "longitudinal", label: "Evolução longitudinal", path: "/longitudinal", description: "Trajetória por domínio" },
   { id: "pos-tratamento", label: "Planejamento", path: "/pos-tratamento", description: "Próximas consultas e recuperação" },
@@ -143,8 +142,8 @@ export function OncogeriatricQuickActions({
   const actions = [
     { step: "Etapa 1", label: "Avaliação antes do tratamento", path: "/basal" },
     { step: "Etapa 3", label: "Reavaliar durante o tratamento", path: "/check" },
-    { step: "Etapa 5", label: "Aplicar ou revisar escalas", path: "/escalas" },
-    { step: "Etapa 8", label: "Revisar relatório", path: "/relatorio" },
+    { step: "Etapa 4", label: "Aplicar ou revisar escalas", path: "/escalas" },
+    { step: "Etapa 7", label: "Revisar relatório", path: "/relatorio" },
   ] as const;
 
   return (

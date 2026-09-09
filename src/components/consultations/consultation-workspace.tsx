@@ -67,10 +67,12 @@ export function ConsultationWorkspace({
   consultationId,
   patientName,
   professionalIdentity,
+  returnContext,
 }: {
   consultationId: string;
   patientName: string;
   professionalIdentity: ProfessionalIdentity;
+  returnContext?: { href: string; label: string };
 }) {
   const [active, setActive] = useState<WorkspaceSectionId>("soap");
   const [visited, setVisited] = useState<Set<WorkspaceSectionId>>(() => new Set(["soap"]));
@@ -128,6 +130,16 @@ export function ConsultationWorkspace({
       </aside>
 
       <div className={styles.content}>
+        {returnContext ? (
+          <aside className={`${styles.returnBar} no-print`} aria-label="Retorno à etapa de origem">
+            <div>
+              <span>Você abriu esta área pela Oncogeriatria</span>
+              <strong>{returnContext.label}</strong>
+            </div>
+            <a href={returnContext.href}>← Retornar para {returnContext.label}</a>
+          </aside>
+        ) : null}
+
         <header className={styles.contentHeader}>
           <div>
             <span>Etapa atual</span>
@@ -180,6 +192,13 @@ export function ConsultationWorkspace({
           <div id="finalizacao" hidden={active !== "finalizacao"} className={styles.panel}>
             <ConsultationFinalizationPanel consultationId={consultationId} />
           </div>
+        ) : null}
+
+        {returnContext ? (
+          <nav className={`${styles.returnFooter} no-print`} aria-label="Concluir e retornar à etapa de origem">
+            <span>Terminou o preenchimento ou a revisão desta área?</span>
+            <a href={returnContext.href}>← Retornar para {returnContext.label}</a>
+          </nav>
         ) : null}
       </div>
     </section>

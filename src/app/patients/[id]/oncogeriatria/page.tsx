@@ -9,6 +9,7 @@ import {
   oncogeriatricEpisodeStatusLabel,
   oncogeriatricIntentLabel,
 } from "@/domain/oncogeriatria/presentation-labels";
+import { buildOncogeriatricConsultationHref } from "@/domain/oncogeriatria/return-navigation";
 import {
   capacityHistoryForOncogeriatricEpisode,
   formatClinicalDate,
@@ -94,7 +95,7 @@ export default async function OncogeriatricPatientPage({ params, searchParams }:
             <div><dt>G8</dt><dd>{g8?.scoreText ?? "Não avaliado"}</dd><small>{g8?.classification ?? "Sem classificação"}</small></div>
             <div><dt>CARG</dt><dd>{carg?.scoreText ?? "Não avaliado"}</dd><small>{carg?.classification ?? "Sem classificação"}</small></div>
             <div><dt>Eventos registrados</dt><dd>{workspace.toxicities.length}</dd><small>{latestRelevantEvent ? `${latestRelevantEvent.toxicityType} · ${formatClinicalDate(latestRelevantEvent.occurredAt)}` : "Nenhum evento registrado"}</small></div>
-            <div><dt>Intervenções ativas</dt><dd>{workspace.interventions.filter((item) => item.status !== "COMPLETED").length}</dd><small>ativas ou pendentes</small></div>
+            <div><dt>Avaliações registradas</dt><dd>{workspace.checkpoints.length}</dd><small>neste acompanhamento</small></div>
           </dl>
         </div>
       </section>
@@ -109,7 +110,7 @@ export default async function OncogeriatricPatientPage({ params, searchParams }:
       {episodes.length > 1 ? <section className="panel"><div className="section-heading"><div><p className="eyebrow">Histórico</p><h2>História oncológica</h2></div></div><ul className="clean-list">{episodes.map((item) => <li key={item.id}><a href={`/patients/${patientId}/oncogeriatria?episode=${item.id}`}>{item.diagnosis}</a><span>{item.primarySite ?? "Sítio não registrado"} · {oncogeriatricEpisodeStatusLabel(item.status)} · iniciado em {formatClinicalDate(item.createdAt)}</span></li>)}</ul></section> : null}
 
       <section className="two-columns">
-        <article className="panel"><h2>Avaliação mais recente</h2>{latestCheckpoint ? <><p><strong>{oncogeriatricCheckpointTypeLabel(latestCheckpoint.type)}</strong> · {formatClinicalDate(latestCheckpoint.occurredAt)}</p><p className="muted">Situação: {oncogeriatricCheckpointStatusLabel(latestCheckpoint.status)}. Consulte “Durante o tratamento” para os detalhes estruturados.</p>{latestCheckpoint.consultationId ? <p><a href={`/consultations/${latestCheckpoint.consultationId}#escalas`}>Abrir escalas clínicas desta consulta →</a></p> : null}</> : <p className="muted">Sem dados registrados.</p>}</article>
+        <article className="panel"><h2>Avaliação mais recente</h2>{latestCheckpoint ? <><p><strong>{oncogeriatricCheckpointTypeLabel(latestCheckpoint.type)}</strong> · {formatClinicalDate(latestCheckpoint.occurredAt)}</p><p className="muted">Situação: {oncogeriatricCheckpointStatusLabel(latestCheckpoint.status)}. Consulte “Durante o tratamento” para os detalhes estruturados.</p>{latestCheckpoint.consultationId ? <p><a href={buildOncogeriatricConsultationHref({ consultationId: latestCheckpoint.consultationId, section: "escalas", episodeId: episode.id, returnStage: "overview" })}>Abrir escalas clínicas desta consulta →</a></p> : null}</> : <p className="muted">Sem dados registrados.</p>}</article>
         <article className="panel"><h2>Princípio de decisão</h2><p>G8, CARG, tendências e alertas são apoio à decisão clínica compartilhada. O sistema não indica, contraindica, reduz, suspende nem modifica esquema antineoplásico.</p></article>
       </section>
       <OncogeriatricStepActions patientId={patientId} episodeId={episode.id} currentStep="overview" />

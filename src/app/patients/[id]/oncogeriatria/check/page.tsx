@@ -5,6 +5,7 @@ import { ToxicityForm } from "@/components/oncogeriatria/oncogeriatric-forms";
 import { OncogeriatricNav, OncogeriatricStepActions, OncogeriatricWorkspaceHeader } from "@/components/oncogeriatria/oncogeriatric-nav";
 import { CONSULTATION_STATUS_LABELS, type ConsultationContextStatus } from "@/domain/consultation-context";
 import { oncogeriatricCheckpointTypeLabel, oncogeriatricCourseStatusLabel } from "@/domain/oncogeriatria/presentation-labels";
+import { buildOncogeriatricConsultationHref } from "@/domain/oncogeriatria/return-navigation";
 import { capacityHistoryForOncogeriatricEpisode, formatClinicalDate, hasRelevantCheckpointAlert, loadEpisodeWorkspace, loadOncogeriatricPatient, readStructuredRecord, requireOncogeriatricReadAccess, resolveOncogeriatricEpisode, selectOncogeriatricWorkingConsultation } from "@/server/oncogeriatria/read";
 
 function consultationStatusLabel(value: string): string {
@@ -29,8 +30,8 @@ export default async function OncogeriatricCheckPage({ params, searchParams }: {
     <main className="shell">
       <OncogeriatricWorkspaceHeader patientId={patientId} patientName={patient.fullName} episodeLabel={episode.diagnosis} currentStep="check" title="Reavaliação durante o tratamento" description="Registre mudanças desde a última avaliação sem substituir uma reavaliação geriátrica ampliada quando ela for necessária." />
       <OncogeriatricNav patientId={patientId} episodeId={episode.id} />
-      <OncogeriatricClinicalContinuity patientId={patientId} consultation={workingConsultation} />
-      <OncogeriatricDomainReview history={capacityHistory} workingConsultation={workingConsultation} mode="reassessment" />
+      <OncogeriatricClinicalContinuity patientId={patientId} consultation={workingConsultation} episodeId={episode.id} returnStage="check" />
+      <OncogeriatricDomainReview history={capacityHistory} workingConsultation={workingConsultation} episodeId={episode.id} returnStage="check" />
       <section className="two-columns">
         <article className="panel"><h2>Nova reavaliação</h2><DomainLinkedOncogeriatricCheckForm patientId={patientId} episodeId={episode.id} courses={courseOptions} consultations={consultationOptions} /></article>
         <article className="panel"><h2>Registrar toxicidade relevante</h2><ToxicityForm patientId={patientId} episodeId={episode.id} courses={courseOptions} /></article>
@@ -39,7 +40,7 @@ export default async function OncogeriatricCheckPage({ params, searchParams }: {
       <section className="panel"><div className="section-heading"><div><p className="eyebrow">Histórico</p><h2>Mudanças desde avaliações anteriores</h2></div></div>{checks.length ? <ul className="clean-list">{checks.map((checkpoint) => {
         const data = readStructuredRecord(checkpoint.structuredData);
         const notes = typeof data.notes === "string" ? data.notes : null;
-        return <li key={checkpoint.id}><strong>{formatClinicalDate(checkpoint.occurredAt)} · {oncogeriatricCheckpointTypeLabel(checkpoint.type)}{checkpoint.cycleNumber ? ` · ciclo ${checkpoint.cycleNumber}` : ""}</strong><span>{hasRelevantCheckpointAlert(checkpoint.structuredData) ? "Mudança relevante registrada — reavaliação médica indicada." : "Sem sinal estruturado de mudança registrado."}{checkpoint.consultationId ? " · avaliação por domínio vinculada à consulta" : " · sem consulta vinculada para os domínios"}{notes ? ` · ${notes}` : ""}</span>{checkpoint.consultationId ? <a href={`/consultations/${checkpoint.consultationId}#escalas`}>Abrir escalas desta consulta →</a> : null}</li>;
+        return <li key={checkpoint.id}><strong>{formatClinicalDate(checkpoint.occurredAt)} · {oncogeriatricCheckpointTypeLabel(checkpoint.type)}{checkpoint.cycleNumber ? ` · ciclo ${checkpoint.cycleNumber}` : ""}</strong><span>{hasRelevantCheckpointAlert(checkpoint.structuredData) ? "Mudança relevante registrada — reavaliação médica indicada." : "Sem sinal estruturado de mudança registrado."}{checkpoint.consultationId ? " · avaliação por domínio vinculada à consulta" : " · sem consulta vinculada para os domínios"}{notes ? ` · ${notes}` : ""}</span>{checkpoint.consultationId ? <a href={buildOncogeriatricConsultationHref({ consultationId: checkpoint.consultationId, section: "escalas", episodeId: episode.id, returnStage: "check" })}>Abrir escalas desta consulta →</a> : null}</li>;
       })}</ul> : <p className="muted">Nenhuma reavaliação registrada.</p>}</section>
       <section className="panel"><h2>Eventos de toxicidade</h2>{workspace.toxicities.length ? <ul className="clean-list">{workspace.toxicities.map((event) => <li key={event.id}><strong>{event.toxicityType} · {formatClinicalDate(event.occurredAt)}</strong><span>grau: {event.grade ?? "não registrado"} · hospitalização: {event.hospitalizationAssociated ? "sim" : "não"} · atraso de ciclo: {event.cycleDelayAssociated ? "sim" : "não"}{event.treatmentModificationRecorded ? ` · modificação previamente registrada: ${event.treatmentModificationRecorded}` : ""}</span></li>)}</ul> : <p className="muted">Nenhuma toxicidade registrada.</p>}</section>
       <OncogeriatricStepActions patientId={patientId} episodeId={episode.id} currentStep="check" />

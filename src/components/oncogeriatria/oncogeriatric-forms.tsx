@@ -5,8 +5,6 @@ import { useState, type FormEvent } from "react";
 import {
   ONCOGERIATRIC_COURSE_STATUS_OPTIONS,
   ONCOGERIATRIC_INTENT_OPTIONS,
-  ONCOGERIATRIC_INTERVENTION_DOMAIN_OPTIONS,
-  ONCOGERIATRIC_INTERVENTION_STATUS_OPTIONS,
   ONCOGERIATRIC_MODALITY_OPTIONS,
   ONCOGERIATRIC_RECOVERY_DOMAIN_OPTIONS,
   ONCOGERIATRIC_RECOVERY_STATUS_OPTIONS,
@@ -214,26 +212,6 @@ export function G8Form({ patientId, episodeId, checkpointId }: { patientId: stri
       <label>Saúde comparada a pessoas da mesma idade<select name="health"><option value="WORSE">Pior</option><option value="UNKNOWN">Não sabe</option><option value="SAME">Igual</option><option value="BETTER">Melhor</option></select></label>
       <label>Idade<input name="ageYears" type="number" min="0" required /></label>
       <button disabled={state.pending} type="submit">Calcular e registrar G8</button><Feedback message={state.message} />
-    </form>
-  );
-}
-
-export function InterventionForm({ patientId, episodeId }: { patientId: string; episodeId: string }) {
-  const state = useSubmission();
-  async function submit(event: FormEvent<HTMLFormElement>) { event.preventDefault(); const form = new FormData(event.currentTarget); await state.run(() => postAction(patientId, {
-    action: "INTERVENTION_CREATE", episodeId, domain: text(form, "domain"), description: text(form, "description"), intervention: text(form, "intervention"), responsibleProfessional: text(form, "responsibleProfessional"), dueAt: text(form, "dueAt"), status: text(form, "status"), result: text(form, "result"),
-  })); }
-  return (
-    <form className="stack" onSubmit={submit}>
-      <label>1. Domínio prioritário<select name="domain">{ONCOGERIATRIC_INTERVENTION_DOMAIN_OPTIONS.map((item) => <option key={item.value} value={item.value}>{item.label}</option>)}</select></label>
-      <label>2. Vulnerabilidade ou necessidade confirmada<textarea name="description" rows={3} required placeholder="Descreva o achado revisado, sem transformar o escore isolado em diagnóstico." /></label>
-      <label>3. Ação pactuada e revisada pelo profissional<textarea name="intervention" rows={4} placeholder="Uma ação clara, com meta compatível com o contexto clínico." /></label>
-      <label>4. Responsável<input name="responsibleProfessional" placeholder="Profissional ou serviço responsável" /></label>
-      <label>5. Data prevista para revisão<input type="date" name="dueAt" /></label>
-      <label>6. Situação<select name="status">{ONCOGERIATRIC_INTERVENTION_STATUS_OPTIONS.map((item) => <option key={item.value} value={item.value}>{item.label}</option>)}</select></label>
-      <label>7. Resultado observado<textarea name="result" rows={3} placeholder="Preencha quando houver reavaliação." /></label>
-      <button disabled={state.pending}>{state.pending ? "Salvando…" : "Adicionar ação ao plano geriátrico"}</button>
-      <Feedback message={state.message} />
     </form>
   );
 }
