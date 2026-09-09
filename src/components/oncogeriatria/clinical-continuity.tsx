@@ -77,27 +77,22 @@ export function OncogeriatricClinicalContinuity({
 export function OncogeriatricDomainReview({
   history,
   workingConsultation,
-  mode,
   episodeId,
   returnStage,
 }: {
   history: CapacityDimensionHistory;
   workingConsultation: OncogeriatricWorkingConsultation | null;
-  mode: "reassessment" | "care-plan";
   episodeId: string;
   returnStage: OncogeriatricReturnStage;
 }) {
   const priorities = buildOncogeriatricDomainReviewPriorities(history);
-  const title = mode === "reassessment"
-    ? "Domínios que merecem reavaliação durante o tratamento"
-    : "Vulnerabilidades que devem orientar o plano geriátrico";
 
   return (
-    <section className={styles.reviewSection} aria-labelledby={`domain-review-${mode}`}>
+    <section className={styles.reviewSection} aria-labelledby="domain-review-reassessment">
       <div className={styles.reviewHeading}>
         <div>
           <p className="eyebrow">Prioridade clínica</p>
-          <h2 id={`domain-review-${mode}`}>{title}</h2>
+          <h2 id="domain-review-reassessment">Domínios que merecem reavaliação durante o tratamento</h2>
         </div>
         <p>As escalas exibidas são as preenchidas na avaliação anterior mais recente do domínio. A reaplicação continua sendo decisão do geriatra.</p>
       </div>

@@ -95,7 +95,7 @@ export default async function OncogeriatricPatientPage({ params, searchParams }:
             <div><dt>G8</dt><dd>{g8?.scoreText ?? "Não avaliado"}</dd><small>{g8?.classification ?? "Sem classificação"}</small></div>
             <div><dt>CARG</dt><dd>{carg?.scoreText ?? "Não avaliado"}</dd><small>{carg?.classification ?? "Sem classificação"}</small></div>
             <div><dt>Eventos registrados</dt><dd>{workspace.toxicities.length}</dd><small>{latestRelevantEvent ? `${latestRelevantEvent.toxicityType} · ${formatClinicalDate(latestRelevantEvent.occurredAt)}` : "Nenhum evento registrado"}</small></div>
-            <div><dt>Intervenções ativas</dt><dd>{workspace.interventions.filter((item) => item.status !== "COMPLETED").length}</dd><small>ativas ou pendentes</small></div>
+            <div><dt>Avaliações registradas</dt><dd>{workspace.checkpoints.length}</dd><small>neste acompanhamento</small></div>
           </dl>
         </div>
       </section>

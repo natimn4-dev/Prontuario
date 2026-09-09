@@ -12,7 +12,6 @@ const stages = [
   ["basal", "Antes do tratamento"],
   ["tratamento", "Tratamento oncológico"],
   ["check", "Durante o tratamento"],
-  ["intervencoes", "Plano geriátrico"],
   ["escalas", "Escalas clínicas"],
   ["longitudinal", "Evolução longitudinal"],
   ["pos-tratamento", "Planejamento"],
@@ -28,6 +27,14 @@ test("acompanhamento oncogeriátrico mantém uma rota independente por etapa", (
     assert.match(page, /OncogeriatricWorkspaceHeader/);
     assert.ok(page.includes(`currentStep="${stage}"`), `rodapé de fluxo ausente em ${label}`);
   }
+});
+
+test("plano geriátrico foi suprimido sem apagar a rota histórica", () => {
+  const legacyPage = readFileSync("src/app/patients/[id]/oncogeriatria/intervencoes/page.tsx", "utf8");
+  assert.doesNotMatch(navigation, /Plano geriátrico|path: "\/intervencoes"/);
+  assert.match(legacyPage, /redirect\(`/);
+  assert.match(legacyPage, /oncogeriatria\/escalas/);
+  assert.doesNotMatch(legacyPage, /InterventionForm|OncogeriatricDomainReview|OncogeriatricWorkspaceHeader/);
 });
 
 test("navegação oferece orientação, retorno e finalização sem alterar regras clínicas", () => {

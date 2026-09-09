@@ -31,7 +31,7 @@ export default async function OncogeriatricCheckPage({ params, searchParams }: {
       <OncogeriatricWorkspaceHeader patientId={patientId} patientName={patient.fullName} episodeLabel={episode.diagnosis} currentStep="check" title="Reavaliação durante o tratamento" description="Registre mudanças desde a última avaliação sem substituir uma reavaliação geriátrica ampliada quando ela for necessária." />
       <OncogeriatricNav patientId={patientId} episodeId={episode.id} />
       <OncogeriatricClinicalContinuity patientId={patientId} consultation={workingConsultation} episodeId={episode.id} returnStage="check" />
-      <OncogeriatricDomainReview history={capacityHistory} workingConsultation={workingConsultation} mode="reassessment" episodeId={episode.id} returnStage="check" />
+      <OncogeriatricDomainReview history={capacityHistory} workingConsultation={workingConsultation} episodeId={episode.id} returnStage="check" />
       <section className="two-columns">
         <article className="panel"><h2>Nova reavaliação</h2><DomainLinkedOncogeriatricCheckForm patientId={patientId} episodeId={episode.id} courses={courseOptions} consultations={consultationOptions} /></article>
         <article className="panel"><h2>Registrar toxicidade relevante</h2><ToxicityForm patientId={patientId} episodeId={episode.id} courses={courseOptions} /></article>

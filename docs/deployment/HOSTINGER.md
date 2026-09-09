@@ -71,9 +71,9 @@ O endpoint público de health check deve responder HTTP 200 e incluir:
 
 - `status: "ok"`
 - `database: "ok"`
-- `releaseId: "2026-09-08-oncogeriatria-domain-workflow-v3"`
+- `releaseId: "2026-09-09-oncogeriatria-contextual-return-v4"`
 
-Nesta release, a Oncogeriatria passa a priorizar, nos domínios alterados, os instrumentos preenchidos na avaliação anterior; reutiliza a consulta clínica geral para medicamentos, SOAP, vacinas, condutas e escalas; reorganiza o planejamento geriátrico; e amplia o relatório final com trajetória por domínio. Nenhuma escala ou conduta antineoplásica é selecionada automaticamente.
+Nesta release, as áreas do prontuário geral abertas pela Oncogeriatria oferecem retorno explícito à etapa e ao episódio de origem. A jornada visível também deixa de apresentar o plano geriátrico; a rota antiga redireciona para as escalas clínicas, sem excluir registros históricos. Nenhuma escala ou conduta antineoplásica é selecionada automaticamente.
 
 O `releaseId` é deliberadamente servido com `Cache-Control: no-store`; uma CDN ou proxy não deve reutilizar um identificador antigo para declarar a implantação como atual. O smoke também exige esse header antes de aceitar a resposta de health.
 

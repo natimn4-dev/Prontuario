@@ -54,7 +54,7 @@ test("toda saída da Oncogeriatria para uma consulta carrega o retorno contextua
   assert.match(continuity, /episodeId: string/);
   assert.match(continuity, /returnStage: OncogeriatricReturnStage/);
 
-  const stages = ["basal", "tratamento", "check", "intervencoes", "escalas", "pos-tratamento"] as const;
+  const stages = ["basal", "tratamento", "check", "escalas", "pos-tratamento"] as const;
   for (const stage of stages) {
     const page = readFileSync(`src/app/patients/[id]/oncogeriatria/${stage}/page.tsx`, "utf8");
     assert.ok(page.includes(`returnStage="${stage}"`), `contexto de retorno ausente em ${stage}`);

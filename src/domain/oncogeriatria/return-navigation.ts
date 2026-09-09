@@ -3,7 +3,6 @@ export const ONCOGERIATRIC_RETURN_STAGES = {
   basal: { path: "/basal", label: "Antes do tratamento" },
   tratamento: { path: "/tratamento", label: "Tratamento oncológico" },
   check: { path: "/check", label: "Durante o tratamento" },
-  intervencoes: { path: "/intervencoes", label: "Plano geriátrico" },
   escalas: { path: "/escalas", label: "Escalas clínicas" },
   longitudinal: { path: "/longitudinal", label: "Evolução longitudinal" },
   "pos-tratamento": { path: "/pos-tratamento", label: "Planejamento" },
