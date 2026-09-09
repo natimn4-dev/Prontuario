@@ -3,6 +3,6 @@ import test from "node:test";
 import { CLINICAL_RELEASE_ID } from "../../src/domain/clinical-release.ts";
 
 test("release clínica possui identificador estável e não vazio para o smoke de produção", () => {
-  assert.equal(CLINICAL_RELEASE_ID, "2026-09-09-oncogeriatria-contextual-return-v4");
+  assert.equal(CLINICAL_RELEASE_ID, "2026-09-09-oncogeriatria-ecog-kps-options-v1");
   assert.ok(CLINICAL_RELEASE_ID.length > 10);
 });
