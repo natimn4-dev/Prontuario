@@ -65,12 +65,6 @@ jobs:
         run: npx prisma migrate deploy
       - name: MySQL concurrency and patient isolation
         run: npm run test:integration
-      - name: Diagnostic full golden serial
-        continue-on-error: true
-        run: node --test --test-concurrency=1 --experimental-strip-types tests/golden-master/*.test.ts
-      - name: Diagnostic full golden limited concurrency
-        continue-on-error: true
-        run: node --test --test-concurrency=4 --experimental-strip-types tests/golden-master/*.test.ts
       - name: Clinical golden master
         run: npm run test:golden
       - name: Domain typecheck
