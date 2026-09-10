@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import type { PatientAccessScope, ProfessionalRole, UserRole } from "@/domain/security/auth-policy";
+import type { PatientAccessScope, ProfessionalRole } from "@/domain/security/auth-policy";
 import { AccessForbiddenError, AuthenticationRequiredError } from "@/server/auth/access-errors";
 import { updateClinicalUserAccess } from "@/server/users/manage-user";
 
@@ -9,7 +9,6 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
   try {
     const { id } = await params;
     const body = await request.json() as {
-      role?: unknown;
       active?: unknown;
       professionalRole?: unknown;
       patientAccessScope?: unknown;
@@ -17,7 +16,6 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
     };
     const result = await updateClinicalUserAccess({
       targetUserId: id,
-      nextRole: typeof body.role === "string" ? body.role as UserRole : undefined,
       nextActive: typeof body.active === "boolean" ? body.active : undefined,
       nextProfessionalRole: typeof body.professionalRole === "string" ? body.professionalRole as ProfessionalRole : undefined,
       nextPatientAccessScope: typeof body.patientAccessScope === "string" ? body.patientAccessScope as PatientAccessScope : undefined,
