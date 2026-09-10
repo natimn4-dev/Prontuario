@@ -11,6 +11,7 @@ import {
   ONCOGERIATRIC_RECOVERY_STATUS_OPTIONS,
 } from "@/domain/oncogeriatria/presentation-labels";
 import { KPS_OPTIONS } from "@/domain/performance-status-options";
+import styles from "./oncogeriatric-forms.module.css";
 
 async function postAction(patientId: string, payload: Record<string, unknown>) {
   const response = await fetch(`/api/oncogeriatria/patients/${patientId}`, {
@@ -76,7 +77,7 @@ export function StartEpisodeForm({ patientId }: { patientId: string }) {
     }));
   }
   return (
-    <form className="stack" onSubmit={submit}>
+    <form className={styles.form} onSubmit={submit}>
       <label>Diagnóstico oncológico<input name="diagnosis" required /></label>
       <label>Sítio primário<input name="primarySite" /></label>
       <label>Histologia<input name="histology" /></label>
@@ -105,7 +106,7 @@ export function TreatmentCourseForm({ patientId, episodeId }: { patientId: strin
     }));
   }
   return (
-    <form className="stack" onSubmit={submit}>
+    <form className={styles.form} onSubmit={submit}>
       <label>Modalidade<select name="modality" defaultValue="SYSTEMIC">{ONCOGERIATRIC_MODALITY_OPTIONS.map((item) => <option key={item.value} value={item.value}>{item.label}</option>)}</select></label>
       <label>Intenção do tratamento<select name="intent" defaultValue="CURATIVE">{ONCOGERIATRIC_INTENT_OPTIONS.map((item) => <option key={item.value} value={item.value}>{item.label}</option>)}</select></label>
       <label>Linha terapêutica<input name="therapyLine" /></label>
@@ -145,7 +146,7 @@ export function BaselineCheckpointForm({ patientId, episodeId, consultations, co
     }));
   }
   return (
-    <form className="stack" onSubmit={submit}>
+    <form className={styles.form} onSubmit={submit}>
       <label>Data da avaliação inicial<input type="date" name="occurredAt" required /></label>
       <label>Consulta existente para aplicar e recuperar escalas<select name="consultationId" defaultValue=""><option value="">Sem vínculo por enquanto</option>{consultations.map((item) => <option key={item.id} value={item.id}>{item.label}</option>)}</select></label>
       <p className="muted">Vincule uma consulta para usar as mesmas escalas do prontuário geral e manter um único resultado por instrumento.</p>
@@ -163,6 +164,13 @@ export function BaselineCheckpointForm({ patientId, episodeId, consultations, co
         </select>
       </label>
       <p className="muted">Selecione o grau já avaliado pelo médico. O sistema apenas registra a escolha e não infere conduta.</p>
+      <details className={styles.descriptions}>
+        <summary>Consultar descrições completas de ECOG e KPS</summary>
+        <h3>ECOG — graus de 0 a 5</h3>
+        <ul>{ECOG_OPTIONS.map((option) => <li key={option.value}><strong>ECOG {option.value}</strong> — {option.label}</li>)}</ul>
+        <h3>KPS — níveis de 10% a 100%</h3>
+        <ul>{KPS_OPTIONS.map((option) => <li key={option.value}>{option.label}</li>)}</ul>
+      </details>
       <label>O que importa para o paciente<textarea name="whatMatters" rows={3} /></label>
       <button disabled={state.pending} type="submit">Criar avaliação inicial</button>
       <Feedback message={state.message} />
@@ -189,7 +197,7 @@ export function QuickCheckForm({ patientId, episodeId, courses }: { patientId: s
     }));
   }
   return (
-    <form className="stack" onSubmit={submit}>
+    <form className={styles.form} onSubmit={submit}>
       <label>Data<input name="occurredAt" type="date" required /></label>
       <label>Tratamento relacionado<select name="treatmentCourseId" defaultValue=""><option value="">Sem tratamento vinculado</option>{courses.map((item) => <option key={item.id} value={item.id}>{item.label}</option>)}</select></label>
       <label>Ciclo<input name="cycleNumber" type="number" min="0" /></label>
@@ -215,7 +223,7 @@ export function G8Form({ patientId, episodeId, checkpointId }: { patientId: stri
     }}));
   }
   return (
-    <form className="stack" onSubmit={submit}>
+    <form className={styles.form} onSubmit={submit}>
       <h3>G8 — triagem geriátrica</h3>
       <label>Ingestão nos últimos 3 meses<select name="foodIntake"><option value="SEVERE_DECREASE">Redução importante</option><option value="MODERATE_DECREASE">Redução moderada</option><option value="NO_DECREASE">Sem redução</option></select></label>
       <label>Perda de peso<select name="weightLoss"><option value="GT_3_KG">Mais de 3 kg</option><option value="UNKNOWN">Não sabe</option><option value="BETWEEN_1_AND_3_KG">1 a 3 kg</option><option value="NONE">Sem perda</option></select></label>
@@ -235,13 +243,13 @@ export function ToxicityForm({ patientId, episodeId, courses }: { patientId: str
   async function submit(event: FormEvent<HTMLFormElement>) { event.preventDefault(); const form = new FormData(event.currentTarget); await state.run(() => postAction(patientId, {
     action: "TOXICITY_CREATE", episodeId, treatmentCourseId: text(form, "treatmentCourseId"), occurredAt: text(form, "occurredAt"), toxicityType: text(form, "toxicityType"), grade: text(form, "grade"), consequences: text(form, "consequences"), hospitalizationAssociated: form.get("hospitalizationAssociated") === "on", cycleDelayAssociated: form.get("cycleDelayAssociated") === "on", treatmentModificationRecorded: text(form, "treatmentModificationRecorded"),
   })); }
-  return <form className="stack" onSubmit={submit}><label>Data<input type="date" name="occurredAt" required /></label><label>Tratamento relacionado<select name="treatmentCourseId"><option value="">Sem tratamento vinculado</option>{courses.map((item) => <option key={item.id} value={item.id}>{item.label}</option>)}</select></label><label>Tipo de toxicidade<input name="toxicityType" required /></label><label>Grau informado pelo médico<input name="grade" /></label><label>Consequências<textarea name="consequences" /></label><label><input type="checkbox" name="hospitalizationAssociated" /> Hospitalização associada</label><label><input type="checkbox" name="cycleDelayAssociated" /> Atraso de ciclo associado</label><label>Modificação do tratamento já registrada pelo oncologista<textarea name="treatmentModificationRecorded" /></label><button disabled={state.pending}>Registrar toxicidade</button><Feedback message={state.message} /></form>;
+  return <form className={styles.form} onSubmit={submit}><label>Data<input type="date" name="occurredAt" required /></label><label>Tratamento relacionado<select name="treatmentCourseId"><option value="">Sem tratamento vinculado</option>{courses.map((item) => <option key={item.id} value={item.id}>{item.label}</option>)}</select></label><label>Tipo de toxicidade<input name="toxicityType" required /></label><label>Grau informado pelo médico<input name="grade" /></label><label>Consequências<textarea name="consequences" /></label><label><input type="checkbox" name="hospitalizationAssociated" /> Hospitalização associada</label><label><input type="checkbox" name="cycleDelayAssociated" /> Atraso de ciclo associado</label><label>Modificação do tratamento já registrada pelo oncologista<textarea name="treatmentModificationRecorded" /></label><button disabled={state.pending}>Registrar toxicidade</button><Feedback message={state.message} /></form>;
 }
 
 export function RecoveryForm({ patientId, episodeId }: { patientId: string; episodeId: string }) {
   const state = useSubmission();
   async function submit(event: FormEvent<HTMLFormElement>) { event.preventDefault(); const form = new FormData(event.currentTarget); await state.run(() => postAction(patientId, { action: "RECOVERY_CREATE", episodeId, domain: text(form, "domain"), status: text(form, "status"), assessedAt: text(form, "assessedAt"), notes: text(form, "notes") })); }
-  return <form className="stack" onSubmit={submit}><label>Domínio<select name="domain">{ONCOGERIATRIC_RECOVERY_DOMAIN_OPTIONS.map((item) => <option key={item.value} value={item.value}>{item.label}</option>)}</select></label><label>Situação<select name="status">{ONCOGERIATRIC_RECOVERY_STATUS_OPTIONS.map((item) => <option key={item.value} value={item.value}>{item.label}</option>)}</select></label><label>Data<input type="date" name="assessedAt" required /></label><label>Observações<textarea name="notes" /></label><button disabled={state.pending}>Registrar recuperação</button><Feedback message={state.message} /></form>;
+  return <form className={styles.form} onSubmit={submit}><label>Domínio<select name="domain">{ONCOGERIATRIC_RECOVERY_DOMAIN_OPTIONS.map((item) => <option key={item.value} value={item.value}>{item.label}</option>)}</select></label><label>Situação<select name="status">{ONCOGERIATRIC_RECOVERY_STATUS_OPTIONS.map((item) => <option key={item.value} value={item.value}>{item.label}</option>)}</select></label><label>Data<input type="date" name="assessedAt" required /></label><label>Observações<textarea name="notes" /></label><button disabled={state.pending}>Registrar recuperação</button><Feedback message={state.message} /></form>;
 }
 
 export function ReportSnapshotButton({ patientId, episodeId, content }: { patientId: string; episodeId: string; content: Record<string, unknown> }) {
