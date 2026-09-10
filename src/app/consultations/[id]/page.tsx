@@ -7,6 +7,7 @@ import {
   parseOncogeriatricReturnStage,
 } from "@/domain/oncogeriatria/return-navigation";
 import { buildProfessionalIdentity } from "@/domain/professional-identity";
+import { assertPatientAccessForUser } from "@/server/auth/patient-access";
 import { requireAuthenticatedUser } from "@/server/auth/require-user";
 import { prisma } from "@/server/db";
 import styles from "./page.module.css";
@@ -23,12 +24,19 @@ export default async function ConsultationPage({
   searchParams: Promise<{ oncogeriatriaReturn?: string | string[]; episode?: string | string[] }>;
 }) {
   const { user } = await requireAuthenticatedUser("patient.read");
+  const { id } = await params;
+  const consultationScope = await prisma.consultation.findUnique({
+    where: { id },
+    select: { patientId: true },
+  });
+  if (!consultationScope) notFound();
+  await assertPatientAccessForUser(user, consultationScope.patientId);
+
   const professionalIdentity = buildProfessionalIdentity({
     name: user.name,
     email: user.email,
     brandOwnerEmail: process.env.PROFESSIONAL_BRAND_OWNER_EMAIL,
   });
-  const { id } = await params;
   const consultation = await prisma.consultation.findUnique({
     where: { id },
     select: {
