@@ -66,6 +66,7 @@ import {
   TEN_CS_STRUCTURED_DEFINITION,
   scoreTenCsStructured,
 } from "@/domain/ten-cs-structured";
+import { requireConsultationAccess } from "@/server/auth/patient-access";
 import { requireAuthenticatedUser } from "@/server/auth/require-user";
 import { saveScaleAssessment } from "@/server/clinical/persistence";
 import { prisma } from "@/server/db";
@@ -97,6 +98,7 @@ const DEFINITIONS = [
 const SUPPORTED = new Set<string>(DEFINITIONS.map((item) => item.code));
 
 async function consultationContext(consultationId: string) {
+  await requireConsultationAccess(consultationId, "patient.read");
   const consultation = await prisma.consultation.findUnique({
     where: { id: consultationId },
     select: { id: true, patientId: true, status: true },
