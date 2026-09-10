@@ -25,6 +25,7 @@ const CONTINUOUS_MEASUREMENT_CODES = new Set([
   "preensao",
   "velocidade_marcha",
   "sentar_levantar_5x",
+  "sarc_calf",
 ]);
 
 const STRUCTURED_RAW_NUMERIC_CODES = new Set(["g8", "esas"]);
