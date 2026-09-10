@@ -38,7 +38,7 @@ function findSoapSaveButton(): HTMLButtonElement | null {
   const editor = title?.closest("section");
   if (!editor) return null;
   return [...editor.querySelectorAll<HTMLButtonElement>("button")]
-    .find((button) => button.textContent?.includes("Salvar evolução e plano")) ?? null;
+    .find((button) => /Salvar evolução e plano|Salvando/.test(button.textContent ?? "")) ?? null;
 }
 
 /**
