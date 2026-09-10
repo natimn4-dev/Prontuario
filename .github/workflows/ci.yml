@@ -65,6 +65,18 @@ jobs:
         run: npx prisma migrate deploy
       - name: MySQL concurrency and patient isolation
         run: npm run test:integration
+      - name: Diagnostic SARC-CalF golden master
+        continue-on-error: true
+        run: node --test --experimental-strip-types tests/golden-master/sarc-calf-vitalidade.test.ts
+      - name: Diagnostic intrinsic capacity guidance
+        continue-on-error: true
+        run: node --test --experimental-strip-types tests/golden-master/intrinsic-capacity-guidance.test.ts
+      - name: Diagnostic unified clinical scales
+        continue-on-error: true
+        run: node --test --experimental-strip-types tests/golden-master/unified-clinical-scales.test.ts
+      - name: Diagnostic SOAP clinical flow
+        continue-on-error: true
+        run: node --test --experimental-strip-types tests/golden-master/soap-clinical-flow-ux.test.ts
       - name: Clinical golden master
         run: npm run test:golden
       - name: Domain typecheck
