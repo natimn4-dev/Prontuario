@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/server/db";
+import { requireConsultationAccess } from "@/server/auth/patient-access";
 import { requireAuthenticatedUser } from "@/server/auth/require-user";
 import { saveScaleAssessment } from "@/server/clinical/persistence";
 import { scaleConsultationHorizonIds } from "@/domain/scale-consultation-horizon";
@@ -12,12 +13,8 @@ import {
 } from "@/domain/oncogeriatric-scales";
 
 async function consultationPatientId(consultationId: string) {
-  const consultation = await prisma.consultation.findUnique({
-    where: { id: consultationId },
-    select: { patientId: true },
-  });
-  if (!consultation) throw new Error("Consulta não encontrada.");
-  return consultation.patientId;
+  const { patientId } = await requireConsultationAccess(consultationId, "patient.read");
+  return patientId;
 }
 
 async function consultationHorizonIds(patientId: string, targetConsultationId: string) {
@@ -92,6 +89,7 @@ async function matchingAutofillSources(consultationId: string, input: Pick<Crash
 export async function POST(request: Request, context: { params: Promise<{ id: string }> }) {
   try {
     const { id } = await context.params;
+    await requireConsultationAccess(id, "consultation.write");
     const body = await request.json() as Record<string, unknown>;
 
     if (body.scaleCode === "ecog") {
