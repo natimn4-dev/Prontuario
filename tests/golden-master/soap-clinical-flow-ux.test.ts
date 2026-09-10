@@ -31,6 +31,7 @@ test("campos e salvaguardas clínicas do SOAP continuam presentes", () => {
   assert.ok(editor.includes("Exames laboratoriais e de imagem"));
   assert.ok(editor.includes("expectedNoteVersion: view.noteVersion"));
   assert.ok(editor.includes("summarizeSoapMedicationProvenance"));
+  assert.match(editor, /clinical-note-changed/);
 });
 
 test("regressão: etapa soap mantém evolução e plano explícitos na navegação", () => {
