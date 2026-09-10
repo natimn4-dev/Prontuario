@@ -20,7 +20,7 @@ import {
   buildConsultationExamView,
   normalizeClinicalExamText,
 } from "../../domain/consultation-exams.ts";
-import { requireAuthenticatedUser } from "../auth/require-user.ts";
+import { requireConsultationAccess } from "../auth/patient-access.ts";
 import { prisma } from "../db.ts";
 import { consultationNoteVersion } from "./consultation-note-version.ts";
 
@@ -201,7 +201,7 @@ function prismaJson(value: unknown): Prisma.InputJsonValue {
 }
 
 export async function getConsultationNote(consultationId: string): Promise<ConsultationNoteView> {
-  await requireAuthenticatedUser("patient.read");
+  await requireConsultationAccess(consultationId, "patient.read");
   return prisma.$transaction(async (tx) => publicView(await noteContext(tx, consultationId)));
 }
 
@@ -213,7 +213,7 @@ export async function saveConsultationNote(input: {
   examsText?: string;
   requestId?: string;
 }): Promise<ConsultationNoteView> {
-  const { user } = await requireAuthenticatedUser("consultation.write");
+  const { user } = await requireConsultationAccess(input.consultationId, "consultation.write");
   const expectedUpdatedAt = input.expectedUpdatedAt ? new Date(input.expectedUpdatedAt) : undefined;
   if (expectedUpdatedAt && !Number.isFinite(expectedUpdatedAt.getTime())) {
     throw new Error("Versão da consulta inválida.");
