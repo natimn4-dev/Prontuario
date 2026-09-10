@@ -20,6 +20,7 @@ const approvedProductionEmailFingerprints = new Set([
   "f3edb3d5dbf548434e230325bc7835275146d04fcc65dcf55d83385956691210",
   "b233416c9c9fecdd75ad43613d16cb2515c19c2ff302e56842dbcd64a876de02",
   "7adbe1e0c628a064adf67f5241674295f6fdb6b4f2c09734532121e6db5e35f4",
+  "13e72ccddb396665ef006f83eda5bb0d95d093050923a1ba8ca3c5ebde767840",
 ]);
 
 function emailFingerprint(email: string): string {
