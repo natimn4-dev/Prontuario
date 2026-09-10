@@ -48,6 +48,20 @@ export async function requirePatientAccess(
   return authenticated;
 }
 
+export async function requireConsultationAccess(
+  consultationId: string,
+  permission: Permission = "patient.read",
+) {
+  const authenticated = await requireAuthenticatedUser(permission);
+  const consultation = await prisma.consultation.findUnique({
+    where: { id: consultationId },
+    select: { patientId: true },
+  });
+  if (!consultation) throw new AccessForbiddenError();
+  await assertPatientAccessForUser(authenticated.user, consultation.patientId);
+  return { ...authenticated, patientId: consultation.patientId };
+}
+
 export async function assignedPatientIdsForUser(userId: string): Promise<string[]> {
   const assignments = await prisma.patientUserAssignment.findMany({
     where: { userId, active: true },
