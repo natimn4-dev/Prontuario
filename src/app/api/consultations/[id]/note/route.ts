@@ -3,6 +3,7 @@ import {
   saveConsultationNote,
 } from "@/server/clinical/consultation-note";
 import { consultationNoteHttpHandlers } from "@/server/clinical/consultation-note-http";
+import { withConsultationPatientAccess } from "@/server/auth/consultation-route-guard";
 
 const handlers = consultationNoteHttpHandlers({
   getConsultationNote,
@@ -14,7 +15,7 @@ export async function GET(
   context: { params: Promise<{ id: string }> },
 ) {
   const { id } = await context.params;
-  return handlers.GET(request, id);
+  return withConsultationPatientAccess(id, () => handlers.GET(request, id));
 }
 
 export async function PUT(
@@ -22,5 +23,5 @@ export async function PUT(
   context: { params: Promise<{ id: string }> },
 ) {
   const { id } = await context.params;
-  return handlers.PUT(request, id);
+  return withConsultationPatientAccess(id, () => handlers.PUT(request, id));
 }
