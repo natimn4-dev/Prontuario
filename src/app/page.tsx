@@ -24,6 +24,7 @@ export default async function Home() {
   });
   const program55Enabled = isProgram55Enabled(process.env.PROGRAM55_EMERGENCY_DISABLED);
   const oncogeriatriaEnabled = isOncogeriatriaEnabled(process.env.ONCOGERIATRIA_EMERGENCY_DISABLED);
+  const canManageUsers = user.role === "ADMIN" || user.canManageUsers;
 
   return (
     <main className="shell home-shell">
@@ -48,6 +49,19 @@ export default async function Home() {
       </header>
 
       <PatientFinder />
+
+      {canManageUsers ? (
+        <section className="panel" aria-labelledby="user-management-entry-title">
+          <div className="section-heading">
+            <div>
+              <p className="eyebrow">Administração</p>
+              <h2 id="user-management-entry-title">Gestão de usuários</h2>
+              <p className="muted">Cadastre profissionais, defina permissões e vincule pacientes com rastreabilidade.</p>
+            </div>
+            <a href="/admin/users">Gerenciar usuários →</a>
+          </div>
+        </section>
+      ) : null}
 
       {program55Enabled ? (
         <section className="panel" aria-labelledby="program55-entry-title">
