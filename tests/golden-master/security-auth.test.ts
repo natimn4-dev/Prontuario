@@ -19,6 +19,7 @@ const approvedProductionPrincipalFingerprints = [
   "f3edb3d5dbf548434e230325bc7835275146d04fcc65dcf55d83385956691210",
   "b233416c9c9fecdd75ad43613d16cb2515c19c2ff302e56842dbcd64a876de02",
   "7adbe1e0c628a064adf67f5241674295f6fdb6b4f2c09734532121e6db5e35f4",
+  "13e72ccddb396665ef006f83eda5bb0d95d093050923a1ba8ca3c5ebde767840",
 ] as const;
 
 test("allowlist normaliza email e falha fechada fora da lista", () => {
@@ -57,17 +58,17 @@ test("último administrador ativo não pode ser removido", () => {
   }));
 });
 
-test("regressão: produção mantém exatamente três identidades médicas aprovadas sem expor os emails no login", () => {
-  assert.equal(approvedProductionPrincipalFingerprints.length, 3);
+test("regressão: produção mantém exatamente quatro identidades médicas aprovadas sem expor os emails no login", () => {
+  assert.equal(approvedProductionPrincipalFingerprints.length, 4);
   for (const fingerprint of approvedProductionPrincipalFingerprints) {
     assert.ok(authServer.includes(fingerprint), `fingerprint de acesso ausente: ${fingerprint.slice(0, 8)}`);
   }
   assert.match(authServer, /isApprovedProductionEmail/);
   assert.doesNotMatch(loginPage, /@gmail\.com/i);
-  assert.doesNotMatch(authServer, /natimn4@gmail\.com|draanameliacoutinho@gmail\.com|paulalimaf20@gmail\.com/i);
+  assert.doesNotMatch(authServer, /natimn4@gmail\.com|draanameliacoutinho@gmail\.com|paulalimaf20@gmail\.com|griloguedes@gmail\.com/i);
 });
 
-test("regressão: as três identidades aprovadas não dependem da allowlist externa para autenticar", () => {
+test("regressão: as quatro identidades aprovadas não dependem da allowlist externa para autenticar", () => {
   const authorizationFunction = authServer.match(/(?:export )?function isAuthorizedEmail\(email: string\): boolean \{[\s\S]*?\n\}/)?.[0] ?? "";
   const productionContractFunction = authServer.match(/function usesApprovedProductionAccessContract\(\): boolean \{[\s\S]*?\n\}/)?.[0] ?? "";
 
@@ -76,7 +77,7 @@ test("regressão: as três identidades aprovadas não dependem da allowlist exte
   assert.match(productionContractFunction, /process\.env\.NODE_ENV === "production"[\s\S]*\|\|[\s\S]*canonicalProductionAppUrl/);
 });
 
-test("regressão: rotas protegidas usam o mesmo contrato das três médicas após o OAuth", () => {
+test("regressão: rotas protegidas usam o mesmo contrato das quatro médicas após o OAuth", () => {
   assert.match(authServer, /export function isAuthorizedEmail\(email: string\): boolean/);
   assert.match(requireUserServer, /import \{ auth, isAuthorizedEmail \} from "\.\/auth"/);
   assert.match(requireUserServer, /!user\.active \|\| !isAuthorizedEmail\(user\.email\)/);
