@@ -23,11 +23,78 @@ interface WorkflowErrorBody {
   message?: string;
 }
 
+interface ClinicalNoteChangedDetail {
+  consultationId?: string;
+}
+
 const STATUS_LABEL: Record<ConsultationStatus, string> = {
   DRAFT: "Rascunho",
   IN_REVIEW: "Em revisão",
   FINALIZED: "Finalizada",
 };
+
+function findSoapSaveButton(): HTMLButtonElement | null {
+  const title = document.getElementById("soap-editor-title");
+  const editor = title?.closest("section");
+  if (!editor) return null;
+  return [...editor.querySelectorAll<HTMLButtonElement>("button")]
+    .find((button) => button.textContent?.includes("Salvar evolução e plano")) ?? null;
+}
+
+/**
+ * O editor SOAP permanece montado no workspace. Antes de mudar o status da consulta,
+ * reutilizamos a própria rotina de salvamento do editor e aguardamos o evento que ela
+ * já emite somente após uma gravação bem-sucedida. Se a gravação falhar, o botão sai
+ * de "Salvando…" sem emitir o evento e a transição de workflow é abortada.
+ */
+async function savePendingSoapBeforeWorkflow(consultationId: string): Promise<boolean> {
+  const button = findSoapSaveButton();
+  if (!button) return true;
+
+  const initialLabel = button.textContent ?? "";
+  const alreadySaving = initialLabel.includes("Salvando");
+  if (button.disabled && !alreadySaving) return true;
+
+  return new Promise<boolean>((resolve) => {
+    let settled = false;
+    let savingObserved = alreadySaving;
+    let failureCheckScheduled = false;
+
+    const finish = (result: boolean) => {
+      if (settled) return;
+      settled = true;
+      window.clearTimeout(timeoutId);
+      observer.disconnect();
+      window.removeEventListener("clinical-note-changed", onNoteChanged);
+      resolve(result);
+    };
+
+    const onNoteChanged = (event: Event) => {
+      const detail = (event as CustomEvent<ClinicalNoteChangedDetail>).detail;
+      if (detail?.consultationId === consultationId) finish(true);
+    };
+
+    const observer = new MutationObserver(() => {
+      const label = button.textContent ?? "";
+      if (label.includes("Salvando")) {
+        savingObserved = true;
+        failureCheckScheduled = false;
+        return;
+      }
+      if (!savingObserved || failureCheckScheduled) return;
+      failureCheckScheduled = true;
+      window.setTimeout(() => {
+        if (!settled && !(button.textContent ?? "").includes("Salvando")) finish(false);
+      }, 0);
+    });
+
+    const timeoutId = window.setTimeout(() => finish(false), 15000);
+    window.addEventListener("clinical-note-changed", onNoteChanged);
+    observer.observe(button, { attributes: true, attributeFilter: ["disabled"], childList: true, subtree: true });
+
+    if (!button.disabled) button.click();
+  });
+}
 
 export function ConsultationFinalizationPanel({ consultationId }: { consultationId: string }) {
   const router = useRouter();
@@ -88,6 +155,11 @@ export function ConsultationFinalizationPanel({ consultationId }: { consultation
     setBusy(true);
     setError("");
     try {
+      const soapSaved = await savePendingSoapBeforeWorkflow(consultationId);
+      if (!soapSaved) {
+        throw new Error("Não foi possível salvar a evolução SOAP pendente. A mudança de status foi cancelada; revise a mensagem na seção Evolução e plano e tente novamente.");
+      }
+
       const response = await fetch(`/api/consultations/${consultationId}/workflow`, {
         method: "POST",
         headers: { "content-type": "application/json" },
