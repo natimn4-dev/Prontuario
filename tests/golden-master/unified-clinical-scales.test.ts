@@ -112,11 +112,13 @@ test("consultation page delegates to one lazy unified scale workspace instead of
 test("unified workspace exposes checkbox selection and current-consultation status", () => {
   const workspace = readFileSync("src/components/scales/clinical-scales-workspace.tsx", "utf8");
   const statusRoute = readFileSync("src/app/api/consultations/[id]/scales/status/route.ts", "utf8");
+  const consultationGuard = readFileSync("src/server/auth/consultation-route-guard.ts", "utf8");
   assert.match(workspace, /type="checkbox"/);
   assert.match(workspace, /Em preenchimento/);
   assert.match(workspace, /Aplicada nesta consulta/);
   assert.match(workspace, /clinical-scales-changed/);
-  assert.match(statusRoute, /requireAuthenticatedUser\("patient\.read"\)/);
+  assert.match(statusRoute, /withConsultationPatientAccess\(id,/);
+  assert.match(consultationGuard, /requireConsultationAccess\(consultationId, "patient\.read"\)/);
   assert.match(statusRoute, /consultationId: consultation\.id/);
   assert.match(statusRoute, /patientId: consultation\.patientId/);
 });
