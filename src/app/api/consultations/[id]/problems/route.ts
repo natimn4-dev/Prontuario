@@ -1,3 +1,4 @@
+import { withConsultationPatientAccess } from "@/server/auth/consultation-route-guard";
 import {
   changeProblemStatus,
   createProblem,
@@ -18,7 +19,7 @@ export async function GET(
   context: { params: Promise<{ id: string }> },
 ) {
   const { id } = await context.params;
-  return handlers.GET(request, id);
+  return withConsultationPatientAccess(id, () => handlers.GET(request, id));
 }
 
 export async function POST(
@@ -26,5 +27,5 @@ export async function POST(
   context: { params: Promise<{ id: string }> },
 ) {
   const { id } = await context.params;
-  return handlers.POST(request, id);
+  return withConsultationPatientAccess(id, () => handlers.POST(request, id));
 }
