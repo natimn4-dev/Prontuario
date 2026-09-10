@@ -8,6 +8,7 @@ import {
   normalizeEmail,
   parseEmailSet,
   roleForFirstLogin,
+  roleForProfessional,
 } from "../../domain/security/auth-policy";
 import { assertProductionEnvironment } from "../../domain/security/environment";
 
@@ -36,11 +37,32 @@ function usesApprovedProductionAccessContract(): boolean {
     || appUrl.replace(/\/$/, "") === canonicalProductionAppUrl;
 }
 
+/**
+ * Contrato legado mantido deliberadamente para as quatro médicas já aprovadas.
+ * Novos profissionais são autorizados por cadastro persistido em UserAccessGrant.
+ */
 export function isAuthorizedEmail(email: string): boolean {
   if (isApprovedProductionEmail(email)) return true;
   return usesApprovedProductionAccessContract()
     ? false
     : isEmailAllowed(email, allowedEmails);
+}
+
+async function findActiveAccessGrant(email: string) {
+  return prisma.userAccessGrant.findFirst({
+    where: { email: normalizeEmail(email), active: true },
+    select: {
+      id: true,
+      professionalRole: true,
+      patientAccessScope: true,
+      canManageUsers: true,
+    },
+  });
+}
+
+export async function isAuthorizedEmailForLogin(email: string): Promise<boolean> {
+  if (isAuthorizedEmail(email)) return true;
+  return Boolean(await findActiveAccessGrant(email));
 }
 
 if (process.env.NODE_ENV === "production") {
@@ -82,6 +104,30 @@ export const auth = betterAuth({
         input: false,
         defaultValue: true,
       },
+      professionalRole: {
+        type: "string",
+        required: true,
+        input: false,
+        defaultValue: "MEDICO",
+      },
+      patientAccessScope: {
+        type: "string",
+        required: true,
+        input: false,
+        defaultValue: "ALL_PATIENTS",
+      },
+      canManageUsers: {
+        type: "boolean",
+        required: true,
+        input: false,
+        defaultValue: false,
+      },
+      accessManaged: {
+        type: "boolean",
+        required: true,
+        input: false,
+        defaultValue: false,
+      },
     },
   },
   session: {
@@ -117,21 +163,40 @@ export const auth = betterAuth({
     user: {
       create: {
         before: async (user) => {
-          if (!isAuthorizedEmail(user.email)) {
+          const grant = await findActiveAccessGrant(user.email);
+          const legacyAuthorized = isAuthorizedEmail(user.email);
+          if (!legacyAuthorized && !grant) {
             throw new APIError("FORBIDDEN", {
               message: "Conta não autorizada para este prontuário.",
             });
           }
+
+          const bootstrapRole = roleForFirstLogin({
+            email: user.email,
+            bootstrapAdmins,
+          });
+          const professionalRole = grant?.professionalRole ?? "MEDICO";
+          const role = bootstrapRole === "ADMIN"
+            ? "ADMIN"
+            : roleForProfessional(professionalRole);
+
           return {
             data: {
               ...user,
-              role: roleForFirstLogin({
-                email: user.email,
-                bootstrapAdmins,
-              }),
+              role,
               active: true,
+              professionalRole,
+              patientAccessScope: grant?.patientAccessScope ?? "ALL_PATIENTS",
+              canManageUsers: bootstrapRole === "ADMIN" || (grant?.canManageUsers ?? false),
+              accessManaged: Boolean(grant) || bootstrapRole === "ADMIN",
             },
           };
+        },
+        after: async (user) => {
+          await prisma.userAccessGrant.updateMany({
+            where: { email: normalizeEmail(user.email), active: true },
+            data: { acceptedAt: new Date() },
+          });
         },
       },
     },
@@ -140,12 +205,18 @@ export const auth = betterAuth({
         before: async (session) => {
           const user = await prisma.user.findUnique({
             where: { id: session.userId },
-            select: { id: true, email: true, role: true, active: true },
+            select: {
+              id: true,
+              email: true,
+              role: true,
+              active: true,
+              accessManaged: true,
+            },
           });
           if (!user) {
             throw new APIError("UNAUTHORIZED", { message: "Usuário não encontrado." });
           }
-          if (!user.active || !isAuthorizedEmail(user.email)) {
+          if (!user.active || (!user.accessManaged && !isAuthorizedEmail(user.email))) {
             throw new APIError("FORBIDDEN", { message: "Acesso ao prontuário revogado." });
           }
           return { data: session };
