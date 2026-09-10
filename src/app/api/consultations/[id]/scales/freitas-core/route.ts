@@ -5,6 +5,7 @@ import { COGNITIVE_FREITAS_SCALES, scoreCognitiveFreitasScale, type CognitiveFre
 import { PSYCHOSOCIAL_FREITAS_SCALES, scorePsychosocialFreitasScale, type PsychosocialFreitasScaleCode } from "@/domain/freitas-psychosocial-scales";
 import { electronicScaleLicenseFlagsFromEnvironment, electronicScaleRestriction, isElectronicScaleLicensed, unconfirmedElectronicScaleRestrictions } from "@/domain/clinical-config/electronic-scale-license-policy";
 import { scaleConsultationHorizonIds } from "@/domain/scale-consultation-horizon";
+import { requireConsultationAccess } from "@/server/auth/patient-access";
 import { requireAuthenticatedUser } from "@/server/auth/require-user";
 import { saveScaleAssessment } from "@/server/clinical/persistence";
 import { prisma } from "@/server/db";
@@ -18,6 +19,7 @@ const SUPPORTED = new Set<ScaleCode>([...CORE, ...VALIDATED, ...COGNITIVE, ...PS
 const DEFINITIONS = [...CORE_FREITAS_SCALES, ...VALIDATED_FREITAS_SCALES, ...COGNITIVE_FREITAS_SCALES, ...PSYCHOSOCIAL_FREITAS_SCALES];
 
 async function consultationContext(consultationId: string) {
+  await requireConsultationAccess(consultationId, "patient.read");
   const consultation = await prisma.consultation.findUnique({
     where: { id: consultationId },
     select: { id: true, patientId: true, status: true },

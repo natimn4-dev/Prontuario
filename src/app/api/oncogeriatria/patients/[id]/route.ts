@@ -1,4 +1,6 @@
 import { NextResponse } from "next/server";
+import { AccessForbiddenError, AuthenticationRequiredError } from "@/server/auth/access-errors";
+import { requirePatientAccess } from "@/server/auth/patient-access";
 import {
   createOncogeriatricCheckpoint,
   createOncogeriatricEpisode,
@@ -16,6 +18,7 @@ import {
 export async function POST(request: Request, { params }: { params: Promise<{ id: string }> }) {
   try {
     const { id: patientId } = await params;
+    await requirePatientAccess(patientId, "patient.read");
     const body = await request.json() as Record<string, unknown>;
     const action = typeof body.action === "string" ? body.action : "";
 
@@ -32,6 +35,12 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
 
     return NextResponse.json({ code: "UNKNOWN_ONCOGERIATRIA_ACTION", message: "Ação inválida." }, { status: 400 });
   } catch (error) {
+    if (error instanceof AuthenticationRequiredError) {
+      return NextResponse.json({ code: "AUTHENTICATION_REQUIRED", message: "Autenticação obrigatória." }, { status: 401 });
+    }
+    if (error instanceof AccessForbiddenError) {
+      return NextResponse.json({ code: "ACCESS_FORBIDDEN", message: "Acesso não autorizado." }, { status: 403 });
+    }
     if (error instanceof OncogeriatricError) {
       return NextResponse.json({ code: error.code, message: error.message }, { status: error.httpStatus });
     }

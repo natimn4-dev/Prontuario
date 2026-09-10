@@ -11,12 +11,18 @@ import { isProblemLogicalDeletionNote } from "@/domain/as-of-consultation";
 import type { ClinicalProblem } from "@/domain/problems";
 import { isProgram55Eligible } from "@/domain/program55/eligibility";
 import { isProgram55Enabled } from "@/domain/program55/feature";
-import { requireAuthenticatedUser } from "@/server/auth/require-user";
+import { hasAccessProfilePermission } from "@/domain/security/auth-policy";
+import { requirePatientAccess } from "@/server/auth/patient-access";
 import { prisma } from "@/server/db";
 
 export default async function PatientPage({ params }: { params: Promise<{ id: string }> }) {
-  await requireAuthenticatedUser("patient.read");
   const { id } = await params;
+  const { user } = await requirePatientAccess(id, "patient.read");
+  const canWriteConsultation = hasAccessProfilePermission({
+    role: user.role,
+    professionalRole: user.professionalRole,
+    canManageUsers: user.canManageUsers,
+  }, "consultation.write");
   const program55Enabled = isProgram55Enabled(process.env.PROGRAM55_EMERGENCY_DISABLED);
   const patient = await prisma.patient.findUnique({
     where: { id },
@@ -133,10 +139,12 @@ export default async function PatientPage({ params }: { params: Promise<{ id: st
           <h2>Consultas</h2>
           <div className="no-print" style={{ display: "flex", alignItems: "center", justifyContent: "flex-end", gap: 14, flexWrap: "wrap" }}>
             {program55Enabled && program55Eligible ? <a href={`/patients/${patient.id}/programa-55`}>Programa 55+ · 55–70 anos</a> : null}
-            <CreateConsultationButton
-              patientId={patient.id}
-              baselineConsultationId={patient.baselineConsultationId}
-            />
+            {canWriteConsultation ? (
+              <CreateConsultationButton
+                patientId={patient.id}
+                baselineConsultationId={patient.baselineConsultationId}
+              />
+            ) : null}
           </div>
         </div>
         {patient.consultations.length ? (

@@ -1,0 +1,162 @@
+.workspace {
+  display: grid;
+  gap: 24px;
+}
+
+.formGrid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px;
+}
+
+.field {
+  display: grid;
+  gap: 7px;
+  font-weight: 650;
+}
+
+.field input,
+.field select {
+  width: 100%;
+}
+
+.full {
+  grid-column: 1 / -1;
+}
+
+.checkRow {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  font-weight: 600;
+}
+
+.actions {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.status {
+  min-height: 24px;
+  color: var(--text-muted, #5f6b68);
+}
+
+.userList {
+  display: grid;
+  gap: 14px;
+}
+
+.userCard {
+  border: 1px solid var(--border, #dce4e1);
+  border-radius: 18px;
+  padding: 18px;
+  display: grid;
+  gap: 16px;
+  background: var(--surface, #fff);
+}
+
+.userHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 18px;
+}
+
+.userHeader h3,
+.userHeader p {
+  margin: 0;
+}
+
+.badges {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  justify-content: flex-end;
+}
+
+.badge {
+  border-radius: 999px;
+  padding: 5px 9px;
+  border: 1px solid var(--border, #dce4e1);
+  font-size: 0.82rem;
+  white-space: nowrap;
+}
+
+.editor {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+  align-items: end;
+}
+
+.assignmentBox {
+  display: grid;
+  gap: 12px;
+  padding-top: 4px;
+}
+
+.searchRow {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 10px;
+}
+
+.resultList,
+.assignmentList,
+.pendingList {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: grid;
+  gap: 8px;
+}
+
+.resultItem,
+.assignmentItem,
+.pendingItem {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  align-items: center;
+  border: 1px solid var(--border, #dce4e1);
+  border-radius: 12px;
+  padding: 10px 12px;
+}
+
+.muted {
+  color: var(--text-muted, #5f6b68);
+  font-size: 0.92rem;
+}
+
+.dangerButton {
+  border-color: #b45c5c;
+}
+
+@media (max-width: 760px) {
+  .formGrid,
+  .editor {
+    grid-template-columns: 1fr;
+  }
+
+  .full {
+    grid-column: auto;
+  }
+
+  .userHeader,
+  .resultItem,
+  .assignmentItem,
+  .pendingItem {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .badges {
+    justify-content: flex-start;
+  }
+
+  .searchRow {
+    grid-template-columns: 1fr;
+  }
+}

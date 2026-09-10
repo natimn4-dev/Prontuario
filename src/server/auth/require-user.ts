@@ -2,7 +2,7 @@ import { headers } from "next/headers";
 import { auth, isAuthorizedEmail } from "./auth";
 import { prisma } from "../db";
 import {
-  assertPermission,
+  assertAccessProfilePermission,
   type Permission,
 } from "../../domain/security/auth-policy";
 import { AccessForbiddenError, AuthenticationRequiredError } from "./access-errors";
@@ -19,17 +19,33 @@ export async function requireAuthenticatedUser(permission?: Permission) {
 
   const user = await prisma.user.findUnique({
     where: { id: session.user.id },
-    select: { id: true, email: true, name: true, role: true, active: true },
+    select: {
+      id: true,
+      email: true,
+      name: true,
+      role: true,
+      active: true,
+      professionalRole: true,
+      patientAccessScope: true,
+      canManageUsers: true,
+      accessManaged: true,
+    },
   });
 
   if (!user) throw new AccessForbiddenError();
 
   try {
-    if (!user.active || !isAuthorizedEmail(user.email)) {
+    if (!user.active || (!user.accessManaged && !isAuthorizedEmail(user.email))) {
       throw new Error("Usuário inativo ou fora do contrato de acesso autorizado.");
     }
 
-    if (permission) assertPermission(user.role, permission);
+    if (permission) {
+      assertAccessProfilePermission({
+        role: user.role,
+        professionalRole: user.professionalRole,
+        canManageUsers: user.canManageUsers,
+      }, permission);
+    }
   } catch {
     throw new AccessForbiddenError();
   }

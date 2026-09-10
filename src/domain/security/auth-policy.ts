@@ -1,4 +1,11 @@
 export type UserRole = "ADMIN" | "PHYSICIAN" | "READ_ONLY";
+export type ProfessionalRole =
+  | "MEDICO"
+  | "FISIOTERAPEUTA"
+  | "NUTRICIONISTA"
+  | "PSICOLOGO"
+  | "FONOAUDIOLOGO";
+export type PatientAccessScope = "ALL_PATIENTS" | "ASSIGNED_PATIENTS";
 
 export type Permission =
   | "patient.read"
@@ -6,6 +13,7 @@ export type Permission =
   | "consultation.write"
   | "consultation.finalize"
   | "document.generate"
+  | "professional.evolution.write"
   | "user.manage"
   | "audit.read";
 
@@ -16,6 +24,7 @@ const ROLE_PERMISSIONS: Readonly<Record<UserRole, ReadonlySet<Permission>>> = {
     "consultation.write",
     "consultation.finalize",
     "document.generate",
+    "professional.evolution.write",
     "user.manage",
     "audit.read",
   ]),
@@ -25,9 +34,21 @@ const ROLE_PERMISSIONS: Readonly<Record<UserRole, ReadonlySet<Permission>>> = {
     "consultation.write",
     "consultation.finalize",
     "document.generate",
+    "professional.evolution.write",
   ]),
   READ_ONLY: new Set<Permission>(["patient.read"]),
 };
+
+const ALLIED_PROFESSIONAL_PERMISSIONS = new Set<Permission>([
+  "patient.read",
+  "professional.evolution.write",
+]);
+
+export interface AccessProfile {
+  role: UserRole;
+  professionalRole: ProfessionalRole;
+  canManageUsers: boolean;
+}
 
 export function normalizeEmail(value: string): string {
   return value.trim().toLowerCase();
@@ -53,12 +74,29 @@ export function roleForFirstLogin(input: {
   return input.bootstrapAdmins.has(normalizeEmail(input.email)) ? "ADMIN" : "PHYSICIAN";
 }
 
+export function roleForProfessional(professionalRole: ProfessionalRole): UserRole {
+  return professionalRole === "MEDICO" ? "PHYSICIAN" : "READ_ONLY";
+}
+
 export function hasPermission(role: UserRole, permission: Permission): boolean {
   return ROLE_PERMISSIONS[role].has(permission);
 }
 
 export function assertPermission(role: UserRole, permission: Permission): void {
   if (!hasPermission(role, permission)) {
+    throw new Error(`Permissão negada: ${permission}.`);
+  }
+}
+
+export function hasAccessProfilePermission(profile: AccessProfile, permission: Permission): boolean {
+  if (profile.role === "ADMIN") return true;
+  if (permission === "user.manage") return profile.canManageUsers;
+  if (profile.professionalRole === "MEDICO") return hasPermission(profile.role, permission);
+  return ALLIED_PROFESSIONAL_PERMISSIONS.has(permission);
+}
+
+export function assertAccessProfilePermission(profile: AccessProfile, permission: Permission): void {
+  if (!hasAccessProfilePermission(profile, permission)) {
     throw new Error(`Permissão negada: ${permission}.`);
   }
 }
@@ -113,5 +151,25 @@ export function assertCanChangeAdminState(input: {
     if (otherActiveAdmins.length === 0) {
       throw new Error("Não é permitido remover ou desativar o último administrador ativo.");
     }
+  }
+}
+
+export function assertCanChangeUserManagerState(input: {
+  targetUserId: string;
+  targetCanManageUsers: boolean;
+  targetActive: boolean;
+  nextCanManageUsers?: boolean;
+  nextActive?: boolean;
+  activeManagerIds: readonly string[];
+}): void {
+  const removingManager =
+    input.targetCanManageUsers &&
+    input.targetActive &&
+    (input.nextCanManageUsers === false || input.nextActive === false);
+
+  if (!removingManager) return;
+  const otherActiveManagers = input.activeManagerIds.filter((id) => id !== input.targetUserId);
+  if (otherActiveManagers.length === 0) {
+    throw new Error("Não é permitido remover ou desativar o último gestor de usuários ativo.");
   }
 }
