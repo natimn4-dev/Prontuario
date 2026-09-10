@@ -37,6 +37,16 @@ test("workspace hides detailed MEEM/MoCA duplicates and preserves simplified ent
   assert.deepEqual(options.map((item) => item.code).sort(), ["meem", "moca"]);
 });
 
+test("workspace substitui SARC-F legado por SARC-CalF e mantém a nova escala em Vitalidade", () => {
+  const options = buildClinicalScaleOptions([
+    { source: "complementary", code: "sarcf", name: "SARC-F", dimension: "mobilidade" },
+    { source: "complementary", code: "sarc_calf", name: "SARC-CalF", dimension: "nutricao" },
+  ]);
+  assert.deepEqual(options.map((item) => item.code), ["sarc_calf"]);
+  assert.equal(options[0]?.domain, "Vitalidade e nutrição");
+  assert.equal(clinicalScaleDomain("sarc_calf", "nutricao"), "Vitalidade e nutrição");
+});
+
 test("workspace deduplicates codes and maps sleep, family, social, caregiver, vitality and prognosis correctly", () => {
   const options = buildClinicalScaleOptions([
     { source: "complementary", code: "isi", name: "ISI", dimension: "sono" },
@@ -128,4 +138,7 @@ test("simplified MEEM and MoCA replace legacy definitions in the complementary A
   assert.match(route, /COGNITIVE_QUICK_DEFINITIONS/);
   assert.match(route, /scoreCognitiveQuickEntry/);
   assert.match(route, /filter\(\(item\) => !QUICK_CODES\.has/);
+  assert.match(route, /requireConsultationAccess\(consultationId, "patient\.read"\)/);
+  assert.match(route, /SARC_CALF_STRUCTURED_DEFINITION/);
+  assert.match(route, /scoreSarcCalfStructured/);
 });
