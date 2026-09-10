@@ -47,7 +47,7 @@ test("health release identifier cannot be served from an intermediary cache", ()
 });
 
 test("Hostinger runbook tracks the current clinical release and exact-SHA smoke", () => {
-  assert.match(hostingerDocs, /2026-09-09-oncogeriatria-ecog-kps-options-v1/);
+  assert.match(hostingerDocs, /2026-09-10-auth-four-physicians-v1/);
   assert.match(smoke, /não bloqueou cache compartilhado/);
   assert.match(hostingerDocs, /SHA exato/);
   assert.match(hostingerDocs, /aproximadamente 15 minutos/);
