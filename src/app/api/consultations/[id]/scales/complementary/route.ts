@@ -29,8 +29,11 @@ import {
   scoreIsi,
 } from "@/domain/isi";
 import {
+  SARC_CALF_STRUCTURED_CODE,
+  SARC_CALF_STRUCTURED_DEFINITION,
   SARCF_STRUCTURED_CODE,
   SARCF_STRUCTURED_DEFINITION,
+  scoreSarcCalfStructured,
   scoreSarcfStructured,
 } from "@/domain/sarcf-structured";
 import {
@@ -72,7 +75,7 @@ import { saveScaleAssessment } from "@/server/clinical/persistence";
 import { prisma } from "@/server/db";
 
 const QUICK_CODES = new Set<CognitiveQuickCode>(COGNITIVE_QUICK_DEFINITIONS.map((item) => item.code));
-type RequestScaleCode = ComplementaryScoreScaleCode | typeof ISI_CODE;
+type RequestScaleCode = ComplementaryScoreScaleCode | typeof ISI_CODE | typeof SARC_CALF_STRUCTURED_CODE;
 const DEFINITIONS = [
   ...COMPLEMENTARY_SCORE_SCALES
     .filter((item) => !QUICK_CODES.has(item.code as CognitiveQuickCode))
@@ -92,6 +95,7 @@ const DEFINITIONS = [
       return item;
     })
     .map((item) => withStructuredScaleEntry(item)),
+  withStructuredScaleEntry(SARC_CALF_STRUCTURED_DEFINITION),
   ...COGNITIVE_QUICK_DEFINITIONS,
   ISI_QUICK_DEFINITION,
 ];
@@ -143,7 +147,7 @@ function failure(error: unknown) {
   const code = error instanceof Error ? error.message : "UNKNOWN";
   if (code === "CONSULTATION_NOT_FOUND") return NextResponse.json({ code, message: "Consulta não encontrada." }, { status: 404 });
   if (code === "INVALID_REQUEST" || code === "UNSUPPORTED_SCALE") return NextResponse.json({ code, message: "Requisição de escala complementar inválida." }, { status: 400 });
-  if (error instanceof Error && /Valor inválido|Escala complementar|interpretar|Escolaridade|Pontuação|campo não permitido|ISI_|10-CS|SARC-F|STOPPFall|Cornell|CAM|LACE|G8|Charlson|ESAS/i.test(error.message)) {
+  if (error instanceof Error && /Valor inválido|Escala complementar|interpretar|Escolaridade|Pontuação|campo não permitido|ISI_|10-CS|SARC-F|SARC-CalF|STOPPFall|Cornell|CAM|LACE|G8|Charlson|ESAS/i.test(error.message)) {
     return NextResponse.json({ code: "INVALID_SCALE_ANSWERS", message: error.message }, { status: 400 });
   }
   return NextResponse.json({ code: "COMPLEMENTARY_SCALE_FAILED", message: "Não foi possível processar a escala complementar." }, { status: 500 });
@@ -217,27 +221,29 @@ export async function POST(request: Request, context: { params: Promise<{ id: st
           ? scoreMnaSfStructured(answers)
           : scaleCode === TEN_CS_STRUCTURED_CODE
             ? scoreTenCsStructured(answers)
-            : scaleCode === SARCF_STRUCTURED_CODE
-              ? scoreSarcfStructured(answers)
-              : scaleCode === CORNELL_STRUCTURED_CODE
-                ? scoreCornellStructured(answers)
-                : scaleCode === STOPPFALL_STRUCTURED_CODE
-                  ? scoreStoppfallStructured(answers)
-                  : scaleCode === CAM_STRUCTURED_CODE
-                    ? scoreCamStructured(answers)
-                    : scaleCode === LACE_STRUCTURED_CODE
-                      ? scoreLaceStructured(answers)
-                      : scaleCode === G8_STRUCTURED_CODE
-                        ? scoreStructuredG8(answers)
-                        : scaleCode === CHARLSON_STRUCTURED_CODE
-                          ? scoreStructuredCharlson(answers)
-                          : scaleCode === ESAS_STRUCTURED_CODE
-                            ? scoreStructuredEsas(answers)
-                            : scaleCode === ISI_CODE
-                              ? scoreIsi(answers)
-                              : QUICK_CODES.has(scaleCode as CognitiveQuickCode)
-                                ? scoreCognitiveQuickEntry(scaleCode as CognitiveQuickCode, answers)
-                                : scoreComplementaryScale(scaleCode as ComplementaryScoreScaleCode, answers);
+            : scaleCode === SARC_CALF_STRUCTURED_CODE
+              ? scoreSarcCalfStructured(answers)
+              : scaleCode === SARCF_STRUCTURED_CODE
+                ? scoreSarcfStructured(answers)
+                : scaleCode === CORNELL_STRUCTURED_CODE
+                  ? scoreCornellStructured(answers)
+                  : scaleCode === STOPPFALL_STRUCTURED_CODE
+                    ? scoreStoppfallStructured(answers)
+                    : scaleCode === CAM_STRUCTURED_CODE
+                      ? scoreCamStructured(answers)
+                      : scaleCode === LACE_STRUCTURED_CODE
+                        ? scoreLaceStructured(answers)
+                        : scaleCode === G8_STRUCTURED_CODE
+                          ? scoreStructuredG8(answers)
+                          : scaleCode === CHARLSON_STRUCTURED_CODE
+                            ? scoreStructuredCharlson(answers)
+                            : scaleCode === ESAS_STRUCTURED_CODE
+                              ? scoreStructuredEsas(answers)
+                              : scaleCode === ISI_CODE
+                                ? scoreIsi(answers)
+                                : QUICK_CODES.has(scaleCode as CognitiveQuickCode)
+                                  ? scoreCognitiveQuickEntry(scaleCode as CognitiveQuickCode, answers)
+                                  : scoreComplementaryScale(scaleCode as ComplementaryScoreScaleCode, answers);
     const assessment = await saveScaleAssessment({
       consultationId: id,
       scaleCode,
