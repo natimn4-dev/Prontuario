@@ -13,6 +13,19 @@ enum UserRole {
   READ_ONLY
 }
 
+enum ProfessionalRole {
+  MEDICO
+  FISIOTERAPEUTA
+  NUTRICIONISTA
+  PSICOLOGO
+  FONOAUDIOLOGO
+}
+
+enum PatientAccessScope {
+  ALL_PATIENTS
+  ASSIGNED_PATIENTS
+}
+
 enum ConsultationType {
   AGA_INITIAL
   FOLLOW_UP
@@ -114,6 +127,10 @@ model User {
   image         String?
   role          UserRole       @default(PHYSICIAN)
   active        Boolean        @default(true)
+  professionalRole ProfessionalRole @default(MEDICO)
+  patientAccessScope PatientAccessScope @default(ALL_PATIENTS)
+  canManageUsers Boolean       @default(false)
+  accessManaged Boolean        @default(false)
   consultations Consultation[]
   documents     DocumentSnapshot[] @relation("FinalizedDocuments")
   generatedDocuments DocumentSnapshot[] @relation("GeneratedDocuments")
@@ -121,6 +138,9 @@ model User {
   integrationCredentials ExternalIntegrationCredential[]
   auditEvents   AuditEvent[]
   advanceDirectiveRecords AdvanceDirectiveRecord[]
+  accessGrantsCreated UserAccessGrant[] @relation("UserAccessGrantCreator")
+  patientAssignments PatientUserAssignment[] @relation("PatientAssignedUser")
+  patientAssignmentsCreated PatientUserAssignment[] @relation("PatientAssignmentCreator")
   program55CoordinatedEnrollments Program55Enrollment[] @relation("Program55Coordinator")
   program55Memberships Program55ProfessionalMembership[]
   program55Assessments Program55ProfessionalAssessment[] @relation("Program55AssessmentAuthor")
@@ -131,6 +151,42 @@ model User {
   accounts      Account[]
   createdAt     DateTime       @default(now())
   updatedAt     DateTime       @updatedAt
+}
+
+model UserAccessGrant {
+  id                 String             @id @default(cuid())
+  email              String             @unique
+  name               String?
+  professionalRole   ProfessionalRole
+  patientAccessScope PatientAccessScope @default(ASSIGNED_PATIENTS)
+  canManageUsers     Boolean            @default(false)
+  active             Boolean            @default(true)
+  createdByUserId    String
+  acceptedAt         DateTime?
+  createdBy          User               @relation("UserAccessGrantCreator", fields: [createdByUserId], references: [id], onDelete: Restrict)
+  createdAt          DateTime            @default(now())
+  updatedAt          DateTime            @updatedAt
+
+  @@index([active, createdAt])
+  @@index([createdByUserId, createdAt])
+}
+
+model PatientUserAssignment {
+  id               String   @id @default(cuid())
+  userId           String
+  patientId        String
+  assignedByUserId String
+  active           Boolean  @default(true)
+  user             User     @relation("PatientAssignedUser", fields: [userId], references: [id], onDelete: Restrict)
+  patient          Patient  @relation(fields: [patientId], references: [id], onDelete: Restrict)
+  assignedBy       User     @relation("PatientAssignmentCreator", fields: [assignedByUserId], references: [id], onDelete: Restrict)
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  @@unique([userId, patientId])
+  @@index([userId, active])
+  @@index([patientId, active])
+  @@index([assignedByUserId, createdAt])
 }
 
 model Session {
@@ -211,6 +267,7 @@ model Patient {
   digitalSignatures      DigitalSignature[]
   advanceDirectiveRecords AdvanceDirectiveRecord[]
   identifiers            PatientIdentifier[]
+  userAssignments        PatientUserAssignment[]
   program55Enrollment    Program55Enrollment?
   program55Checkpoints   Program55Checkpoint[]
   program55BodyComposition Program55BodyComposition[]
