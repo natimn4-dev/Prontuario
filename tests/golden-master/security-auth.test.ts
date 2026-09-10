@@ -2,13 +2,16 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import {
+  assertAccessProfilePermission,
   assertActiveAllowedUser,
   assertCanChangeAdminState,
+  assertCanChangeUserManagerState,
   assertPermission,
   assertRecentAuthentication,
   isEmailAllowed,
   parseEmailSet,
   roleForFirstLogin,
+  roleForProfessional,
 } from "../../src/domain/security/auth-policy.ts";
 
 const allowed = parseEmailSet("medica@example.com; admin@example.com");
@@ -34,11 +37,29 @@ test("bootstrap define ADMIN somente para email explicitamente configurado", () 
   assert.equal(roleForFirstLogin({ email: "medica@example.com", bootstrapAdmins: bootstrap }), "PHYSICIAN");
 });
 
-test("RBAC impede usuário somente leitura de alterar prontuário", () => {
+test("RBAC legado impede usuário somente leitura de alterar prontuário", () => {
   assert.doesNotThrow(() => assertPermission("READ_ONLY", "patient.read"));
   assert.throws(() => assertPermission("READ_ONLY", "consultation.write"));
   assert.doesNotThrow(() => assertPermission("PHYSICIAN", "document.generate"));
   assert.throws(() => assertPermission("PHYSICIAN", "user.manage"));
+});
+
+test("perfis multiprofissionais não herdam escrita médica", () => {
+  for (const professionalRole of ["FISIOTERAPEUTA", "NUTRICIONISTA", "PSICOLOGO", "FONOAUDIOLOGO"] as const) {
+    assert.equal(roleForProfessional(professionalRole), "READ_ONLY");
+    assert.doesNotThrow(() => assertAccessProfilePermission({ role: "READ_ONLY", professionalRole, canManageUsers: false }, "patient.read"));
+    assert.doesNotThrow(() => assertAccessProfilePermission({ role: "READ_ONLY", professionalRole, canManageUsers: false }, "professional.evolution.write"));
+    assert.throws(() => assertAccessProfilePermission({ role: "READ_ONLY", professionalRole, canManageUsers: false }, "consultation.write"));
+    assert.throws(() => assertAccessProfilePermission({ role: "READ_ONLY", professionalRole, canManageUsers: false }, "consultation.finalize"));
+    assert.throws(() => assertAccessProfilePermission({ role: "READ_ONLY", professionalRole, canManageUsers: false }, "document.generate"));
+  }
+  assert.equal(roleForProfessional("MEDICO"), "PHYSICIAN");
+  assert.doesNotThrow(() => assertAccessProfilePermission({ role: "PHYSICIAN", professionalRole: "MEDICO", canManageUsers: false }, "consultation.write"));
+});
+
+test("gestão de usuários é permissão independente da profissão", () => {
+  assert.doesNotThrow(() => assertAccessProfilePermission({ role: "READ_ONLY", professionalRole: "NUTRICIONISTA", canManageUsers: true }, "user.manage"));
+  assert.throws(() => assertAccessProfilePermission({ role: "PHYSICIAN", professionalRole: "MEDICO", canManageUsers: false }, "user.manage"));
 });
 
 test("ações administrativas exigem autenticação recente", () => {
@@ -58,6 +79,17 @@ test("último administrador ativo não pode ser removido", () => {
   }));
 });
 
+test("último gestor de usuários ativo não pode ser removido", () => {
+  assert.throws(() => assertCanChangeUserManagerState({
+    targetUserId: "m1", targetCanManageUsers: true, targetActive: true,
+    nextCanManageUsers: false, activeManagerIds: ["m1"],
+  }));
+  assert.doesNotThrow(() => assertCanChangeUserManagerState({
+    targetUserId: "m1", targetCanManageUsers: true, targetActive: true,
+    nextActive: false, activeManagerIds: ["m1", "m2"],
+  }));
+});
+
 test("regressão: produção mantém exatamente quatro identidades médicas aprovadas sem expor os emails no login", () => {
   assert.equal(approvedProductionPrincipalFingerprints.length, 4);
   for (const fingerprint of approvedProductionPrincipalFingerprints) {
@@ -68,7 +100,7 @@ test("regressão: produção mantém exatamente quatro identidades médicas apro
   assert.doesNotMatch(authServer, /natimn4@gmail\.com|draanameliacoutinho@gmail\.com|paulalimaf20@gmail\.com|griloguedes@gmail\.com/i);
 });
 
-test("regressão: as quatro identidades aprovadas não dependem da allowlist externa para autenticar", () => {
+test("regressão: as quatro identidades aprovadas continuam independentes da allowlist externa", () => {
   const authorizationFunction = authServer.match(/(?:export )?function isAuthorizedEmail\(email: string\): boolean \{[\s\S]*?\n\}/)?.[0] ?? "";
   const productionContractFunction = authServer.match(/function usesApprovedProductionAccessContract\(\): boolean \{[\s\S]*?\n\}/)?.[0] ?? "";
 
@@ -77,10 +109,11 @@ test("regressão: as quatro identidades aprovadas não dependem da allowlist ext
   assert.match(productionContractFunction, /process\.env\.NODE_ENV === "production"[\s\S]*\|\|[\s\S]*canonicalProductionAppUrl/);
 });
 
-test("regressão: rotas protegidas usam o mesmo contrato das quatro médicas após o OAuth", () => {
-  assert.match(authServer, /export function isAuthorizedEmail\(email: string\): boolean/);
-  assert.match(requireUserServer, /import \{ auth, isAuthorizedEmail \} from "\.\/auth"/);
-  assert.match(requireUserServer, /!user\.active \|\| !isAuthorizedEmail\(user\.email\)/);
+test("novos logins dependem de pré-autorização persistida e rotas protegidas reconhecem acesso gerenciado", () => {
+  assert.match(authServer, /prisma\.userAccessGrant\.findFirst/);
+  assert.match(authServer, /accessManaged: Boolean\(grant\)/);
+  assert.match(authServer, /!user\.accessManaged && !isAuthorizedEmail\(user\.email\)/);
+  assert.match(requireUserServer, /assertAccessProfilePermission/);
+  assert.match(requireUserServer, /!user\.accessManaged && !isAuthorizedEmail\(user\.email\)/);
   assert.doesNotMatch(requireUserServer, /AUTH_ALLOWED_EMAILS/);
-  assert.doesNotMatch(requireUserServer, /assertActiveAllowedUser|parseEmailSet/);
 });
