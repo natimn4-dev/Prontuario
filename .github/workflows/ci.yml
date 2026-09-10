@@ -65,18 +65,24 @@ jobs:
         run: npx prisma migrate deploy
       - name: MySQL concurrency and patient isolation
         run: npm run test:integration
-      - name: Diagnostic SARC-CalF golden master
+      - name: Diagnostic golden a-d
         continue-on-error: true
-        run: node --test --experimental-strip-types tests/golden-master/sarc-calf-vitalidade.test.ts
-      - name: Diagnostic intrinsic capacity guidance
+        run: node --test --experimental-strip-types tests/golden-master/[a-d]*.test.ts
+      - name: Diagnostic golden e-h
         continue-on-error: true
-        run: node --test --experimental-strip-types tests/golden-master/intrinsic-capacity-guidance.test.ts
-      - name: Diagnostic unified clinical scales
+        run: node --test --experimental-strip-types tests/golden-master/[e-h]*.test.ts
+      - name: Diagnostic golden i-l
         continue-on-error: true
-        run: node --test --experimental-strip-types tests/golden-master/unified-clinical-scales.test.ts
-      - name: Diagnostic SOAP clinical flow
+        run: node --test --experimental-strip-types tests/golden-master/[i-l]*.test.ts
+      - name: Diagnostic golden m-p
         continue-on-error: true
-        run: node --test --experimental-strip-types tests/golden-master/soap-clinical-flow-ux.test.ts
+        run: node --test --experimental-strip-types tests/golden-master/[m-p]*.test.ts
+      - name: Diagnostic golden q-t
+        continue-on-error: true
+        run: node --test --experimental-strip-types tests/golden-master/[q-t]*.test.ts
+      - name: Diagnostic golden u-z
+        continue-on-error: true
+        run: node --test --experimental-strip-types tests/golden-master/[u-z]*.test.ts
       - name: Clinical golden master
         run: npm run test:golden
       - name: Domain typecheck
