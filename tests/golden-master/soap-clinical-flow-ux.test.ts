@@ -46,7 +46,7 @@ test("revisão e finalização salvam SOAP pendente antes de mudar o status", ()
   assert.match(finalization, /clinical-note-changed/);
   assert.match(finalization, /button\.click\(\)/);
   const saveIndex = finalization.indexOf("await savePendingSoapBeforeWorkflow(consultationId)");
-  const workflowPostIndex = finalization.indexOf("fetch(`/api/consultations/${consultationId}/workflow`");
+  const workflowPostIndex = finalization.indexOf("fetch(`/api/consultations/${consultationId}/workflow`", saveIndex);
   assert.ok(saveIndex >= 0);
   assert.ok(workflowPostIndex > saveIndex);
   assert.match(finalization, /A mudança de status foi cancelada/);
