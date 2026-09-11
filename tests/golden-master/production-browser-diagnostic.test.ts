@@ -97,12 +97,20 @@ test("diagnóstico de produção identifica cada endpoint DNS e valida /login em
 
   const chrome = chromeBinary();
   if (chrome) {
+    const browserEndpoint = endpointResults.find((item) => item.healthy && item.family === 4);
+    assert.ok(browserEndpoint, "Nenhum endpoint IPv4 saudável ficou disponível para a verificação do navegador.");
     const result = command(chrome, [
       "--headless=new",
       "--no-sandbox",
       "--disable-gpu",
       "--disable-dev-shm-usage",
       "--disable-quic",
+      "--disable-background-networking",
+      "--disable-component-update",
+      "--disable-default-apps",
+      "--no-first-run",
+      "--no-default-browser-check",
+      "--host-resolver-rules", `MAP ${host} ${browserEndpoint.address}`,
       "--virtual-time-budget=5000",
       "--dump-dom",
       loginUrl,
