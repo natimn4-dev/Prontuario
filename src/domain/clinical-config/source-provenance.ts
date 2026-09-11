@@ -47,6 +47,15 @@ export const SOURCE_PROVENANCE: Record<string, ClinicalSourceProvenance> = {
     note:
       "Adaptação institucional não validada externamente. Mantém os demais componentes da CRASH, mas atribui 0 ponto ao MNA-SF 12-14 e 2 pontos ao MNA-SF 0-11. Não deve ser apresentada como equivalente à CRASH original nem usada isoladamente para decidir tratamento.",
   },
+  sarc_calf: {
+    scaleId: "sarc_calf",
+    status: "confirmed-primary",
+    legacyVersion: "sarc-calf-br-barbosa-silva-2016-v1",
+    primaryReference:
+      "Barbosa-Silva TG et al. Enhancing SARC-F: Improving Sarcopenia Screening in the Clinical Practice. J Am Med Dir Assoc. 2016;17(12):1136-1141. PMID 27650212.",
+    note:
+      "Validação brasileira do SARC-CalF. O instrumento combina os cinco itens do SARC-F com circunferência da panturrilha; a medida baixa acrescenta 10 pontos (≤34 cm em homens; ≤33 cm em mulheres) e escore total ≥11 indica rastreio positivo. O resultado não confirma sarcopenia isoladamente.",
+  },
 
   zarit_paliativo_7_ms2013: {
     scaleId: "zarit_paliativo_7_ms2013",
