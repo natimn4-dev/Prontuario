@@ -116,7 +116,7 @@ export function scoreSarcfStructured(raw: Record<string, unknown>) {
 }
 
 export function scoreSarcCalfStructured(raw: Record<string, unknown>) {
-  const allowed = new Set(SARC_CALF_STRUCTURED_DEFINITION.fields.map((field) => field.id));
+  const allowed = new Set<string>(SARC_CALF_STRUCTURED_DEFINITION.fields.map((field) => field.id));
   if (Object.keys(raw).some((id) => !allowed.has(id))) throw new Error("SARC-CalF contém campo não permitido.");
 
   const sarc = sarcAnswers(raw);
