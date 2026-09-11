@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { withConsultationPatientAccess } from "@/server/auth/patient-access-http";
+import { withConsultationPatientAccess } from "@/server/auth/consultation-route-guard";
 import { DietaryAssessmentError, searchDietaryFoods } from "@/server/clinical/dietary-assessment";
 
 export async function GET(request: Request, { params }: { params: Promise<{ id: string }> }) {
