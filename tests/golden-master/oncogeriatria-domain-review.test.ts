@@ -9,7 +9,7 @@ import {
 function history(): CapacityDimensionHistory {
   return {
     patientId: "patient-a",
-    methodologyVersion: "intrinsic-capacity-model-v1.1.0",
+    methodologyVersion: "intrinsic-capacity-model-v1.2.0",
     frameworkLabel: "Teste",
     methodologyNote: "Teste",
     consultations: [

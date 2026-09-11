@@ -9,6 +9,7 @@ import {
 import { LEGACY_INTERVENTIONS } from "./interventions.ts";
 import { ISI_VERSION } from "./isi.ts";
 import { CRASH_MNA_SF_VERSION, ECOG_VERSION } from "./oncogeriatric-scales.ts";
+import { SARC_CALF_STRUCTURED_VERSION } from "./sarcf-structured.ts";
 
 export type GeriatricDimension =
   | "funcionalidade"
@@ -54,6 +55,7 @@ const METADATA = {
   dez_cs: ["10-CS", "10-CS", "cognicao"],
   frail_br: ["FRAIL-BR", "FRAIL-BR", "fragilidade"],
   sarcf: ["SARC-F", "SARC-F", "mobilidade"],
+  sarc_calf: ["SARC-CalF — rastreio de sarcopenia", "SARC-CalF", "nutricao"],
   preensao: ["Força de preensão", "Preensão", "mobilidade"],
   velocidade_marcha: ["Velocidade de marcha", "Marcha", "mobilidade"],
   sentar_levantar_5x: ["Sentar-levantar 5x", "5x cadeira", "mobilidade"],
@@ -91,7 +93,9 @@ export const SCALE_CATALOG: Readonly<Record<string, ScaleCatalogEntry>> = Object
             ? CRASH_MNA_SF_VERSION
             : code === "isi"
               ? ISI_VERSION
-              : LEGACY_CONFIG_VERSION,
+              : code === "sarc_calf"
+                ? SARC_CALF_STRUCTURED_VERSION
+                : LEGACY_CONFIG_VERSION,
       name,
       shortName,
       dimension,
