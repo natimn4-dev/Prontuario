@@ -5,7 +5,7 @@ import { useEffect, useMemo, useState } from "react";
 import type { ProfessionalIdentity } from "@/domain/professional-identity";
 import styles from "./consultation-workspace.module.css";
 
-type WorkspaceSectionId = "problemas" | "medicamentos" | "soap" | "escalas" | "diretivas" | "relatorio" | "finalizacao";
+type WorkspaceSectionId = "problemas" | "medicamentos" | "alimentacao" | "soap" | "escalas" | "diretivas" | "relatorio" | "finalizacao";
 
 type WorkspaceSection = {
   id: WorkspaceSectionId;
@@ -17,6 +17,7 @@ type WorkspaceSection = {
 const SECTIONS: readonly WorkspaceSection[] = [
   { id: "problemas", label: "Problemas", shortLabel: "Problemas", description: "Lista clínica e geriátrica longitudinal" },
   { id: "medicamentos", label: "Medicamentos", shortLabel: "Medicamentos", description: "Reconciliação e horários" },
+  { id: "alimentacao", label: "Alimentação", shortLabel: "Alimentação", description: "Recordatório e estimativa nutricional" },
   { id: "soap", label: "Evolução e plano", shortLabel: "Evolução + plano", description: "SOAP, exames, vacinas e plano por problema" },
   { id: "escalas", label: "Escalas clínicas", shortLabel: "Escalas", description: "Avaliações estruturadas" },
   { id: "diretivas", label: "Diretivas antecipadas", shortLabel: "Diretivas", description: "Valores e preferências revisáveis" },
@@ -30,6 +31,10 @@ const ProblemWorkspace = dynamic(
 );
 const MedicationWorkspace = dynamic(
   () => import("@/components/medications/medication-workspace").then((module) => module.MedicationWorkspace),
+  { ssr: false, loading: () => <WorkspaceLoading /> },
+);
+const DietaryAssessmentWorkspace = dynamic(
+  () => import("@/components/dietary/dietary-assessment-workspace").then((module) => module.DietaryAssessmentWorkspace),
   { ssr: false, loading: () => <WorkspaceLoading /> },
 );
 const SoapEditor = dynamic(
@@ -161,6 +166,12 @@ export function ConsultationWorkspace({
               <div><strong>Tabela de medicamentos</strong><span>Abra o documento separado para revisar e imprimir. As salvaguardas de identidade e reconciliação continuam valendo.</span></div>
               <a className={styles.documentAction} href={`/consultations/${consultationId}/medications/print`} target="_blank" rel="noreferrer">Abrir e imprimir tabela</a>
             </div>
+          </div>
+        ) : null}
+
+        {visited.has("alimentacao") ? (
+          <div id="alimentacao" hidden={active !== "alimentacao"} className={styles.panel}>
+            <DietaryAssessmentWorkspace consultationId={consultationId} />
           </div>
         ) : null}
 
