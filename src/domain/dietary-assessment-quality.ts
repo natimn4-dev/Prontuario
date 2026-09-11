@@ -1,4 +1,4 @@
-import type { DietaryNutrients } from "./dietary-assessment";
+import type { DietaryNutrients } from "./dietary-assessment.js";
 
 export type DietaryEnergyCrossCheck = {
   sourceEnergyKcal: number;
