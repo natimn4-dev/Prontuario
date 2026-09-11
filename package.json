@@ -13,7 +13,7 @@
     "prisma:migrate": "prisma migrate dev",
     "prisma:studio": "prisma studio",
     "test": "node --test --experimental-strip-types tests/golden-master/*.test.ts",
-    "test:golden": "node --test --experimental-strip-types $(find tests/golden-master -maxdepth 1 -type f -name '*.test.ts' ! -name 'production-browser-diagnostic.test.ts' -print | sort)",
+    "test:golden": "node --test --test-concurrency=1 --experimental-strip-types $(find tests/golden-master -maxdepth 1 -type f -name '*.test.ts' ! -name 'production-browser-diagnostic.test.ts' -print | sort)",
     "test:clinical": "node --experimental-strip-types --test tests/golden-master/*.test.ts",
     "test:production:browser": "node --experimental-strip-types --test tests/golden-master/production-browser-diagnostic.test.ts",
     "test:integration": "node --experimental-strip-types --test tests/integration/*.test.ts",
