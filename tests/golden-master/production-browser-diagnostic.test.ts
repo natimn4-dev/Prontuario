@@ -63,7 +63,7 @@ function pinnedCurl(address: string, family: 4 | 6) {
   ], 15_000);
   const receivedLogin = /Entrar com Google/.test(result.stdout);
   const receivedHostingerChallenge = /Checking your browser before accessing/.test(result.stdout)
-    && /hcdn-cgi\\/jschallenge/.test(result.stdout);
+    && /hcdn-cgi\/jschallenge/.test(result.stdout);
   const healthy = result.status === 0 && (receivedLogin || receivedHostingerChallenge);
   console.log(`PROD_DIAG_PINNED_IPV${family}_${address}`, JSON.stringify({
     ...result,
@@ -100,7 +100,7 @@ test("diagnóstico de produção identifica cada endpoint DNS e valida /login em
   assert.equal(defaultCurl.status, 0, "A rota padrão não conseguiu acessar /login.");
   const defaultReceivedLogin = /Entrar com Google/.test(defaultCurl.stdout);
   const defaultReceivedHostingerChallenge = /Checking your browser before accessing/.test(defaultCurl.stdout)
-    && /hcdn-cgi\\/jschallenge/.test(defaultCurl.stdout);
+    && /hcdn-cgi\/jschallenge/.test(defaultCurl.stdout);
   assert.ok(
     defaultReceivedLogin || defaultReceivedHostingerChallenge,
     "A rota padrão não recebeu nem a página de login nem o desafio de segurança reconhecido da Hostinger.",
