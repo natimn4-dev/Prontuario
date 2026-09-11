@@ -28,7 +28,7 @@ test("modelo usa independência funcional separada dos cinco domínios de capaci
     "sensorial",
   ]);
   assert.equal(CAPACITY_DIMENSIONS[0]?.label, "Independência funcional");
-  assert.equal(INTRINSIC_CAPACITY_MODEL_VERSION, "intrinsic-capacity-model-v1.1.0");
+  assert.equal(INTRINSIC_CAPACITY_MODEL_VERSION, "intrinsic-capacity-model-v1.2.0");
 });
 
 test("modelo não aplica pior resultado vence quando assessments de mesma prioridade discordam", () => {
