@@ -127,7 +127,7 @@ function validateAgainstDefinition(scaleCode: RequestScaleCode, answers: Record<
   const definition = DEFINITIONS.find((item) => item.code === scaleCode);
   if (!definition) throw new Error("UNSUPPORTED_SCALE");
   const fields = definition.fields;
-  const allowedIds = new Set(fields.map((field) => field.id));
+  const allowedIds = new Set<string>(fields.map((field) => field.id));
   if (Object.keys(answers).some((key) => !allowedIds.has(key))) throw new Error("Valor inválido: campo não permitido.");
 
   for (const field of fields) {
