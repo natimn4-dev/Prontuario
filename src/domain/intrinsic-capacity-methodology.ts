@@ -35,7 +35,7 @@ export interface CapacityInstrumentMethodology {
  * comparabilidade exige uma nova versão. Snapshots/documentos já emitidos não
  * devem ser reescritos silenciosamente.
  */
-export const INTRINSIC_CAPACITY_MODEL_VERSION = "intrinsic-capacity-model-v1.1.0" as const;
+export const INTRINSIC_CAPACITY_MODEL_VERSION = "intrinsic-capacity-model-v1.2.0" as const;
 
 /**
  * Definição operacional da primeira versão.
@@ -328,6 +328,16 @@ export const CAPACITY_INSTRUMENT_METHODOLOGY: readonly CapacityInstrumentMethodo
     canClassifyDomain: true,
     rationale: "Indicador nutricional usado como proxy operacional de vitalidade; não equivale ao construto fisiológico completo.",
     researchNote: "A OMS e revisões recentes descrevem vitalidade como construto mais amplo envolvendo energia/metabolismo, função neuromuscular e resposta imune/ao estresse. A validação do domínio amplo permanece agenda de pesquisa.",
+  },
+  {
+    scaleCode: "sarc_calf",
+    domain: "vitalidade",
+    role: "screening",
+    mappingStrength: "acceptable",
+    basis: "screening",
+    canClassifyDomain: true,
+    rationale: "O SARC-CalF combina desempenho autorreferido do SARC-F com circunferência da panturrilha como marcador antropométrico de massa muscular; um rastreio positivo sinaliza vulnerabilidade muscular relevante para a Vitalidade, sem confirmar sarcopenia isoladamente.",
+    researchNote: "Validação brasileira: Barbosa-Silva TG et al., J Am Med Dir Assoc. 2016; PMID 27650212. A classificação deve permanecer vinculada à versão SARC-CalF e não ser comparada como se fosse o SARC-F 0–10.",
   },
   {
     scaleCode: "frail_br",

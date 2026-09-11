@@ -20,18 +20,32 @@ test("gera orientações somente para domínios alterados e avaliados na consult
   assert.ok(guidance.alteredDomains.every((domain) => domain.evidenceReferences.every((reference) => reference.url === `https://pubmed.ncbi.nlm.nih.gov/${reference.pmid}/`)));
 });
 
-test("MNA-SF sinaliza vitalidade sem representá-la isoladamente e FRAIL-BR permanece contextual", () => {
+test("MNA-SF e SARC-CalF sinalizam Vitalidade; FRAIL-BR permanece contextual", () => {
   const guidance = buildIntrinsicCapacityGuidance([
     { scaleId: "mna_sf", scaleName: "MNA-SF", color: "vermelho", assessedInTargetConsultation: true },
+    { scaleId: "sarc_calf", scaleName: "SARC-CalF", color: "vermelho", assessedInTargetConsultation: true },
     { scaleId: "frail_br", scaleName: "FRAIL-BR", color: "amarelo", assessedInTargetConsultation: true },
   ]);
 
   const vitality = guidance.alteredDomains.find((domain) => domain.code === "vitalidade");
   assert.ok(vitality);
-  assert.deepEqual(vitality.triggeredBy, ["MNA-SF"]);
+  assert.deepEqual(vitality.triggeredBy, ["MNA-SF", "SARC-CalF"]);
   assert.ok(!guidance.alteredDomains.some((domain) => domain.triggeredBy.includes("FRAIL-BR")));
-  assert.match(vitality.whyItMatters, /estado nutricional é um dos sinais acompanhados/i);
+  assert.match(vitality.whyItMatters, /estado nutricional e o rastreio de vulnerabilidade muscular pelo SARC-CalF/i);
   assert.match(vitality.whyItMatters, /junto com força, funcionalidade e condições clínicas/i);
+  assert.ok(vitality.actions.some((action) => /SARC-CalF estiver positivo/i.test(action)));
+  assert.ok(vitality.evidenceReferences.some((reference) => reference.pmid === "27650212"));
+});
+
+test("SARC-CalF positivo isolado aciona Vitalidade, sem ser promovido a diagnóstico", () => {
+  const guidance = buildIntrinsicCapacityGuidance([
+    { scaleId: "sarc_calf", scaleName: "SARC-CalF", color: "vermelho", assessedInTargetConsultation: true },
+  ]);
+
+  assert.deepEqual(guidance.alteredDomains.map((domain) => domain.code), ["vitalidade"]);
+  const vitality = guidance.alteredDomains[0];
+  assert.deepEqual(vitality?.triggeredBy, ["SARC-CalF"]);
+  assert.ok(vitality?.actions.some((action) => /não confirma o diagnóstico isoladamente/i.test(action)));
 });
 
 test("FRAIL-BR isolado não define automaticamente locomoção ou vitalidade", () => {

@@ -125,23 +125,32 @@ const DOMAIN_CONTENT: Readonly<Record<IntrinsicCapacityDomainCode, Omit<Intrinsi
   },
   vitalidade: {
     label: "Vitalidade",
-    whyItMatters: "Vitalidade representa a reserva que o organismo usa para enfrentar doenças e manter as atividades do dia. Nesta versão, o estado nutricional é um dos sinais acompanhados e deve ser interpretado junto com força, funcionalidade e condições clínicas.",
+    whyItMatters: "Vitalidade representa a reserva que o organismo usa para enfrentar doenças e manter as atividades do dia. Nesta versão, o estado nutricional e o rastreio de vulnerabilidade muscular pelo SARC-CalF são sinais acompanhados e devem ser interpretados junto com força, funcionalidade e condições clínicas.",
     actions: [
       "Priorize uma alimentação possível e prazerosa: ofereça refeições menores e mais frequentes quando grandes volumes cansarem ou reduzirem a aceitação, mantendo as orientações nutricionais já definidas para a pessoa.",
       "Facilite líquidos ao longo do dia e deixe bebidas ao alcance quando isso for seguro, sempre respeitando eventual restrição de líquidos orientada pela equipe.",
       "Acompanhe mudanças que ajudam a perceber perda de reserva: peso, roupas mais folgadas, redução das porções, perda de apetite, dificuldade para mastigar ou engolir e cansaço maior para comer.",
-      "Preserve atividade e participação conforme tolerância, alternando esforço e descanso. O objetivo é evitar tanto a exaustão quanto a inatividade prolongada.",
+      "Quando o SARC-CalF estiver positivo, leve o resultado à equipe para avaliação de sarcopenia, incluindo revisão de força e desempenho físico, estado nutricional e causas reversíveis; o rastreio não confirma o diagnóstico isoladamente.",
+      "Preserve atividade e participação conforme tolerância. Quando clinicamente seguro, priorize exercício resistido e funcional planejado de acordo com capacidade, risco de quedas e orientação da equipe.",
     ],
     attentionSigns: [
-      "Avise a equipe se houver perda de peso sem intenção, queda persistente da ingestão, piora do apetite, cansaço crescente, vômitos repetidos ou dificuldade para mastigar ou engolir.",
+      "Avise a equipe se houver perda de peso sem intenção, queda persistente da ingestão, piora do apetite, redução progressiva de força ou desempenho, quedas recorrentes ou cansaço crescente.",
       "Procure avaliação rápida se houver engasgo com falta de ar, incapacidade de ingerir líquidos, redução importante da urina, sonolência fora do habitual ou prostração importante.",
     ],
-    evidenceReferences: [{
-      label: "Diretriz prática ESPEN de nutrição clínica e hidratação em geriatria",
-      pmid: "35306388",
-      url: "https://pubmed.ncbi.nlm.nih.gov/35306388/",
-      relevance: "Diretriz prática: rastreio e cuidado nutricional devem ser individualizados; alimentação, hidratação e suporte oral fazem parte de uma abordagem abrangente e multidisciplinar para pessoas idosas.",
-    }],
+    evidenceReferences: [
+      {
+        label: "Diretriz prática ESPEN de nutrição clínica e hidratação em geriatria",
+        pmid: "35306388",
+        url: "https://pubmed.ncbi.nlm.nih.gov/35306388/",
+        relevance: "Diretriz prática: rastreio e cuidado nutricional devem ser individualizados; alimentação, hidratação e suporte oral fazem parte de uma abordagem abrangente e multidisciplinar para pessoas idosas.",
+      },
+      {
+        label: "Validação brasileira do SARC-CalF para rastreio de sarcopenia",
+        pmid: "27650212",
+        url: "https://pubmed.ncbi.nlm.nih.gov/27650212/",
+        relevance: "Estudo de validação: adicionar a circunferência da panturrilha ao SARC-F melhora o desempenho do rastreio de sarcopenia; resultado positivo requer avaliação clínica confirmatória.",
+      },
+    ],
   },
   sensorial: {
     label: "Capacidade sensorial",

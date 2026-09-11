@@ -60,6 +60,7 @@ const CODE_DOMAIN: Record<string, ClinicalScaleDomain> = {
   zarit_br_22: "Sobrecarga do cuidador",
   mna_sf: "Vitalidade e nutrição",
   sarcf: "Vitalidade e nutrição",
+  sarc_calf: "Vitalidade e nutrição",
   pps: "Prognóstico e cuidados paliativos",
   kps: "Prognóstico e cuidados paliativos",
   lace: "Prognóstico e cuidados paliativos",
@@ -71,6 +72,7 @@ const CODE_DOMAIN: Record<string, ClinicalScaleDomain> = {
 };
 
 const HIDDEN_DETAILED_COGNITIVE = new Set(["meem_freitas", "moca_br_freitas"]);
+const HIDDEN_REPLACED_SCALES = new Set(["sarcf"]);
 
 function normalizeDimension(value?: string | null): string {
   return (value ?? "")
@@ -93,6 +95,7 @@ export function clinicalScaleDomain(code: string, dimension?: string | null): Cl
 }
 
 export function isScaleExposedInUnifiedWorkspace(input: Pick<ClinicalScaleOptionInput, "source" | "code">): boolean {
+  if (HIDDEN_REPLACED_SCALES.has(input.code)) return false;
   return !(input.source === "core" && HIDDEN_DETAILED_COGNITIVE.has(input.code));
 }
 
