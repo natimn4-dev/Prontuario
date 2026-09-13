@@ -5,6 +5,7 @@ import {
   DEFAULT_MEALS,
   HOUSEHOLD_MEASURES,
   parseDietaryNaturalLanguage,
+  renalProteinReference,
   roundForDisplay,
   type DietaryAssessmentInput,
   type DietaryAssessmentSnapshot,
@@ -85,6 +86,12 @@ function numberOrNull(value: string): number | null {
   return Number.isFinite(parsed) && parsed > 0 ? parsed : null;
 }
 
+function nonNegativeNumberOrNull(value: string): number | null {
+  if (!value.trim()) return null;
+  const parsed = Number(value.replace(",", "."));
+  return Number.isFinite(parsed) && parsed >= 0 ? parsed : null;
+}
+
 function format(value: number | null | undefined, digits = 1): string {
   const rounded = value == null ? null : roundForDisplay(value, digits);
   if (rounded == null) return "—";
@@ -114,6 +121,9 @@ export function DietaryAssessmentWorkspace({ consultationId }: { consultationId:
   const [meals, setMeals] = useState<UiDietaryMeal[]>(freshMeals);
   const [targets, setTargets] = useState<DietaryTargets>({});
   const [weightOverride, setWeightOverride] = useState("");
+  const [renalEgfr, setRenalEgfr] = useState("");
+  const [renalDialysis, setRenalDialysis] = useState(false);
+  const [renalVeryLowProteinDiet, setRenalVeryLowProteinDiet] = useState(false);
   const [orientationDraft, setOrientationDraft] = useState("");
   const [orientationReviewed, setOrientationReviewed] = useState(false);
   const [includeInSoap, setIncludeInSoap] = useState(false);
@@ -138,6 +148,12 @@ export function DietaryAssessmentWorkspace({ consultationId }: { consultationId:
   const assessment = data?.assessment ?? null;
   const energyCheck = assessment ? crossCheckDietaryEnergy(assessment.summary) : null;
   const activeContexts = contextLabels(data?.clinicalContext ?? null);
+  const renalReference = useMemo(() => renalProteinReference({
+    ...(data?.clinicalContext ?? {}),
+    renalEgfrMlMinPer1_73: nonNegativeNumberOrNull(renalEgfr),
+    renalDialysis,
+    renalVeryLowProteinDiet,
+  }), [data?.clinicalContext, renalEgfr, renalDialysis, renalVeryLowProteinDiet]);
   const totalItems = meals.reduce((sum, meal) => sum + meal.items.length, 0);
 
   async function load() {
@@ -153,6 +169,9 @@ export function DietaryAssessmentWorkspace({ consultationId }: { consultationId:
       setWeightOverride(body.assessment?.clinicalContext.weightSource === "clinician" && body.assessment.clinicalContext.weightKg
         ? String(body.assessment.clinicalContext.weightKg)
         : "");
+      setRenalEgfr(body.assessment?.clinicalContext.renalEgfrMlMinPer1_73 == null ? "" : String(body.assessment.clinicalContext.renalEgfrMlMinPer1_73));
+      setRenalDialysis(Boolean(body.assessment?.clinicalContext.renalDialysis));
+      setRenalVeryLowProteinDiet(Boolean(body.assessment?.clinicalContext.renalVeryLowProteinDiet));
       setOrientationDraft(body.assessment?.orientationDraft ?? "");
       setOrientationReviewed(Boolean(body.assessment?.orientationReviewed));
       setIncludeInSoap(Boolean(body.assessment?.includeInSoap));
@@ -168,6 +187,15 @@ export function DietaryAssessmentWorkspace({ consultationId }: { consultationId:
 
   function patchTarget(key: TargetKey, value: string) {
     setTargets((current) => ({ ...current, [key]: numberOrNull(value) }));
+  }
+
+  function applyRenalReference() {
+    if (!renalReference?.proteinGPerKgMin || !renalReference.proteinGPerKgMax) return;
+    setTargets((current) => ({
+      ...current,
+      proteinGPerKgMin: renalReference.proteinGPerKgMin,
+      proteinGPerKgMax: renalReference.proteinGPerKgMax,
+    }));
   }
 
   function patchItem(targetMealId: string, itemId: string, patch: Partial<UiDietaryItem>) {
@@ -273,6 +301,9 @@ export function DietaryAssessmentWorkspace({ consultationId }: { consultationId:
       ...data.clinicalContext,
       weightKg: clinicianWeight ?? data.clinicalContext.weightKg,
       weightSource: clinicianWeight ? "clinician" : data.clinicalContext.weightSource,
+      renalEgfrMlMinPer1_73: nonNegativeNumberOrNull(renalEgfr),
+      renalDialysis,
+      renalVeryLowProteinDiet,
     };
     const payload: DietaryAssessmentInput = {
       schemaVersion: "dietary-assessment-v1",
@@ -416,6 +447,15 @@ export function DietaryAssessmentWorkspace({ consultationId }: { consultationId:
         <div className={styles.contextBar}>
           {activeContexts.length ? activeContexts.map((label) => <span key={label}>{label}</span>) : <span>Nenhum contexto automático adicional identificado</span>}
         </div>
+        {data?.clinicalContext.ckd ? <section className={styles.renalReference} aria-labelledby="renal-protein-reference-title">
+          <div><strong id="renal-protein-reference-title">Referência renal por TFG</strong><span>A meta só muda quando você escolher “Usar como meta inicial”.</span></div>
+          <div className={styles.renalControls}>
+            <label>TFG atual, mL/min/1,73 m²<input inputMode="decimal" value={renalEgfr} onChange={(event) => { setRenalEgfr(event.target.value); setRenalVeryLowProteinDiet(false); }} placeholder="informar" disabled={renalDialysis} /></label>
+            <label className={styles.checkLabel}><input type="checkbox" checked={renalDialysis} onChange={(event) => { setRenalDialysis(event.target.checked); if (event.target.checked) setRenalVeryLowProteinDiet(false); }} />Em hemodiálise ou diálise peritoneal</label>
+            {renalReference?.code === "g4-g5" || renalReference?.code === "g4-g5-vlpd" ? <label className={styles.checkLabel}><input type="checkbox" checked={renalVeryLowProteinDiet} onChange={(event) => setRenalVeryLowProteinDiet(event.target.checked)} />Dieta muito baixa em proteína, já definida pela equipe</label> : null}
+          </div>
+          {renalReference ? <div className={styles.renalResult} role="status"><strong>{renalReference.label}</strong><span>{renalReference.proteinGPerKgMin == null ? "Sem meta automática" : `${format(renalReference.proteinGPerKgMin, 1)}–${format(renalReference.proteinGPerKgMax, 1)} g/kg/dia`}</span><p>{renalReference.note}</p>{renalReference.proteinGPerKgMin != null ? <button type="button" onClick={applyRenalReference}>Usar como meta inicial</button> : null}</div> : null}
+        </section> : null}
         <div className={styles.targetGrid}>
           <label>Peso clínico, kg <small>opcional; substitui o peso do Programa 55+ nesta avaliação</small><input inputMode="decimal" value={weightOverride} onChange={(event) => setWeightOverride(event.target.value)} placeholder={data?.clinicalContext.weightKg ? format(data.clinicalContext.weightKg, 1) : "não disponível"} /></label>
           <label>Energia mínima, kcal/kg/d<input inputMode="decimal" value={targetValue(targets, "energyKcalPerKgMin")} onChange={(event) => patchTarget("energyKcalPerKgMin", event.target.value)} /></label>
