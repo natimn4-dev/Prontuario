@@ -54,6 +54,7 @@ enum DocumentType {
   FAMILY_REPORT
   MEDICATION_PLAN
   AGA_REPORT
+  DEMENTIA_REPORT
 }
 
 enum DigitalSignatureStatus {
@@ -138,6 +139,7 @@ model User {
   integrationCredentials ExternalIntegrationCredential[]
   auditEvents   AuditEvent[]
   advanceDirectiveRecords AdvanceDirectiveRecord[]
+  dementiaAssessments CognitiveDiagnosticAssessment[]
   accessGrantsCreated UserAccessGrant[] @relation("UserAccessGrantCreator")
   patientAssignments PatientUserAssignment[] @relation("PatientAssignedUser")
   patientAssignmentsCreated PatientUserAssignment[] @relation("PatientAssignmentCreator")
@@ -266,6 +268,7 @@ model Patient {
   documents              DocumentSnapshot[]
   digitalSignatures      DigitalSignature[]
   advanceDirectiveRecords AdvanceDirectiveRecord[]
+  dementiaAssessments     CognitiveDiagnosticAssessment[]
   identifiers            PatientIdentifier[]
   userAssignments        PatientUserAssignment[]
   program55Enrollment    Program55Enrollment?
@@ -317,6 +320,7 @@ model Consultation {
   documents         DocumentSnapshot[]
   digitalSignatures DigitalSignature[]
   advanceDirectiveRecords AdvanceDirectiveRecord[]
+  dementiaAssessments CognitiveDiagnosticAssessment[]
   program55Checkpoints Program55Checkpoint[] @relation("Program55CoordinatingConsultation")
   createdAt         DateTime            @default(now())
   updatedAt         DateTime            @updatedAt
@@ -344,6 +348,36 @@ model AdvanceDirectiveRecord {
   topics              Json
   documentStatus      String
   reviewTrigger       String
+  patient             Patient      @relation(fields: [patientId], references: [id], onDelete: Restrict)
+  consultation        Consultation @relation(fields: [consultationId, patientId], references: [id, patientId], onDelete: Restrict)
+  recordedBy          User         @relation(fields: [recordedById], references: [id], onDelete: Restrict)
+  createdAt           DateTime     @default(now())
+
+  @@unique([consultationId, version])
+  @@index([patientId, createdAt])
+  @@index([recordedById, createdAt])
+}
+
+model CognitiveDiagnosticAssessment {
+  id                  String       @id @default(cuid())
+  patientId           String
+  consultationId      String
+  recordedById        String
+  version             Int
+  protocolVersion     String
+  safety              Json
+  clinical            Json
+  keyFeatures         Json
+  labs                 Json
+  imaging              Json
+  biomarkers           Json
+  neuropsychologySummary String?   @db.Text
+  clinicianSyndrome   String?      @db.Text
+  clinicianPrimaryHypothesis String? @db.Text
+  clinicianDifferentials String?   @db.Text
+  interpretation      Json
+  reportText          String       @db.LongText
+  clinicianReviewed   Boolean      @default(false)
   patient             Patient      @relation(fields: [patientId], references: [id], onDelete: Restrict)
   consultation        Consultation @relation(fields: [consultationId, patientId], references: [id, patientId], onDelete: Restrict)
   recordedBy          User         @relation(fields: [recordedById], references: [id], onDelete: Restrict)
