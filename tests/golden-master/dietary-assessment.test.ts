@@ -1,161 +1,113 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import {
+  DIETARY_CLINICAL_REFERENCES,
+  buildDietaryOrientation,
+  buildDietaryPriorities,
+  buildProteinComparison,
   nutrientsForGrams,
+  parseDietaryNaturalLanguage,
+  portionMetadata,
   renalProteinReference,
   roundForDisplay,
   summarizeDietaryAssessment,
+  validateDietaryInput,
   type DietaryAssessmentInput,
   type DietaryConfirmedMeal,
   type DietaryNutrients,
 } from "../../src/domain/dietary-assessment.ts";
-import {
-  crossCheckDietaryEnergy,
-  dietaryNutrientUnit,
-} from "../../src/domain/dietary-assessment-quality.ts";
+import { crossCheckDietaryEnergy, dietaryNutrientUnit } from "../../src/domain/dietary-assessment-quality.ts";
 
-const zero: DietaryNutrients = {
-  energyKcal: 0,
-  proteinG: 0,
-  carbohydratesG: 0,
-  fatG: 0,
-  fiberG: 0,
-  calciumMg: 0,
-  sodiumMg: 0,
-};
-
+const zero: DietaryNutrients = { energyKcal: 0, proteinG: 0, carbohydratesG: 0, fatG: 0, fiberG: 0, calciumMg: 0, sodiumMg: 0 };
 function meal(id: string, label: string, nutrients: DietaryNutrients): DietaryConfirmedMeal {
-  return {
-    id,
-    label,
-    items: [{
-      id: `${id}-item`,
-      label: "Alimento sintético",
-      quantity: 100,
-      measure: "g",
-      grams: 100,
-      gramsSource: "direct-grams",
-      estimated: false,
-      food: null,
-      composition: null,
-      nutrients,
-    }],
-  };
+  return { id, label, items: [{ id: `${id}-item`, label: "Alimento sintético", quantity: 100, measure: "g", grams: 100, gramsSource: "direct-grams", estimated: false, quantitySource: "peso informado", uncertainty: "baixa", food: null, composition: null, nutrients }] };
 }
 
 test("A — duas porções do mesmo alimento totalizam 2 × uma porção", () => {
-  const per100g: DietaryNutrients = {
-    energyKcal: 120,
-    proteinG: 8,
-    carbohydratesG: 15,
-    fatG: 4,
-    fiberG: 3,
-    calciumMg: 80,
-    sodiumMg: 40,
-  };
-  const onePortion = nutrientsForGrams(per100g, 75);
-  const twoPortions = nutrientsForGrams(per100g, 150);
-  for (const key of Object.keys(onePortion) as Array<keyof DietaryNutrients>) {
-    assert.equal(twoPortions[key], onePortion[key] * 2);
-  }
+  const per100g: DietaryNutrients = { energyKcal: 120, proteinG: 8, carbohydratesG: 15, fatG: 4, fiberG: 3, calciumMg: 80, sodiumMg: 40 };
+  const one = nutrientsForGrams(per100g, 75); const two = nutrientsForGrams(per100g, 150);
+  for (const key of Object.keys(one) as Array<keyof DietaryNutrients>) assert.equal(two[key], one[key] * 2);
 });
 
-test("B — checagem energética cruza fonte com 4P + 4C + 9G e sinaliza diferença relevante", () => {
-  const consistent = crossCheckDietaryEnergy({
-    energyKcal: 170,
-    proteinG: 10,
-    carbohydratesG: 20,
-    fatG: 5.5,
-  });
-  assert.equal(consistent.status, "consistent");
-
-  const review = crossCheckDietaryEnergy({
-    energyKcal: 160,
-    proteinG: 5,
-    carbohydratesG: 10,
-    fatG: 2,
-  });
-  assert.equal(review.status, "review");
-  assert.match(review.note, /fibra|álcool|polióis/i);
+test("B — checagem energética cruza fonte com 4P + 4C + 9G", () => {
+  assert.equal(crossCheckDietaryEnergy({ energyKcal: 170, proteinG: 10, carbohydratesG: 20, fatG: 5.5 }).status, "consistent");
+  const review = crossCheckDietaryEnergy({ energyKcal: 160, proteinG: 5, carbohydratesG: 10, fatG: 2 });
+  assert.equal(review.status, "review"); assert.match(review.note, /fibra|álcool|polióis/i);
 });
 
-test("C — cálcio e sódio permanecem em mg e não são apresentados como g", () => {
-  assert.equal(dietaryNutrientUnit("calciumMg"), "mg");
-  assert.equal(dietaryNutrientUnit("sodiumMg"), "mg");
-  assert.equal(dietaryNutrientUnit("proteinG"), "g");
+test("C — cálcio e sódio permanecem em mg", () => {
+  assert.equal(dietaryNutrientUnit("calciumMg"), "mg"); assert.equal(dietaryNutrientUnit("sodiumMg"), "mg"); assert.equal(dietaryNutrientUnit("proteinG"), "g");
 });
 
 test("D — 60 g de proteína para 50 kg correspondem a 1,20 g/kg/d", () => {
-  const proteinMeal = meal("lunch", "Almoço", { ...zero, proteinG: 60, energyKcal: 600 });
-  const { summary } = summarizeDietaryAssessment([proteinMeal], 50);
+  const { summary } = summarizeDietaryAssessment([meal("lunch", "Almoço", { ...zero, proteinG: 60, energyKcal: 600 })], 50);
   assert.equal(roundForDisplay(summary.proteinGPerKg, 2), 1.2);
 });
 
 test("E — subtotais por refeição fecham com o total diário", () => {
-  const breakfast = meal("breakfast", "Café da manhã", {
-    ...zero,
-    energyKcal: 350,
-    proteinG: 20,
-    carbohydratesG: 45,
-    fatG: 10,
-    fiberG: 6,
-    calciumMg: 250,
-    sodiumMg: 180,
-  });
-  const dinner = meal("dinner", "Jantar", {
-    ...zero,
-    energyKcal: 550,
-    proteinG: 35,
-    carbohydratesG: 60,
-    fatG: 18,
-    fiberG: 9,
-    calciumMg: 180,
-    sodiumMg: 320,
-  });
-  const breakfastSummary = summarizeDietaryAssessment([breakfast]).summary;
-  const dinnerSummary = summarizeDietaryAssessment([dinner]).summary;
-  const daily = summarizeDietaryAssessment([breakfast, dinner]).summary;
-  assert.equal(daily.energyKcal, breakfastSummary.energyKcal + dinnerSummary.energyKcal);
-  assert.equal(daily.proteinG, breakfastSummary.proteinG + dinnerSummary.proteinG);
-  assert.equal(daily.calciumMg, breakfastSummary.calciumMg + dinnerSummary.calciumMg);
-  assert.equal(daily.sodiumMg, breakfastSummary.sodiumMg + dinnerSummary.sodiumMg);
+  const a = meal("breakfast", "Café", { ...zero, energyKcal: 350, proteinG: 20, calciumMg: 250, sodiumMg: 180 });
+  const b = meal("dinner", "Jantar", { ...zero, energyKcal: 550, proteinG: 35, calciumMg: 180, sodiumMg: 320 });
+  const sa = summarizeDietaryAssessment([a]).summary, sb = summarizeDietaryAssessment([b]).summary, total = summarizeDietaryAssessment([a, b]).summary;
+  assert.equal(total.energyKcal, sa.energyKcal + sb.energyKcal); assert.equal(total.proteinG, sa.proteinG + sb.proteinG); assert.equal(total.calciumMg, sa.calciumMg + sb.calciumMg);
 });
 
-test("perfil sintético renal não recebe orientação automática para aumentar proteína", async () => {
-  const { buildDietaryOrientation, buildDietaryPriorities } = await import("../../src/domain/dietary-assessment.ts");
-  const syntheticMeal = meal("lunch", "Almoço", { ...zero, proteinG: 30, energyKcal: 700 });
-  const { summary, proteinByMeal } = summarizeDietaryAssessment([syntheticMeal], 60);
-  const priorities = buildDietaryPriorities({
-    summary,
-    proteinByMeal,
-    targets: { proteinGPerKgMin: 1 },
-    context: { weightKg: 60, ckd: true },
-    meals: [syntheticMeal],
-  });
-  assert.equal(priorities.find((priority) => priority.code === "protein")?.title, "Revisar meta proteica no contexto renal");
-  assert.match(buildDietaryOrientation({ priorities, context: { ckd: true }, meals: [syntheticMeal] }), /revise a meta e a função renal antes de orientar aumento de proteína/i);
+test("ovo explícito é unidade e não é convertido em porção de carne", () => {
+  for (const [text, quantity] of [["1 ovo", 1], ["2 ovos", 2], ["3 ovos", 3]] as const) {
+    const parsed = parseDietaryNaturalLanguage(text)[0];
+    assert.equal(parsed.quantity, quantity); assert.equal(parsed.measure, "unidade"); assert.notEqual(parsed.measure, "palma-mao");
+  }
 });
 
-
-test("referência proteica renal para pessoa idosa é estratificada por TFG e diálise", () => {
-  assert.deepEqual(renalProteinReference({ ckd: true, ageYears: 78, renalEgfrMlMinPer1_73: 52 }), {
-    code: "g3a", label: "DRC G3a — TFG 45–59 mL/min/1,73 m²", proteinGPerKgMin: 0.8, proteinGPerKgMax: 0.8,
-    note: "Referência inicial: 0,8 g/kg/dia. Em fragilidade, sarcopenia, desnutrição ou baixa probabilidade de progressão, individualize com a equipe.",
-  });
-  assert.equal(renalProteinReference({ ckd: true, renalEgfrMlMinPer1_73: 35 })?.code, "g3b");
-  assert.deepEqual(renalProteinReference({ ckd: true, renalEgfrMlMinPer1_73: 22 }), {
-    code: "g4-g5", label: "DRC G4–G5 sem diálise — TFG <30 mL/min/1,73 m²", proteinGPerKgMin: 0.6, proteinGPerKgMax: 0.8,
-    note: "Referência inicial: 0,6–0,8 g/kg/dia. Preferir a faixa mais alta quando houver diabetes, idade avançada, desnutrição ou outro risco nutricional.",
-  });
-  assert.equal(renalProteinReference({ ckd: true, renalEgfrMlMinPer1_73: 22, renalVeryLowProteinDiet: true })?.code, "g4-g5-vlpd");
-  assert.deepEqual(renalProteinReference({ ckd: true, renalDialysis: true }), {
-    code: "g5d", label: "DRC G5D — hemodiálise ou diálise peritoneal", proteinGPerKgMin: 1.2, proteinGPerKgMax: 1.5,
-    note: "Para pessoa idosa em diálise, usar 1,2–1,5 g/kg/dia como referência inicial e individualizar pela modalidade, perdas e estado nutricional.",
-  });
+test("ovo sem quantidade e omelete permanecem dados insuficientes", () => {
+  const egg = parseDietaryNaturalLanguage("comi ovo")[0]; assert.equal(egg.quantity, null); assert.match(egg.issue ?? "", /informe quantas unidades/i);
+  const omelet = parseDietaryNaturalLanguage("omelete")[0]; assert.equal(omelet.measure, null); assert.match(omelet.issue ?? "", /quantos ovos.*quantas pessoas/i);
 });
 
-test("dieta muito baixa em proteína exige DRC sem diálise e TFG menor que 30", async () => {
-  const { validateDietaryInput } = await import("../../src/domain/dietary-assessment.ts");
-  const input: DietaryAssessmentInput = { schemaVersion: "dietary-assessment-v1", meals: [meal("lunch", "Almoço", zero)], targets: {}, clinicalContext: { ckd: true, renalEgfrMlMinPer1_73: 45, renalVeryLowProteinDiet: true } };
-  assert.match(validateDietaryInput(input).join(" "), /Dieta muito baixa em proteína/);
+test("palma da mão é estimativa visual de alta incerteza, nunca peso exato", () => {
+  const parsed = parseDietaryNaturalLanguage("1 porção do tamanho da palma da mão de peixe")[0];
+  assert.equal(parsed.measure, "palma-mao"); assert.equal(parsed.estimated, true); assert.match(parsed.issue ?? "", /Estimativa — confirmar quantidade/i);
+  assert.deepEqual(portionMetadata("palma-mao", null), { quantitySource: "estimativa visual", uncertainty: "alta", estimated: true, gramsSource: null });
+});
+
+test("medida caseira sem gramas não é transformada silenciosamente em peso", () => {
+  const metadata = portionMetadata("colher-sopa", null); assert.equal(metadata.gramsSource, null); assert.equal(metadata.uncertainty, "alta");
+});
+
+test("referência renal é estratificada e protege risco nutricional", () => {
+  const g3a = renalProteinReference({ ckd: true, renalEgfrMlMinPer1_73: 52 }); assert.equal(g3a?.code, "g3a"); assert.equal(g3a?.proteinGPerKgMin, 0.8);
+  const g3b = renalProteinReference({ ckd: true, renalEgfrMlMinPer1_73: 35 }); assert.equal(g3b?.code, "g3b");
+  const g45 = renalProteinReference({ ckd: true, renalEgfrMlMinPer1_73: 22, sarcopenia: true }); assert.equal(g45?.proteinGPerKgMin, 0.6); assert.match(g45?.note ?? "", /não reduza proteína automaticamente|Não aplicar a faixa mais baixa automaticamente/i);
+  const missing = renalProteinReference({ ckd: true }); assert.match(missing?.note ?? "", /TFG não informada.*Não é possível sugerir uma meta renal específica/i);
+  const dialysisMissing = renalProteinReference({ ckd: true, renalDialysis: true }); assert.equal(dialysisMissing?.proteinGPerKgMin, null); assert.match(dialysisMissing?.note ?? "", /confirme modalidade, peso de referência, perdas e estado nutricional/i);
+  const dialysis = renalProteinReference({ ckd: true, renalDialysis: true, renalDialysisModality: "hemodialysis" }); assert.equal(dialysis?.proteinGPerKgMin, 1.2); assert.equal(dialysis?.proteinGPerKgMax, 1.5);
+});
+
+test("dieta muito baixa exige critérios e confirmação explícita", () => {
+  const base: DietaryAssessmentInput = { schemaVersion: "dietary-assessment-v1", meals: [meal("lunch", "Almoço", zero)], targets: {}, clinicalContext: { ckd: true, renalEgfrMlMinPer1_73: 22, renalVeryLowProteinDiet: true } };
+  assert.match(validateDietaryInput(base).join(" "), /Confirme explicitamente/);
+  const confirmed = { ...base, clinicalContext: { ...base.clinicalContext, renalVeryLowProteinDietConfirmed: true } };
+  assert.equal(validateDietaryInput(confirmed).length, 0); assert.equal(renalProteinReference(confirmed.clinicalContext)?.code, "g4-g5-vlpd");
+});
+
+test("cálculo por peso explicita faixa diária e diferença", () => {
+  const summary = { ...zero, proteinG: 40, energyKcalPerKg: null, proteinGPerKg: 40 / 60, carbohydrateEnergyPercent: null, incompleteItems: 0 };
+  const comparison = buildProteinComparison(summary, { proteinGPerKgMin: 0.6, proteinGPerKgMax: 0.8, proteinTargetSource: "reference-suggestion" }, { weightKg: 60, weightSource: "clinician" });
+  assert.equal(comparison.targetTotalGMin, 36); assert.equal(comparison.targetTotalGMax, 48); assert.equal(comparison.differenceToMinG, 4); assert.equal(comparison.differenceToMaxG, -8);
+});
+
+test("orientação separa revisão e não prescreve aumento renal automaticamente", () => {
+  const synthetic = meal("lunch", "Almoço", { ...zero, proteinG: 30, calciumMg: 300 });
+  const { summary, proteinByMeal } = summarizeDietaryAssessment([synthetic], 60);
+  const context = { ckd: true, weightKg: 60, frailty: true };
+  const priorities = buildDietaryPriorities({ summary, proteinByMeal, targets: { proteinGPerKgMin: 1, calciumMg: 1000 }, context, meals: [synthetic] });
+  const orientation = buildDietaryOrientation({ priorities, context, meals: [synthetic], summary });
+  assert.match(orientation, /O que manter/); assert.match(orientation, /O que melhorar/); assert.match(orientation, /O que precisa ser confirmado/); assert.match(orientation, /O que exige decisão médica ou nutricional/);
+  assert.match(orientation, /Revise a qualidade do relato, as porções confirmadas, o peso utilizado e o contexto clínico antes de orientar aumento de proteína/i);
+  assert.match(orientation, /Fontes de cálcio devem ser escolhidas conforme função renal, fósforo, cálcio sérico, tolerância e plano nutricional/i);
+});
+
+test("fontes clínicas obrigatórias permanecem rastreáveis", () => {
+  const urls = DIETARY_CLINICAL_REFERENCES.map((source) => source.url).join(" ");
+  for (const token of ["32829751", "35306388", "8429287", "33650974", "32153884", "asbran.org.br", "KDIGO-2024"]) assert.match(urls, new RegExp(token, "i"));
+  assert.equal(DIETARY_CLINICAL_REFERENCES.length, 7);
 });
