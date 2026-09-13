@@ -2,8 +2,10 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import {
   nutrientsForGrams,
+  renalProteinReference,
   roundForDisplay,
   summarizeDietaryAssessment,
+  type DietaryAssessmentInput,
   type DietaryConfirmedMeal,
   type DietaryNutrients,
 } from "../../src/domain/dietary-assessment.ts";
@@ -132,4 +134,28 @@ test("perfil sintético renal não recebe orientação automática para aumentar
   });
   assert.equal(priorities.find((priority) => priority.code === "protein")?.title, "Revisar meta proteica no contexto renal");
   assert.match(buildDietaryOrientation({ priorities, context: { ckd: true }, meals: [syntheticMeal] }), /revise a meta e a função renal antes de orientar aumento de proteína/i);
+});
+
+
+test("referência proteica renal para pessoa idosa é estratificada por TFG e diálise", () => {
+  assert.deepEqual(renalProteinReference({ ckd: true, ageYears: 78, renalEgfrMlMinPer1_73: 52 }), {
+    code: "g3a", label: "DRC G3a — TFG 45–59 mL/min/1,73 m²", proteinGPerKgMin: 0.8, proteinGPerKgMax: 0.8,
+    note: "Referência inicial: 0,8 g/kg/dia. Em fragilidade, sarcopenia, desnutrição ou baixa probabilidade de progressão, individualize com a equipe.",
+  });
+  assert.equal(renalProteinReference({ ckd: true, renalEgfrMlMinPer1_73: 35 })?.code, "g3b");
+  assert.deepEqual(renalProteinReference({ ckd: true, renalEgfrMlMinPer1_73: 22 }), {
+    code: "g4-g5", label: "DRC G4–G5 sem diálise — TFG <30 mL/min/1,73 m²", proteinGPerKgMin: 0.6, proteinGPerKgMax: 0.8,
+    note: "Referência inicial: 0,6–0,8 g/kg/dia. Preferir a faixa mais alta quando houver diabetes, idade avançada, desnutrição ou outro risco nutricional.",
+  });
+  assert.equal(renalProteinReference({ ckd: true, renalEgfrMlMinPer1_73: 22, renalVeryLowProteinDiet: true })?.code, "g4-g5-vlpd");
+  assert.deepEqual(renalProteinReference({ ckd: true, renalDialysis: true }), {
+    code: "g5d", label: "DRC G5D — hemodiálise ou diálise peritoneal", proteinGPerKgMin: 1.2, proteinGPerKgMax: 1.5,
+    note: "Para pessoa idosa em diálise, usar 1,2–1,5 g/kg/dia como referência inicial e individualizar pela modalidade, perdas e estado nutricional.",
+  });
+});
+
+test("dieta muito baixa em proteína exige DRC sem diálise e TFG menor que 30", async () => {
+  const { validateDietaryInput } = await import("../../src/domain/dietary-assessment.ts");
+  const input: DietaryAssessmentInput = { schemaVersion: "dietary-assessment-v1", meals: [meal("lunch", "Almoço", zero)], targets: {}, clinicalContext: { ckd: true, renalEgfrMlMinPer1_73: 45, renalVeryLowProteinDiet: true } };
+  assert.match(validateDietaryInput(input).join(" "), /Dieta muito baixa em proteína/);
 });
