@@ -25,7 +25,7 @@ test("evolução anterior fica somente leitura e não preenche a evolução atua
 });
 
 test("histórico anterior é carregado apenas quando a médica abre o painel", () => {
-  assert.match(previousNote, /onToggle=\{\(event\) => \{[\s\S]*?if \(event\.currentTarget\.open\) void loadPreviousNote\(\)/);
+  assert.match(previousNote, /onToggle=\{\(event\) => \{[\s\S]*?if \(event\.currentTarget\.open\) void loadPreviousNote\(previousConsultation\)/);
   assert.match(previousNote, /<summary>Ver evolução anterior<\/summary>/);
   assert.match(previousNote, /Abrir consulta anterior completa/);
 });
