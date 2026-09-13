@@ -1,0 +1,86 @@
+.page {
+  min-height: 100vh;
+  padding: 28px;
+  background: #f4f1f6;
+  color: #231f26;
+}
+
+.actions {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  max-width: 800px;
+  margin: 0 auto 16px;
+}
+
+.actions a,
+.actions button {
+  min-height: 44px;
+  display: inline-flex;
+  align-items: center;
+  padding: 10px 14px;
+  border: 1px solid #67417b;
+  border-radius: 9px;
+  background: #67417b;
+  color: #fff;
+  font: inherit;
+  font-weight: 750;
+  text-decoration: none;
+  cursor: pointer;
+}
+
+.document {
+  width: min(100%, 800px);
+  margin: 0 auto;
+  padding: 58px 64px;
+  background: #fff;
+  box-shadow: 0 8px 30px rgb(35 31 38 / 10%);
+}
+
+.document header > p:first-child {
+  margin: 0 0 8px;
+  color: #67417b;
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+}
+
+.document h1 {
+  margin: 0 0 24px;
+  font-size: 26px;
+  line-height: 1.15;
+}
+
+.document dl {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px 24px;
+  margin: 0 0 28px;
+  padding: 16px 0;
+  border-block: 1px solid #d8d1dc;
+}
+
+.document dl div { display: grid; gap: 3px; }
+.document dt { color: #6c6570; font-size: 11px; font-weight: 700; }
+.document dd { margin: 0; font-size: 13px; font-weight: 650; }
+.document section p { margin: 0 0 8px; font-size: 12pt; line-height: 1.55; white-space: pre-wrap; }
+.space { height: 8px; }
+.warning { padding: 10px 12px; border: 2px solid #9b3a20; color: #702913; font-weight: 800; }
+.document footer { margin-top: 32px; padding-top: 16px; border-top: 1px solid #d8d1dc; color: #6c6570; font-size: 9pt; line-height: 1.45; }
+
+@page { size: A4 portrait; margin: 16mm 17mm 18mm; }
+
+@media print {
+  .page { padding: 0; background: #fff; }
+  .actions { display: none; }
+  .document { width: auto; margin: 0; padding: 0; box-shadow: none; }
+  .document header, .document footer, .warning { break-inside: avoid; }
+  .document h1 { break-after: avoid; }
+}
+
+@media (max-width: 700px) {
+  .page { padding: 12px; }
+  .document { padding: 28px 20px; }
+  .document dl { grid-template-columns: 1fr; }
+}

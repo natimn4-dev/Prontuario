@@ -9,7 +9,7 @@ import {
 } from "./previous-consultation-note";
 import styles from "./consultation-workspace.module.css";
 
-type WorkspaceSectionId = "problemas" | "medicamentos" | "alimentacao" | "soap" | "escalas" | "diretivas" | "relatorio" | "finalizacao";
+type WorkspaceSectionId = "problemas" | "medicamentos" | "alimentacao" | "soap" | "escalas" | "demencia" | "diretivas" | "relatorio" | "finalizacao";
 
 type WorkspaceSection = {
   id: WorkspaceSectionId;
@@ -24,6 +24,7 @@ const SECTIONS: readonly WorkspaceSection[] = [
   { id: "alimentacao", label: "Alimentação", shortLabel: "Alimentação", description: "Recordatório e estimativa nutricional" },
   { id: "soap", label: "Evolução e plano", shortLabel: "Evolução + plano", description: "SOAP, exames, vacinas e plano por problema" },
   { id: "escalas", label: "Escalas clínicas", shortLabel: "Escalas", description: "Avaliações estruturadas" },
+  { id: "demencia", label: "Investigação cognitiva", shortLabel: "Cognição", description: "Fluxo diagnóstico preenchível" },
   { id: "diretivas", label: "Diretivas antecipadas", shortLabel: "Diretivas", description: "Valores e preferências revisáveis" },
   { id: "relatorio", label: "Relatório final", shortLabel: "Relatório", description: "Documento para paciente e família" },
   { id: "finalizacao", label: "Finalizar consulta", shortLabel: "Finalizar", description: "Revisão dos itens obrigatórios" },
@@ -51,6 +52,10 @@ const ClinicalScalesWorkspace = dynamic(
 );
 const AdvanceDirectivesWorkspace = dynamic(
   () => import("@/components/consultations/advance-directives-workspace").then((module) => module.AdvanceDirectivesWorkspace),
+  { ssr: false, loading: () => <WorkspaceLoading /> },
+);
+const DementiaAssessmentWorkspace = dynamic(
+  () => import("@/components/consultations/dementia-assessment-workspace").then((module) => module.DementiaAssessmentWorkspace),
   { ssr: false, loading: () => <WorkspaceLoading /> },
 );
 const ReportWorkspaceTabs = dynamic(
@@ -197,6 +202,12 @@ export function ConsultationWorkspace({
         {visited.has("diretivas") ? (
           <div id="diretivas" hidden={active !== "diretivas"} className={styles.panel}>
             <AdvanceDirectivesWorkspace consultationId={consultationId} />
+          </div>
+        ) : null}
+
+        {visited.has("demencia") ? (
+          <div id="demencia" hidden={active !== "demencia"} className={styles.panel}>
+            <DementiaAssessmentWorkspace consultationId={consultationId} />
           </div>
         ) : null}
 

@@ -2,7 +2,7 @@ import type { Prisma } from "../../generated/prisma/client.ts";
 
 export type DocumentSnapshotInput = {
   consultationId: string;
-  type: "SOAP" | "FAMILY_REPORT" | "MEDICATION_PLAN" | "AGA_REPORT";
+  type: "SOAP" | "FAMILY_REPORT" | "MEDICATION_PLAN" | "AGA_REPORT" | "DEMENTIA_REPORT";
   content: Prisma.InputJsonValue;
   contentSchemaVersion?: string;
   requestId?: string;
