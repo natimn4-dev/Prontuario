@@ -156,5 +156,5 @@ test("referência proteica renal para pessoa idosa é estratificada por TFG e di
 test("dieta muito baixa em proteína exige DRC sem diálise e TFG menor que 30", async () => {
   const { validateDietaryInput } = await import("../../src/domain/dietary-assessment.ts");
   const input = { schemaVersion: "dietary-assessment-v1", meals: [meal("lunch", "Almoço", zero)], targets: {}, clinicalContext: { ckd: true, renalEgfrMlMinPer1_73: 45, renalVeryLowProteinDiet: true } } as const;
-  assert.match(validateDietaryInput(input), /Dieta muito baixa em proteína/);
+  assert.match(validateDietaryInput(input).join(" "), /Dieta muito baixa em proteína/);
 });
