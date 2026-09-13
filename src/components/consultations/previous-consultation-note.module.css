@@ -1,0 +1,228 @@
+.card {
+  margin: 22px 0 14px;
+  padding: 18px;
+  border: 1px solid #ddd3e5;
+  border-radius: 16px;
+  background: #fbf9fd;
+}
+
+.heading {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 18px;
+}
+
+.heading > div {
+  display: grid;
+  gap: 4px;
+}
+
+.eyebrow {
+  color: var(--primary-strong);
+  font-size: 10px;
+  font-weight: 850;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+}
+
+.heading h3 {
+  margin: 0;
+  color: var(--ink);
+  font-size: 16px;
+}
+
+.heading p {
+  max-width: 760px;
+  margin: 0;
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 1.5;
+}
+
+.heading a {
+  flex: 0 0 auto;
+  padding: 8px 10px;
+  border: 1px solid #d1c0df;
+  border-radius: 9px;
+  background: #fff;
+  color: var(--primary-strong);
+  font-size: 11px;
+  font-weight: 800;
+  text-decoration: none;
+}
+
+.heading a:focus-visible,
+.details summary:focus-visible {
+  outline: 3px solid rgb(107 85 217 / 22%);
+  outline-offset: 2px;
+}
+
+.details {
+  margin-top: 14px;
+  border-top: 1px solid #e6deeb;
+  padding-top: 12px;
+}
+
+.details summary {
+  width: fit-content;
+  cursor: pointer;
+  color: var(--primary-strong);
+  font-size: 12px;
+  font-weight: 850;
+}
+
+.body {
+  display: grid;
+  gap: 12px;
+  margin-top: 14px;
+}
+
+.meta {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 9px 10px;
+  border: 1px solid #e6deeb;
+  border-radius: 10px;
+  background: #fff;
+}
+
+.meta span {
+  color: var(--muted);
+  font-size: 11px;
+}
+
+.meta strong {
+  color: var(--primary-strong);
+  font-size: 11px;
+}
+
+.warning,
+.error {
+  display: grid;
+  gap: 4px;
+  padding: 10px 12px;
+  border-radius: 10px;
+  font-size: 11px;
+  line-height: 1.45;
+}
+
+.warning {
+  border: 1px solid #e7c97f;
+  background: #fffaf0;
+  color: #76591b;
+}
+
+.error {
+  margin-top: 12px;
+  border: 1px solid #dda7b0;
+  background: var(--danger-soft);
+  color: var(--danger);
+}
+
+.muted {
+  margin: 12px 0 0;
+  color: var(--muted);
+  font-size: 12px;
+}
+
+.soapGrid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.soapGrid section {
+  min-width: 0;
+  padding: 12px;
+  border: 1px solid #e8e1ee;
+  border-radius: 11px;
+  background: #fff;
+}
+
+.soapGrid h4 {
+  margin: 0 0 8px;
+  color: var(--primary-strong);
+  font-size: 12px;
+}
+
+.soapGrid p,
+.soapGrid dd,
+.soapGrid li,
+.soapGrid span {
+  color: var(--ink);
+  font-size: 11px;
+  line-height: 1.5;
+  white-space: pre-wrap;
+}
+
+.soapGrid p {
+  margin: 0;
+}
+
+.soapGrid dl {
+  display: grid;
+  gap: 7px;
+  margin: 0;
+}
+
+.soapGrid dl > div {
+  display: grid;
+  gap: 2px;
+}
+
+.soapGrid dt {
+  color: var(--muted);
+  font-size: 10px;
+  font-weight: 800;
+}
+
+.soapGrid dd {
+  margin: 0;
+}
+
+.soapGrid ol,
+.soapGrid ul {
+  margin: 0;
+  padding-left: 18px;
+}
+
+.soapGrid ol > li {
+  margin: 5px 0;
+}
+
+.soapGrid li > strong,
+.soapGrid li > span {
+  display: block;
+}
+
+.soapGrid li > span {
+  margin-top: 2px;
+  color: var(--muted);
+}
+
+.soapGrid ul {
+  margin-top: 4px;
+}
+
+@media (max-width: 820px) {
+  .heading {
+    display: grid;
+  }
+
+  .heading a {
+    width: fit-content;
+  }
+
+  .soapGrid {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media print {
+  .card {
+    display: none !important;
+  }
+}

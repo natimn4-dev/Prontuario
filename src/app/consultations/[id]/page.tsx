@@ -44,6 +44,7 @@ export default async function ConsultationPage({
       type: true,
       status: true,
       occurredAt: true,
+      createdAt: true,
       patient: {
         select: {
           id: true,
@@ -63,6 +64,22 @@ export default async function ConsultationPage({
     occurredAt: consultation.occurredAt,
     patient: consultation.patient,
   });
+  const consultationTimeline = await prisma.consultation.findMany({
+    where: { patientId: context.patientId },
+    orderBy: [{ occurredAt: "desc" }, { createdAt: "desc" }, { id: "desc" }],
+    select: { id: true, occurredAt: true, createdAt: true },
+  });
+  const currentTimelineIndex = consultationTimeline.findIndex((item) => item.id === consultation.id);
+  const previousTimelinePoint = currentTimelineIndex >= 0
+    ? consultationTimeline[currentTimelineIndex + 1]
+    : undefined;
+  const previousConsultation = previousTimelinePoint
+    ? {
+      consultationId: previousTimelinePoint.id,
+      occurredAt: previousTimelinePoint.occurredAt.toISOString(),
+    }
+    : undefined;
+
   const query = await searchParams;
   const returnStage = parseOncogeriatricReturnStage(firstQueryValue(query.oncogeriatriaReturn));
   const episodeId = firstQueryValue(query.episode);
@@ -141,6 +158,7 @@ export default async function ConsultationPage({
           consultationId={id}
           patientName={context.patientName}
           professionalIdentity={professionalIdentity}
+          previousConsultation={previousConsultation}
           returnContext={returnContext}
         />
       </div>

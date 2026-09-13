@@ -3,6 +3,10 @@
 import dynamic from "next/dynamic";
 import { useEffect, useMemo, useState } from "react";
 import type { ProfessionalIdentity } from "@/domain/professional-identity";
+import {
+  PreviousConsultationNote,
+  type PreviousConsultationReference,
+} from "./previous-consultation-note";
 import styles from "./consultation-workspace.module.css";
 
 type WorkspaceSectionId = "problemas" | "medicamentos" | "alimentacao" | "soap" | "escalas" | "diretivas" | "relatorio" | "finalizacao";
@@ -72,11 +76,13 @@ export function ConsultationWorkspace({
   consultationId,
   patientName,
   professionalIdentity,
+  previousConsultation,
   returnContext,
 }: {
   consultationId: string;
   patientName: string;
   professionalIdentity: ProfessionalIdentity;
+  previousConsultation?: PreviousConsultationReference;
   returnContext?: { href: string; label: string };
 }) {
   const [active, setActive] = useState<WorkspaceSectionId>("soap");
@@ -177,6 +183,7 @@ export function ConsultationWorkspace({
 
         {visited.has("soap") ? (
           <div id="soap" hidden={active !== "soap"} className={styles.panel}>
+            <PreviousConsultationNote previousConsultation={previousConsultation} />
             <SoapEditor consultationId={consultationId} />
           </div>
         ) : null}
