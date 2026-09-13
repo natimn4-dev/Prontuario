@@ -63,12 +63,12 @@ export function PreviousConsultationNote({
 
   if (!previousConsultation) return null;
 
-  async function loadPreviousNote() {
+  async function loadPreviousNote(reference: PreviousConsultationReference) {
     if (loadState === "loading" || loadState === "ready") return;
     setLoadState("loading");
     setError("");
     try {
-      const response = await fetch(`/api/consultations/${previousConsultation.consultationId}/note`, {
+      const response = await fetch(`/api/consultations/${reference.consultationId}/note`, {
         method: "GET",
         cache: "no-store",
       });
@@ -107,7 +107,7 @@ export function PreviousConsultationNote({
       <details
         className={styles.details}
         onToggle={(event) => {
-          if (event.currentTarget.open) void loadPreviousNote();
+          if (event.currentTarget.open) void loadPreviousNote(previousConsultation);
         }}
       >
         <summary>Ver evolução anterior</summary>
