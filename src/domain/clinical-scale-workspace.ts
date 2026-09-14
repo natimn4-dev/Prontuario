@@ -71,7 +71,6 @@ const CODE_DOMAIN: Record<string, ClinicalScaleDomain> = {
   g8: "Oncogeriatria",
 };
 
-const HIDDEN_DETAILED_COGNITIVE = new Set(["meem_freitas", "moca_br_freitas"]);
 const HIDDEN_REPLACED_SCALES = new Set(["sarcf"]);
 
 function normalizeDimension(value?: string | null): string {
@@ -95,16 +94,25 @@ export function clinicalScaleDomain(code: string, dimension?: string | null): Cl
 }
 
 export function isScaleExposedInUnifiedWorkspace(input: Pick<ClinicalScaleOptionInput, "source" | "code">): boolean {
-  if (HIDDEN_REPLACED_SCALES.has(input.code)) return false;
-  return !(input.source === "core" && HIDDEN_DETAILED_COGNITIVE.has(input.code));
+  return !HIDDEN_REPLACED_SCALES.has(input.code);
 }
 
 function sourcePriority(input: ClinicalScaleOptionInput): number {
   if (input.disabled) return 0;
-  if ((input.code === "meem" || input.code === "moca") && input.source === "complementary") return 100;
   if (input.source === "core") return 30;
   if (input.source === "complementary") return 20;
   return 10;
+}
+
+function cognitiveFallbackSuppressed(input: ClinicalScaleOptionInput, inputs: readonly ClinicalScaleOptionInput[]): boolean {
+  if (input.source !== "complementary") return false;
+  if (input.code === "meem") {
+    return inputs.some((candidate) => candidate.source === "core" && candidate.code === "meem_freitas" && !candidate.disabled);
+  }
+  if (input.code === "moca") {
+    return inputs.some((candidate) => candidate.source === "core" && candidate.code === "moca_br_freitas" && !candidate.disabled);
+  }
+  return false;
 }
 
 export function buildClinicalScaleOptions(inputs: readonly ClinicalScaleOptionInput[]): ClinicalScaleOption[] {
@@ -112,6 +120,7 @@ export function buildClinicalScaleOptions(inputs: readonly ClinicalScaleOptionIn
 
   for (const input of inputs) {
     if (!isScaleExposedInUnifiedWorkspace(input)) continue;
+    if (cognitiveFallbackSuppressed(input, inputs)) continue;
     const previous = byCode.get(input.code);
     if (!previous || sourcePriority(input) > sourcePriority(previous)) byCode.set(input.code, input);
   }

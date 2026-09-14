@@ -34,7 +34,7 @@ test("workspace hides detailed MEEM/MoCA duplicates and preserves simplified ent
     { source: "complementary", code: "meem", name: "MEEM simples", dimension: "cognicao" },
     { source: "complementary", code: "moca", name: "MoCA simples", dimension: "cognicao" },
   ]);
-  assert.deepEqual(options.map((item) => item.code).sort(), ["meem", "moca"]);
+  assert.deepEqual(options.map((item) => item.code).sort(), ["meem_freitas", "moca_br_freitas"]);
 });
 
 test("workspace substitui SARC-F legado por SARC-CalF e mantém a nova escala em Vitalidade", () => {
