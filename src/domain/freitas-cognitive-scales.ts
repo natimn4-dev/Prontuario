@@ -1,6 +1,6 @@
 import type { ValidatedScaleQuestion, ValidatedScaleResult } from "./freitas-validated-scales.ts";
 
-export type CognitiveFreitasScaleCode = "minicog_freitas" | "meem_freitas" | "clock_shulman" | "moca_br_freitas" | "iqcode_br_26";
+export type CognitiveFreitasScaleCode = "minicog_freitas" | "meem_freitas" | "clock_shulman" | "moca_br_freitas" | "verbal_fluency_animals" | "iqcode_br_26";
 
 type CognitiveScaleDefinition = {
   code: CognitiveFreitasScaleCode;
@@ -38,18 +38,23 @@ const educationChoices = [
 
 export const MEEM_FREITAS: CognitiveScaleDefinition = {
   code: "meem_freitas",
-  version: "freitas-py-meem-brucki-2026-08-v1",
+  version: "freitas-py-meem-brucki-2026-09-v2",
   name: "MEEM — Miniexame do Estado Mental",
   dimension: "cognicao",
-  instruction: "Aplicar os itens do formulário Freitas/Py e registrar os subtotais. A escolaridade é registrada separadamente porque influencia fortemente o desempenho no MEEM brasileiro.",
-  sourceNote: "Freitas/Py Tabela A.11 para o formulário; Brucki et al. 2003 para referências educacionais brasileiras (medianas normativas, não pontos diagnósticos).",
+  instruction: "Aplicar os itens do formulário autorizado e registrar cada subtotal cognitivo. O servidor soma 0–30. A escolaridade é registrada separadamente e modifica a interpretação de referência, sem alterar matematicamente o escore bruto.",
+  sourceNote: "Estrutura de pontuação do MEEM/MMSE por subtotais; Brucki et al. 2003 para referências educacionais brasileiras (medianas normativas, não pontos diagnósticos). A reprodução eletrônica detalhada permanece condicionada à licença/permissão aplicável configurada no prontuário.",
   questions: [
     { id: "time", label: "Orientação temporal", number: numeric(0, 5) },
     { id: "place", label: "Orientação espacial", number: numeric(0, 5) },
-    { id: "registration", label: "Registro imediato de três palavras", number: numeric(0, 3) },
-    { id: "attention", label: "Atenção e cálculo", number: numeric(0, 5) },
-    { id: "recall", label: "Evocação tardia", number: numeric(0, 3) },
-    { id: "language", label: "Linguagem e praxia", number: numeric(0, 9) },
+    { id: "registration", label: "Registro imediato", number: numeric(0, 3) },
+    { id: "attention", label: "Cálculo ou palavra / atenção", number: numeric(0, 5) },
+    { id: "recall", label: "Memória recente / evocação", number: numeric(0, 3) },
+    { id: "naming", label: "Nomeação", number: numeric(0, 2) },
+    { id: "repetition", label: "Repetição", number: numeric(0, 1) },
+    { id: "writing", label: "Escrever uma frase", number: numeric(0, 1) },
+    { id: "commands", label: "Comandos em três etapas", number: numeric(0, 3) },
+    { id: "reading", label: "Ler e executar", number: numeric(0, 1) },
+    { id: "diagram_copy", label: "Copiar diagrama", number: numeric(0, 1) },
     { id: "education", label: "Escolaridade para referência interpretativa", choices: educationChoices },
   ],
 };
@@ -59,8 +64,8 @@ export const CLOCK_SHULMAN: CognitiveScaleDefinition = {
   version: "clock-shulman-0-5-br-2026-08-v1",
   name: "Teste do desenho do relógio — Shulman 0–5",
   dimension: "cognicao",
-  instruction: "Aplicar o desenho do relógio conforme a máscara disponível no Freitas/Py e classificar o desenho pela escala Shulman de 0 a 5. Esta versão é separada do relógio usado no Mini-Cog e do item do MoCA.",
-  sourceNote: "Freitas/Py fornece a máscara; Fuzikawa et al. (Bambuí) validaram a confiabilidade do método Shulman em idosos brasileiros: 4–5 normal e 0–3 alterado.",
+  instruction: "Aplicar o desenho do relógio conforme a máscara disponível e classificar o desenho pela escala Shulman de 0 a 5. Esta versão é separada do relógio usado no Mini-Cog e do item do MoCA.",
+  sourceNote: "Fuzikawa et al. (Bambuí) validaram a confiabilidade do método Shulman em idosos brasileiros: 4–5 normal e 0–3 alterado.",
   questions: [
     { id: "score", label: "Pontuação Shulman", choices: [
       choice(0, "0 — Não representa um relógio razoável"),
@@ -75,11 +80,11 @@ export const CLOCK_SHULMAN: CognitiveScaleDefinition = {
 
 export const MOCA_BR_FREITAS: CognitiveScaleDefinition = {
   code: "moca_br_freitas",
-  version: "freitas-py-moca-br-experimental-2026-08-v1",
-  name: "MoCA — versão brasileira do Freitas/Py",
+  version: "freitas-py-moca-br-experimental-2026-09-v2",
+  name: "MoCA — versão brasileira",
   dimension: "cognicao",
-  instruction: "Aplicar a folha MoCA reproduzida no Freitas/Py e registrar os subtotais por domínio. O servidor soma 0–30 e adiciona 1 ponto quando a escolaridade é ≤12 anos, sem ultrapassar 30.",
-  sourceNote: "Freitas/Py Figura A.3 para formulário e correção educacional. Memória et al. validaram MoCA-BR em idosos com ≥4 anos de escolaridade; estudos brasileiros posteriores mostram que o ponto de corte varia com escolaridade.",
+  instruction: "Aplicar a versão brasileira autorizada do MoCA e registrar os subtotais por domínio. O servidor soma 0–30 e adiciona 1 ponto quando a escolaridade é ≤12 anos, sem ultrapassar 30.",
+  sourceNote: "MoCA-BR: subtotais por domínio e correção educacional de +1 ponto para ≤12 anos, limitada a 30. Memória et al. validaram MoCA-BR em idosos com ≥4 anos de escolaridade; estudos brasileiros posteriores mostram que o ponto de corte varia com escolaridade. A reprodução eletrônica detalhada permanece condicionada à licença/permissão aplicável configurada no prontuário.",
   questions: [
     { id: "visuospatial", label: "Visuoespacial / executiva", number: numeric(0, 5) },
     { id: "naming", label: "Nomeação", number: numeric(0, 3) },
@@ -88,7 +93,20 @@ export const MOCA_BR_FREITAS: CognitiveScaleDefinition = {
     { id: "abstraction", label: "Abstração", number: numeric(0, 2) },
     { id: "delayed_recall", label: "Evocação tardia sem pistas", number: numeric(0, 5) },
     { id: "orientation", label: "Orientação", number: numeric(0, 6) },
-    { id: "education_years", label: "Anos completos de escolaridade", number: numeric(0, 40, 1, "Usado somente para a correção de +1 ponto quando ≤12 anos e para contextualizar a interpretação.") },
+    { id: "education_years", label: "Anos completos de escolaridade", number: numeric(0, 40, 1, "Usado para a correção de +1 ponto quando ≤12 anos e para contextualizar a interpretação.") },
+  ],
+};
+
+export const VERBAL_FLUENCY_ANIMALS: CognitiveScaleDefinition = {
+  code: "verbal_fluency_animals",
+  version: "verbal-fluency-animals-br-2026-09-v1",
+  name: "Fluência verbal semântica — animais",
+  dimension: "cognicao",
+  instruction: "Registrar o número de nomes de animais produzidos em 60 segundos e os anos completos de escolaridade. O prontuário registra o desempenho e o incorpora ao perfil cognitivo, sem aplicar um ponto de corte universal automático.",
+  sourceNote: "Radanovic et al. 2009 (PMID 19619390) demonstraram influência da escolaridade e utilidade da fluência semântica na discriminação de doença de Alzheimer em amostra brasileira. O sistema preserva o valor bruto e evita um corte universal não sustentado para todas as escolaridades e contextos.",
+  questions: [
+    { id: "animal_count", label: "Animais nomeados em 60 segundos", number: numeric(0, 100, 1, "Conte apenas respostas válidas e não duplicadas conforme a aplicação clínica.") },
+    { id: "education_years", label: "Anos completos de escolaridade", number: numeric(0, 40, 1, "A escolaridade influencia o desempenho e deve acompanhar a interpretação.") },
   ],
 };
 
@@ -112,7 +130,7 @@ export const IQCODE_BR_26: CognitiveScaleDefinition = {
   questions: iqcodeLabels.map((label, index) => ({ id: `i${index + 1}`, label, choices: iqcodeChoice })),
 };
 
-export const COGNITIVE_FREITAS_SCALES = [MINICOG_FREITAS, MEEM_FREITAS, CLOCK_SHULMAN, MOCA_BR_FREITAS, IQCODE_BR_26] as const;
+export const COGNITIVE_FREITAS_SCALES = [MINICOG_FREITAS, MEEM_FREITAS, CLOCK_SHULMAN, MOCA_BR_FREITAS, VERBAL_FLUENCY_ANIMALS, IQCODE_BR_26] as const;
 
 function strictAnswers(definition: CognitiveScaleDefinition, raw: Record<string, unknown>): Record<string, number> {
   const allowed = new Set(definition.questions.map((q) => q.id));
@@ -148,7 +166,7 @@ export function scoreCognitiveFreitasScale(code: CognitiveFreitasScaleCode, raw:
     const score = total(answers, ["education"]);
     const reference: Record<number, number> = { 0:20, 1:25, 5:26.5, 9:28, 12:29 };
     const median = reference[answers.education];
-    return { answers, version: definition.version, result: { score, scoreText: `${score}/30`, classification: score < median ? "Abaixo da mediana de referência educacional" : "Na ou acima da mediana de referência educacional", interpretation: `Referência Brucki para a faixa educacional registrada: mediana ${median}/30 em adultos saudáveis. Essa comparação é contextual e não constitui ponto diagnóstico de demência.` } };
+    return { answers, version: definition.version, result: { score, scoreText: `${score}/30`, classification: score < median ? "Abaixo da mediana de referência educacional" : "Na ou acima da mediana de referência educacional", interpretation: `MEEM bruto ${score}/30. Referência Brucki para a faixa educacional registrada: mediana ${median}/30 em adultos saudáveis. A escolaridade contextualiza a interpretação e não altera o escore bruto. Essa comparação não constitui ponto diagnóstico de demência.` } };
   }
 
   if (code === "clock_shulman") {
@@ -171,7 +189,21 @@ export function scoreCognitiveFreitasScale(code: CognitiveFreitasScaleCode, raw:
       classification = score < 20 ? "Rastreio cognitivo alterado para a referência educacional adotada" : "Acima do ponto de rastreio educacional adotado";
       interpretation += "Em estudo brasileiro com estratificação educacional, escore <20 para >12 anos indicou necessidade de investigação cognitiva adicional. Não estabelece diagnóstico.";
     }
-    return { answers, version: definition.version, result: { score, scoreText: `${score}/30`, classification, interpretation } };
+    return { answers, version: definition.version, result: { score, scoreText: `Bruto ${rawScore}/30 · corrigido ${score}/30`, classification, interpretation } };
+  }
+
+  if (code === "verbal_fluency_animals") {
+    const score = answers.animal_count;
+    return {
+      answers,
+      version: definition.version,
+      result: {
+        score,
+        scoreText: `${score} animais/60 s`,
+        classification: "Fluência verbal semântica registrada",
+        interpretation: `Foram registrados ${score} animais em 60 segundos, com ${answers.education_years} ano(s) completos de escolaridade. A escolaridade influencia o desempenho e a evidência brasileira apoia o uso da tarefa no rastreio cognitivo, mas o prontuário não aplica um ponto de corte universal automático. Interpretar no perfil cognitivo e no contexto clínico; não estabelece etiologia ou diagnóstico isoladamente.`,
+      },
+    };
   }
 
   const score = Math.round((total(answers) / 26) * 100) / 100;
