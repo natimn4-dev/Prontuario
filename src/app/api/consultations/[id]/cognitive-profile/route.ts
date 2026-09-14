@@ -6,8 +6,7 @@ import {
   type DementiaInterpretationForProfile,
 } from "@/domain/cognitive-domain-profile";
 import { scaleConsultationHorizonIds } from "@/domain/scale-consultation-horizon";
-import { requireConsultationAccess } from "@/server/auth/patient-access";
-import { requireAuthenticatedUser } from "@/server/auth/require-user";
+import { withConsultationPatientAccess } from "@/server/auth/consultation-route-guard";
 import { prisma } from "@/server/db";
 
 const COGNITIVE_SCALE_CODES = [
@@ -20,6 +19,8 @@ const COGNITIVE_SCALE_CODES = [
   "relogio",
   "verbal_fluency_animals",
 ] as const;
+
+const NO_STORE_HEADERS = { "Cache-Control": "private, no-store, max-age=0" };
 
 function asDementiaInterpretation(value: unknown): DementiaInterpretationForProfile | null {
   if (!value || typeof value !== "object" || Array.isArray(value)) return null;
@@ -46,23 +47,23 @@ function asDementiaInterpretation(value: unknown): DementiaInterpretationForProf
   return { ...(pathway ? { pathway } : {}), hypotheses };
 }
 
+function json(body: unknown, status = 200) {
+  return NextResponse.json(body, { status, headers: NO_STORE_HEADERS });
+}
+
 function failure(error: unknown) {
   const code = error instanceof Error ? error.message : "UNKNOWN";
   if (code === "CONSULTATION_NOT_FOUND") {
-    return NextResponse.json({ code, message: "Consulta não encontrada." }, { status: 404 });
+    return json({ code, message: "Consulta não encontrada." }, 404);
   }
-  return NextResponse.json(
+  return json(
     { code: "COGNITIVE_PROFILE_FAILED", message: "Não foi possível consolidar o perfil cognitivo." },
-    { status: 500 },
+    500,
   );
 }
 
-export async function GET(_request: Request, context: { params: Promise<{ id: string }> }) {
+async function buildProfileResponse(id: string) {
   try {
-    await requireAuthenticatedUser("patient.read");
-    const { id } = await context.params;
-    await requireConsultationAccess(id, "patient.read");
-
     const consultation = await prisma.consultation.findUnique({
       where: { id },
       select: {
@@ -160,7 +161,7 @@ export async function GET(_request: Request, context: { params: Promise<{ id: st
       ? synthesizeCognitiveEtiology(current.snapshot, dementiaInterpretation)
       : synthesizeCognitiveEtiology(buildCognitiveDomainSnapshot([]), dementiaInterpretation);
 
-    return NextResponse.json({
+    return json({
       consultationId: id,
       current,
       previous,
@@ -171,4 +172,9 @@ export async function GET(_request: Request, context: { params: Promise<{ id: st
   } catch (error) {
     return failure(error);
   }
+}
+
+export async function GET(_request: Request, context: { params: Promise<{ id: string }> }) {
+  const { id } = await context.params;
+  return withConsultationPatientAccess(id, () => buildProfileResponse(id));
 }
