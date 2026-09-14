@@ -54,6 +54,10 @@ const AdvanceDirectivesWorkspace = dynamic(
   () => import("@/components/consultations/advance-directives-workspace").then((module) => module.AdvanceDirectivesWorkspace),
   { ssr: false, loading: () => <WorkspaceLoading /> },
 );
+const CognitiveDomainProfileWorkspace = dynamic(
+  () => import("@/components/consultations/cognitive-domain-profile-workspace").then((module) => module.CognitiveDomainProfileWorkspace),
+  { ssr: false, loading: () => <WorkspaceLoading /> },
+);
 const DementiaAssessmentWorkspace = dynamic(
   () => import("@/components/consultations/dementia-assessment-workspace").then((module) => module.DementiaAssessmentWorkspace),
   { ssr: false, loading: () => <WorkspaceLoading /> },
@@ -207,6 +211,7 @@ export function ConsultationWorkspace({
 
         {visited.has("demencia") ? (
           <div id="demencia" hidden={active !== "demencia"} className={styles.panel}>
+            <CognitiveDomainProfileWorkspace consultationId={consultationId} />
             <DementiaAssessmentWorkspace consultationId={consultationId} />
           </div>
         ) : null}
