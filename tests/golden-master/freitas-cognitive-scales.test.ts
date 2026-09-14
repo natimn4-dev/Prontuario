@@ -24,12 +24,40 @@ test("Mini-Cog soma evocação 0–3 e relógio 0/2 com corte convencional 0–2
   assert.match(negative.result.classification, /não positivo/i);
 });
 
-test("MEEM totaliza 0–30 sem somar escolaridade e usa mediana apenas como referência", () => {
-  const answers = { time:5, place:5, registration:3, attention:5, recall:3, language:9, education:5 };
+test("MEEM expõe os 11 subtotais solicitados, totaliza 0–30 e não soma escolaridade", () => {
+  const definition = COGNITIVE_FREITAS_SCALES.find((item) => item.code === "meem_freitas")!;
+  assert.deepEqual(definition.questions.map((q) => q.id), [
+    "time", "place", "registration", "attention", "recall", "naming", "repetition",
+    "writing", "commands", "reading", "diagram_copy", "education",
+  ]);
+  const answers = {
+    time: 5,
+    place: 5,
+    registration: 3,
+    attention: 5,
+    recall: 3,
+    naming: 2,
+    repetition: 1,
+    writing: 1,
+    commands: 3,
+    reading: 1,
+    diagram_copy: 1,
+    education: 5,
+  };
   const result = scoreCognitiveFreitasScale("meem_freitas", answers);
   assert.equal(result.result.score, 30);
+  assert.match(result.result.interpretation, /MEEM bruto 30\/30/i);
   assert.match(result.result.interpretation, /mediana 26.5\/30/i);
+  assert.match(result.result.interpretation, /não altera o escore bruto/i);
   assert.match(result.result.interpretation, /não constitui ponto diagnóstico/i);
+});
+
+test("MEEM aceita mínimo zero em todos os domínios sem transformar escolaridade em ponto", () => {
+  const result = scoreCognitiveFreitasScale("meem_freitas", {
+    time: 0, place: 0, registration: 0, attention: 0, recall: 0, naming: 0,
+    repetition: 0, writing: 0, commands: 0, reading: 0, diagram_copy: 0, education: 12,
+  });
+  assert.equal(result.result.score, 0);
 });
 
 test("relógio Shulman mantém 4–5 normal e 0–3 alterado", () => {
@@ -41,6 +69,7 @@ test("MoCA aplica correção educacional sem ultrapassar 30 e não cria corte ab
   const full = { visuospatial:5,naming:3,attention:6,language:3,abstraction:2,delayed_recall:5,orientation:6,education_years:8 };
   const max = scoreCognitiveFreitasScale("moca_br_freitas", full);
   assert.equal(max.result.score, 30);
+  assert.match(max.result.scoreText, /Bruto 30\/30 · corrigido 30\/30/);
   assert.match(max.result.interpretation, /correção educacional \+1/i);
 
   const lowEducation = scoreCognitiveFreitasScale("moca_br_freitas", { ...full, visuospatial:1, education_years:2 });
@@ -49,6 +78,16 @@ test("MoCA aplica correção educacional sem ultrapassar 30 e não cria corte ab
   const fourToTwelve = scoreCognitiveFreitasScale("moca_br_freitas", { ...full, visuospatial:0,naming:0,attention:4,language:2,abstraction:1,delayed_recall:4,orientation:5,education_years:8 });
   assert.equal(fourToTwelve.result.score, 17);
   assert.match(fourToTwelve.result.classification, /alterado/i);
+});
+
+test("fluência verbal registra animais por 60 segundos com escolaridade sem corte universal automático", () => {
+  const result = scoreCognitiveFreitasScale("verbal_fluency_animals", { animal_count: 12, education_years: 4 });
+  assert.equal(result.result.score, 12);
+  assert.equal(result.result.scoreText, "12 animais/60 s");
+  assert.match(result.result.classification, /registrada/i);
+  assert.match(result.result.interpretation, /escolaridade influencia/i);
+  assert.match(result.result.interpretation, /não aplica um ponto de corte universal automático/i);
+  assert.doesNotMatch(result.result.classification, /demência|alzheimer|alterad/i);
 });
 
 test("IQCODE-Br 26 calcula média 1–5 e usa 3,52 somente como referência de rastreio", () => {
@@ -68,5 +107,9 @@ test("IQCODE-Br 26 calcula média 1–5 e usa 3,52 somente como referência de r
 test("escalas cognitivas rejeitam respostas extras, faltantes e fora da faixa", () => {
   assert.throws(() => scoreCognitiveFreitasScale("minicog_freitas", { recall:3, clock:2, forged:1 }), /não permitida/);
   assert.throws(() => scoreCognitiveFreitasScale("minicog_freitas", { recall:3 }), /clock/);
-  assert.throws(() => scoreCognitiveFreitasScale("meem_freitas", { time:6, place:5, registration:3, attention:5, recall:3, language:9, education:5 }), /time/);
+  assert.throws(() => scoreCognitiveFreitasScale("meem_freitas", {
+    time: 6, place:5, registration:3, attention:5, recall:3, naming:2,
+    repetition:1, writing:1, commands:3, reading:1, diagram_copy:1, education:5,
+  }), /time/);
+  assert.throws(() => scoreCognitiveFreitasScale("verbal_fluency_animals", { animal_count: 101, education_years: 4 }), /animal_count/);
 });
