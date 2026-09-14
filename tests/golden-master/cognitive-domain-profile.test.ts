@@ -69,7 +69,16 @@ test("MEEM é decomposto por dimensão sem transformar subtotal em diagnóstico"
 test("MoCA incorpora visuoespacial, nomeação, atenção, linguagem, abstração, evocação e orientação", () => {
   const snapshot = buildCognitiveDomainSnapshot([moca({ visuospatial: 3, abstraction: 1 })]);
   const keys = new Set(snapshot.domains.map((item) => item.key));
-  for (const key of ["executive_visuospatial", "naming", "attention_working_memory", "language", "abstraction", "delayed_recall", "orientation_global"]) {
+  const expectedDomains = [
+    "executive_visuospatial",
+    "naming",
+    "attention_working_memory",
+    "language",
+    "abstraction",
+    "delayed_recall",
+    "orientation_global",
+  ] as const;
+  for (const key of expectedDomains) {
     assert.ok(keys.has(key), key);
   }
   assert.equal(snapshot.domains.find((item) => item.key === "executive_visuospatial")?.status, "ERRORS_PRESENT");
