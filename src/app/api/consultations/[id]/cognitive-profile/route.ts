@@ -31,9 +31,14 @@ function asDementiaInterpretation(value: unknown): DementiaInterpretationForProf
     if (!item || typeof item !== "object" || Array.isArray(item)) return [];
     const hypothesis = item as Record<string, unknown>;
     const support = hypothesis.support;
-    const supportLevel = support === "LOW" || support === "MODERATE" || support === "HIGH"
-      ? support
-      : null;
+    const supportLevel: "LOW" | "MODERATE" | "HIGH" | null =
+      support === "LOW"
+        ? "LOW"
+        : support === "MODERATE"
+          ? "MODERATE"
+          : support === "HIGH"
+            ? "HIGH"
+            : null;
     if (
       typeof hypothesis.etiology !== "string"
       || typeof hypothesis.label !== "string"
