@@ -1,3 +1,5 @@
+import type { DietaryGuidance } from "./dietary-guidance.js";
+
 export type DietaryNutrients = {
   energyKcal: number;
   proteinG: number;
