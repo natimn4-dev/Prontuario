@@ -125,6 +125,7 @@ export function DietaryAssessmentWorkspace({ consultationId, patientName }: { co
   const [loading, setLoading] = useState(true);
   const [searching, setSearching] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [dirty, setDirty] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
@@ -149,7 +150,7 @@ export function DietaryAssessmentWorkspace({ consultationId, patientName }: { co
       const body = await response.json() as LoadPayload & { error?: string };
       if (!response.ok) throw new Error(body.error ?? "Não foi possível carregar a avaliação alimentar.");
       const saved = body.assessment?.clinicalContext;
-      setData(body); setMeals(draftMeals(body.assessment)); setTargets(body.assessment?.targets ?? {});
+      setData(body); setMeals(draftMeals(body.assessment)); setTargets(body.assessment?.targets ?? {}); setDirty(false);
       setWeightOverride(saved?.weightSource === "clinician" && saved.weightKg ? String(saved.weightKg) : "");
       setRenalEgfr(saved?.renalEgfrMlMinPer1_73 == null ? "" : String(saved.renalEgfrMlMinPer1_73));
       setRenalDialysis(Boolean(saved?.renalDialysis)); setDialysisModality(saved?.renalDialysisModality ?? null);
@@ -164,15 +165,21 @@ export function DietaryAssessmentWorkspace({ consultationId, patientName }: { co
   }
   useEffect(() => { void load(); }, [consultationId]);
 
+  useEffect(() => {
+    if (!dirty || !data || loading || saving || data.status === "FINALIZED") return;
+    const timer = window.setTimeout(() => void save({ silent: true }), 1200);
+    return () => window.clearTimeout(timer);
+  }, [dirty, data, loading, saving, meals, targets, weightOverride, renalEgfr, renalDialysis, dialysisModality, renalVeryLowProteinDiet, vlpdConfirmed, malnutrition, involuntaryWeightLoss, acuteIllness, orientationDraft, orientationReviewed, includeInSoap, includeInReport]);
+
   function patchTarget(key: TargetKey, value: string) {
-    setTargets((current) => ({ ...current, [key]: numberOrNull(value), ...(key.startsWith("protein") ? { proteinTargetSource: "clinician-manual" as const, proteinTargetReference: null } : {}) }));
+    setDirty(true); setTargets((current) => ({ ...current, [key]: numberOrNull(value), ...(key.startsWith("protein") ? { proteinTargetSource: "clinician-manual" as const, proteinTargetReference: null } : {}) }));
   }
   function applyRenalReference() {
     if (renalReference?.proteinGPerKgMin == null || renalReference.proteinGPerKgMax == null) return;
-    setTargets((current) => ({ ...current, proteinGPerKgMin: renalReference.proteinGPerKgMin, proteinGPerKgMax: renalReference.proteinGPerKgMax, proteinTargetSource: "reference-suggestion", proteinTargetReference: renalReference.label }));
+    setDirty(true); setTargets((current) => ({ ...current, proteinGPerKgMin: renalReference.proteinGPerKgMin, proteinGPerKgMax: renalReference.proteinGPerKgMax, proteinTargetSource: "reference-suggestion", proteinTargetReference: renalReference.label }));
   }
   function patchItem(targetMealId: string, itemId: string, patch: Partial<UiDietaryItem>) {
-    setMeals((current) => current.map((meal) => meal.id !== targetMealId ? meal : ({ ...meal, items: meal.items.map((item) => {
+    setDirty(true); setMeals((current) => current.map((meal) => meal.id !== targetMealId ? meal : ({ ...meal, items: meal.items.map((item) => {
       if (item.id !== itemId) return item;
       const next = { ...item, ...patch };
       if (patch.measure === "g") next.grams = next.quantity;
@@ -182,7 +189,7 @@ export function DietaryAssessmentWorkspace({ consultationId, patientName }: { co
       return { ...next, ...metadata };
     }) })));
   }
-  const removeItem = (targetMealId: string, itemId: string) => setMeals((current) => current.map((meal) => meal.id === targetMealId ? { ...meal, items: meal.items.filter((item) => item.id !== itemId) } : meal));
+  const removeItem = (targetMealId: string, itemId: string) => { setDirty(true); setMeals((current) => current.map((meal) => meal.id === targetMealId ? { ...meal, items: meal.items.filter((item) => item.id !== itemId) } : meal)); };
 
   async function searchFoods(query = foodQuery) {
     const trimmed = query.trim(); if (trimmed.length < 2) return;
@@ -216,11 +223,11 @@ export function DietaryAssessmentWorkspace({ consultationId, patientName }: { co
       food: { provider: selectedFood.provider, sourceId: selectedFood.sourceId, description: selectedFood.description, dataType: selectedFood.dataType },
       qualityFlags, observation: observation.trim() || undefined,
     };
-    setMeals((current) => current.map((meal) => meal.id === mealId ? { ...meal, items: [...meal.items, item] } : meal));
+    setDirty(true); setMeals((current) => current.map((meal) => meal.id === mealId ? { ...meal, items: [...meal.items, item] } : meal));
     setSelectedFood(null); setFoodResults([]); setFoodQuery(""); setQuantity(""); setMeasure("g"); setGrams(""); setObservation(""); setQualityFlags([]);
   }
 
-  async function save() {
+  async function save(options: { silent?: boolean } = {}) {
     if (!data) return;
     setSaving(true); setError(null); setMessage(null);
     const clinicianWeight = numberOrNull(weightOverride);
@@ -238,7 +245,7 @@ export function DietaryAssessmentWorkspace({ consultationId, patientName }: { co
       const response = await fetch(`/api/consultations/${consultationId}/dietary-assessment`, { method: "PUT", headers: { "content-type": "application/json" }, body: JSON.stringify({ expectedUpdatedAt: data.updatedAt, assessment: payload }) });
       const body = await response.json() as { error?: string };
       if (!response.ok) throw new Error(body.error ?? "Não foi possível salvar a avaliação alimentar.");
-      setMessage("Avaliação alimentar salva. Nutrientes e metadados de porção foram revalidados no servidor."); await load();
+      setDirty(false); if (!options.silent) setMessage("Avaliação alimentar salva. Nutrientes e metadados de porção foram revalidados no servidor."); await load();
     } catch (cause) { setError(cause instanceof Error ? cause.message : "Falha ao salvar avaliação alimentar."); }
     finally { setSaving(false); }
   }
@@ -259,7 +266,7 @@ export function DietaryAssessmentWorkspace({ consultationId, patientName }: { co
 
     <section className={styles.card} aria-labelledby="dietary-entry-title">
       <div className={styles.sectionHeading}><div><span>1</span><h4 id="dietary-entry-title">Relato alimentar</h4></div><small>Ausência não é zero e nenhuma porção recebe peso universal.</small></div>
-      <div className={styles.warning}><strong>Como registrar porções</strong><p>Ovos: registre unidades consumidas; para a referência de porção do módulo, 1 porção = 3 ovos. Não presumir que uma unidade corresponda à porção completa.</p><p>Carne, frango ou peixe: informe o número de pedaços ou o peso. “1 palmo” é apenas uma estimativa visual e deve ser confirmado quando possível. Leite, iogurte e queijo devem usar, respectivamente, 1 copo, 1 unidade e 2 fatias como referências de porção.</p><p>Exemplos: 1 filé de peixe = confirmar peso · 1 pedaço de frango = informar corte · 1 bife = confirmar peso · palma da mão = estimativa, não medida exata.</p></div>
+      <div className={styles.warning}><strong>Como registrar porções</strong><p>Ovos: registre unidades consumidas; para a referência de porção do módulo, 1 porção = 3 ovos. Não presumir que uma unidade corresponda à porção completa.</p><p>Carne, frango ou peixe: informe o número de pedaços ou o peso. “1 palmo” é apenas uma estimativa visual e deve ser confirmado quando possível. Leite, iogurte e queijo devem usar, respectivamente, 1 copo, 1 unidade e 2 fatias como referências de porção.</p><p>Exemplos: 1 filé de peixe = confirmar peso · 1 pedaço de frango = informar corte · 1 bife = confirmar peso · palma da mão = estimativa, não medida exata.</p><div className={styles.portionDefinitions} aria-label="Referências de porção">{DIETARY_PORTION_DEFINITIONS.map((item) => <span key={item.id}><strong>{item.label}:</strong> {item.description}</span>)}</div></div>
       <textarea className={styles.textarea} value={freeText} onChange={(event) => setFreeText(event.target.value)} placeholder="Ex.: 2 ovos; 1 filé de peixe; 3 colheres de arroz…" rows={3} />
       {parsedPhrases.length ? <div className={styles.parsedList}>{parsedPhrases.map((parsed, index) => <button key={`${parsed.raw}-${index}`} type="button" onClick={() => void useParsedPhrase(index)}><strong>{parsed.foodQuery || parsed.raw}</strong><span>{parsed.quantity ?? "?"} {parsed.measure ? MEASURE_LABELS[parsed.measure] : "medida a confirmar"}{parsed.issue ? ` · ${parsed.issue}` : ""}</span></button>)}</div> : null}
       <div className={styles.addGrid}>
