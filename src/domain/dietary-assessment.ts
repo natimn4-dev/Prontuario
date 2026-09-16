@@ -94,6 +94,8 @@ export type DietaryTargets = {
   note?: string;
 };
 
+export type DietaryAssessmentStatus = "DRAFT" | "IN_REVIEW" | "FINALIZED";
+
 export type DietaryClinicalContext = {
   ageYears?: number | null;
   sex?: string | null;
@@ -114,6 +116,19 @@ export type DietaryClinicalContext = {
   cancer?: boolean;
   dementia?: boolean;
   dysphagia?: boolean;
+  renalPotassiumMmolL?: number | null;
+  renalPhosphorusMgDl?: number | null;
+  serumBicarbonateMmolL?: number | null;
+  appetiteReduced?: boolean;
+  reducedIntake?: boolean;
+  hydrationMl?: number | null;
+  edema?: boolean;
+  heartFailure?: boolean;
+  reducedUrineOutput?: boolean;
+  hyponatremia?: boolean;
+  allergies?: string[];
+  intolerances?: string[];
+  dietaryRestrictions?: string[];
 };
 
 export type DietaryRenalProteinReference = {
@@ -189,6 +204,8 @@ export type DietaryAssessmentSnapshot = {
   confirmedAt: string;
   updatedAt: string;
   ruleTrace: DietaryRuleTrace[];
+  assessmentStatus?: DietaryAssessmentStatus;
+  conditionalGuidance?: DietaryGuidance[];
 };
 
 export const DIETARY_CLINICAL_REFERENCES = [
@@ -233,6 +250,42 @@ export const DIETARY_CLINICAL_REFERENCES = [
     citation: "KDIGO 2024 CKD Guideline Executive Summary",
     version: "2024",
     url: "https://kdigo.org/wp-content/uploads/2017/02/KDIGO-2024-CKD-Guideline-Executive-Summary.pdf",
+  },
+  {
+    id: "KDIGO-CKD-2024-PUBMED",
+    citation: "KDIGO 2024 Clinical Practice Guideline for Evaluation and Management of CKD",
+    version: "2024",
+    url: "https://pubmed.ncbi.nlm.nih.gov/38519239/",
+  },
+  {
+    id: "CKD-DIETARY-POTASSIUM-2020",
+    citation: "Dietary Potassium and Risk of CKD Progression",
+    version: "2020",
+    url: "https://pubmed.ncbi.nlm.nih.gov/32191264/",
+  },
+  {
+    id: "CKD-POTASSIUM-RESTRICTION-2019",
+    citation: "Dietary Potassium Restriction in CKD",
+    version: "2019",
+    url: "https://pubmed.ncbi.nlm.nih.gov/31734057/",
+  },
+  {
+    id: "CKD-PHOSPHORUS-SOURCES-2010",
+    citation: "Dietary Phosphorus and CKD: Organic, Inorganic, and Additive Sources",
+    version: "2010",
+    url: "https://pubmed.ncbi.nlm.nih.gov/20404416/",
+  },
+  {
+    id: "CKD-PROTEIN-PHOSPHORUS-2021",
+    citation: "Dietary Protein Source and Phosphorus in CKD",
+    version: "2021",
+    url: "https://pubmed.ncbi.nlm.nih.gov/34113962/",
+  },
+  {
+    id: "MEDITERRANEAN-DASH-2020",
+    citation: "Mediterranean and DASH Dietary Patterns in CKD",
+    version: "2020",
+    url: "https://pubmed.ncbi.nlm.nih.gov/32671570/",
   },
 ] as const;
 
