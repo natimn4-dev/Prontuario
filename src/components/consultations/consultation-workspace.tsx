@@ -186,7 +186,7 @@ export function ConsultationWorkspace({
 
         {visited.has("alimentacao") ? (
           <div id="alimentacao" hidden={active !== "alimentacao"} className={styles.panel}>
-            <DietaryAssessmentWorkspace consultationId={consultationId} />
+            <DietaryAssessmentWorkspace consultationId={consultationId} patientName={patientName} />
           </div>
         ) : null}
 
