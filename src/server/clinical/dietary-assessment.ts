@@ -18,6 +18,7 @@ import {
   type DietaryConfirmedMeal,
   type DietaryFoodComposition,
 } from "../../domain/dietary-assessment";
+import { buildConditionalDietaryGuidance, guidanceAsText } from "../../domain/dietary-guidance";
 import { requireConsultationAccess } from "../auth/patient-access";
 import { prisma } from "../db";
 
@@ -219,6 +220,11 @@ export async function saveDietaryAssessment(args: { consultationId: string; expe
     const { summary, proteinByMeal } = summarizeDietaryAssessment(meals, context.weightKg);
     const priorities = buildDietaryPriorities({ summary, proteinByMeal, targets: args.assessment.targets, context, meals });
     const generatedOrientation = buildDietaryOrientation({ priorities, context, meals, summary });
+    const conditionalGuidance = buildConditionalDietaryGuidance({
+      context,
+      items: meals.flatMap((meal) => meal.items),
+      summary,
+    });
     const renalReference = renalProteinReference(context);
     const proteinComparison = buildProteinComparison(summary, args.assessment.targets, context);
     const now = new Date().toISOString();
@@ -244,8 +250,8 @@ export async function saveDietaryAssessment(args: { consultationId: string; expe
       proteinByMeal,
       proteinComparison,
       priorities,
-      generatedOrientation,
-      orientationDraft: args.assessment.orientationDraft?.trim() || generatedOrientation,
+      generatedOrientation: [generatedOrientation, guidanceAsText(conditionalGuidance)].filter(Boolean).join("\n\n"),
+      orientationDraft: args.assessment.orientationDraft?.trim() || [generatedOrientation, guidanceAsText(conditionalGuidance)].filter(Boolean).join("\n\n"),
       orientationReviewed: Boolean(args.assessment.orientationReviewed),
       includeInReport: Boolean(args.assessment.includeInReport && args.assessment.orientationReviewed),
       includeInSoap: Boolean(args.assessment.includeInSoap && args.assessment.orientationReviewed),
@@ -253,6 +259,8 @@ export async function saveDietaryAssessment(args: { consultationId: string; expe
       confirmedAt: now,
       updatedAt: now,
       ruleTrace,
+      assessmentStatus: args.assessment.orientationReviewed ? "IN_REVIEW" : "DRAFT",
+      conditionalGuidance,
     };
 
     const base = consultation.assessment === null ? {} : consultation.assessment as Prisma.JsonObject;
