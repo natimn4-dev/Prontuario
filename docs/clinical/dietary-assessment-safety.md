@@ -50,3 +50,12 @@ A orientação final é organizada em quatro blocos: o que manter; o que melhora
 7. KDIGO 2024 CKD Guideline Executive Summary. https://kdigo.org/wp-content/uploads/2017/02/KDIGO-2024-CKD-Guideline-Executive-Summary.pdf
 
 As referências são sintetizadas em regras clínicas; trechos extensos não são reproduzidos. A decisão clínica final permanece com a profissional responsável.
+
+
+## Refatoração 2026-09-16
+
+A interface mantém o registro por porções, explicita as referências de medida — 3 ovos, palma da mão, 1 copo de leite, 1 unidade de iogurte e 2 fatias de queijo — e exibe a paciente e o status da avaliação no contexto da consulta.
+
+As orientações condicionais são sugestões rastreáveis e editáveis. Hiperpotassemia direciona revisão individualizada sem exclusão automática de frutas, verduras ou leguminosas; fósforo elevado direciona revisão de aditivos sem exclusão automática de leite e derivados; diálise usa fluxo proteico próprio; edema, insuficiência cardíaca, oligúria ou hiponatremia bloqueiam recomendação hídrica automática.
+
+A camada condicional utiliza os PMIDs 38519239, 32191264, 31734057, 20404416, 34113962 e 32671570, registrados no domínio e associados a cada orientação. Nenhuma orientação é promovida automaticamente a conduta no SOAP ou no relatório.
