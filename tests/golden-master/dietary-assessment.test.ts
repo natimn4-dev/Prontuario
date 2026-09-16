@@ -109,5 +109,5 @@ test("orientação separa revisão e não prescreve aumento renal automaticament
 test("fontes clínicas obrigatórias permanecem rastreáveis", () => {
   const urls = DIETARY_CLINICAL_REFERENCES.map((source) => source.url).join(" ");
   for (const token of ["32829751", "35306388", "8429287", "33650974", "32153884", "asbran.org.br", "KDIGO-2024"]) assert.match(urls, new RegExp(token, "i"));
-  assert.equal(DIETARY_CLINICAL_REFERENCES.length, 7);
+  assert.equal(DIETARY_CLINICAL_REFERENCES.length, 13);
 });
