@@ -16,19 +16,29 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
+          LAST_FAILURE_CLASS="UNAVAILABLE"
           for attempt in $(seq 1 30); do
-            BODY="$(curl -fsS --max-time 20 -H 'Cache-Control: no-cache' https://prontuario.nataliamendesgeriatra.com/api/health/auth)"
+            if ! BODY="$(curl -fsS --max-time 20 -H 'Cache-Control: no-cache' https://prontuario.nataliamendesgeriatra.com/api/health/auth)"; then
+              if [[ "$attempt" -lt 30 ]]; then
+                sleep 10
+                continue
+              fi
+              echo 'VIDAAS_FAILURE_CLASS=UNAVAILABLE'
+              exit 1
+            fi
             FAILURE_CLASS="$(printf '%s' "$BODY" | node -e 'let s="";process.stdin.on("data",d=>s+=d).on("end",()=>{const j=JSON.parse(s);const v=j.vidaasFailureClass;if(v!==null&&v!==undefined&&typeof v!=="string")process.exit(2);process.stdout.write(v??"NONE")})')"
             if [[ ! "$FAILURE_CLASS" =~ ^(NONE|TOKEN_HTTP_[0-9]{3}|SIGNATURE_HTTP_[0-9]{3}|SIGNED_DOCUMENT_MISSING|SIGNED_DOCUMENT_INVALID|SIGNED_DOCUMENT_RESPONSE|DOCUMENT_TOO_LARGE|UNSIGNED_DOCUMENT_INTEGRITY|TOKEN_RESPONSE|SIGNATURE_RESPONSE|OTHER)$ ]]; then
               echo 'VIDAAS_FAILURE_CLASS=UNEXPECTED_SANITIZED_VALUE'
               exit 1
             fi
-            if [[ "$FAILURE_CLASS" != "SIGNED_DOCUMENT_RESPONSE" ]]; then
-              echo "VIDAAS_FAILURE_CLASS=$FAILURE_CLASS"
+            if [[ "$FAILURE_CLASS" == "NONE" ]]; then
+              echo 'VIDAAS_FAILURE_CLASS=NONE'
               exit 0
             fi
+            LAST_FAILURE_CLASS="$FAILURE_CLASS"
             if [[ "$attempt" -lt 30 ]]; then
               sleep 10
             fi
           done
-          echo 'VIDAAS_FAILURE_CLASS=SIGNED_DOCUMENT_RESPONSE'
+          echo "VIDAAS_FAILURE_CLASS=$LAST_FAILURE_CLASS"
+          exit 1
