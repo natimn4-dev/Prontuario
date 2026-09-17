@@ -12,6 +12,7 @@ import {
   roundForDisplay,
   summarizeDietaryAssessment,
   validateDietaryInput,
+  dietarySnapshotNeedsRuleReview,
   type DietaryAssessmentInput,
   type DietaryConfirmedMeal,
   type DietaryNutrients,
@@ -110,4 +111,11 @@ test("fontes clínicas obrigatórias permanecem rastreáveis", () => {
   const urls = DIETARY_CLINICAL_REFERENCES.map((source) => source.url).join(" ");
   for (const token of ["32829751", "35306388", "8429287", "33650974", "32153884", "asbran.org.br", "KDIGO-2024"]) assert.match(urls, new RegExp(token, "i"));
   assert.equal(DIETARY_CLINICAL_REFERENCES.length, 13);
+});
+
+test("snapshot alimentar antigo exige revisão explícita sem ser apagado", () => {
+  const legacy = { assessmentStatus: undefined, conditionalGuidance: undefined } as never;
+  assert.equal(dietarySnapshotNeedsRuleReview(legacy), true);
+  assert.equal(dietarySnapshotNeedsRuleReview({ assessmentStatus: "DRAFT", conditionalGuidance: [] } as never), false);
+  assert.equal(dietarySnapshotNeedsRuleReview(null), false);
 });
