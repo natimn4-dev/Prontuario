@@ -210,6 +210,17 @@ export type DietaryAssessmentSnapshot = {
   conditionalGuidance?: DietaryGuidance[];
 };
 
+/**
+ * Snapshots anteriores à camada de orientação condicional permanecem válidos,
+ * mas precisam de revisão explícita antes de serem tratados como atuais.
+ * A função é deliberadamente conservadora: dados incompletos nunca são
+ * promovidos silenciosamente para uma versão nova.
+ */
+export function dietarySnapshotNeedsRuleReview(snapshot: DietaryAssessmentSnapshot | null | undefined): boolean {
+  if (!snapshot) return false;
+  return snapshot.assessmentStatus == null || !Array.isArray(snapshot.conditionalGuidance);
+}
+
 export const DIETARY_CLINICAL_REFERENCES = [
   {
     id: "KDOQI-2020",
