@@ -138,6 +138,7 @@ function validateAgainstDefinition(scaleCode: RequestScaleCode, answers: Record<
 
   for (const field of fields) {
     const value = answers[field.id];
+    if ((value === undefined || value === null || value === "") && (field as { optional?: boolean }).optional) continue;
     if ("number" in field && field.number) {
       if (typeof value !== "number" || !Number.isFinite(value) || value < field.number.min || value > field.number.max) {
         throw new Error(`Valor inválido para ${field.id}.`);

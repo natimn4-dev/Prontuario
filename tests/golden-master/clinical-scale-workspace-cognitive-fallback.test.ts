@@ -6,6 +6,7 @@ const quickMeem = { source: "complementary" as const, code: "meem", name: "MEEM 
 const quickMoca = { source: "complementary" as const, code: "moca", name: "MoCA — pontuação e escolaridade", dimension: "cognicao" };
 const detailedMeem = { source: "core" as const, code: "meem_freitas", name: "MEEM — Miniexame do Estado Mental", dimension: "cognicao" };
 const detailedMoca = { source: "core" as const, code: "moca_br_freitas", name: "MoCA — versão brasileira", dimension: "cognicao" };
+const cognitiveProfile = { source: "complementary" as const, code: "cognitive_domain_observation", name: "MEEM/MoCA — preenchimento por domínios", dimension: "cognicao" };
 
 test("MEEM detalhado presente suprime somente o fallback rápido de MEEM", () => {
   const options = buildClinicalScaleOptions([quickMeem, quickMoca, detailedMeem]);
@@ -30,6 +31,13 @@ test("sem definição detalhada licenciada o registro score-only permanece dispo
 test("definição detalhada desabilitada não remove fallback rápido", () => {
   const options = buildClinicalScaleOptions([quickMeem, { ...detailedMeem, disabled: true }]);
   assert.ok(options.some((item) => item.code === "meem"));
+});
+
+test("perfil por domínios substitui os cards score-only de MEEM e MoCA", () => {
+  const options = buildClinicalScaleOptions([quickMeem, quickMoca, cognitiveProfile]);
+  assert.ok(options.some((item) => item.code === "cognitive_domain_observation"));
+  assert.ok(!options.some((item) => item.code === "meem"));
+  assert.ok(!options.some((item) => item.code === "moca"));
 });
 
 test("fluência verbal cognitiva permanece exposta no workspace unificado", () => {

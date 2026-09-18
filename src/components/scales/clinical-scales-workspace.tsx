@@ -22,7 +22,7 @@ type CoreDefinition = {
   questions: readonly CoreQuestion[];
 };
 type ApplicationGuide = readonly { title: string; items: readonly string[] }[];
-type ComplementaryField = { id: string; label: string; choices?: readonly Choice[]; number?: NumericRule; display?: "checkbox" };
+type ComplementaryField = { id: string; label: string; choices?: readonly Choice[]; number?: NumericRule; display?: "checkbox"; optional?: boolean; instrument?: string };
 type ComplementaryDefinition = {
   code: string;
   version: string;
@@ -366,6 +366,7 @@ export function ClinicalScalesWorkspace({ consultationId }: { consultationId: st
     const output: Record<string, number | string> = {};
     for (const field of fields) {
       const raw = answers[field.id] ?? (field.display === "checkbox" ? "0" : "");
+      if (raw === "" && "optional" in field && field.optional) continue;
       if (raw === "") throw new Error(`Preencha ${field.label} antes de salvar.`);
       output[field.id] = parseFieldValue(raw, field);
     }
@@ -438,13 +439,16 @@ export function ClinicalScalesWorkspace({ consultationId }: { consultationId: st
   }
 
   function renderComplementary(definition: ComplementaryDefinition) {
+    const visibleFields = definition.code === "cognitive_domain_observation"
+      ? definition.fields.filter((field) => !field.instrument || field.instrument === answers.instrument || field.id === "instrument")
+      : definition.fields;
     return <>
       <p className={styles.instruction}>{definition.instruction}</p>
       {definition.applicationGuide?.length ? <details className={styles.guide}>
         <summary>Como aplicar e interpretar</summary>
         <div className={styles.guideGrid}>{definition.applicationGuide.map((section) => <section key={section.title}><h4>{section.title}</h4><ul>{section.items.map((item) => <li key={item}>{item}</li>)}</ul></section>)}</div>
       </details> : null}
-      <div className={styles.fields}>{definition.fields.map((field) => (
+      <div className={styles.fields}>{visibleFields.map((field) => (
         <div className={styles.field} key={field.id}><span className={styles.fieldLabel}>{field.label}</span>
           {fieldInput(field, answers[field.id] ?? (field.display === "checkbox" ? "0" : ""), finalized || saving, (value) => setAnswer(field.id, value))}
           {field.number?.help ? <small>{field.number.help}</small> : null}
