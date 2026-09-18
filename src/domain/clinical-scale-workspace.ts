@@ -107,10 +107,16 @@ function sourcePriority(input: ClinicalScaleOptionInput): number {
 function cognitiveFallbackSuppressed(input: ClinicalScaleOptionInput, inputs: readonly ClinicalScaleOptionInput[]): boolean {
   if (input.source !== "complementary") return false;
   if (input.code === "meem") {
-    return inputs.some((candidate) => candidate.source === "core" && candidate.code === "meem_freitas" && !candidate.disabled);
+    return inputs.some((candidate) =>
+      !candidate.disabled
+      && ((candidate.source === "core" && candidate.code === "meem_freitas")
+        || (candidate.source === "complementary" && candidate.code === "cognitive_domain_observation")));
   }
   if (input.code === "moca") {
-    return inputs.some((candidate) => candidate.source === "core" && candidate.code === "moca_br_freitas" && !candidate.disabled);
+    return inputs.some((candidate) =>
+      !candidate.disabled
+      && ((candidate.source === "core" && candidate.code === "moca_br_freitas")
+        || (candidate.source === "complementary" && candidate.code === "cognitive_domain_observation")));
   }
   return false;
 }

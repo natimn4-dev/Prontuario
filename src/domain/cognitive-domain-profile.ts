@@ -209,6 +209,37 @@ function observationsForScale(scale: CognitiveScaleInput): Array<{ key: Cognitiv
   };
 
   if (scale.scaleCode === "cognitive_domain_observation") {
+    const rawAnswers = scale.answers && typeof scale.answers === "object" && !Array.isArray(scale.answers)
+      ? scale.answers as Record<string, unknown>
+      : {};
+    const instrument = rawAnswers.instrument ?? "clinical_observation";
+    if (instrument === "meem") {
+      const subtotals: Array<[CognitiveDomainKey, string, number]> = [
+        ["orientation_temporal", "meem_orientation_temporal", 5],
+        ["orientation_global", "meem_orientation_spatial", 5],
+        ["immediate_memory", "meem_registration", 3],
+        ["attention_working_memory", "meem_attention", 5],
+        ["delayed_recall", "meem_recall", 3],
+        ["naming", "meem_naming", 2],
+        ["repetition", "meem_repetition", 1],
+        ["writing", "meem_writing", 1],
+        ["comprehension_commands", "meem_commands", 3],
+        ["reading", "meem_reading", 1],
+        ["executive_visuospatial", "meem_diagram_copy", 1],
+      ];
+      for (const [key, field, max] of subtotals) subtotal(key, field, max);
+    } else if (instrument === "moca") {
+      const subtotals: Array<[CognitiveDomainKey, string, number]> = [
+        ["executive_visuospatial", "moca_visuospatial", 5],
+        ["naming", "moca_naming", 3],
+        ["attention_working_memory", "moca_attention", 6],
+        ["language", "moca_language", 3],
+        ["abstraction", "moca_abstraction", 2],
+        ["delayed_recall", "moca_delayed_recall", 5],
+        ["orientation_global", "moca_orientation", 6],
+      ];
+      for (const [key, field, max] of subtotals) subtotal(key, field, max);
+    }
     const domainFields: Array<[CognitiveDomainKey, string]> = [
       ["orientation_global", "orientation"],
       ["immediate_memory", "immediate_memory"],
@@ -220,10 +251,7 @@ function observationsForScale(scale: CognitiveScaleInput): Array<{ key: Cognitiv
       ["comprehension_commands", "comprehension_commands"],
       ["abstraction", "abstraction"],
     ];
-    const rawAnswers = scale.answers && typeof scale.answers === "object" && !Array.isArray(scale.answers)
-      ? scale.answers as Record<string, unknown>
-      : {};
-    for (const [key, field] of domainFields) {
+    for (const [key, field] of instrument === "clinical_observation" ? domainFields : []) {
       const value = rawAnswers[field];
       if (value === "not_assessed" || value === undefined) continue;
       const altered = value === "change_observed";
