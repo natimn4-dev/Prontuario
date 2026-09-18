@@ -80,7 +80,7 @@ export async function GET(_request: Request, context: { params: Promise<{ id: st
         scaleCode: { in: availableCodes },
       },
       orderBy: [{ appliedAt: "desc" }, { id: "desc" }],
-      select: { id: true, consultationId: true, scaleCode: true, scaleVersion: true, scoreNumeric: true, scoreText: true, classification: true, interpretation: true, appliedAt: true },
+      select: { id: true, consultationId: true, scaleCode: true, scaleVersion: true, answers: true, scoreNumeric: true, scoreText: true, classification: true, interpretation: true, appliedAt: true },
     });
     return NextResponse.json({
       consultationId: id,

@@ -7,7 +7,7 @@ type DomainObservation = {
   scaleCode: string;
   scaleName: string;
   display: string;
-  status: "NO_RECORDED_ERROR" | "ERRORS_PRESENT" | "ALTERED_VALIDATED_RULE" | "RECORDED_NO_CUTOFF";
+  status: "NO_RECORDED_ERROR" | "ERRORS_PRESENT" | "ALTERED_VALIDATED_RULE" | "RECORDED_NO_CUTOFF" | "CLINICAL_ALTERATION_RECORDED";
   interpretation: string;
 };
 
@@ -84,6 +84,7 @@ const STATUS_LABELS: Record<DomainObservation["status"], string> = {
   ERRORS_PRESENT: "Erros presentes",
   ALTERED_VALIDATED_RULE: "Alterado pela regra do instrumento",
   RECORDED_NO_CUTOFF: "Registrado sem corte automático",
+  CLINICAL_ALTERATION_RECORDED: "Alteração clínica registrada",
 };
 
 const SUPPORT_LABELS: Record<NonNullable<Etiology["support"]>, string> = {

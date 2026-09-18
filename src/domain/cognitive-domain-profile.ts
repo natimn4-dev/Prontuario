@@ -19,7 +19,7 @@ export const COGNITIVE_DOMAIN_KEYS = [
 ] as const;
 
 export type CognitiveDomainKey = (typeof COGNITIVE_DOMAIN_KEYS)[number];
-export type CognitiveDomainStatus = "NO_RECORDED_ERROR" | "ERRORS_PRESENT" | "ALTERED_VALIDATED_RULE" | "RECORDED_NO_CUTOFF";
+export type CognitiveDomainStatus = "NO_RECORDED_ERROR" | "ERRORS_PRESENT" | "ALTERED_VALIDATED_RULE" | "RECORDED_NO_CUTOFF" | "CLINICAL_ALTERATION_RECORDED";
 export type CognitiveProfileCode = "INSUFFICIENT" | "AMNESTIC" | "EXECUTIVE_VISUOSPATIAL" | "LANGUAGE" | "MULTIDOMAIN";
 
 export type CognitiveScaleInput = {
@@ -120,6 +120,7 @@ const STATUS_WEIGHT: Readonly<Record<CognitiveDomainStatus, number>> = {
   NO_RECORDED_ERROR: 0,
   RECORDED_NO_CUTOFF: 1,
   ERRORS_PRESENT: 2,
+  CLINICAL_ALTERATION_RECORDED: 2,
   ALTERED_VALIDATED_RULE: 3,
 };
 
@@ -141,6 +142,7 @@ function subtotalInterpretation(value: number, max: number): string {
 }
 
 function scaleName(code: string): string {
+  if (code === "cognitive_domain_observation") return "Perfil cognitivo clínico";
   if (code === "meem_freitas" || code === "meem") return "MEEM";
   if (code === "moca_br_freitas" || code === "moca") return "MoCA";
   if (code === "clock_shulman" || code === "clock" || code === "relogio") return "Teste do Relógio";
@@ -148,7 +150,8 @@ function scaleName(code: string): string {
   return code;
 }
 
-function scaleFamily(code: string): "MEEM" | "MOCA" | "CLOCK" | "FLUENCY" | "OTHER" {
+function scaleFamily(code: string): "MEEM" | "MOCA" | "CLOCK" | "FLUENCY" | "PROFILE" | "OTHER" {
+  if (code === "cognitive_domain_observation") return "PROFILE";
   if (code === "meem_freitas" || code === "meem") return "MEEM";
   if (code === "moca_br_freitas" || code === "moca") return "MOCA";
   if (code === "clock_shulman" || code === "clock" || code === "relogio") return "CLOCK";
@@ -157,6 +160,7 @@ function scaleFamily(code: string): "MEEM" | "MOCA" | "CLOCK" | "FLUENCY" | "OTH
 }
 
 function scalePriority(code: string): number {
+  if (code === "cognitive_domain_observation") return 30;
   if (code === "meem_freitas" || code === "moca_br_freitas" || code === "clock_shulman" || code === "verbal_fluency_animals") return 20;
   if (code === "meem" || code === "moca" || code === "clock" || code === "relogio") return 10;
   return 0;
@@ -204,7 +208,39 @@ function observationsForScale(scale: CognitiveScaleInput): Array<{ key: Cognitiv
     items.push(observation(scale, key, value, max, statusFromSubtotal(value, max), subtotalInterpretation(value, max)));
   };
 
-  if (scale.scaleCode === "meem_freitas") {
+  if (scale.scaleCode === "cognitive_domain_observation") {
+    const domainFields: Array<[CognitiveDomainKey, string]> = [
+      ["orientation_global", "orientation"],
+      ["immediate_memory", "immediate_memory"],
+      ["delayed_recall", "delayed_recall"],
+      ["attention_working_memory", "attention_working_memory"],
+      ["executive_visuospatial", "executive_visuospatial"],
+      ["naming", "naming"],
+      ["language", "language"],
+      ["comprehension_commands", "comprehension_commands"],
+      ["abstraction", "abstraction"],
+    ];
+    const rawAnswers = scale.answers && typeof scale.answers === "object" && !Array.isArray(scale.answers)
+      ? scale.answers as Record<string, unknown>
+      : {};
+    for (const [key, field] of domainFields) {
+      const value = rawAnswers[field];
+      if (value === "not_assessed" || value === undefined) continue;
+      const altered = value === "change_observed";
+      const item = observation(
+        scale,
+        key,
+        altered ? 1 : 0,
+        undefined,
+        altered ? "CLINICAL_ALTERATION_RECORDED" : "NO_RECORDED_ERROR",
+        altered
+          ? "Alteração clínica registrada neste domínio. O achado é descritivo, não corresponde a subescore de MEEM ou MoCA e deve ser integrado ao contexto clínico."
+          : "Sem alteração observada neste domínio durante a avaliação registrada. Esse achado não exclui comprometimento cognitivo sutil.",
+      );
+      item.observation.display = altered ? "Alteração observada" : "Sem alteração observada";
+      items.push(item);
+    }
+  } else if (scale.scaleCode === "meem_freitas") {
     subtotal("orientation_temporal", "time", 5);
     subtotal("orientation_spatial", "place", 5);
     subtotal("immediate_memory", "registration", 3);
@@ -261,6 +297,8 @@ function summarizeDomain(key: CognitiveDomainKey, observations: CognitiveDomainO
     STATUS_WEIGHT[item.status] > STATUS_WEIGHT[best] ? item.status : best, "NO_RECORDED_ERROR");
   const interpretation = status === "ALTERED_VALIDATED_RULE"
     ? "Há alteração por uma regra validada do instrumento nesta dimensão. Correlacionar com os demais domínios e com o contexto clínico."
+    : status === "CLINICAL_ALTERATION_RECORDED"
+      ? "Há alteração clínica registrada nesta dimensão. O achado é descritivo e não equivale a subescore de instrumento ou diagnóstico."
     : status === "ERRORS_PRESENT"
       ? "Há erros registrados em pelo menos um item/subtotal desta dimensão. Isso descreve o padrão do rastreio, mas não define etiologia isoladamente."
       : status === "RECORDED_NO_CUTOFF"
@@ -270,7 +308,7 @@ function summarizeDomain(key: CognitiveDomainKey, observations: CognitiveDomainO
 }
 
 function hasError(domains: readonly CognitiveDomainSummary[], keys: readonly CognitiveDomainKey[]): boolean {
-  return domains.some((domain) => keys.includes(domain.key) && (domain.status === "ERRORS_PRESENT" || domain.status === "ALTERED_VALIDATED_RULE"));
+  return domains.some((domain) => keys.includes(domain.key) && (domain.status === "ERRORS_PRESENT" || domain.status === "ALTERED_VALIDATED_RULE" || domain.status === "CLINICAL_ALTERATION_RECORDED"));
 }
 
 function deriveProfile(domains: readonly CognitiveDomainSummary[]): { profile: CognitiveProfileCode; explanation: string } {

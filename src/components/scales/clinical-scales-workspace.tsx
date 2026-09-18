@@ -36,11 +36,13 @@ type ComplementaryDefinition = {
 type CoreView = {
   consultationStatus: "DRAFT" | "IN_REVIEW" | "FINALIZED";
   definitions: CoreDefinition[];
+  latest?: Array<{ scaleCode: string; answers?: unknown }>;
   licensingRestrictions?: Array<{ code: string; name: string }>;
 };
 type ComplementaryView = {
   consultationStatus: "DRAFT" | "IN_REVIEW" | "FINALIZED";
   definitions: ComplementaryDefinition[];
+  latest?: Array<{ scaleCode: string; answers?: unknown }>;
 };
 type CurrentAssessment = {
   id: string;
@@ -93,6 +95,14 @@ const INLINE_CHOICE_LIMIT = 6;
 
 function asDisplayValue(value: unknown): string {
   return value === null || value === undefined ? "" : String(value);
+}
+
+function storedAnswerStrings(value: unknown): Answers {
+  if (!value || typeof value !== "object" || Array.isArray(value)) return {};
+  return Object.fromEntries(Object.entries(value as Record<string, unknown>).flatMap(([key, item]) =>
+    typeof item === "string" || typeof item === "number" || typeof item === "boolean"
+      ? [[key, String(item)]]
+      : []));
 }
 
 function displayClinicalDate(value: string): string {
@@ -323,8 +333,13 @@ export function ClinicalScalesWorkspace({ consultationId }: { consultationId: st
       });
       return;
     }
-    setAnswers({});
-  }, [activeOption?.key, oncogeriatricPrefills]);
+    const stored = activeOption.source === "core"
+      ? coreView?.latest?.find((item) => item.scaleCode === activeOption.code)?.answers
+      : activeOption.source === "complementary"
+        ? complementaryView?.latest?.find((item) => item.scaleCode === activeOption.code)?.answers
+        : undefined;
+    setAnswers(storedAnswerStrings(stored));
+  }, [activeOption?.key, oncogeriatricPrefills, coreView?.latest, complementaryView?.latest]);
 
   function toggleScale(option: ClinicalScaleOption, checked: boolean) {
     if (option.disabled) return;

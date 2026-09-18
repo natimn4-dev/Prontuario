@@ -14,6 +14,7 @@ const COGNITIVE_SCALE_CODES = [
   "moca",
   "meem_freitas",
   "moca_br_freitas",
+  "cognitive_domain_observation",
   "clock_shulman",
   "clock",
   "relogio",
