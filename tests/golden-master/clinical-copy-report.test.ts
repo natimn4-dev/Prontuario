@@ -36,15 +36,25 @@ test("cópia de escalas contém apenas resultados efetivamente preenchidos e nun
 test("relatório combinado ordena SOAP, exames e escalas", () => {
   const text = renderSoapExamsScalesReport({
     soap: "S — SUBJETIVO\nRegistro clínico.",
+    problems: [
+      { type: "CLINICAL", status: "ACTIVE", title: "Hipertensão arterial" },
+      { type: "GERIATRIC", status: "RESOLVED", title: "Queda prévia" },
+    ],
     currentExams: "Exame atual validado.",
     examHistory: history,
     scaleResults: scales,
   });
   assert.ok(text.indexOf("S — SUBJETIVO") < text.indexOf("EXAMES DESTA CONSULTA"));
+  assert.ok(text.indexOf("LISTA DE PROBLEMAS") < text.indexOf("EXAMES DESTA CONSULTA"));
+  assert.match(text, /PROBLEMAS CLÍNICOS\n- Hipertensão arterial — Ativo/);
+  assert.match(text, /PROBLEMAS GERIÁTRICOS\n- Queda prévia — Resolvido/);
   assert.ok(text.indexOf("EXAMES DESTA CONSULTA") < text.indexOf("RESULTADOS DAS ESCALAS"));
 });
 
 test("se não houver exames ou escalas, a cópia não inventa seções vazias", () => {
-  const text = renderSoapExamsScalesReport({ soap: "SOAP", currentExams: "", examHistory: [], scaleResults: [] });
-  assert.equal(text, "SOAP");
+  const text = renderSoapExamsScalesReport({ soap: "SOAP", problems: [], currentExams: "", examHistory: [], scaleResults: [] });
+  assert.match(text, /^SOAP\n\nLISTA DE PROBLEMAS/);
+  assert.match(text, /PROBLEMAS CLÍNICOS\n- sem dados registrados/);
+  assert.match(text, /PROBLEMAS GERIÁTRICOS\n- sem dados registrados/);
+  assert.doesNotMatch(text, /EXAMES DESTA CONSULTA|RESULTADOS DAS ESCALAS/);
 });
