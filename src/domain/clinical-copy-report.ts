@@ -1,4 +1,6 @@
 import type { ClinicalExamHistoryItem } from "./consultation-exams.ts";
+import { problemStatusLabel } from "./accessible-report-language.ts";
+import type { ProblemStatus, ProblemType } from "./problems.ts";
 
 export interface CompletedScaleResult {
   scaleCode: string;
@@ -8,6 +10,12 @@ export interface CompletedScaleResult {
   classification?: string;
   interpretation?: string;
   appliedAt: string;
+}
+
+export interface CopyProblem {
+  type: ProblemType;
+  status: ProblemStatus;
+  title: string;
 }
 
 function formatDate(value: string): string {
@@ -60,14 +68,31 @@ export function renderCompletedScalesText(results: readonly CompletedScaleResult
   return lines.length > 0 ? ["RESULTADOS DAS ESCALAS PREENCHIDAS NESTA CONSULTA", ...lines].join("\n") : "";
 }
 
+function renderProblemGroup(title: string, problems: readonly CopyProblem[]): string {
+  const lines = problems.length > 0
+    ? problems.map((problem) => `- ${problem.title.trim() || "sem dados registrados"} — ${problemStatusLabel(problem.status)}`)
+    : ["- sem dados registrados"];
+  return [title, ...lines].join("\n");
+}
+
+export function renderProblemsText(problems: readonly CopyProblem[]): string {
+  return [
+    "LISTA DE PROBLEMAS",
+    renderProblemGroup("PROBLEMAS CLÍNICOS", problems.filter((problem) => problem.type === "CLINICAL")),
+    renderProblemGroup("PROBLEMAS GERIÁTRICOS", problems.filter((problem) => problem.type === "GERIATRIC")),
+  ].join("\n\n");
+}
+
 export function renderSoapExamsScalesReport(input: {
   soap: string;
+  problems: readonly CopyProblem[];
   currentExams: string;
   examHistory: readonly ClinicalExamHistoryItem[];
   scaleResults: readonly CompletedScaleResult[];
 }): string {
   return [
     input.soap.trim(),
+    renderProblemsText(input.problems),
     renderClinicalExamsText({ current: input.currentExams, history: input.examHistory }),
     renderCompletedScalesText(input.scaleResults),
   ].filter(Boolean).join("\n\n");

@@ -431,6 +431,7 @@ export function SoapEditor({ consultationId }: { consultationId: string }) {
     await copyText(
       renderSoapExamsScalesReport({
         soap: renderSoap(draft, view.problems, items),
+        problems: view.problems,
         currentExams: draft.examsText,
         examHistory: view.exams.history,
         scaleResults: asCompletedScaleResults(results),
