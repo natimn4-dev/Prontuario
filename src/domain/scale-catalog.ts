@@ -52,6 +52,7 @@ const METADATA = {
   cam: ["Confusion Assessment Method", "CAM", "cognicao"],
   moca: ["MoCA", "MoCA", "cognicao"],
   meem: ["MEEM", "MEEM", "cognicao"],
+  cognitive_domain_observation: ["Perfil cognitivo por domínios — registro clínico", "Perfil cognitivo", "cognicao"],
   dez_cs: ["10-CS", "10-CS", "cognicao"],
   frail_br: ["FRAIL-BR", "FRAIL-BR", "fragilidade"],
   sarcf: ["SARC-F", "SARC-F", "mobilidade"],

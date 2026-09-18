@@ -91,12 +91,12 @@ test("visão geral mostra MoCA conciso e explica ABVD/AIVD", () => {
   assert.ok(enrichment.overview.functionality.some((item) => item.label.includes("AIVD (atividades instrumentais da vida diária)")));
 });
 
-test("MoCA usa faixas familiares solicitadas sem transformar rastreio em diagnóstico", () => {
+test("MoCA preserva a interpretação educacional registrada sem criar gravidade diagnóstica", () => {
   const cases = [
-    { score: 27, state: "preserved", text: /Cognição normal no rastreio/i },
-    { score: 21, state: "attention", text: /comprometimento cognitivo leve/i },
-    { score: 15, state: "altered", text: /comprometimento cognitivo moderado/i },
-    { score: 8, state: "altered", text: /comprometimento cognitivo grave/i },
+    { score: 27, state: "preserved" },
+    { score: 21, state: "attention" },
+    { score: 15, state: "altered" },
+    { score: 8, state: "altered" },
   ] as const;
 
   for (const current of cases) {
@@ -107,14 +107,13 @@ test("MoCA usa faixas familiares solicitadas sem transformar rastreio em diagnó
         dimension: "cognicao",
         score: current.score,
         scoreText: `Bruto ${current.score}/30 · corrigido ${current.score}/30`,
-        classification: "Classificação educacional legada",
+        classification: "Abaixo da referência de rastreio educacional adotada",
       }),
     ], "cognicao");
 
     assert.equal(summary.state, current.state);
-    assert.match(summary.results[0]?.value ?? "", current.text);
-    assert.match(summary.results[0]?.value ?? "", /rastreio/i);
-    assert.doesNotMatch(summary.results[0]?.value ?? "", /Bruto|corrigido|Classificação educacional legada/i);
+    assert.match(summary.results[0]?.value ?? "", /rastreio educacional/i);
+    assert.doesNotMatch(summary.results[0]?.value ?? "", /comprometimento cognitivo (leve|moderado|grave)|CCL|MCI/i);
     if (current.score < 26) assert.notEqual(summary.stateLabel, "Sem alteração sinalizada nesta consulta");
   }
 });

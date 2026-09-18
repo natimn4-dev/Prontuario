@@ -13,6 +13,7 @@ import type {
   IntrinsicCapacityGuidance,
 } from "./intrinsic-capacity-guidance.ts";
 import { intrinsicCapacityGuidanceForDomain } from "./intrinsic-capacity-guidance.ts";
+import { COGNITIVE_DOMAIN_OBSERVATION_FIELDS } from "./cognitive-domain-observation.ts";
 
 export type ReportDomainState = "altered" | "attention" | "preserved" | "not-assessed";
 
@@ -276,17 +277,17 @@ function stateLabelFor(state: ReportDomainState): string {
   return "Não avaliado nesta consulta";
 }
 
-function mocaFamilyClassification(score: number): string {
-  if (score >= 26) return "Cognição normal no rastreio — sem indício de declínio significativo neste teste";
-  if (score >= 18) return "Faixa de rastreio: comprometimento cognitivo leve (CCL / MCI)";
-  if (score >= 10) return "Faixa de rastreio: comprometimento cognitivo moderado";
-  return "Faixa de rastreio: comprometimento cognitivo grave";
-}
-
 function familyResultValue(scale: AgaScaleReportSection): string {
-  if (isMocaScale(scale)) {
-    const score = scoreNumber(scale);
-    if (typeof score === "number") return `${score}/30 — ${mocaFamilyClassification(score)}`;
+  if (scale.code === "cognitive_domain_observation") {
+    const labels = new Map<string, string>(COGNITIVE_DOMAIN_OBSERVATION_FIELDS.map((field) => [field.id, field.label]));
+    const altered = scale.collectedData
+      .filter((item) => item.value === "change_observed")
+      .map((item) => labels.get(item.field) ?? item.field);
+    if (altered.length > 0) return `Alterações observadas: ${altered.join(", ")}. Registro descritivo, sem diagnóstico automático.`;
+    const assessed = scale.collectedData.filter((item) => item.value !== "not_assessed");
+    return assessed.length > 0
+      ? "Sem alteração observada nos domínios avaliados; o achado não exclui comprometimento sutil."
+      : "Domínios não avaliados nesta consulta.";
   }
   const score = scale.result.scoreText ?? (scale.result.score !== null ? String(scale.result.score) : undefined);
   return unique([score ?? "Resultado registrado", scale.result.classification ?? ""]).join(" — ");
@@ -294,6 +295,7 @@ function familyResultValue(scale: AgaScaleReportSection): string {
 
 function familyScaleName(scale: AgaScaleReportSection): string {
   if (isMocaScale(scale)) return "MoCA";
+  if (scale.code === "cognitive_domain_observation") return "Perfil cognitivo por domínios";
   if (scale.code === "lawton") return "AIVD — atividades instrumentais da vida diária (Lawton)";
   if (scale.code === "katz") return "ABVD — atividades básicas da vida diária (Katz)";
   if (scale.code === "barthel") return "ABVD — atividades básicas da vida diária (Barthel)";

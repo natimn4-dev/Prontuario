@@ -54,9 +54,9 @@ test("already structured item choices remain unchanged", () => {
   assert.equal(definition.fields[0]!.choices, choices);
 });
 
-test("complementary endpoint structures legacy discrete scales before appending MEEM, MoCA and ISI quick entries", () => {
+test("complementary endpoint structures legacy discrete scales before appending cognitive entries and ISI", () => {
   const route = readFileSync("src/app/api/consultations/[id]/scales/complementary/route.ts", "utf8");
   assert.match(route, /withStructuredScaleEntry/);
   assert.match(route, /\.map\(\(item\) => withStructuredScaleEntry\(item\)\)/);
-  assert.match(route, /\.\.\.COGNITIVE_QUICK_DEFINITIONS,\s*ISI_QUICK_DEFINITION/);
+  assert.match(route, /\.\.\.COGNITIVE_QUICK_DEFINITIONS,\s*COGNITIVE_DOMAIN_OBSERVATION_DEFINITION,\s*ISI_QUICK_DEFINITION/);
 });
