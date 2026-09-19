@@ -136,17 +136,25 @@ test("API e workspace devolvem as respostas persistidas para reabertura segura",
 
 
 test("MoCA aplica correção educacional e classifica todas as faixas de rastreio", () => {
-  const base = {
-    instrument: "moca",
-    moca_visuospatial: 5,
-    moca_naming: 3,
-    moca_attention: 6,
-    moca_language: 3,
-    moca_abstraction: 2,
-    moca_delayed_recall: 5,
-    moca_orientation: 6,
-    moca_education_years: 13,
-  } as const;
+  const make = (rawScore: number, educationYears = 13) => {
+    let remaining = rawScore;
+    const take = (max: number) => {
+      const value = Math.min(max, Math.max(0, remaining));
+      remaining -= value;
+      return value;
+    };
+    return scoreCognitiveDomainObservation({
+      instrument: "moca",
+      moca_visuospatial: take(5),
+      moca_naming: take(3),
+      moca_attention: take(6),
+      moca_language: take(3),
+      moca_abstraction: take(2),
+      moca_delayed_recall: take(5),
+      moca_orientation: take(6),
+      moca_education_years: educationYears,
+    });
+  };
 
   const cases = [
     { score: 26, expected: /Cognição Normal/i, color: "verde" },
@@ -158,25 +166,17 @@ test("MoCA aplica correção educacional e classifica todas as faixas de rastrei
   ] as const;
 
   for (const current of cases) {
-    const raw = { ...base, moca_delayed_recall: Math.max(0, 5 - (30 - current.score)) };
-    const scored = scoreCognitiveDomainObservation(raw);
+    const scored = make(current.score);
     assert.equal(scored.result.score, current.score);
     assert.match(scored.result.classification, current.expected);
     assert.equal(scored.result.clinicalColor, current.color);
   }
 
-  const educationAdjusted = scoreCognitiveDomainObservation({
-    ...base,
-    moca_delayed_recall: 4,
-    moca_education_years: 12,
-  });
+  const educationAdjusted = make(29, 12);
   assert.equal(educationAdjusted.result.score, 30);
   assert.match(educationAdjusted.result.scoreText, /bruto 29\/30.*corrigido 30\/30/i);
 
-  const capped = scoreCognitiveDomainObservation({
-    ...base,
-    moca_education_years: 12,
-  });
+  const capped = make(30, 12);
   assert.equal(capped.result.score, 30);
 });
 
