@@ -7,6 +7,10 @@ import {
   type ClinicalScaleOption,
 } from "@/domain/clinical-scale-workspace";
 import { ECOG_OPTIONS } from "@/domain/oncogeriatric-scales";
+import {
+  type ScopedWorkspaceValue,
+  visibleWorkspaceValue,
+} from "./scoped-workspace-state";
 import styles from "./clinical-scales-workspace.module.css";
 
 type Choice = { value: number | string; label: string };
@@ -89,6 +93,7 @@ type ResultPayload = {
 };
 
 type Answers = Record<string, string>;
+type Feedback = { kind: "error" | "success"; text: string };
 
 const EMPTY_PREFILLS: OncogeriatricPrefills = { meem: null, mnaSf: null, ecog: null };
 const INLINE_CHOICE_LIMIT = 6;
@@ -228,10 +233,10 @@ export function ClinicalScalesWorkspace({ consultationId }: { consultationId: st
   const [selectedKeys, setSelectedKeys] = useState<Set<string>>(new Set());
   const [activeKey, setActiveKey] = useState<string | null>(null);
   const [answers, setAnswers] = useState<Answers>({});
-  const [result, setResult] = useState<ResultPayload | null>(null);
+  const [resultState, setResultState] = useState<ScopedWorkspaceValue<ResultPayload>>(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
-  const [feedback, setFeedback] = useState<{ kind: "error" | "success"; text: string } | null>(null);
+  const [feedbackState, setFeedbackState] = useState<ScopedWorkspaceValue<Feedback>>(null);
   const [oncogeriatricReadWarning, setOncogeriatricReadWarning] = useState<string | null>(null);
 
   async function fetchJson<T>(url: string): Promise<T> {
@@ -249,7 +254,7 @@ export function ClinicalScalesWorkspace({ consultationId }: { consultationId: st
   useEffect(() => {
     let active = true;
     setLoading(true);
-    setFeedback(null);
+    setFeedbackState(null);
     Promise.all([
       fetchJson<CoreView>(`/api/consultations/${consultationId}/scales/freitas-core`),
       fetchJson<ComplementaryView>(`/api/consultations/${consultationId}/scales/complementary`),
@@ -261,7 +266,10 @@ export function ClinicalScalesWorkspace({ consultationId }: { consultationId: st
         setComplementaryView(complementary);
         setStatusView(status);
       })
-      .catch((error) => active && setFeedback({ kind: "error", text: error instanceof Error ? error.message : "Não foi possível carregar as escalas." }))
+      .catch((error) => active && setFeedbackState({
+        scopeKey: null,
+        value: { kind: "error", text: error instanceof Error ? error.message : "Não foi possível carregar as escalas." },
+      }))
       .finally(() => active && setLoading(false));
 
     fetchJson<OncogeriatricPrefills>(`/api/consultations/${consultationId}/scales/oncogeriatrics`)
@@ -298,6 +306,8 @@ export function ClinicalScalesWorkspace({ consultationId }: { consultationId: st
   const selectedOptions = useMemo(() => options.filter((option) => selectedKeys.has(option.key)), [options, selectedKeys]);
   const selectedGroups = useMemo(() => groupClinicalScaleOptions(selectedOptions), [selectedOptions]);
   const activeOption = useMemo(() => options.find((option) => option.key === activeKey) ?? null, [options, activeKey]);
+  const result = visibleWorkspaceValue(resultState, activeOption?.key ?? null);
+  const feedback = visibleWorkspaceValue(feedbackState, activeOption?.key ?? null);
   const currentAssessment = activeOption ? statusView?.latest.find((item) => item.scaleCode === activeOption.code) ?? null : null;
   const previousAssessment = activeOption ? previousByCode.get(activeOption.code) ?? null : null;
   const finalized = statusView?.consultationStatus === "FINALIZED";
@@ -311,8 +321,8 @@ export function ClinicalScalesWorkspace({ consultationId }: { consultationId: st
   }, [options, selectedKeys.size]);
 
   useEffect(() => {
-    setResult(null);
-    setFeedback(null);
+    setResultState(null);
+    setFeedbackState(null);
     if (!activeOption) {
       setAnswers({});
       return;
@@ -359,7 +369,7 @@ export function ClinicalScalesWorkspace({ consultationId }: { consultationId: st
 
   function setAnswer(id: string, value: string) {
     setAnswers((current) => ({ ...current, [id]: value }));
-    setFeedback(null);
+    setFeedbackState(null);
   }
 
   function preparedAnswers(fields: readonly (CoreQuestion | ComplementaryField)[]): Record<string, number | string> {
@@ -375,8 +385,9 @@ export function ClinicalScalesWorkspace({ consultationId }: { consultationId: st
 
   async function saveActive() {
     if (!activeOption || activeOption.disabled || saving || finalized) return;
+    const savingScaleKey = activeOption.key;
     setSaving(true);
-    setFeedback(null);
+    setFeedbackState(null);
     try {
       let url = "";
       let body: Record<string, unknown>;
@@ -414,12 +425,18 @@ export function ClinicalScalesWorkspace({ consultationId }: { consultationId: st
       const response = await fetch(url, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(body) });
       const payload = await response.json().catch(() => null) as { result?: ResultPayload; message?: string } | null;
       if (!response.ok || !payload) throw new Error(payload?.message ?? "Não foi possível salvar a avaliação.");
-      setResult(payload.result ?? null);
+      setResultState(payload.result ? { scopeKey: savingScaleKey, value: payload.result } : null);
       await refreshStatus();
-      setFeedback({ kind: "success", text: "Avaliação salva nesta consulta. O resultado permanece sujeito à revisão médica." });
+      setFeedbackState({
+        scopeKey: savingScaleKey,
+        value: { kind: "success", text: "Avaliação salva nesta consulta. O resultado permanece sujeito à revisão médica." },
+      });
       window.dispatchEvent(new CustomEvent("clinical-scales-changed", { detail: { consultationId } }));
     } catch (error) {
-      setFeedback({ kind: "error", text: error instanceof Error ? error.message : "Não foi possível salvar a avaliação." });
+      setFeedbackState({
+        scopeKey: savingScaleKey,
+        value: { kind: "error", text: error instanceof Error ? error.message : "Não foi possível salvar a avaliação." },
+      });
     } finally {
       setSaving(false);
     }
@@ -483,7 +500,10 @@ export function ClinicalScalesWorkspace({ consultationId }: { consultationId: st
   }
 
   if (loading) return <section className={styles.card}><p>Carregando escalas clínicas…</p></section>;
-  if (!coreView || !complementaryView || !statusView) return <section className={styles.card}><p role="alert">{feedback?.text ?? "Escalas clínicas indisponíveis."}</p></section>;
+  if (!coreView || !complementaryView || !statusView) {
+    const loadFeedback = visibleWorkspaceValue(feedbackState, null);
+    return <section className={styles.card}><p role="alert">{loadFeedback?.text ?? "Escalas clínicas indisponíveis."}</p></section>;
+  }
 
   const activeCore = activeOption?.source === "core" ? coreView.definitions.find((item) => item.code === activeOption.code) : null;
   const activeComplementary = activeOption?.source === "complementary" ? complementaryView.definitions.find((item) => item.code === activeOption.code) : null;
