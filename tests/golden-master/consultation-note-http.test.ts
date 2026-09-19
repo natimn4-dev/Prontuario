@@ -58,6 +58,7 @@ test("serialização SOAP v1 faz roundtrip sem criar assessment ou dados ausente
     anthropometry: undefined,
     vaccinationReview: undefined,
     planByProblem: { "problem-1": ["Ação sintética"] },
+    preventiveExamOrders: undefined,
   });
   assert.equal("assessment" in serialized, false);
 });
@@ -90,6 +91,7 @@ test("PUT deriva consultationId exclusivamente da rota e preserva controle de ve
     anthropometry: "Peso sintético",
     examsText: "Exames sintéticos",
     planByProblem: { "problem-1": ["Ação sintética"] },
+    preventiveExamOrders: ["MAMMOGRAPHY", "FOBT", "LABORATORY_TESTS"],
   }), "consultation-from-route");
 
   assert.equal(response.status, 200);
@@ -104,6 +106,7 @@ test("PUT deriva consultationId exclusivamente da rota e preserva controle de ve
       anthropometry: "Peso sintético",
       vaccinationReview: undefined,
       planByProblem: { "problem-1": ["Ação sintética"] },
+      preventiveExamOrders: ["LABORATORY_TESTS", "FOBT", "MAMMOGRAPHY"],
     },
     requestId: undefined,
   });
@@ -129,6 +132,21 @@ test("fronteira SOAP aceita revisão vacinal estruturada e rejeita prescrição 
         pendingVaccines: [],
         prescription: "aplicar hoje",
       },
+    }),
+    ConsultationNoteRequestError,
+  );
+});
+
+test("fronteira SOAP aceita somente opções enumeradas de exames e rastreios", () => {
+  const parsed = parseConsultationNoteUpdate({
+    expectedUpdatedAt: view.updatedAt,
+    preventiveExamOrders: ["MAMMOGRAPHY", "LABORATORY_TESTS"],
+  });
+  assert.deepEqual(parsed.fields.preventiveExamOrders, ["LABORATORY_TESTS", "MAMMOGRAPHY"]);
+  assert.throws(
+    () => parseConsultationNoteUpdate({
+      expectedUpdatedAt: view.updatedAt,
+      preventiveExamOrders: ["EXAM_NOT_IN_CATALOG"],
     }),
     ConsultationNoteRequestError,
   );

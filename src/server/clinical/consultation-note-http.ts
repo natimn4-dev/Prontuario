@@ -12,6 +12,10 @@ import {
   normalizeVaccinationReview,
   type VaccinationReview,
 } from "../../domain/vaccination-prevention.ts";
+import {
+  parsePreventiveExamOrders,
+  type PreventiveExamOrder,
+} from "../../domain/preventive-exam-orders.ts";
 
 const OPERATIONAL_REQUEST_ID = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 const NOTE_VERSION = /^[0-9a-f]{64}$/i;
@@ -127,6 +131,16 @@ function parseVaccinationReview(value: unknown): VaccinationReview | undefined {
   }
 }
 
+function parsePreventiveExamOrderSelection(value: unknown): PreventiveExamOrder[] | undefined {
+  try {
+    return parsePreventiveExamOrders(value);
+  } catch (error) {
+    throw new ConsultationNoteRequestError(
+      error instanceof Error ? error.message : "Solicitações de exames e rastreios inválidas.",
+    );
+  }
+}
+
 export function parseConsultationNoteUpdate(body: unknown): {
   expectedUpdatedAt: string;
   expectedNoteVersion?: string;
@@ -144,6 +158,7 @@ export function parseConsultationNoteUpdate(body: unknown): {
     "examsText",
     "vaccinationReview",
     "planByProblem",
+    "preventiveExamOrders",
   ], "Requisição");
 
   if (typeof record.expectedUpdatedAt !== "string" || !Number.isFinite(new Date(record.expectedUpdatedAt).getTime())) {
@@ -170,6 +185,7 @@ export function parseConsultationNoteUpdate(body: unknown): {
       anthropometry: optionalText(record.anthropometry, "Antropometria"),
       vaccinationReview: parseVaccinationReview(record.vaccinationReview),
       planByProblem: parsePlan(record.planByProblem),
+      preventiveExamOrders: parsePreventiveExamOrderSelection(record.preventiveExamOrders),
     },
   };
 }

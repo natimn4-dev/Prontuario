@@ -1,5 +1,6 @@
 import { parsePlanNote } from "./consultation-note-contract.ts";
 import { gastrostomyFamilyGuidance } from "./family-contextual-care.ts";
+import { preventiveExamOrderLabel } from "./preventive-exam-orders.ts";
 
 export interface ReportProblemInput {
   id: string;
@@ -23,23 +24,20 @@ export interface AgaReportCareSections {
   gastrostomyCare?: AgaReportGastrostomyCare;
 }
 
-function savedPlanByProblem(value: unknown): Readonly<Record<string, readonly string[]>> | undefined {
-  try {
-    return parsePlanNote(value)?.byProblem;
-  } catch {
-    // Relatórios antigos podem conter JSON legado. Não reinterpretar conteúdo ambíguo.
-    return undefined;
-  }
-}
-
 export function buildAgaReportCareSections(input: {
   gastrostomyPresent: boolean;
   savedPlan: unknown;
   problems: readonly ReportProblemInput[];
 }): AgaReportCareSections {
   const problemById = new Map(input.problems.map((problem) => [problem.id, problem]));
-  const planByProblem = savedPlanByProblem(input.savedPlan);
-  const clinicalConducts = Object.entries(planByProblem ?? {}).flatMap(([problemId, actions]) => {
+  let parsedPlan: ReturnType<typeof parsePlanNote>;
+  try {
+    parsedPlan = parsePlanNote(input.savedPlan);
+  } catch {
+    parsedPlan = undefined;
+  }
+
+  const clinicalConducts = Object.entries(parsedPlan?.byProblem ?? {}).flatMap(([problemId, actions]) => {
     const problem = problemById.get(problemId);
     if (!problem) return [];
     const normalizedActions = [...new Set(actions.map((action) => action.trim()).filter(Boolean))];
@@ -50,6 +48,14 @@ export function buildAgaReportCareSections(input: {
       actions: normalizedActions,
     }];
   });
+  const preventiveExamOrders = parsedPlan?.preventiveExamOrders ?? [];
+  if (preventiveExamOrders.length > 0) {
+    clinicalConducts.push({
+      problemId: "preventive-exam-orders",
+      problemTitle: "Exames e rastreios solicitados",
+      actions: preventiveExamOrders.map(preventiveExamOrderLabel),
+    });
+  }
 
   const gastrostomyGuidance = input.gastrostomyPresent ? gastrostomyFamilyGuidance() : undefined;
 

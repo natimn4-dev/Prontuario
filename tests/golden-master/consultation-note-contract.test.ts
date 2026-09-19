@@ -29,6 +29,7 @@ test("contrato SOAP v1 projeta apenas campos já suportados pelo renderer", () =
       byProblem: {
         problema_1: ["Conduta registrada para o problema 1."],
       },
+      preventiveExamOrders: ["LABORATORY_TESTS", "MAMMOGRAPHY"],
     },
   });
 
@@ -41,6 +42,7 @@ test("contrato SOAP v1 projeta apenas campos já suportados pelo renderer", () =
     planByProblem: {
       problema_1: ["Conduta registrada para o problema 1."],
     },
+    preventiveExamOrders: ["LABORATORY_TESTS", "MAMMOGRAPHY"],
   });
 });
 
@@ -54,7 +56,26 @@ test("contrato SOAP v1 preserva ausência de dados sem inventar valores", () => 
       anthropometry: undefined,
       vaccinationReview: undefined,
       planByProblem: undefined,
+      preventiveExamOrders: undefined,
     },
+  );
+});
+
+test("contrato SOAP preserva somente as opções de exames e rastreios explicitamente selecionadas", () => {
+  const draft = consultationNoteJsonToSoapDraft({
+    subjective: null,
+    objective: null,
+    plan: {
+      schemaVersion: CONSULTATION_NOTE_SCHEMA_VERSION,
+      kind: "plan",
+      preventiveExamOrders: ["BONE_DENSITOMETRY", "FOBT"],
+    },
+  });
+
+  assert.deepEqual(draft.preventiveExamOrders, ["FOBT", "BONE_DENSITOMETRY"]);
+  assert.deepEqual(
+    soapDraftToConsultationNoteJson(draft).plan.preventiveExamOrders,
+    ["FOBT", "BONE_DENSITOMETRY"],
   );
 });
 
@@ -129,5 +150,13 @@ test("contrato SOAP rejeita plano por problema ambíguo ou malformado", () => {
       byProblem: { problema_1: [""] },
     }),
     /texto não vazio/,
+  );
+  assert.throws(
+    () => parsePlanNote({
+      schemaVersion: "1.0",
+      kind: "plan",
+      preventiveExamOrders: ["UNSUPPORTED_OPTION"],
+    }),
+    /opção não reconhecida/,
   );
 });

@@ -40,11 +40,14 @@ Cada seção persistida deve declarar `schemaVersion` e `kind`. O parser falha f
   "kind": "plan",
   "byProblem": {
     "problemId": ["conduta registrada para este problema"]
-  }
+  },
+  "preventiveExamOrders": ["LABORATORY_TESTS", "MAMMOGRAPHY"]
 }
 ```
 
 Todos os campos clínicos de texto são opcionais. Ausência permanece ausência e será apresentada pelo renderer atual como `sem dados registrados` quando aplicável.
+
+`preventiveExamOrders` é opcional e contém somente opções explicitamente marcadas pelo médico na evolução: `LABORATORY_TESTS`, `FOBT`, `COLONOSCOPY`, `MAMMOGRAPHY`, `BREAST_ULTRASOUND` e `BONE_DENSITOMETRY`. A lista não calcula indicação, não gera pedido automaticamente e, quando preenchida, é exibida como conduta registrada no relatório de orientações ao paciente.
 
 ## O que não é duplicado neste contrato
 

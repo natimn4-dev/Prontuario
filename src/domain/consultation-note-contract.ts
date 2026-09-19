@@ -2,6 +2,11 @@ import {
   normalizeVaccinationReview,
   type VaccinationReview,
 } from "./vaccination-prevention.ts";
+import {
+  normalizePreventiveExamOrders,
+  parsePreventiveExamOrders,
+  type PreventiveExamOrder,
+} from "./preventive-exam-orders.ts";
 
 export const CONSULTATION_NOTE_SCHEMA_VERSION = "1.0" as const;
 
@@ -28,6 +33,7 @@ export interface PlanNoteV1 {
   schemaVersion: ConsultationNoteSchemaVersion;
   kind: "plan";
   byProblem?: Readonly<Record<string, readonly string[]>>;
+  preventiveExamOrders?: readonly PreventiveExamOrder[];
 }
 
 export interface PersistedConsultationNoteJson {
@@ -43,6 +49,7 @@ export interface SoapDraftFields {
   anthropometry?: string;
   vaccinationReview?: VaccinationReview;
   planByProblem?: Readonly<Record<string, readonly string[]>>;
+  preventiveExamOrders?: readonly PreventiveExamOrder[];
 }
 
 export interface SerializedConsultationNoteJson {
@@ -169,12 +176,13 @@ function parsePlanByProblem(value: unknown): Readonly<Record<string, readonly st
 export function parsePlanNote(value: unknown): PlanNoteV1 | undefined {
   if (value === undefined || value === null) return undefined;
   const record = asRecord(value, "plan");
-  assertOnlyKeys(record, ["schemaVersion", "kind", "byProblem"], "plan");
+  assertOnlyKeys(record, ["schemaVersion", "kind", "byProblem", "preventiveExamOrders"], "plan");
   assertHeader(record, "plan", "plan");
   return {
     schemaVersion: CONSULTATION_NOTE_SCHEMA_VERSION,
     kind: "plan",
     byProblem: parsePlanByProblem(record.byProblem),
+    preventiveExamOrders: parsePreventiveExamOrders(record.preventiveExamOrders),
   };
 }
 
@@ -200,6 +208,7 @@ export function consultationNoteJsonToSoapDraft(
     anthropometry: objective?.anthropometry,
     vaccinationReview: objective?.vaccinationReview,
     planByProblem: plan?.byProblem,
+    preventiveExamOrders: plan?.preventiveExamOrders,
   };
 }
 
@@ -217,6 +226,7 @@ export function soapDraftToConsultationNoteJson(
   const vaccinationReview = input.vaccinationReview
     ? normalizeVaccinationReview(input.vaccinationReview)
     : undefined;
+  const preventiveExamOrders = normalizePreventiveExamOrders(input.preventiveExamOrders);
   const byProblem: Record<string, readonly string[]> = {};
 
   for (const [problemId, actions] of Object.entries(input.planByProblem ?? {})) {
@@ -244,6 +254,7 @@ export function soapDraftToConsultationNoteJson(
       schemaVersion: CONSULTATION_NOTE_SCHEMA_VERSION,
       kind: "plan",
       ...(Object.keys(byProblem).length > 0 ? { byProblem } : {}),
+      ...(preventiveExamOrders ? { preventiveExamOrders } : {}),
     },
   };
 }

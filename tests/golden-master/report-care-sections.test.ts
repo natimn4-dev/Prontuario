@@ -56,6 +56,28 @@ test("conduta vinculada a problema fora do horizonte não vaza para o relatório
   assert.deepEqual(sections.clinicalConducts, []);
 });
 
+test("exames e rastreios marcados na evolução aparecem em condutas sem criar indicação automática", () => {
+  const sections = buildAgaReportCareSections({
+    gastrostomyPresent: false,
+    savedPlan: {
+      schemaVersion: "1.0",
+      kind: "plan",
+      preventiveExamOrders: ["MAMMOGRAPHY", "FOBT", "BONE_DENSITOMETRY"],
+    },
+    problems: [],
+  });
+
+  assert.deepEqual(sections.clinicalConducts, [{
+    problemId: "preventive-exam-orders",
+    problemTitle: "Exames e rastreios solicitados",
+    actions: [
+      "Pesquisa de sangue oculto nas fezes",
+      "Mamografia",
+      "Densitometria óssea",
+    ],
+  }]);
+});
+
 test("plano legado ou ambíguo falha fechado e não é reinterpretado como conduta", () => {
   const sections = buildAgaReportCareSections({
     gastrostomyPresent: false,
@@ -110,4 +132,32 @@ test("texto acessível inclui as duas caixas somente quando os dados corresponde
   const withoutSections = renderAccessibleAgaReportText(report);
   assert.doesNotMatch(withoutSections, /CONDUTAS CLÍNICAS/);
   assert.doesNotMatch(withoutSections, /CUIDADOS COM GASTROSTOMIA/);
+});
+
+test("relatório de orientações mostra apenas as solicitações de rastreio assinaladas", () => {
+  const report = buildAgaReportModel({
+    patientId: "patient-1",
+    consultationId: "consultation-1",
+    consultationStatus: "IN_REVIEW",
+    patientName: "Paciente Sintético",
+    longitudinalProblems: [],
+    longitudinalAssessments: [],
+  });
+  const sections = buildAgaReportCareSections({
+    gastrostomyPresent: false,
+    savedPlan: {
+      schemaVersion: "1.0",
+      kind: "plan",
+      preventiveExamOrders: ["COLONOSCOPY", "BREAST_ULTRASOUND"],
+    },
+    problems: [],
+  });
+  const text = renderAccessibleAgaReportText({ ...report, ...sections });
+
+  assert.match(text, /CONDUTAS CLÍNICAS/);
+  assert.match(text, /Exames e rastreios solicitados/);
+  assert.match(text, /Colonoscopia/);
+  assert.match(text, /USG de mamas e axilas/);
+  assert.doesNotMatch(text, /Mamografia/);
+  assert.doesNotMatch(text, /Densitometria óssea/);
 });
