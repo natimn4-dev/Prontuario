@@ -13,7 +13,10 @@ import type {
   IntrinsicCapacityGuidance,
 } from "./intrinsic-capacity-guidance.ts";
 import { intrinsicCapacityGuidanceForDomain } from "./intrinsic-capacity-guidance.ts";
-import { COGNITIVE_DOMAIN_OBSERVATION_FIELDS } from "./cognitive-domain-observation.ts";
+import {
+  COGNITIVE_DOMAIN_OBSERVATION_FIELDS,
+  cognitiveScreenClassification,
+} from "./cognitive-domain-observation.ts";
 import { FRAIL_BR } from "./clinical-config/legacy-core.ts";
 
 export type ReportDomainState = "altered" | "attention" | "preserved" | "not-assessed";
@@ -356,6 +359,10 @@ function isMocaScale(scale: AgaScaleReportSection): boolean {
   return scale.code === "moca" || scale.code === "moca_br_freitas";
 }
 
+function isMeemScale(scale: AgaScaleReportSection): boolean {
+  return scale.code === "meem" || scale.code === "meem_freitas";
+}
+
 function isGdsScale(scale: AgaScaleReportSection): boolean {
   return scale.code === "gds15" || scale.code === "gds_15";
 }
@@ -368,6 +375,187 @@ function currentMocaScore(scales: readonly AgaScaleReportSection[]): number | un
 function currentGdsScore(scales: readonly AgaScaleReportSection[]): number | undefined {
   const gds = scales.find((scale) => scale.assessedInTargetConsultation && isGdsScale(scale));
   return gds ? scoreNumber(gds) : undefined;
+}
+
+function collectedValues(scale: AgaScaleReportSection): Map<string, string> {
+  return new Map(scale.collectedData.map((item) => [item.field, item.value]));
+}
+
+function cognitiveObservationInstrument(scale: AgaScaleReportSection): "moca" | "meem" | "clinical_observation" | undefined {
+  if (scale.code !== "cognitive_domain_observation") return undefined;
+  const instrument = collectedValues(scale).get("instrument");
+  return instrument === "moca" || instrument === "meem" || instrument === "clinical_observation" ? instrument : undefined;
+}
+
+function cognitiveScreenState(scales: readonly AgaScaleReportSection[]): Exclude<ReportDomainState, "not-assessed"> | undefined {
+  const states: Array<Exclude<ReportDomainState, "not-assessed">> = [];
+  for (const scale of scales.filter((item) => item.assessedInTargetConsultation)) {
+    const score = scoreNumber(scale);
+    if (isMocaScale(scale) && typeof score === "number") {
+      states.push(score >= 26 ? "preserved" : score >= 18 ? "attention" : "altered");
+      continue;
+    }
+    if (isMeemScale(scale) && typeof score === "number") {
+      states.push(score >= 24 ? "preserved" : score >= 20 ? "attention" : "altered");
+      continue;
+    }
+    const instrument = cognitiveObservationInstrument(scale);
+    if ((instrument === "moca" || instrument === "meem") && typeof score === "number") {
+      states.push(instrument === "moca"
+        ? score >= 26 ? "preserved" : score >= 18 ? "attention" : "altered"
+        : score >= 24 ? "preserved" : score >= 20 ? "attention" : "altered");
+    }
+  }
+  if (states.includes("altered")) return "altered";
+  if (states.includes("attention")) return "attention";
+  if (states.includes("preserved")) return "preserved";
+  return undefined;
+}
+
+type CognitiveGuidanceGroup = {
+  label: string;
+  fields: readonly { id: string; max: number }[];
+  action: string;
+};
+
+const COGNITIVE_GUIDANCE_GROUPS: readonly CognitiveGuidanceGroup[] = [
+  {
+    label: "memória e orientação",
+    fields: [
+      { id: "moca_delayed_recall", max: 5 }, { id: "moca_orientation", max: 6 },
+      { id: "meem_orientation_temporal", max: 5 }, { id: "meem_orientation_spatial", max: 5 },
+      { id: "meem_registration", max: 3 }, { id: "meem_recall", max: 3 },
+    ],
+    action: "Memória/orientação foi uma das áreas mais acometidas: use agenda, calendário ou quadro visual, mantenha objetos importantes em locais fixos e introduza lembretes simples. Supervisão de medicamentos, fogo/cozinha ou deslocamentos deve ser proporcional aos erros e riscos realmente observados.",
+  },
+  {
+    label: "atenção e funções executivas",
+    fields: [
+      { id: "moca_attention", max: 6 }, { id: "moca_abstraction", max: 2 },
+      { id: "meem_attention", max: 5 }, { id: "meem_commands", max: 3 },
+    ],
+    action: "Atenção/funções executivas foi uma das áreas mais acometidas: divida tarefas complexas em etapas curtas, reduza estímulos simultâneos e confira atividades de maior risco, como finanças e organização de medicamentos, quando houver erros observáveis.",
+  },
+  {
+    label: "linguagem",
+    fields: [
+      { id: "moca_naming", max: 3 }, { id: "moca_language", max: 3 },
+      { id: "meem_naming", max: 2 }, { id: "meem_repetition", max: 1 },
+      { id: "meem_writing", max: 1 }, { id: "meem_reading", max: 1 },
+    ],
+    action: "Linguagem foi uma das áreas mais acometidas: fale devagar, use frases curtas e objetivas, dê tempo para resposta e complemente com gestos ou pistas visuais quando necessário. Se a dificuldade persistir e interferir na comunicação, discuta avaliação fonoaudiológica.",
+  },
+  {
+    label: "habilidades visuoespaciais/visuoconstrutivas",
+    fields: [
+      { id: "moca_visuospatial", max: 5 }, { id: "meem_diagram_copy", max: 1 },
+    ],
+    action: "Habilidades visuoespaciais/visuoconstrutivas foram uma das áreas mais acometidas: melhore a iluminação e a organização visual do ambiente, retire obstáculos e tapetes soltos e revise segurança em rotas desconhecidas e direção veicular quando aplicável.",
+  },
+];
+
+function targetedCognitiveGuidance(scales: readonly AgaScaleReportSection[]): string[] {
+  const scale = scales.find((item) => item.assessedInTargetConsultation
+    && item.code === "cognitive_domain_observation"
+    && (cognitiveObservationInstrument(item) === "moca" || cognitiveObservationInstrument(item) === "meem"));
+  if (!scale) return [];
+  const values = collectedValues(scale);
+  const ranked = COGNITIVE_GUIDANCE_GROUPS.map((group) => {
+    let deficit = 0;
+    let maximum = 0;
+    for (const field of group.fields) {
+      const raw = values.get(field.id);
+      if (raw === undefined) continue;
+      const value = Number(raw);
+      if (!Number.isFinite(value)) continue;
+      deficit += Math.max(0, field.max - value);
+      maximum += field.max;
+    }
+    return { ...group, ratio: maximum > 0 ? deficit / maximum : 0, deficit };
+  })
+    .filter((group) => group.deficit > 0)
+    .sort((left, right) => right.ratio - left.ratio || right.deficit - left.deficit);
+  return ranked.slice(0, 2).map((group) => group.action);
+}
+
+function npiPositiveDomains(scales: readonly AgaScaleReportSection[]): string[] {
+  const npi = scales.find((item) => item.assessedInTargetConsultation && item.code === "npi");
+  if (!npi) return [];
+  const values = collectedValues(npi);
+  const domains = [
+    ["delusions", "Delírios"], ["hallucinations", "Alucinações"], ["dysphoria", "Disforia/depressão"],
+    ["anxiety", "Ansiedade"], ["agitation", "Agitação/agressividade"], ["euphoria", "Euforia"],
+    ["disinhibition", "Desinibição"], ["irritability", "Irritabilidade/labilidade"],
+    ["apathy", "Apatia/indiferença"], ["aberrant_motor", "Atividade motora aberrante"],
+  ] as const;
+  return domains.flatMap(([key, label]) => {
+    const frequency = Number(values.get(`npi_${key}_frequency`) ?? 0);
+    const severity = Number(values.get(`npi_${key}_severity`) ?? 0);
+    return frequency > 0 && severity > 0 ? [label] : [];
+  });
+}
+
+function npiNonPharmacologicalGuidance(scales: readonly AgaScaleReportSection[]): string[] {
+  const positive = npiPositiveDomains(scales);
+  if (positive.length === 0) return [];
+  const actions = [
+    "O NPI registrou sintomas neuropsiquiátricos. Antes de atribuir o comportamento apenas à demência, procure gatilhos ou necessidades não atendidas, como dor, constipação, necessidade de urinar, fome, desidratação, privação de sono, déficit visual/auditivo, excesso de ruído ou mudança recente de medicamentos. Prefira rotina previsível, abordagem calma e comunicação simples, centrada na pessoa.",
+  ];
+  if (positive.some((item) => /Delírios|Alucinações/.test(item))) {
+    actions.push("Para delírios ou alucinações, evite confronto para provar que a percepção está errada; reconheça a emoção, redirecione com calma, reduza estímulos e revise iluminação, visão e audição. Mudança súbita ou flutuação importante requer avaliação clínica.");
+  }
+  if (positive.some((item) => /Agitação|Irritabilidade/.test(item))) {
+    actions.push("Para agitação, agressividade ou irritabilidade, reduza ruído e aglomeração, fale uma pessoa por vez e use atividades individualizadas, música ou movimento seguro conforme preferências e resposta da pessoa.");
+  }
+  if (positive.includes("Ansiedade")) {
+    actions.push("Para ansiedade, antecipe o que será feito, explique antes de tocar ou mover a pessoa, mantenha rotina e reduza mudanças abruptas ou situações excessivamente estimulantes.");
+  }
+  if (positive.some((item) => /Apatia|Disforia/.test(item))) {
+    actions.push("Para apatia ou disforia, ofereça atividades significativas e curtas, contato social e movimento seguro, com convite gentil e sem cobrança ou críticas quando a pessoa não conseguir participar.");
+  }
+  if (positive.some((item) => /Desinibição|Euforia/.test(item))) {
+    actions.push("Para desinibição ou euforia, redirecione com privacidade e sem humilhação, organize o ambiente para reduzir gatilhos e preserve limites de segurança de forma discreta.");
+  }
+  if (positive.includes("Atividade motora aberrante")) {
+    actions.push("Para atividade motora repetitiva ou deambulação, ofereça rota segura para caminhar, atividades programadas e verifique dor, necessidade de banheiro, fome e tédio; contenção física não deve ser estratégia de rotina.");
+  }
+  return actions;
+}
+
+function cognitiveGuidanceFor(
+  scales: readonly AgaScaleReportSection[],
+  overallState: Exclude<ReportDomainState, "not-assessed">,
+): DomainGuidance {
+  const screenState = cognitiveScreenState(scales);
+  const screenGuidance = screenState ? COGNITIVE_SCREEN_GUIDANCE[screenState] : undefined;
+  const targeted = targetedCognitiveGuidance(scales);
+  const npiGuidance = npiNonPharmacologicalGuidance(scales);
+  const npiEvidence: IntrinsicCapacityEvidenceReference[] = npiGuidance.length > 0 ? [
+    {
+      label: "Diretriz clínica para sintomas comportamentais e psicológicos da demência",
+      pmid: "40051590",
+      url: "https://pubmed.ncbi.nlm.nih.gov/40051590/",
+      relevance: "Diretriz baseada em revisão de evidências: avaliação estruturada e intervenções psicossociais/não farmacológicas devem integrar o manejo de sintomas neuropsiquiátricos.",
+    },
+    {
+      label: "Consenso baseado em evidências para agitação na demência",
+      pmid: "42563132",
+      url: "https://pubmed.ncbi.nlm.nih.gov/42563132/",
+      relevance: "Consenso de 2026: cuidado centrado na pessoa, identificação de necessidades e intervenções individualizadas formam a base do manejo não farmacológico da agitação.",
+    },
+  ] : [];
+  const fallback = screenGuidance ?? (npiGuidance.length > 0 ? undefined : COGNITIVE_SCREEN_GUIDANCE[overallState]);
+  return {
+    actions: unique([
+      ...(fallback?.actions ?? []),
+      ...targeted,
+      ...npiGuidance,
+    ]),
+    evidenceReferences: [
+      ...(fallback?.evidenceReferences ?? []),
+      ...npiEvidence,
+    ],
+  };
 }
 
 function frailtyProfileFor(scales: readonly AgaScaleReportSection[]): FrailtyGuidanceProfile | undefined {
@@ -405,6 +593,8 @@ function stateFor(scales: readonly AgaScaleReportSection[], dimension: string): 
   // ABVD ou AIVD comprometida é alteração funcional, independentemente de uma cor
   // técnica ausente/inconsistente em registros legados.
   if (dimension === "funcionalidade" && functionalDependenceDetected(current)) return "altered";
+  const cognitiveScreen = dimension === "cognicao" ? cognitiveScreenState(current) : undefined;
+  if (cognitiveScreen === "altered") return "altered";
   if (current.some((scale) => scale.clinicalColor === "vermelho")) return "altered";
 
   const mocaScore = dimension === "cognicao" ? currentMocaScore(current) : undefined;
@@ -413,6 +603,7 @@ function stateFor(scales: readonly AgaScaleReportSection[], dimension: string): 
   const gdsScore = dimension === "humor" ? currentGdsScore(current) : undefined;
   if (typeof gdsScore === "number" && gdsScore >= 11) return "altered";
 
+  if (cognitiveScreen === "attention") return "attention";
   if (current.some((scale) => scale.clinicalColor === "amarelo")) return "attention";
   if (typeof mocaScore === "number" && mocaScore >= 18 && mocaScore <= 25) return "attention";
   if (typeof gdsScore === "number" && gdsScore >= 6) return "attention";
@@ -427,13 +618,26 @@ function stateLabelFor(state: ReportDomainState): string {
 }
 
 function familyResultValue(scale: AgaScaleReportSection): string {
+  if (isMocaScale(scale)) {
+    const score = scoreNumber(scale);
+    if (typeof score === "number") return `${score}/30 — ${cognitiveScreenClassification("moca", score)}`;
+  }
+  if (isMeemScale(scale)) {
+    const score = scoreNumber(scale);
+    if (typeof score === "number") return `${score}/30 — ${cognitiveScreenClassification("meem", score)}`;
+  }
   if (scale.code === "cognitive_domain_observation") {
+    const instrument = cognitiveObservationInstrument(scale);
+    if (instrument === "moca" || instrument === "meem") {
+      const score = scale.result.scoreText ?? (scale.result.score !== null ? String(scale.result.score) : "Resultado registrado");
+      return unique([score, scale.result.classification ?? ""]).join(" — ");
+    }
     const labels = new Map<string, string>(COGNITIVE_DOMAIN_OBSERVATION_FIELDS.map((field) => [field.id, field.label]));
     const altered = scale.collectedData
       .filter((item) => item.value === "change_observed")
       .map((item) => labels.get(item.field) ?? item.field);
     if (altered.length > 0) return `Alterações observadas: ${altered.join(", ")}. Registro descritivo, sem diagnóstico automático.`;
-    const assessed = scale.collectedData.filter((item) => item.value !== "not_assessed");
+    const assessed = scale.collectedData.filter((item) => item.value !== "not_assessed" && item.field !== "instrument");
     return assessed.length > 0
       ? "Sem alteração observada nos domínios avaliados; o achado não exclui comprometimento sutil."
       : "Domínios não avaliados nesta consulta.";
@@ -485,7 +689,7 @@ export function buildReportDomainSummaries(
           return state === "not-assessed" ? undefined : FRAILTY_STATE_FALLBACK_GUIDANCE[state];
         })()
       : dimension === "cognicao" && (state === "preserved" || state === "attention" || state === "altered")
-        ? COGNITIVE_SCREEN_GUIDANCE[state]
+        ? cognitiveGuidanceFor(dimensionScales, state)
         : undefined;
     const genericGuidance = unique([
       ...(stateAwareGuidance?.actions ?? alteredIntrinsicGuidance?.actions ?? intrinsicGuidance?.actions ?? domainGuidance?.actions ?? []),
@@ -511,7 +715,10 @@ export function buildReportDomainSummaries(
               functionallyContextualized,
               immobilityContext,
             );
-    const guidance = unique(contextGuidance).slice(0, isAlteredGds ? 3 : 2);
+    const cognitionGuidanceLimit = dimension === "cognicao"
+      ? (npiPositiveDomains(dimensionScales).length > 0 ? 5 : targetedCognitiveGuidance(dimensionScales).length > 0 ? 4 : 2)
+      : 2;
+    const guidance = unique(contextGuidance).slice(0, isAlteredGds ? 3 : cognitionGuidanceLimit);
     const requiresMedicalGuidance = (state === "altered" || state === "attention") && guidance.length === 0;
     const evidenceReferences = isAlteredGds
       ? LATE_LIFE_DEPRESSION_EVIDENCE
