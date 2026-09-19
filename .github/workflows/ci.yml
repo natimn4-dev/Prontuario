@@ -67,6 +67,31 @@ jobs:
         run: npm run test:integration
       - name: Clinical golden master
         run: npm run test:golden
+      - name: Authenticated E2E smoke on ephemeral data
+        env:
+          CI: "true"
+          NODE_ENV: development
+          APP_URL: http://127.0.0.1:3100
+          E2E_BASE_URL: http://127.0.0.1:3100
+          E2E_AUTH_ENABLED: "1"
+          E2E_AUTH_SECRET: ci-e2e-secret-with-at-least-thirty-two-characters
+        shell: bash
+        run: |
+          set -euo pipefail
+          npm run dev -- --hostname 127.0.0.1 --port 3100 > /tmp/prontuario-e2e-next.log 2>&1 &
+          SERVER_PID=$!
+          trap 'kill "$SERVER_PID" 2>/dev/null || true; cat /tmp/prontuario-e2e-next.log || true' EXIT
+          for attempt in $(seq 1 40); do
+            if curl -fsS --max-time 3 http://127.0.0.1:3100/login >/dev/null; then
+              break
+            fi
+            if [[ "$attempt" -eq 40 ]]; then
+              echo "Servidor E2E não iniciou." >&2
+              exit 1
+            fi
+            sleep 1
+          done
+          npm run test:e2e:auth
       - name: Domain typecheck
         run: npm run typecheck:domain
       - name: Full typecheck
