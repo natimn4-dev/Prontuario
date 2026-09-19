@@ -142,7 +142,7 @@ test("FRAIL-BR diferencia orientações para robusto, pré-frágil e frágil", (
   assert.ok(summaries.every((summary, index) => summary.guidance.some((item) => item.includes(cases[index]!.marker))));
   assert.notDeepEqual(summaries[0]?.guidance, summaries[1]?.guidance);
   assert.notDeepEqual(summaries[1]?.guidance, summaries[2]?.guidance);
-  assert.ok(summaries[0]?.evidenceReferences.some((reference) => reference.pmid === "32020713"));
+  assert.ok(summaries[0]?.evidenceReferences.some((reference) => reference.pmid === "42560630"));
   assert.ok(summaries[1]?.evidenceReferences.some((reference) => reference.pmid === "42620771"));
   assert.ok(summaries[2]?.evidenceReferences.some((reference) => reference.pmid === "42570706"));
 });
@@ -180,18 +180,18 @@ test("cognição preservada não recebe orientação de supervisão própria de 
   ], "cognicao");
 
   assert.equal(preserved.state, "preserved");
-  assert.ok(preserved.guidance.some((item) => /não indica necessidade de supervisão sistemática/i.test(item)));
-  assert.ok(preserved.guidance.some((item) => /não exclui alterações iniciais/i.test(item)));
+  assert.ok(preserved.guidance.some((item) => /não institua supervisão/i.test(item)));
+  assert.ok(preserved.guidance.some((item) => /reavalie se paciente ou familiar perceber mudança/i.test(item)));
   assert.ok(!preserved.guidance.some((item) => /erros em medicamentos|apoio direto do cuidador/i.test(item)));
 
   assert.equal(attention.state, "attention");
-  assert.ok(attention.guidance.some((item) => /não confirma demência/i.test(item)));
-  assert.ok(attention.guidance.some((item) => /supervisão proporcional ao risco/i.test(item)));
+  assert.ok(attention.guidance.some((item) => /não é diagnóstico de demência/i.test(item)));
+  assert.ok(attention.guidance.some((item) => /supervisão apenas nas tarefas/i.test(item)));
 
   assert.equal(altered.state, "altered");
   assert.ok(altered.guidance.some((item) => /não estabelece sozinho diagnóstico de demência/i.test(item)));
-  assert.ok(altered.guidance.some((item) => /apoio direto do cuidador/i.test(item)));
-  assert.ok(altered.evidenceReferences.some((reference) => reference.pmid === "26052687"));
+  assert.ok(altered.guidance.some((item) => /apoio direto nessas atividades/i.test(item)));
+  assert.ok(altered.evidenceReferences.some((reference) => reference.pmid === "39713942"));
   assert.notDeepEqual(preserved.guidance, altered.guidance);
 });
 

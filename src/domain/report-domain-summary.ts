@@ -76,15 +76,15 @@ type FrailtyGuidanceProfile = "robust" | "pre-frail" | "frail";
 const FRAILTY_GUIDANCE: Readonly<Record<FrailtyGuidanceProfile, DomainGuidance>> = {
   robust: {
     actions: [
-      "O FRAIL-BR não identificou critérios de fragilidade nesta consulta. Preserve a autonomia e incentive atividade física regular, incluindo componentes de força, equilíbrio e resistência, sempre com progressão compatível com a capacidade e a segurança da pessoa.",
-      "Mantenha alimentação suficiente e variada, hidratação conforme o plano clínico, sono regular e participação em atividades significativas. Reavalie se surgirem perda de peso não intencional, fadiga persistente, redução de força, quedas ou perda de desempenho.",
+      "O FRAIL-BR não identificou critérios de fragilidade nesta consulta: o perfil é robusto. O objetivo é preservar a reserva e a independência, mantendo atividade física regular com força, equilíbrio e resistência, em intensidade compatível com a capacidade e a segurança da pessoa.",
+      "Mantenha alimentação suficiente e variada, hidratação conforme o plano clínico, sono regular e participação social e em atividades significativas. Na ausência de declínio, não é necessário tratar a pessoa como frágil; reavalie se surgirem perda de peso não intencional, fadiga persistente, redução de força, quedas ou perda funcional.",
     ],
     evidenceReferences: [
       {
-        label: "Consequências da inatividade física em idosos",
-        pmid: "32020713",
-        url: "https://pubmed.ncbi.nlm.nih.gov/32020713/",
-        relevance: "Revisão de revisões e meta-análises: a inatividade física se associa a desfechos adversos; a orientação deve estimular movimento compatível com a capacidade e o contexto clínico.",
+        label: "Diretriz de detecção e manejo da fragilidade na atenção primária",
+        pmid: "42560630",
+        url: "https://pubmed.ncbi.nlm.nih.gov/42560630/",
+        relevance: "Diretriz clínica de 2026: a abordagem da fragilidade deve ser personalizada e multidimensional, com atividade física, suporte nutricional e revisão de fatores modificáveis conforme o perfil clínico.",
       },
     ],
   },
@@ -133,15 +133,15 @@ const FRAILTY_GUIDANCE: Readonly<Record<FrailtyGuidanceProfile, DomainGuidance>>
 const COGNITIVE_SCREEN_GUIDANCE: Readonly<Record<"preserved" | "attention" | "altered", DomainGuidance>> = {
   preserved: {
     actions: [
-      "O rastreio cognitivo desta consulta ficou dentro da faixa esperada. Preserve a autonomia nas tarefas que a pessoa realiza com segurança; este resultado isolado não indica necessidade de supervisão sistemática.",
-      "Mantenha atividade física, convívio social, sono regular, correção de visão e audição e controle dos fatores de risco acompanhados pela equipe. Se houver queixa persistente ou mudança percebida no dia a dia, registre e reavalie, pois um rastreio preservado não exclui alterações iniciais.",
+      "O rastreio cognitivo desta consulta não identificou déficit cognitivo. Na ausência de queixa persistente ou perda funcional, preserve a autonomia e não institua supervisão de medicamentos, finanças ou outras tarefas apenas por causa da idade.",
+      "O foco é manutenção da saúde cognitiva: atividade física regular, convívio social, sono adequado, correção de déficits auditivos e visuais e bom controle dos fatores de risco vascular. Reavalie se paciente ou familiar perceber mudança nova e persistente de memória, linguagem, orientação, julgamento ou desempenho nas atividades do dia a dia.",
     ],
     evidenceReferences: [
       {
-        label: "FINGER: intervenção multidomínio para preservar a função cognitiva",
-        pmid: "25771249",
-        url: "https://pubmed.ncbi.nlm.nih.gov/25771249/",
-        relevance: "Ensaio clínico randomizado: combinação de dieta, exercício, treino cognitivo e monitoramento de risco vascular reduziu o declínio cognitivo em idosos sob risco.",
+        label: "LatAm-FINGERS: intervenção multidomínio para prevenção do declínio cognitivo na América Latina",
+        pmid: "42442374",
+        url: "https://pubmed.ncbi.nlm.nih.gov/42442374/",
+        relevance: "Ensaio clínico randomizado latino-americano: intervenção multidomínio em idosos sob risco apoia a promoção de atividade física, alimentação saudável, estímulo cognitivo e controle de fatores vasculares, sem transformar prevenção em tratamento de demência.",
       },
       {
         label: "ACHIEVE: intervenção auditiva e declínio cognitivo",
@@ -153,27 +153,51 @@ const COGNITIVE_SCREEN_GUIDANCE: Readonly<Record<"preserved" | "attention" | "al
   },
   attention: {
     actions: [
-      "O rastreio cognitivo apresentou sinal de atenção, mas isso não confirma demência. Interprete o resultado com escolaridade, funcionalidade, humor, sono, visão, audição, medicamentos e contexto clínico, mantendo a decisão diagnóstica sob revisão médica.",
-      "Observe tarefas em que surgem erros e ofereça lembretes ou supervisão proporcional ao risco, sem retirar a autonomia que permanece segura. Organize reavaliação clínica se houver persistência, progressão ou impacto nas atividades do dia a dia.",
+      "O rastreio cognitivo foi positivo para possível comprometimento cognitivo, mas um rastreio positivo não é diagnóstico de demência. Confirme o achado em avaliação clínica estruturada, considerando escolaridade, relato do paciente e informante, funcionalidade, humor, sono, visão, audição, medicamentos e causas potencialmente reversíveis.",
+      "Preserve a autonomia que permanece segura. Ofereça lembretes ou supervisão apenas nas tarefas em que existam erros ou risco observável e organize seguimento para definir se há comprometimento cognitivo, sua repercussão funcional e necessidade de investigação adicional.",
     ],
     evidenceReferences: [{
-      label: "Testes cognitivos para detectar demência",
-      pmid: "26052687",
-      url: "https://pubmed.ncbi.nlm.nih.gov/26052687/",
-      relevance: "Revisão sistemática e meta-análise: testes cognitivos têm desempenho variável e devem integrar avaliação clínica, não substituir o diagnóstico contextualizado.",
+      label: "Diretriz DETeCD-ADRD para avaliação diagnóstica de suspeita de comprometimento cognitivo",
+      pmid: "39713942",
+      url: "https://pubmed.ncbi.nlm.nih.gov/39713942/",
+      relevance: "Diretriz clínica da Alzheimer's Association: suspeita de comprometimento cognitivo deve seguir avaliação estruturada do estado cognitivo e funcional e do provável processo causal; instrumentos de rastreio não substituem o diagnóstico clínico.",
     }],
   },
   altered: {
     actions: [
-      "O rastreio cognitivo sinalizou alteração mais importante, mas não estabelece sozinho diagnóstico de demência nem sua causa. É indicada revisão médica contextualizada, incluindo evolução, funcionalidade, informante, humor, sono, visão, audição, medicamentos e causas potencialmente reversíveis.",
-      "Se houver erros em medicamentos, finanças, deslocamentos ou outras tarefas de risco, organize apoio direto do cuidador nessas atividades e preserve a participação segura nas demais. Confusão ou sonolência de início súbito exige avaliação imediata.",
+      "O rastreio cognitivo foi claramente alterado e aumenta a necessidade de investigação, mas não estabelece sozinho diagnóstico de demência nem sua causa. Faça avaliação clínica e funcional estruturada, com história evolutiva, informante, revisão de humor, sono, visão, audição, medicamentos e causas potencialmente reversíveis, além de exames complementares quando clinicamente indicados.",
+      "Se já houver erros em medicamentos, finanças, deslocamentos ou outras tarefas de risco, organize apoio direto nessas atividades sem retirar a participação segura nas demais. Confusão, sonolência ou piora cognitiva de início súbito deve ser tratada como mudança aguda e avaliada prontamente.",
     ],
     evidenceReferences: [{
-      label: "Testes cognitivos para detectar demência",
-      pmid: "26052687",
-      url: "https://pubmed.ncbi.nlm.nih.gov/26052687/",
-      relevance: "Revisão sistemática e meta-análise: nenhum teste cognitivo isolado substitui avaliação clínica e funcional para estabelecer diagnóstico.",
+      label: "Diretriz DETeCD-ADRD para avaliação diagnóstica de suspeita de comprometimento cognitivo",
+      pmid: "39713942",
+      url: "https://pubmed.ncbi.nlm.nih.gov/39713942/",
+      relevance: "Diretriz clínica da Alzheimer's Association: o diagnóstico requer caracterização cognitiva, funcional e etiológica estruturada; resultado de teste cognitivo isolado não define demência.",
     }],
+  },
+};
+
+const FRAILTY_STATE_FALLBACK_GUIDANCE: Readonly<Record<Exclude<ReportDomainState, "not-assessed">, DomainGuidance>> = {
+  preserved: {
+    actions: [
+      "A avaliação de fragilidade desta consulta não sinalizou vulnerabilidade. Preserve autonomia, atividade física regular, alimentação adequada e participação social; não aplique rotinas de cuidado destinadas a pessoas frágeis apenas por causa da idade.",
+      "Reavalie se surgirem perda de peso sem intenção, fadiga persistente, redução de força, quedas ou perda funcional nova.",
+    ],
+    evidenceReferences: FRAILTY_GUIDANCE.robust.evidenceReferences,
+  },
+  attention: {
+    actions: [
+      "A avaliação mostrou sinal de vulnerabilidade ou pré-fragilidade. Esta é uma oportunidade de intervenção precoce: revise atividade física, força e equilíbrio, estado nutricional, quedas, doenças e medicamentos de forma individualizada.",
+      "Preserve a independência nas tarefas seguras e acompanhe a evolução; procure a equipe se houver progressão de fadiga, fraqueza, perda de peso, quedas ou dificuldade para levantar e caminhar.",
+    ],
+    evidenceReferences: FRAILTY_GUIDANCE["pre-frail"].evidenceReferences,
+  },
+  altered: {
+    actions: [
+      "A avaliação sinalizou fragilidade ou vulnerabilidade relevante. Organize um plano geriátrico individualizado para identificar causas modificáveis e integrar exercício seguro, nutrição, revisão de medicamentos, prevenção de quedas e suporte funcional.",
+      "Apoie as tarefas de maior risco sem retirar toda a autonomia possível e comunique declínio funcional recente, perda de peso, piora da força, quedas ou redução importante da ingestão.",
+    ],
+    evidenceReferences: FRAILTY_GUIDANCE.frail.evidenceReferences,
   },
 };
 
@@ -457,7 +481,8 @@ export function buildReportDomainSummaries(
     const stateAwareGuidance = dimension === "fragilidade"
       ? (() => {
           const profile = frailtyProfileFor(dimensionScales);
-          return profile ? FRAILTY_GUIDANCE[profile] : undefined;
+          if (profile) return FRAILTY_GUIDANCE[profile];
+          return state === "not-assessed" ? undefined : FRAILTY_STATE_FALLBACK_GUIDANCE[state];
         })()
       : dimension === "cognicao" && (state === "preserved" || state === "attention" || state === "altered")
         ? COGNITIVE_SCREEN_GUIDANCE[state]
