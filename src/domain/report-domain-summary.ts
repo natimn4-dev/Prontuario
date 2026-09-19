@@ -13,7 +13,10 @@ import type {
   IntrinsicCapacityGuidance,
 } from "./intrinsic-capacity-guidance.ts";
 import { intrinsicCapacityGuidanceForDomain } from "./intrinsic-capacity-guidance.ts";
-import { COGNITIVE_DOMAIN_OBSERVATION_FIELDS } from "./cognitive-domain-observation.ts";
+import {
+  COGNITIVE_DOMAIN_OBSERVATION_FIELDS,
+  cognitiveScreenClassification,
+} from "./cognitive-domain-observation.ts";
 import { FRAIL_BR } from "./clinical-config/legacy-core.ts";
 
 export type ReportDomainState = "altered" | "attention" | "preserved" | "not-assessed";
@@ -541,7 +544,7 @@ function cognitiveGuidanceFor(
       relevance: "Consenso de 2026: cuidado centrado na pessoa, identificação de necessidades e intervenções individualizadas formam a base do manejo não farmacológico da agitação.",
     },
   ] : [];
-  const fallback = screenGuidance ?? COGNITIVE_SCREEN_GUIDANCE[overallState];
+  const fallback = screenGuidance ?? (npiGuidance.length > 0 ? undefined : COGNITIVE_SCREEN_GUIDANCE[overallState]);
   return {
     actions: unique([
       ...(fallback?.actions ?? []),
@@ -590,6 +593,8 @@ function stateFor(scales: readonly AgaScaleReportSection[], dimension: string): 
   // ABVD ou AIVD comprometida é alteração funcional, independentemente de uma cor
   // técnica ausente/inconsistente em registros legados.
   if (dimension === "funcionalidade" && functionalDependenceDetected(current)) return "altered";
+  const cognitiveScreen = dimension === "cognicao" ? cognitiveScreenState(current) : undefined;
+  if (cognitiveScreen === "altered") return "altered";
   if (current.some((scale) => scale.clinicalColor === "vermelho")) return "altered";
 
   const mocaScore = dimension === "cognicao" ? currentMocaScore(current) : undefined;
@@ -598,6 +603,7 @@ function stateFor(scales: readonly AgaScaleReportSection[], dimension: string): 
   const gdsScore = dimension === "humor" ? currentGdsScore(current) : undefined;
   if (typeof gdsScore === "number" && gdsScore >= 11) return "altered";
 
+  if (cognitiveScreen === "attention") return "attention";
   if (current.some((scale) => scale.clinicalColor === "amarelo")) return "attention";
   if (typeof mocaScore === "number" && mocaScore >= 18 && mocaScore <= 25) return "attention";
   if (typeof gdsScore === "number" && gdsScore >= 6) return "attention";
@@ -612,6 +618,14 @@ function stateLabelFor(state: ReportDomainState): string {
 }
 
 function familyResultValue(scale: AgaScaleReportSection): string {
+  if (isMocaScale(scale)) {
+    const score = scoreNumber(scale);
+    if (typeof score === "number") return `${score}/30 — ${cognitiveScreenClassification("moca", score)}`;
+  }
+  if (isMeemScale(scale)) {
+    const score = scoreNumber(scale);
+    if (typeof score === "number") return `${score}/30 — ${cognitiveScreenClassification("meem", score)}`;
+  }
   if (scale.code === "cognitive_domain_observation") {
     const instrument = cognitiveObservationInstrument(scale);
     if (instrument === "moca" || instrument === "meem") {
