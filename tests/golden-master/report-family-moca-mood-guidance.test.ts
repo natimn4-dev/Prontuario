@@ -190,7 +190,7 @@ test("cognição preservada não recebe orientação de supervisão própria de 
 
   assert.equal(altered.state, "altered");
   assert.ok(altered.guidance.some((item) => /não estabelece sozinho diagnóstico de demência/i.test(item)));
-  assert.ok(altered.guidance.some((item) => /apoio direto do cuidador/i.test(item)));
+  assert.ok(altered.guidance.some((item) => /apoio direto nessas atividades/i.test(item)));
   assert.ok(altered.evidenceReferences.some((reference) => reference.pmid === "39713942"));
   assert.notDeepEqual(preserved.guidance, altered.guidance);
 });
