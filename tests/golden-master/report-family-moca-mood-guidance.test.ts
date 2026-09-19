@@ -16,6 +16,7 @@ function scale(input: {
   scoreText?: string;
   classification?: string;
   clinicalColor?: AgaScaleReportSection["clinicalColor"];
+  collectedData?: AgaScaleReportSection["collectedData"];
 }): AgaScaleReportSection {
   return {
     code: input.code,
@@ -29,7 +30,7 @@ function scale(input: {
       score: input.score,
       version: "1.0",
     },
-    collectedData: [],
+    collectedData: input.collectedData ?? [],
     result: {
       score: input.score,
       scoreText: input.scoreText ?? `${input.score}`,
@@ -93,12 +94,12 @@ test("visão geral mostra MoCA conciso e explica ABVD/AIVD", () => {
   assert.ok(enrichment.overview.functionality.some((item) => item.label.includes("AIVD (atividades instrumentais da vida diária)")));
 });
 
-test("MoCA preserva a interpretação educacional registrada sem criar gravidade diagnóstica", () => {
+test("MoCA exibe as faixas de rastreio solicitadas sem tratá-las como diagnóstico etiológico", () => {
   const cases = [
-    { score: 27, state: "preserved" },
-    { score: 21, state: "attention" },
-    { score: 15, state: "altered" },
-    { score: 8, state: "altered" },
+    { score: 27, state: "preserved", text: /Cognição Normal/i },
+    { score: 21, state: "attention", text: /Comprometimento Cognitivo Leve/i },
+    { score: 15, state: "altered", text: /Comprometimento Cognitivo Moderado/i },
+    { score: 8, state: "altered", text: /Comprometimento Cognitivo Grave/i },
   ] as const;
 
   for (const current of cases) {
@@ -109,14 +110,38 @@ test("MoCA preserva a interpretação educacional registrada sem criar gravidade
         dimension: "cognicao",
         score: current.score,
         scoreText: `Bruto ${current.score}/30 · corrigido ${current.score}/30`,
-        classification: "Abaixo da referência de rastreio educacional adotada",
+        classification: "Registro legado",
       }),
     ], "cognicao");
 
     assert.equal(summary.state, current.state);
-    assert.match(summary.results[0]?.value ?? "", /rastreio educacional/i);
-    assert.doesNotMatch(summary.results[0]?.value ?? "", /comprometimento cognitivo (leve|moderado|grave)|CCL|MCI/i);
-    if (current.score < 26) assert.notEqual(summary.stateLabel, "Sem alteração sinalizada nesta consulta");
+    assert.match(summary.results[0]?.value ?? "", current.text);
+    assert.match(summary.results[0]?.value ?? "", /rastreio/i);
+  }
+});
+
+test("MEEM exibe as faixas de rastreio solicitadas", () => {
+  const cases = [
+    { score: 24, state: "preserved", text: /Cognição Preservada/i },
+    { score: 23, state: "attention", text: /Comprometimento Cognitivo Leve/i },
+    { score: 19, state: "altered", text: /Comprometimento Cognitivo Moderado/i },
+    { score: 9, state: "altered", text: /Comprometimento Cognitivo Grave/i },
+  ] as const;
+
+  for (const current of cases) {
+    const summary = domainSummary([
+      scale({
+        code: "meem",
+        name: "MEEM",
+        dimension: "cognicao",
+        score: current.score,
+        scoreText: `${current.score}/30`,
+        classification: "Registro legado",
+      }),
+    ], "cognicao");
+    assert.equal(summary.state, current.state);
+    assert.match(summary.results[0]?.value ?? "", current.text);
+    assert.match(summary.results[0]?.value ?? "", /rastreio/i);
   }
 });
 
@@ -249,4 +274,53 @@ test("ajuda médica imediata é resumida sem perder alerta de autoagressão", ()
   assert.ok(guidance.length <= 2);
   assert.match(guidance[0] ?? "", /piora súbita importante/i);
   assert.ok(guidance.some((item) => /fala sobre morte|intenção de se machucar/i.test(item)));
+});
+
+
+test("MoCA preservado com NPI positivo mantém cognição preservada no texto e acrescenta manejo comportamental", () => {
+  const moca = scale({
+    code: "cognitive_domain_observation",
+    name: "MEEM/MoCA — preenchimento por domínios",
+    dimension: "cognicao",
+    score: 27,
+    scoreText: "MoCA — bruto 27/30 · corrigido 27/30",
+    classification: "Cognição Normal no rastreio",
+    clinicalColor: "verde",
+    collectedData: [
+      { field: "instrument", value: "moca" },
+      { field: "moca_visuospatial", value: "5" },
+      { field: "moca_naming", value: "3" },
+      { field: "moca_attention", value: "6" },
+      { field: "moca_language", value: "3" },
+      { field: "moca_abstraction", value: "2" },
+      { field: "moca_delayed_recall", value: "2" },
+      { field: "moca_orientation", value: "6" },
+      { field: "moca_education_years", value: "13" },
+    ],
+  });
+  const npi = scale({
+    code: "npi",
+    name: "NPI — Inventário Neuropsiquiátrico",
+    dimension: "cognicao",
+    score: 6,
+    scoreText: "NPI 6/120 · 1 domínio(s) positivo(s)",
+    classification: "Sintomas neuropsiquiátricos presentes em 1 domínio(s)",
+    clinicalColor: "amarelo",
+    collectedData: [
+      { field: "npi_agitation_frequency", value: "3" },
+      { field: "npi_agitation_severity", value: "2" },
+    ],
+  });
+
+  const summary = domainSummary([moca, npi], "cognicao");
+  const guidance = summary.guidance.join(" ");
+
+  assert.equal(summary.state, "attention");
+  assert.match(summary.results.find((item) => item.scaleCode === "cognitive_domain_observation")?.value ?? "", /Cognição Normal no rastreio/i);
+  assert.doesNotMatch(guidance, /rastreio cognitivo foi positivo/i);
+  assert.match(guidance, /Memória\/orientação foi uma das áreas mais acometidas/i);
+  assert.match(guidance, /NPI registrou sintomas neuropsiquiátricos/i);
+  assert.match(guidance, /agitação, agressividade ou irritabilidade/i);
+  assert.ok(summary.evidenceReferences.some((reference) => reference.pmid === "40051590"));
+  assert.ok(summary.evidenceReferences.some((reference) => reference.pmid === "42563132"));
 });
