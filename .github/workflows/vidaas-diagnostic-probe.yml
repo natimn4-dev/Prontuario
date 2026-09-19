@@ -1,6 +1,7 @@
 name: VIDaaS Diagnostic Probe
 
 on:
+  workflow_dispatch:
   push:
     branches: [main]
 
@@ -18,7 +19,7 @@ jobs:
           set -euo pipefail
           LAST_FAILURE_CLASS="UNAVAILABLE"
           for attempt in $(seq 1 30); do
-            if ! BODY="$(curl -fsS --max-time 20 -H 'Cache-Control: no-cache' https://prontuario.nataliamendesgeriatra.com/api/health/auth)"; then
+            if ! BODY="$(curl -fsS --max-time 20 -H 'Cache-Control: no-cache' -H 'User-Agent: prontuario-vidaas-diagnostic-probe/1.0' https://prontuario.nataliamendesgeriatra.com/api/health/auth)"; then
               if [[ "$attempt" -lt 30 ]]; then
                 sleep 10
                 continue
