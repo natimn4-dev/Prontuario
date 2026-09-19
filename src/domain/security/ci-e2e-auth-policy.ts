@@ -38,3 +38,16 @@ export function isCiE2EAuthEnvironment(env: CiE2EAuthEnvironment = process.env):
 
   return databaseLooksEphemeral(env.DATABASE_URL);
 }
+
+
+export function hasCiE2ERequestCredentials(
+  headers: Pick<Headers, "get">,
+  env: CiE2EAuthEnvironment = process.env,
+): boolean {
+  if (!isCiE2EAuthEnvironment(env)) return false;
+  const email = headers.get("x-prontuario-e2e-user")?.trim() ?? "";
+  const secret = headers.get("x-prontuario-e2e-secret") ?? "";
+  return isSyntheticCiEmail(email)
+    && Boolean(secret)
+    && secret === (env.E2E_AUTH_SECRET ?? "");
+}
