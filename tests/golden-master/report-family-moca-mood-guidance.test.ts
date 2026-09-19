@@ -15,6 +15,7 @@ function scale(input: {
   score: number;
   scoreText?: string;
   classification?: string;
+  clinicalColor?: AgaScaleReportSection["clinicalColor"];
 }): AgaScaleReportSection {
   return {
     code: input.code,
@@ -34,6 +35,7 @@ function scale(input: {
       scoreText: input.scoreText ?? `${input.score}`,
       ...(input.classification ? { classification: input.classification } : {}),
     },
+    ...(input.clinicalColor ? { clinicalColor: input.clinicalColor } : {}),
     interpretation: input.classification,
     relatedProblemProposals: [],
     interventionSuggestions: [],
@@ -116,6 +118,81 @@ test("MoCA preserva a interpretação educacional registrada sem criar gravidade
     assert.doesNotMatch(summary.results[0]?.value ?? "", /comprometimento cognitivo (leve|moderado|grave)|CCL|MCI/i);
     if (current.score < 26) assert.notEqual(summary.stateLabel, "Sem alteração sinalizada nesta consulta");
   }
+});
+
+test("FRAIL-BR diferencia orientações para robusto, pré-frágil e frágil", () => {
+  const cases = [
+    { score: 0, color: "verde" as const, marker: "não identificou critérios de fragilidade" },
+    { score: 1, color: "amarelo" as const, marker: "indica pré-fragilidade" },
+    { score: 3, color: "vermelho" as const, marker: "indica fragilidade" },
+  ];
+
+  const summaries = cases.map((current) => domainSummary([
+    scale({
+      code: "frail_br",
+      name: "FRAIL-BR",
+      dimension: "fragilidade",
+      score: current.score,
+      scoreText: `${current.score}/5`,
+      clinicalColor: current.color,
+    }),
+  ], "fragilidade"));
+
+  assert.deepEqual(summaries.map((summary) => summary.state), ["preserved", "attention", "altered"]);
+  assert.ok(summaries.every((summary, index) => summary.guidance.some((item) => item.includes(cases[index]!.marker))));
+  assert.notDeepEqual(summaries[0]?.guidance, summaries[1]?.guidance);
+  assert.notDeepEqual(summaries[1]?.guidance, summaries[2]?.guidance);
+  assert.ok(summaries[0]?.evidenceReferences.some((reference) => reference.pmid === "32020713"));
+  assert.ok(summaries[1]?.evidenceReferences.some((reference) => reference.pmid === "42620771"));
+  assert.ok(summaries[2]?.evidenceReferences.some((reference) => reference.pmid === "42570706"));
+});
+
+test("cognição preservada não recebe orientação de supervisão própria de alteração cognitiva", () => {
+  const preserved = domainSummary([
+    scale({
+      code: "moca",
+      name: "MoCA",
+      dimension: "cognicao",
+      score: 27,
+      scoreText: "27/30",
+      classification: "Dentro do esperado",
+    }),
+  ], "cognicao");
+  const attention = domainSummary([
+    scale({
+      code: "moca",
+      name: "MoCA",
+      dimension: "cognicao",
+      score: 21,
+      scoreText: "21/30",
+      classification: "Sinal de atenção no rastreio",
+    }),
+  ], "cognicao");
+  const altered = domainSummary([
+    scale({
+      code: "moca",
+      name: "MoCA",
+      dimension: "cognicao",
+      score: 15,
+      scoreText: "15/30",
+      classification: "Alteração no rastreio",
+    }),
+  ], "cognicao");
+
+  assert.equal(preserved.state, "preserved");
+  assert.ok(preserved.guidance.some((item) => /não indica necessidade de supervisão sistemática/i.test(item)));
+  assert.ok(preserved.guidance.some((item) => /não exclui alterações iniciais/i.test(item)));
+  assert.ok(!preserved.guidance.some((item) => /erros em medicamentos|apoio direto do cuidador/i.test(item)));
+
+  assert.equal(attention.state, "attention");
+  assert.ok(attention.guidance.some((item) => /não confirma demência/i.test(item)));
+  assert.ok(attention.guidance.some((item) => /supervisão proporcional ao risco/i.test(item)));
+
+  assert.equal(altered.state, "altered");
+  assert.ok(altered.guidance.some((item) => /não estabelece sozinho diagnóstico de demência/i.test(item)));
+  assert.ok(altered.guidance.some((item) => /apoio direto do cuidador/i.test(item)));
+  assert.ok(altered.evidenceReferences.some((reference) => reference.pmid === "26052687"));
+  assert.notDeepEqual(preserved.guidance, altered.guidance);
 });
 
 test("GDS alterada nunca aparece como preservada e recebe orientação específica para depressão tardia", () => {

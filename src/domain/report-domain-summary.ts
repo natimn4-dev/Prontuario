@@ -14,6 +14,7 @@ import type {
 } from "./intrinsic-capacity-guidance.ts";
 import { intrinsicCapacityGuidanceForDomain } from "./intrinsic-capacity-guidance.ts";
 import { COGNITIVE_DOMAIN_OBSERVATION_FIELDS } from "./cognitive-domain-observation.ts";
+import { FRAIL_BR } from "./clinical-config/legacy-core.ts";
 
 export type ReportDomainState = "altered" | "attention" | "preserved" | "not-assessed";
 
@@ -70,6 +71,112 @@ type DomainGuidance = {
   evidenceReferences: readonly IntrinsicCapacityEvidenceReference[];
 };
 
+type FrailtyGuidanceProfile = "robust" | "pre-frail" | "frail";
+
+const FRAILTY_GUIDANCE: Readonly<Record<FrailtyGuidanceProfile, DomainGuidance>> = {
+  robust: {
+    actions: [
+      "O FRAIL-BR não identificou critérios de fragilidade nesta consulta. Preserve a autonomia e incentive atividade física regular, incluindo componentes de força, equilíbrio e resistência, sempre com progressão compatível com a capacidade e a segurança da pessoa.",
+      "Mantenha alimentação suficiente e variada, hidratação conforme o plano clínico, sono regular e participação em atividades significativas. Reavalie se surgirem perda de peso não intencional, fadiga persistente, redução de força, quedas ou perda de desempenho.",
+    ],
+    evidenceReferences: [
+      {
+        label: "Consequências da inatividade física em idosos",
+        pmid: "32020713",
+        url: "https://pubmed.ncbi.nlm.nih.gov/32020713/",
+        relevance: "Revisão de revisões e meta-análises: a inatividade física se associa a desfechos adversos; a orientação deve estimular movimento compatível com a capacidade e o contexto clínico.",
+      },
+    ],
+  },
+  "pre-frail": {
+    actions: [
+      "O FRAIL-BR indica pré-fragilidade — uma janela de oportunidade para evitar progressão. Priorize exercício multicomponente, com força e equilíbrio, adaptado à capacidade e com supervisão quando houver risco; revise nutrição, perda de peso, quedas e medicamentos com a equipe.",
+      "Interrompa períodos prolongados sentado ou deitado com atividades seguras e curtas, preservando a participação nas tarefas do dia. Avise a equipe se houver mais fadiga, fraqueza, quedas, redução da ingestão ou dificuldade para caminhar e levantar-se.",
+    ],
+    evidenceReferences: [
+      {
+        label: "Intervenções multidomínio para fragilidade e pré-fragilidade",
+        pmid: "42620771",
+        url: "https://pubmed.ncbi.nlm.nih.gov/42620771/",
+        relevance: "Revisão sistemática: exercício, especialmente treinamento funcional e de resistência, apresenta benefícios consistentes; apoio nutricional pode complementar uma abordagem individualizada e multidomínio.",
+      },
+      {
+        label: "Exercício e força muscular em pessoas idosas",
+        pmid: "42570706",
+        url: "https://pubmed.ncbi.nlm.nih.gov/42570706/",
+        relevance: "Revisão sistemática e meta-análise: exercício resistido melhora força muscular; intervenções devem ser adaptadas à capacidade e segurança de cada pessoa.",
+      },
+    ],
+  },
+  frail: {
+    actions: [
+      "O FRAIL-BR indica fragilidade e maior vulnerabilidade a doenças e outros estressores. Organize avaliação e plano individualizados, combinando exercício funcional e resistido supervisionado quando seguro, cuidado nutricional, revisão de medicamentos, prevenção de quedas e investigação de causas reversíveis.",
+      "Planeje o dia em etapas curtas, oferecendo ajuda antes da exaustão sem retirar toda a participação possível. Comunique perda de peso, redução da ingestão, piora da força, quedas, dificuldade para levantar ou caminhar e qualquer declínio funcional recente.",
+    ],
+    evidenceReferences: [
+      {
+        label: "Intervenções multidomínio para fragilidade e pré-fragilidade",
+        pmid: "42620771",
+        url: "https://pubmed.ncbi.nlm.nih.gov/42620771/",
+        relevance: "Revisão sistemática: intervenções de exercício e nutrição devem ser individualizadas e integradas ao cuidado da pessoa idosa frágil.",
+      },
+      {
+        label: "Exercício e força muscular em pessoas idosas",
+        pmid: "42570706",
+        url: "https://pubmed.ncbi.nlm.nih.gov/42570706/",
+        relevance: "Revisão sistemática e meta-análise: exercício resistido melhora força muscular; a prescrição precisa considerar capacidade, comorbidades e segurança.",
+      },
+    ],
+  },
+};
+
+const COGNITIVE_SCREEN_GUIDANCE: Readonly<Record<"preserved" | "attention" | "altered", DomainGuidance>> = {
+  preserved: {
+    actions: [
+      "O rastreio cognitivo desta consulta ficou dentro da faixa esperada. Preserve a autonomia nas tarefas que a pessoa realiza com segurança; este resultado isolado não indica necessidade de supervisão sistemática.",
+      "Mantenha atividade física, convívio social, sono regular, correção de visão e audição e controle dos fatores de risco acompanhados pela equipe. Se houver queixa persistente ou mudança percebida no dia a dia, registre e reavalie, pois um rastreio preservado não exclui alterações iniciais.",
+    ],
+    evidenceReferences: [
+      {
+        label: "FINGER: intervenção multidomínio para preservar a função cognitiva",
+        pmid: "25771249",
+        url: "https://pubmed.ncbi.nlm.nih.gov/25771249/",
+        relevance: "Ensaio clínico randomizado: combinação de dieta, exercício, treino cognitivo e monitoramento de risco vascular reduziu o declínio cognitivo em idosos sob risco.",
+      },
+      {
+        label: "ACHIEVE: intervenção auditiva e declínio cognitivo",
+        pmid: "37478886",
+        url: "https://pubmed.ncbi.nlm.nih.gov/37478886/",
+        relevance: "Ensaio clínico: o cuidado auditivo é relevante para a saúde e a comunicação; o efeito cognitivo foi mais evidente em participantes com maior risco, sem justificar promessa universal.",
+      },
+    ],
+  },
+  attention: {
+    actions: [
+      "O rastreio cognitivo apresentou sinal de atenção, mas isso não confirma demência. Interprete o resultado com escolaridade, funcionalidade, humor, sono, visão, audição, medicamentos e contexto clínico, mantendo a decisão diagnóstica sob revisão médica.",
+      "Observe tarefas em que surgem erros e ofereça lembretes ou supervisão proporcional ao risco, sem retirar a autonomia que permanece segura. Organize reavaliação clínica se houver persistência, progressão ou impacto nas atividades do dia a dia.",
+    ],
+    evidenceReferences: [{
+      label: "Testes cognitivos para detectar demência",
+      pmid: "26052687",
+      url: "https://pubmed.ncbi.nlm.nih.gov/26052687/",
+      relevance: "Revisão sistemática e meta-análise: testes cognitivos têm desempenho variável e devem integrar avaliação clínica, não substituir o diagnóstico contextualizado.",
+    }],
+  },
+  altered: {
+    actions: [
+      "O rastreio cognitivo sinalizou alteração mais importante, mas não estabelece sozinho diagnóstico de demência nem sua causa. É indicada revisão médica contextualizada, incluindo evolução, funcionalidade, informante, humor, sono, visão, audição, medicamentos e causas potencialmente reversíveis.",
+      "Se houver erros em medicamentos, finanças, deslocamentos ou outras tarefas de risco, organize apoio direto do cuidador nessas atividades e preserve a participação segura nas demais. Confusão ou sonolência de início súbito exige avaliação imediata.",
+    ],
+    evidenceReferences: [{
+      label: "Testes cognitivos para detectar demência",
+      pmid: "26052687",
+      url: "https://pubmed.ncbi.nlm.nih.gov/26052687/",
+      relevance: "Revisão sistemática e meta-análise: nenhum teste cognitivo isolado substitui avaliação clínica e funcional para estabelecer diagnóstico.",
+    }],
+  },
+};
+
 const DOMAIN_GUIDANCE: Readonly<Partial<Record<string, DomainGuidance>>> = {
   funcionalidade: {
     actions: [
@@ -86,9 +193,8 @@ const DOMAIN_GUIDANCE: Readonly<Partial<Record<string, DomainGuidance>>> = {
   },
   fragilidade: {
     actions: [
-      "Fragilidade não significa que a pessoa deva parar: manter movimento seguro e regular ajuda a preservar força, equilíbrio e independência. Priorize as atividades e exercícios que já foram considerados seguros para ela, respeitando limites e necessidade de supervisão.",
-      "Organize o dia em etapas curtas, com pausas antes de chegar à exaustão. Evite longos períodos de imobilidade e incentive participação nas tarefas que a pessoa ainda consegue realizar com segurança.",
-      "Avise a equipe se houver perda de peso sem intenção, redução de força, mais dificuldade para levantar ou caminhar, quedas ou cansaço que esteja aumentando. Esses sinais merecem revisão porque a fragilidade pode mudar ao longo do tempo.",
+      "Interprete a fragilidade junto com funcionalidade, força, mobilidade, nutrição, doenças e medicamentos; o resultado isolado não substitui avaliação clínica individualizada.",
+      "Avise a equipe se houver perda de peso sem intenção, redução de força, mais dificuldade para levantar ou caminhar, quedas ou cansaço que esteja aumentando.",
     ],
     evidenceReferences: [
       {
@@ -240,6 +346,25 @@ function currentGdsScore(scales: readonly AgaScaleReportSection[]): number | und
   return gds ? scoreNumber(gds) : undefined;
 }
 
+function frailtyProfileFor(scales: readonly AgaScaleReportSection[]): FrailtyGuidanceProfile | undefined {
+  const frail = scales.find((scale) => scale.code === "frail_br" && scale.assessedInTargetConsultation);
+  if (!frail) return undefined;
+
+  const score = scoreNumber(frail);
+  if (typeof score === "number") {
+    const range = FRAIL_BR.ranges.find((item) => score >= item.min && score <= item.max);
+    if (range?.classe === "Idoso robusto") return "robust";
+    if (range?.classe === "Idoso pré-frágil") return "pre-frail";
+    if (range?.classe === "Idoso frágil") return "frail";
+  }
+
+  const classification = frail.result.classification ?? "";
+  if (/pré[- ]?fr[aá]gil/i.test(classification)) return "pre-frail";
+  if (/fr[aá]gil/i.test(classification)) return "frail";
+  if (/robusto/i.test(classification)) return "robust";
+  return undefined;
+}
+
 function functionalDependenceDetected(scales: readonly AgaScaleReportSection[]): boolean {
   return scales.some((scale) => {
     if (!scale.assessedInTargetConsultation || typeof scale.result.score !== "number") return false;
@@ -329,8 +454,16 @@ export function buildReportDomainSummaries(
       ? intrinsicCapacityGuidanceForDomain(intrinsicCode)
       : undefined;
     const domainGuidance = DOMAIN_GUIDANCE[dimension];
+    const stateAwareGuidance = dimension === "fragilidade"
+      ? (() => {
+          const profile = frailtyProfileFor(dimensionScales);
+          return profile ? FRAILTY_GUIDANCE[profile] : undefined;
+        })()
+      : dimension === "cognicao" && (state === "preserved" || state === "attention" || state === "altered")
+        ? COGNITIVE_SCREEN_GUIDANCE[state]
+        : undefined;
     const genericGuidance = unique([
-      ...(alteredIntrinsicGuidance?.actions ?? intrinsicGuidance?.actions ?? domainGuidance?.actions ?? []),
+      ...(stateAwareGuidance?.actions ?? alteredIntrinsicGuidance?.actions ?? intrinsicGuidance?.actions ?? domainGuidance?.actions ?? []),
     ]);
     const functionallyContextualized = contextualFamilyGuidance(
       dimension,
@@ -357,7 +490,8 @@ export function buildReportDomainSummaries(
     const requiresMedicalGuidance = (state === "altered" || state === "attention") && guidance.length === 0;
     const evidenceReferences = isAlteredGds
       ? LATE_LIFE_DEPRESSION_EVIDENCE
-      : alteredIntrinsicGuidance?.evidenceReferences
+      : stateAwareGuidance?.evidenceReferences
+        ?? alteredIntrinsicGuidance?.evidenceReferences
         ?? intrinsicGuidance?.evidenceReferences
         ?? domainGuidance?.evidenceReferences
         ?? [];
