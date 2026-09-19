@@ -135,7 +135,7 @@ function cognitiveScreenBand(instrument: "meem" | "moca", score: number): Cognit
   return "severe";
 }
 
-function cognitiveScreenClassification(instrument: "meem" | "moca", score: number): string {
+export function cognitiveScreenClassification(instrument: "meem" | "moca", score: number): string {
   const band = cognitiveScreenBand(instrument, score);
   if (band === "normal") return instrument === "moca"
     ? "Cognição Normal no rastreio"
