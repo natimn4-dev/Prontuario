@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import {
+  hasCiE2ERequestCredentials,
   isCiE2EAuthEnvironment,
   isSyntheticCiEmail,
 } from "../../src/domain/security/ci-e2e-auth-policy.ts";
@@ -33,4 +34,24 @@ test("recusa identidades que não sejam sintéticas", () => {
   assert.equal(isSyntheticCiEmail("medica-ci@example.com"), false);
   assert.equal(isSyntheticCiEmail("ci-e2e-user@gmail.com"), false);
   assert.equal(isSyntheticCiEmail("ci-e2e-user@example.com"), true);
+});
+
+
+test("perímetro aceita somente cabeçalhos sintéticos com segredo correto no CI", () => {
+  const good = new Headers({
+    "x-prontuario-e2e-user": "ci-e2e-dietary@example.com",
+    "x-prontuario-e2e-secret": base.E2E_AUTH_SECRET,
+  });
+  assert.equal(hasCiE2ERequestCredentials(good, base), true);
+
+  const wrongSecret = new Headers({
+    "x-prontuario-e2e-user": "ci-e2e-dietary@example.com",
+    "x-prontuario-e2e-secret": "segredo-incorreto",
+  });
+  assert.equal(hasCiE2ERequestCredentials(wrongSecret, base), false);
+
+  assert.equal(
+    hasCiE2ERequestCredentials(good, { ...base, NODE_ENV: "production" }),
+    false,
+  );
 });
