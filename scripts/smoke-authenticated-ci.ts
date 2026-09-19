@@ -1,8 +1,24 @@
 import assert from "node:assert/strict";
 import { createHash } from "node:crypto";
-import { prisma } from "../src/server/db.ts";
+import { PrismaMariaDb } from "@prisma/adapter-mariadb";
+import { PrismaClient } from "../src/generated/prisma/client.ts";
 import { isCiE2EAuthEnvironment } from "../src/domain/security/ci-e2e-auth-policy.ts";
 
+function databaseConfig() {
+  const raw = process.env.DATABASE_URL;
+  if (!raw) throw new Error("DATABASE_URL não configurada.");
+  const url = new URL(raw);
+  return {
+    host: url.hostname,
+    port: Number(url.port || 3306),
+    user: decodeURIComponent(url.username),
+    password: decodeURIComponent(url.password),
+    database: url.pathname.replace(/^\\//, ""),
+    connectionLimit: 2,
+  };
+}
+
+const prisma = new PrismaClient({ adapter: new PrismaMariaDb(databaseConfig()) });
 const baseUrl = process.env.E2E_BASE_URL ?? "http://127.0.0.1:3100";
 const secret = process.env.E2E_AUTH_SECRET ?? "";
 const email = "ci-e2e-dietary@example.com";
