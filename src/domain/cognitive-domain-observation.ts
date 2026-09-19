@@ -120,6 +120,38 @@ function asOptionalScore(value: unknown): number | null {
   return value;
 }
 
+type CognitiveScreenBand = "normal" | "mild" | "moderate" | "severe";
+
+function cognitiveScreenBand(instrument: "meem" | "moca", score: number): CognitiveScreenBand {
+  if (instrument === "moca") {
+    if (score >= 26) return "normal";
+    if (score >= 18) return "mild";
+    if (score >= 10) return "moderate";
+    return "severe";
+  }
+  if (score >= 24) return "normal";
+  if (score >= 20) return "mild";
+  if (score >= 10) return "moderate";
+  return "severe";
+}
+
+function cognitiveScreenClassification(instrument: "meem" | "moca", score: number): string {
+  const band = cognitiveScreenBand(instrument, score);
+  if (band === "normal") return instrument === "moca"
+    ? "Cognição Normal no rastreio"
+    : "Cognição Preservada (Normal) no rastreio";
+  if (band === "mild") return instrument === "moca"
+    ? "Comprometimento Cognitivo Leve (CCL / MCI) — faixa de rastreio"
+    : "Comprometimento Cognitivo Leve — faixa de rastreio";
+  if (band === "moderate") return "Comprometimento Cognitivo Moderado — faixa de rastreio";
+  return "Comprometimento Cognitivo Grave — faixa de rastreio";
+}
+
+function cognitiveScreenColor(instrument: "meem" | "moca", score: number): "verde" | "amarelo" | "vermelho" {
+  const band = cognitiveScreenBand(instrument, score);
+  return band === "normal" ? "verde" : band === "mild" ? "amarelo" : "vermelho";
+}
+
 export function scoreCognitiveDomainObservation(raw: Record<string, unknown>) {
   const allowed = new Set<string>([
     COGNITIVE_DOMAIN_OBSERVATION_INSTRUMENT_FIELD.id,
@@ -170,7 +202,7 @@ export function scoreCognitiveDomainObservation(raw: Record<string, unknown>) {
   const altered = instrument === "clinical_observation" ? assessed.filter((field) => answers[field.id] === "change_observed") : [];
 
   const classification = instrument !== "clinical_observation"
-    ? `${instrumentLabel} — subtotais somados; rastreio sujeito à revisão clínica`
+    ? cognitiveScreenClassification(instrument, correctedScore ?? 0)
     : assessed.length === 0
       ? "Domínios não avaliados nesta consulta"
       : altered.length > 0
@@ -202,10 +234,10 @@ export function scoreCognitiveDomainObservation(raw: Record<string, unknown>) {
         : assessed.length > 0
           ? instrument === "clinical_observation"
             ? `Não foram registradas alterações nos domínios avaliados nesta consulta para ${instrumentLabel}. Esse achado não exclui comprometimento cognitivo sutil e deve ser integrado à história e à funcionalidade.`
-            : `${instrumentLabel}: os subtotais foram somados automaticamente. O resultado é rastreio, não diagnóstico; integrar escolaridade, história e funcionalidade.`
+            : `${instrumentLabel}: ${cognitiveScreenClassification(instrument, correctedScore ?? 0)}. O resultado é rastreio, não diagnóstico; integrar escolaridade, história e funcionalidade.`
           : "Não há dados suficientes para descrever o perfil cognitivo nesta consulta.",
       clinicalColor: instrument !== "clinical_observation"
-        ? "cinza" as const
+        ? cognitiveScreenColor(instrument, correctedScore ?? 0)
         : altered.length > 0 ? "amarelo" as const : assessed.length > 0 ? "verde" as const : "cinza" as const,
     },
   };
