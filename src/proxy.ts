@@ -1,12 +1,15 @@
 import type { NextRequest } from "next/server.js";
 import { parseEmailSet } from "./domain/security/auth-policy";
 import { isWorkspaceSessionAuthorized } from "./domain/security/route-access";
+import { hasCiE2ERequestCredentials } from "./domain/security/ci-e2e-auth-policy";
 import { auth } from "./server/auth/auth";
 import { createRequestGuard } from "./server/auth/request-guard";
 
 const allowedEmails = parseEmailSet(process.env.AUTH_ALLOWED_EMAILS);
 
 const guardRequest = createRequestGuard(async (requestHeaders) => {
+  if (hasCiE2ERequestCredentials(requestHeaders)) return true;
+
   const session = await auth.api.getSession({
     headers: requestHeaders,
     query: { disableCookieCache: true },
