@@ -4,6 +4,7 @@ import { readFileSync } from "node:fs";
 
 const editor = readFileSync("src/components/consultations/soap-editor.tsx", "utf8");
 const noteService = readFileSync("src/server/clinical/consultation-note.ts", "utf8");
+const preventiveExamOrders = readFileSync("src/domain/preventive-exam-orders.ts", "utf8");
 
 test("Evolução SOAP oferece campo e histórico longitudinal de exames", () => {
   assert.match(editor, /Exames laboratoriais e de imagem/);
@@ -12,6 +13,18 @@ test("Evolução SOAP oferece campo e histórico longitudinal de exames", () => 
   assert.match(editor, /view\.exams\.history\.map/);
   assert.match(noteService, /buildConsultationExamView/);
   assert.match(noteService, /patientId: consultation\.patientId/);
+});
+
+test("Evolução SOAP oferece checklist explícito de exames e rastreios solicitados", () => {
+  assert.match(editor, /Exames e rastreios solicitados/);
+  assert.match(preventiveExamOrders, /Solicitado exames laboratoriais/);
+  assert.match(preventiveExamOrders, /Pesquisa de sangue oculto nas fezes/);
+  assert.match(preventiveExamOrders, /Colonoscopia/);
+  assert.match(preventiveExamOrders, /Mamografia/);
+  assert.match(preventiveExamOrders, /USG de mamas e axilas/);
+  assert.match(preventiveExamOrders, /Densitometria óssea/);
+  assert.match(editor, /preventiveExamOrders/);
+  assert.match(editor, /não define indicação clínica/);
 });
 
 test("cópias separada e combinada preservam o fluxo aprovado e possuem fallback de navegador", () => {

@@ -20,6 +20,11 @@ import {
 } from "@/domain/clinical-copy-report";
 import type { ClinicalExamHistoryItem } from "@/domain/consultation-exams";
 import { scaleCatalogEntry } from "@/domain/scale-catalog";
+import {
+  PREVENTIVE_EXAM_ORDER_OPTIONS,
+  preventiveExamOrderLabel,
+  type PreventiveExamOrder,
+} from "@/domain/preventive-exam-orders";
 import suggestionStyles from "./professional-plan-suggestion.module.css";
 import styles from "./soap-editor.module.css";
 
@@ -53,6 +58,7 @@ type NoteView = {
     anthropometry?: string;
     vaccinationReview?: { status: VaccinationReviewStatus; pendingVaccines?: readonly string[] };
     planByProblem?: Record<string, readonly string[]>;
+    preventiveExamOrders?: readonly PreventiveExamOrder[];
   };
   exams: { current: string; history: ClinicalExamHistoryItem[] };
   problems: Problem[];
@@ -93,6 +99,7 @@ type Draft = {
   pendingVaccines: string[];
   legacyPendingVaccines: string[];
   planTextByProblem: Record<string, string>;
+  preventiveExamOrders: PreventiveExamOrder[];
 };
 
 const KNOWN_VACCINE_NAMES = new Set(GERIATRIC_VACCINE_CHECKLIST.map((item) => item.name));
@@ -114,6 +121,7 @@ function draftFromView(view: NoteView): Draft {
       suggestions: view.planSuggestions,
       seedSuggestions: view.consultationStatus !== "FINALIZED",
     }),
+    preventiveExamOrders: [...(view.fields.preventiveExamOrders ?? [])],
   };
 }
 
@@ -157,7 +165,11 @@ function renderSoap(draft: Draft, problems: Problem[], medications: MedicationIt
   else active.forEach((problem, index) => lines.push(`${index + 1}. ${problem.title}`));
 
   lines.push("", "P — PLANO");
-  if (active.length === 0) lines.push("sem dados registrados");
+  if (draft.preventiveExamOrders.length > 0) {
+    lines.push("Solicitações de exames e rastreios:");
+    draft.preventiveExamOrders.forEach((order) => lines.push(`- ${preventiveExamOrderLabel(order)}`));
+  }
+  if (active.length === 0 && draft.preventiveExamOrders.length === 0) lines.push("sem dados registrados");
   else active.forEach((problem, index) => {
     lines.push(`${index + 1}. ${problem.title}`);
     const actions = actionsFromText(draft.planTextByProblem[problem.id] ?? "");
@@ -338,6 +350,23 @@ export function SoapEditor({ consultationId }: { consultationId: string }) {
     setFeedback(null);
   }
 
+  function setPreventiveExamOrder(order: PreventiveExamOrder, checked: boolean) {
+    setDraft((current) => {
+      if (!current) return current;
+      const selected = new Set(current.preventiveExamOrders);
+      if (checked) selected.add(order);
+      else selected.delete(order);
+      return {
+        ...current,
+        preventiveExamOrders: PREVENTIVE_EXAM_ORDER_OPTIONS
+          .map((option) => option.id)
+          .filter((id) => selected.has(id)),
+      };
+    });
+    setDirty(true);
+    setFeedback(null);
+  }
+
   async function save() {
     if (!view || !draft || saving || view.consultationStatus === "FINALIZED") return;
     setSaving(true);
@@ -363,6 +392,7 @@ export function SoapEditor({ consultationId }: { consultationId: string }) {
           examsText: draft.examsText,
           vaccinationReview,
           planByProblem,
+          preventiveExamOrders: draft.preventiveExamOrders,
         }),
       });
       const body = await response.json().catch(() => null) as (NoteView & { message?: string }) | null;
@@ -371,7 +401,7 @@ export function SoapEditor({ consultationId }: { consultationId: string }) {
       setDraft(draftFromView(body));
       setDirty(false);
       setDismissedSuggestions(new Set());
-      setFeedback({ kind: "success", text: "Evolução, exames, vacinas e plano/condutas salvos nesta consulta." });
+      setFeedback({ kind: "success", text: "Evolução, exames, vacinas, solicitações e plano/condutas salvos nesta consulta." });
       window.dispatchEvent(new CustomEvent("clinical-note-changed", { detail: { consultationId } }));
     } catch (error) {
       setFeedback({ kind: "error", text: error instanceof Error ? error.message : "Não foi possível salvar a evolução e o plano." });
@@ -596,6 +626,35 @@ export function SoapEditor({ consultationId }: { consultationId: string }) {
             <strong>Plano e condutas em um só lugar</strong>
             <span>As orientações sugeridas já aparecem no rascunho quando ainda não há plano salvo. Revise e edite antes de salvar; abrir a consulta não grava nenhuma conduta.</span>
           </div>
+          <fieldset className={styles.preventivePanel}>
+            <legend>Exames e rastreios solicitados</legend>
+            <p className={styles.muted}>Marque somente as solicitações registradas nesta consulta. O sistema não define indicação clínica nem gera pedido automaticamente.</p>
+            <label className={styles.checkRow}>
+              <input
+                type="checkbox"
+                checked={draft.preventiveExamOrders.includes("LABORATORY_TESTS")}
+                disabled={finalized}
+                onChange={(event) => setPreventiveExamOrder("LABORATORY_TESTS", event.target.checked)}
+              />
+              <span>{preventiveExamOrderLabel("LABORATORY_TESTS")}</span>
+            </label>
+            <div className={styles.preventiveGroup}>
+              <strong>Rastreio</strong>
+              <div className={styles.vaccineGrid}>
+                {PREVENTIVE_EXAM_ORDER_OPTIONS.filter((option) => option.id !== "LABORATORY_TESTS").map((option) => (
+                  <label key={option.id} className={styles.checkRow}>
+                    <input
+                      type="checkbox"
+                      checked={draft.preventiveExamOrders.includes(option.id)}
+                      disabled={finalized}
+                      onChange={(event) => setPreventiveExamOrder(option.id, event.target.checked)}
+                    />
+                    <span>{option.label}</span>
+                  </label>
+                ))}
+              </div>
+            </div>
+          </fieldset>
           {activeProblems.length === 0 ? <p className={styles.muted}>Cadastre ou confirme problemas para vincular condutas.</p> : activeProblems.map((problem, index) => {
             const suggestion = view.planSuggestions.find((item) => item.problemId === problem.id);
             const visibleSuggestion = suggestion && !dismissedSuggestions.has(problem.id) ? suggestion : null;

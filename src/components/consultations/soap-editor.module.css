@@ -331,6 +331,31 @@
   font-weight: 850;
 }
 
+.preventivePanel {
+  display: grid;
+  gap: 10px;
+  margin: 0 0 18px !important;
+  padding-top: 18px !important;
+  border-left: 4px solid var(--primary) !important;
+  background: #faf7fd !important;
+}
+
+.preventivePanel > p {
+  margin: 0;
+}
+
+.preventiveGroup {
+  display: grid;
+  gap: 8px;
+  padding-top: 12px;
+  border-top: 1px solid #e8dfee;
+}
+
+.preventiveGroup > strong {
+  color: var(--ink);
+  font-size: 12px;
+}
+
 .planSummaryList {
   display: grid;
   gap: 10px;

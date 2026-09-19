@@ -46,6 +46,8 @@ test("plano e condutas têm editor único no SOAP, relatório permanece familiar
   assert.doesNotMatch(soap, /Adicionar ao rascunho/);
   assert.match(soap, /As orientações sugeridas já aparecem no rascunho quando ainda não há plano salvo/);
   assert.match(soap, /planByProblem/);
+  assert.match(soap, /preventiveExamOrders/);
+  assert.match(soap, /Exames e rastreios solicitados/);
   assert.match(soap, /Salvar evolução e plano/);
   assert.match(soap, /expectedNoteVersion/);
   assert.match(soap, /Consulta finalizada/);
@@ -82,6 +84,7 @@ test("plano e condutas têm editor único no SOAP, relatório permanece familiar
   assert.doesNotMatch(report, /displayResult/);
   assert.match(report, /CapacityDimensionHistoryChart/);
   assert.match(report, /Evolução da capacidade e da independência funcional/);
+  assert.match(report, /Condutas clínicas/);
   assert.doesNotMatch(report, /Equipe e encaminhamentos/);
   assert.match(report, /Quando procurar ajuda médica imediata/);
   assert.match(report, /Situações de urgência/);
