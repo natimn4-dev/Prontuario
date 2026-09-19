@@ -48,14 +48,24 @@ async function ciE2EUser(requestHeaders: Headers) {
 
   if (!user?.active || !user.accessManaged) return null;
 
+  const now = new Date();
   return {
     session: {
+      session: {
+        id: `ci-e2e-session-${user.id}`,
+        createdAt: now,
+        updatedAt: now,
+        userId: user.id,
+        expiresAt: new Date(now.getTime() + 60 * 60 * 1000),
+        token: "ci-e2e-synthetic-not-persisted",
+        ipAddress: null,
+        userAgent: "prontuario-ci-e2e",
+      },
       user: {
         id: user.id,
         email: user.email,
         name: user.name,
       },
-      ciE2E: true as const,
     },
     user,
   };
