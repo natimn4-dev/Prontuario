@@ -133,3 +133,83 @@ test("API e workspace devolvem as respostas persistidas para reabertura segura",
   assert.match(workspace, /storedAnswerStrings/);
   assert.match(workspace, /complementaryView\?\.latest\?\.find/);
 });
+
+
+test("MoCA aplica correção educacional e classifica todas as faixas de rastreio", () => {
+  const base = {
+    instrument: "moca",
+    moca_visuospatial: 5,
+    moca_naming: 3,
+    moca_attention: 6,
+    moca_language: 3,
+    moca_abstraction: 2,
+    moca_delayed_recall: 5,
+    moca_orientation: 6,
+    moca_education_years: 13,
+  } as const;
+
+  const cases = [
+    { score: 26, expected: /Cognição Normal/i, color: "verde" },
+    { score: 25, expected: /Comprometimento Cognitivo Leve/i, color: "amarelo" },
+    { score: 18, expected: /Comprometimento Cognitivo Leve/i, color: "amarelo" },
+    { score: 17, expected: /Moderado/i, color: "vermelho" },
+    { score: 10, expected: /Moderado/i, color: "vermelho" },
+    { score: 9, expected: /Grave/i, color: "vermelho" },
+  ] as const;
+
+  for (const current of cases) {
+    const raw = { ...base, moca_delayed_recall: Math.max(0, 5 - (30 - current.score)) };
+    const scored = scoreCognitiveDomainObservation(raw);
+    assert.equal(scored.result.score, current.score);
+    assert.match(scored.result.classification, current.expected);
+    assert.equal(scored.result.clinicalColor, current.color);
+  }
+
+  const educationAdjusted = scoreCognitiveDomainObservation({
+    ...base,
+    moca_delayed_recall: 4,
+    moca_education_years: 12,
+  });
+  assert.equal(educationAdjusted.result.score, 30);
+  assert.match(educationAdjusted.result.scoreText, /bruto 29\/30.*corrigido 30\/30/i);
+
+  const capped = scoreCognitiveDomainObservation({
+    ...base,
+    moca_education_years: 12,
+  });
+  assert.equal(capped.result.score, 30);
+});
+
+test("MEEM classifica preservado, leve, moderado e grave pelas faixas solicitadas", () => {
+  const make = (score: number) => scoreCognitiveDomainObservation({
+    instrument: "meem",
+    meem_orientation_temporal: Math.min(5, score),
+    meem_orientation_spatial: Math.min(5, Math.max(0, score - 5)),
+    meem_registration: Math.min(3, Math.max(0, score - 10)),
+    meem_attention: Math.min(5, Math.max(0, score - 13)),
+    meem_recall: Math.min(3, Math.max(0, score - 18)),
+    meem_naming: Math.min(2, Math.max(0, score - 21)),
+    meem_repetition: Math.min(1, Math.max(0, score - 23)),
+    meem_writing: Math.min(1, Math.max(0, score - 24)),
+    meem_commands: Math.min(3, Math.max(0, score - 25)),
+    meem_reading: Math.min(1, Math.max(0, score - 28)),
+    meem_diagram_copy: Math.min(1, Math.max(0, score - 29)),
+    meem_education: 12,
+  });
+
+  const cases = [
+    { score: 24, expected: /Cognição Preservada/i, color: "verde" },
+    { score: 23, expected: /Comprometimento Cognitivo Leve/i, color: "amarelo" },
+    { score: 20, expected: /Comprometimento Cognitivo Leve/i, color: "amarelo" },
+    { score: 19, expected: /Moderado/i, color: "vermelho" },
+    { score: 10, expected: /Moderado/i, color: "vermelho" },
+    { score: 9, expected: /Grave/i, color: "vermelho" },
+  ] as const;
+
+  for (const current of cases) {
+    const scored = make(current.score);
+    assert.equal(scored.result.score, current.score);
+    assert.match(scored.result.classification, current.expected);
+    assert.equal(scored.result.clinicalColor, current.color);
+  }
+});
