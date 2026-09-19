@@ -159,3 +159,123 @@ test("FAST 7d com Katz dependente mantém alteração e orientação baseada em 
   assert.doesNotMatch(guidance, /consolidadas no Plano de cuidados/i);
   assert.doesNotMatch(guidance, /ajuda apenas na medida necessária/i);
 });
+
+
+test("fragilidade usa orientações clinicamente distintas para robusto, pré-frágil e frágil", () => {
+  const makeDomain = (score: number, color: "verde" | "amarelo" | "vermelho") => {
+    const report = buildAgaReportModel({
+      patientId: `patient-frailty-${score}`,
+      consultationId: "consultation-current",
+      consultationStatus: "IN_REVIEW",
+      patientName: "Paciente Sintético",
+      longitudinalProblems: [],
+      longitudinalAssessments: [{
+        patientId: `patient-frailty-${score}`,
+        consultationId: "consultation-current",
+        scaleCode: "frail_br",
+        scaleVersion: "1.0",
+        score,
+        scoreText: `${score}/5`,
+        color,
+        appliedAt: "2026-09-19",
+      }],
+    });
+    return buildReportDomainSummaries(report.assessedScales, report.intrinsicCapacity)
+      .find((domain) => domain.code === "fragilidade");
+  };
+
+  const robust = makeDomain(0, "verde");
+  const preFrail = makeDomain(1, "amarelo");
+  const frail = makeDomain(3, "vermelho");
+
+  assert.equal(robust?.state, "preserved");
+  assert.match(robust?.guidance.join(" ") ?? "", /perfil é robusto/i);
+  assert.match(robust?.guidance.join(" ") ?? "", /não é necessário tratar a pessoa como frágil/i);
+  assert.doesNotMatch(robust?.guidance.join(" ") ?? "", /maior vulnerabilidade|plano geriátrico individualizado/i);
+
+  assert.equal(preFrail?.state, "attention");
+  assert.match(preFrail?.guidance.join(" ") ?? "", /pré-fragilidade/i);
+  assert.match(preFrail?.guidance.join(" ") ?? "", /oportunidade/i);
+
+  assert.equal(frail?.state, "altered");
+  assert.match(frail?.guidance.join(" ") ?? "", /indica fragilidade/i);
+  assert.match(frail?.guidance.join(" ") ?? "", /plano individualizado/i);
+
+  assert.notDeepEqual(robust?.guidance, preFrail?.guidance);
+  assert.notDeepEqual(preFrail?.guidance, frail?.guidance);
+  assert.ok(robust?.evidenceReferences.some((reference) => reference.pmid === "42560630"));
+});
+
+test("fragilidade preservada sem FRAIL-BR não cai em orientação genérica de paciente frágil", () => {
+  const report = buildAgaReportModel({
+    patientId: "patient-frailty-fallback",
+    consultationId: "consultation-current",
+    consultationStatus: "IN_REVIEW",
+    patientName: "Paciente Sintético",
+    longitudinalProblems: [],
+    longitudinalAssessments: [{
+      patientId: "patient-frailty-fallback",
+      consultationId: "consultation-current",
+      scaleCode: "ves13",
+      scaleVersion: "1.0",
+      score: 0,
+      scoreText: "0",
+      classification: "Sem vulnerabilidade sinalizada",
+      color: "verde",
+      appliedAt: "2026-09-19",
+    }],
+  });
+  const domain = buildReportDomainSummaries(report.assessedScales, report.intrinsicCapacity)
+    .find((item) => item.code === "fragilidade");
+
+  assert.equal(domain?.state, "preserved");
+  assert.match(domain?.guidance.join(" ") ?? "", /não sinalizou vulnerabilidade/i);
+  assert.match(domain?.guidance.join(" ") ?? "", /não aplique rotinas de cuidado destinadas a pessoas frágeis/i);
+});
+
+test("rastreio cognitivo negativo e positivo geram orientações claramente diferentes", () => {
+  const makeDomain = (score: number, color: "verde" | "amarelo" | "vermelho") => {
+    const report = buildAgaReportModel({
+      patientId: `patient-cognition-${score}`,
+      consultationId: "consultation-current",
+      consultationStatus: "IN_REVIEW",
+      patientName: "Paciente Sintético",
+      longitudinalProblems: [],
+      longitudinalAssessments: [{
+        patientId: `patient-cognition-${score}`,
+        consultationId: "consultation-current",
+        scaleCode: "moca",
+        scaleVersion: "1.0",
+        score,
+        scoreText: `${score}/30`,
+        color,
+        appliedAt: "2026-09-19",
+      }],
+    });
+    return buildReportDomainSummaries(report.assessedScales, report.intrinsicCapacity)
+      .find((domain) => domain.code === "cognicao");
+  };
+
+  const negative = makeDomain(27, "verde");
+  const positive = makeDomain(21, "amarelo");
+  const markedlyAltered = makeDomain(15, "vermelho");
+
+  assert.equal(negative?.state, "preserved");
+  assert.match(negative?.guidance.join(" ") ?? "", /não identificou déficit cognitivo/i);
+  assert.match(negative?.guidance.join(" ") ?? "", /não institua supervisão/i);
+  assert.doesNotMatch(negative?.guidance.join(" ") ?? "", /rastreio cognitivo foi positivo/i);
+
+  assert.equal(positive?.state, "attention");
+  assert.match(positive?.guidance.join(" ") ?? "", /rastreio cognitivo foi positivo/i);
+  assert.match(positive?.guidance.join(" ") ?? "", /não é diagnóstico de demência/i);
+  assert.match(positive?.guidance.join(" ") ?? "", /avaliação clínica estruturada/i);
+
+  assert.equal(markedlyAltered?.state, "altered");
+  assert.match(markedlyAltered?.guidance.join(" ") ?? "", /claramente alterado/i);
+  assert.match(markedlyAltered?.guidance.join(" ") ?? "", /não estabelece sozinho diagnóstico de demência/i);
+  assert.ok(positive?.evidenceReferences.some((reference) => reference.pmid === "39713942"));
+  assert.ok(negative?.evidenceReferences.some((reference) => reference.pmid === "42442374"));
+
+  assert.notDeepEqual(negative?.guidance, positive?.guidance);
+  assert.notDeepEqual(positive?.guidance, markedlyAltered?.guidance);
+});
