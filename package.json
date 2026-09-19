@@ -17,6 +17,7 @@
     "test:clinical": "node --experimental-strip-types --test tests/golden-master/*.test.ts",
     "test:production:browser": "node --experimental-strip-types --test tests/golden-master/production-browser-diagnostic.test.ts",
     "test:integration": "node --experimental-strip-types --test tests/integration/*.test.ts",
+    "test:e2e:auth": "node --experimental-strip-types scripts/smoke-authenticated-ci.ts",
     "typecheck:domain": "tsc -p tsconfig.domain.json",
     "validate:domain": "node --experimental-strip-types --test tests/golden-master/*.test.ts && tsc -p tsconfig.domain.json",
     "validate:security": "node --experimental-strip-types --test tests/golden-master/security-*.test.ts tests/golden-master/html-safety.test.ts tests/golden-master/consultation-workflow.test.ts",
