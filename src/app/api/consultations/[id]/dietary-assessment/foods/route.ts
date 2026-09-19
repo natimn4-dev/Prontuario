@@ -16,6 +16,7 @@ export async function GET(request: Request, { params }: { params: Promise<{ id: 
           description: food.description,
           dataType: food.dataType,
           sourceVersion: food.sourceVersion,
+          nutrientsPer100g: food.nutrientsPer100g,
         })),
       }, { headers: { "Cache-Control": "private, no-store" } });
     } catch (error) {
