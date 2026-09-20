@@ -10,11 +10,21 @@ import {
   roleForFirstLogin,
   roleForProfessional,
 } from "../../domain/security/auth-policy";
-import { assertProductionEnvironment } from "../../domain/security/environment";
+import {
+  assertProductionEnvironment,
+  isSyntheticDietaryPreviewEnvironment,
+} from "../../domain/security/environment";
 
 const appUrl = process.env.APP_URL ?? "http://localhost:3000";
 const allowedEmails = parseEmailSet(process.env.AUTH_ALLOWED_EMAILS);
 const bootstrapAdmins = parseEmailSet(process.env.AUTH_BOOTSTRAP_ADMIN_EMAILS);
+const syntheticPreviewEnvironment = isSyntheticDietaryPreviewEnvironment({
+  nodeEnv: process.env.NODE_ENV,
+  vercelEnv: process.env.VERCEL_ENV,
+  vercelGitCommitRef: process.env.VERCEL_GIT_COMMIT_REF,
+});
+const authSecret = process.env.BETTER_AUTH_SECRET
+  ?? (syntheticPreviewEnvironment ? "preview-build-only-not-for-runtime" : undefined);
 
 const canonicalProductionAppUrl = "https://prontuario.nataliamendesgeriatra.com";
 const approvedProductionEmailFingerprints = new Set([
@@ -65,7 +75,10 @@ export async function isAuthorizedEmailForLogin(email: string): Promise<boolean>
   return Boolean(await findActiveAccessGrant(email));
 }
 
-if (process.env.NODE_ENV === "production") {
+if (
+  process.env.NODE_ENV === "production"
+  && !syntheticPreviewEnvironment
+) {
   assertProductionEnvironment({
     nodeEnv: process.env.NODE_ENV,
     appUrl,
@@ -81,7 +94,7 @@ if (process.env.NODE_ENV === "production") {
 export const auth = betterAuth({
   appName: "Prontuário Aprimorado",
   baseURL: appUrl,
-  secret: process.env.BETTER_AUTH_SECRET,
+  secret: authSecret,
   database: prismaAdapter(prisma, { provider: "mysql" }),
   trustedOrigins: [appUrl],
   telemetry: { enabled: false },

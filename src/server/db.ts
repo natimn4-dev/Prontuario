@@ -1,24 +1,7 @@
 import "server-only";
 import { PrismaMariaDb } from "@prisma/adapter-mariadb";
 import { PrismaClient } from "@/generated/prisma/client";
-
-function databaseConfig() {
-  const raw = process.env.DATABASE_URL;
-  if (!raw) {
-    throw new Error("DATABASE_URL não configurada.");
-  }
-
-  const url = new URL(raw);
-
-  return {
-    host: url.hostname,
-    port: Number(url.port || 3306),
-    user: decodeURIComponent(url.username),
-    password: decodeURIComponent(url.password),
-    database: url.pathname.replace(/^\//, ""),
-    connectionLimit: 5,
-  };
-}
+import { databaseConfig } from "./database-config";
 
 const globalForPrisma = globalThis as unknown as {
   prisma?: PrismaClient;
@@ -27,7 +10,7 @@ const globalForPrisma = globalThis as unknown as {
 export const prisma =
   globalForPrisma.prisma ??
   new PrismaClient({
-    adapter: new PrismaMariaDb(databaseConfig()),
+    adapter: new PrismaMariaDb(databaseConfig(process.env.DATABASE_URL)),
   });
 
 if (process.env.NODE_ENV !== "production") {

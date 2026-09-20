@@ -16,6 +16,20 @@ export interface EnvironmentValidation {
   errors: string[];
 }
 
+export interface SyntheticPreviewEnvironment {
+  nodeEnv?: string;
+  vercelEnv?: string;
+  vercelGitCommitRef?: string;
+}
+
+export function isSyntheticDietaryPreviewEnvironment(
+  env: SyntheticPreviewEnvironment,
+): boolean {
+  return env.nodeEnv === "production"
+    && env.vercelEnv === "preview"
+    && env.vercelGitCommitRef === "preview/dietary-calculator-vercel";
+}
+
 export function isNonPlaceholderConfigValue(value: string | undefined): boolean {
   if (!value?.trim()) return false;
   return !/(trocar|change|example|your-|placeholder)/i.test(value);
