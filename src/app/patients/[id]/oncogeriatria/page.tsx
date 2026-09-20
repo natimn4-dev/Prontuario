@@ -1,4 +1,5 @@
 import { OncogeriatricDomainStatusSummary } from "@/components/oncogeriatria/domain-status-summary";
+import { CapacityDimensionHistoryChart } from "@/components/reports/capacity-dimension-history-chart";
 import { OncogeriatricNav, OncogeriatricQuickActions, OncogeriatricStepActions, OncogeriatricWorkspaceHeader } from "@/components/oncogeriatria/oncogeriatric-nav";
 import styles from "./oncogeriatric-overview.module.css";
 import { StartEpisodeForm } from "@/components/oncogeriatria/oncogeriatric-forms";
@@ -106,6 +107,11 @@ export default async function OncogeriatricPatientPage({ params, searchParams }:
       </section>
 
       <OncogeriatricDomainStatusSummary history={capacityHistory} />
+
+      <section className="panel" aria-label="Evolução longitudinal dos domínios no acompanhamento oncogeriátrico">
+        <div className="section-heading"><div><p className="eyebrow">Trajetória</p><h2>Evolução geriátrica do episódio</h2></div><a href={`/patients/${patientId}/oncogeriatria/longitudinal?episode=${episode.id}`}>Abrir análise detalhada →</a></div>
+        <CapacityDimensionHistoryChart history={capacityHistory} context="patient-home" />
+      </section>
 
       {episodes.length > 1 ? <section className="panel"><div className="section-heading"><div><p className="eyebrow">Histórico</p><h2>História oncológica</h2></div></div><ul className="clean-list">{episodes.map((item) => <li key={item.id}><a href={`/patients/${patientId}/oncogeriatria?episode=${item.id}`}>{item.diagnosis}</a><span>{item.primarySite ?? "Sítio não registrado"} · {oncogeriatricEpisodeStatusLabel(item.status)} · iniciado em {formatClinicalDate(item.createdAt)}</span></li>)}</ul></section> : null}
 

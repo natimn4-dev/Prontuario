@@ -101,7 +101,7 @@ test("SARC-CalF substitui SARC-F na seleção nova e permanece em Vitalidade", (
 });
 
 test("SARC-CalF integra somente Vitalidade na metodologia nova", () => {
-  assert.equal(INTRINSIC_CAPACITY_MODEL_VERSION, "intrinsic-capacity-model-v1.2.0");
+  assert.equal(INTRINSIC_CAPACITY_MODEL_VERSION, "intrinsic-capacity-model-v1.3.0");
   const methodology = methodologyForScale("sarc_calf");
   assert.equal(methodology.length, 1);
   assert.equal(methodology[0]?.domain, "vitalidade");

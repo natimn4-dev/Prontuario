@@ -4,7 +4,8 @@ export type CapacityDimensionCode =
   | "cognicao"
   | "psicologico"
   | "vitalidade"
-  | "sensorial";
+  | "audicao"
+  | "visao";
 
 export type CapacityEvidenceRole =
   | "anchor"
@@ -35,7 +36,7 @@ export interface CapacityInstrumentMethodology {
  * comparabilidade exige uma nova versão. Snapshots/documentos já emitidos não
  * devem ser reescritos silenciosamente.
  */
-export const INTRINSIC_CAPACITY_MODEL_VERSION = "intrinsic-capacity-model-v1.2.0" as const;
+export const INTRINSIC_CAPACITY_MODEL_VERSION = "intrinsic-capacity-model-v1.3.0" as const;
 
 /**
  * Definição operacional da primeira versão.
@@ -349,10 +350,10 @@ export const CAPACITY_INSTRUMENT_METHODOLOGY: readonly CapacityInstrumentMethodo
     rationale: "Fragilidade é síndrome multidimensional e não deve ser usada como medida específica de vitalidade.",
   },
 
-  // Sensorial — manter visão e audição identificáveis; não combiná-las aritmeticamente.
+  // Audição e visão — trajetórias independentes; nunca combiná-las aritmeticamente.
   {
     scaleCode: "audicao",
-    domain: "sensorial",
+    domain: "audicao",
     role: "assessment",
     mappingStrength: "acceptable",
     basis: "direct",
@@ -361,7 +362,7 @@ export const CAPACITY_INSTRUMENT_METHODOLOGY: readonly CapacityInstrumentMethodo
   },
   {
     scaleCode: "hearing",
-    domain: "sensorial",
+    domain: "audicao",
     role: "assessment",
     mappingStrength: "acceptable",
     basis: "direct",
@@ -370,7 +371,7 @@ export const CAPACITY_INSTRUMENT_METHODOLOGY: readonly CapacityInstrumentMethodo
   },
   {
     scaleCode: "visao",
-    domain: "sensorial",
+    domain: "visao",
     role: "assessment",
     mappingStrength: "acceptable",
     basis: "direct",
@@ -379,7 +380,7 @@ export const CAPACITY_INSTRUMENT_METHODOLOGY: readonly CapacityInstrumentMethodo
   },
   {
     scaleCode: "vision",
-    domain: "sensorial",
+    domain: "visao",
     role: "assessment",
     mappingStrength: "acceptable",
     basis: "direct",

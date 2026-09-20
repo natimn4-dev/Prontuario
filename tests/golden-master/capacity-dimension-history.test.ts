@@ -25,10 +25,11 @@ test("modelo usa independência funcional separada dos cinco domínios de capaci
     "cognicao",
     "psicologico",
     "vitalidade",
-    "sensorial",
+    "audicao",
+    "visao",
   ]);
   assert.equal(CAPACITY_DIMENSIONS[0]?.label, "Independência funcional");
-  assert.equal(INTRINSIC_CAPACITY_MODEL_VERSION, "intrinsic-capacity-model-v1.2.0");
+  assert.equal(INTRINSIC_CAPACITY_MODEL_VERSION, "intrinsic-capacity-model-v1.3.0");
 });
 
 test("modelo não aplica pior resultado vence quando assessments de mesma prioridade discordam", () => {
@@ -45,6 +46,22 @@ test("modelo não aplica pior resultado vence quando assessments de mesma priori
   assert.equal(functionality.cells[0]?.status, "indeterminate");
   assert.match(functionality.cells[0]?.statusReason ?? "", /discordantes/);
   assert.ok(functionality.cells[0]?.assessments.every((item) => item.selectedForDomainState));
+});
+
+test("audição e visão permanecem em domínios independentes", () => {
+  const history = buildCapacityDimensionHistory({
+    patientId: "p1",
+    consultations: [consultations[0]!],
+    assessments: [
+      { patientId: "p1", consultationId: "c1", scaleCode: "hearing", scaleVersion: "hearing-v1", clinicalColor: "amarelo", appliedAt: "2026-01-10T10:00:00Z" },
+      { patientId: "p1", consultationId: "c1", scaleCode: "vision", scaleVersion: "vision-v1", clinicalColor: "verde", appliedAt: "2026-01-10T10:01:00Z" },
+    ],
+  });
+
+  assert.equal(dimension(history, "audicao").cells[0]?.status, "attention");
+  assert.equal(dimension(history, "visao").cells[0]?.status, "preserved");
+  assert.equal(dimension(history, "audicao").cells[0]?.comparabilityKey, "hearing@hearing-v1");
+  assert.equal(dimension(history, "visao").cells[0]?.comparabilityKey, "vision@vision-v1");
 });
 
 test("âncora locomotora tem precedência sobre rastreio sem somar nem misturar os instrumentos", () => {
@@ -324,6 +341,8 @@ test("UI usa tempo real, comparabilidade e o design system clínico aprovado sem
   assert.match(generator, /content: \{ report, text \}/);
   assert.match(chart, /proportionalAxisPosition/);
   assert.match(chart, /comparabilityKey/);
+  assert.match(chart, /if \(isComparable\(cell\.status\)\)/);
+  assert.doesNotMatch(chart, /if \(isComparable\(cell\.status\) && cell\.comparabilityKey\)/);
   assert.match(chart, /data-gap/);
   assert.match(chart, /Escalas registradas por consulta/);
   assert.match(chart, /Ponto de inflexão observado/);

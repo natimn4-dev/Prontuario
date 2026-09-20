@@ -146,7 +146,8 @@ export const CAPACITY_DIMENSIONS: readonly {
   { code: "cognicao", label: "Cognição", framework: "intrinsic-capacity" },
   { code: "psicologico", label: "Capacidade psicológica", framework: "intrinsic-capacity" },
   { code: "vitalidade", label: "Vitalidade", framework: "intrinsic-capacity" },
-  { code: "sensorial", label: "Capacidade sensorial", framework: "intrinsic-capacity" },
+  { code: "audicao", label: "Audição", framework: "intrinsic-capacity" },
+  { code: "visao", label: "Visão", framework: "intrinsic-capacity" },
 ] as const;
 
 function timestamp(value: Date | string | undefined, fallback = 0): number {
@@ -351,7 +352,7 @@ function buildInflectionPoints(
             toStatus: cell.status,
             direction: currentRank < previousRank ? "worsened" : "improved",
             comparabilityKey: cell.comparabilityKey,
-            milestones: (milestoneByConsultation.get(cell.consultationId) ?? []).slice(0, 3).map((item) => ({
+            milestones: (milestoneByConsultation.get(cell.consultationId) ?? []).map((item) => ({
               title: item.title,
               note: item.note || undefined,
               source: item.source,
@@ -514,8 +515,8 @@ export function buildCapacityDimensionHistory(input: {
   return {
     patientId: input.patientId,
     methodologyVersion: INTRINSIC_CAPACITY_MODEL_VERSION,
-    frameworkLabel: "Independência funcional + capacidade intrínseca (OMS: locomoção, cognição, capacidade psicológica, vitalidade e sensorial)",
-    methodologyNote: "Representação categórica auditável; não é escore composto. Linhas só conectam avaliações comparáveis do mesmo instrumento e versão. Vitalidade v1 usa MNA-SF como indicador nutricional proxy, não como equivalente ao construto fisiológico completo.",
+    frameworkLabel: "Independência funcional + capacidade intrínseca, com capacidade sensorial apresentada separadamente em audição e visão",
+    methodologyNote: "Representação categórica auditável; não é escore composto. Linhas só conectam avaliações comparáveis do mesmo instrumento e versão. Vitalidade usa MNA-SF como indicador nutricional proxy, não como equivalente ao construto fisiológico completo. Audição e visão permanecem em trajetórias independentes e nunca são combinadas aritmeticamente.",
     consultations,
     dimensions,
     inflectionPoints,

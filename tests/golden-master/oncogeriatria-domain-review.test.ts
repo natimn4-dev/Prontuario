@@ -9,7 +9,7 @@ import {
 function history(): CapacityDimensionHistory {
   return {
     patientId: "patient-a",
-    methodologyVersion: "intrinsic-capacity-model-v1.2.0",
+    methodologyVersion: "intrinsic-capacity-model-v1.3.0",
     frameworkLabel: "Teste",
     methodologyNote: "Teste",
     consultations: [
@@ -35,8 +35,8 @@ function history(): CapacityDimensionHistory {
         ],
       },
       {
-        code: "sensorial",
-        label: "Capacidade sensorial",
+        code: "audicao",
+        label: "Audição",
         framework: "intrinsic-capacity",
         cells: [
           { consultationId: "consultation-1", status: "preserved", statusReason: "Sem redução", assessments: [{ scaleCode: "hearing", scaleName: "Audição", scaleVersion: "v1", scoreText: "preservada", clinicalColor: "verde", role: "assessment", mappingStrength: "strong", basis: "direct", canClassifyDomain: true, selectedForDomainState: true, rationale: "Teste" }] },
@@ -63,7 +63,7 @@ test("reavaliação prioriza os instrumentos da última consulta que avaliou o d
 test("consulta posterior sem reaplicação não apaga prioridade anterior nem fabrica dado", () => {
   const priorities = buildOncogeriatricDomainReviewPriorities(history());
   assert.equal(priorities[0]?.occurredAt, "2026-01-10T00:00:00.000Z");
-  assert.equal(priorities.some((item) => item.code === "sensorial"), false);
+  assert.equal(priorities.some((item) => item.code === "audicao"), false);
 });
 
 test("orientação do relatório usa domínio persistido, PubMed e revisão clínica obrigatória", () => {
