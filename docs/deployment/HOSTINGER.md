@@ -34,6 +34,7 @@ Nunca copie valores reais para arquivos versionados.
 - `GOOGLE_CLIENT_SECRET=<OAuth Client Secret>`
 - `AUTH_ALLOWED_EMAILS=<lista fechada de e-mails autorizados>`
 - `AUTH_BOOTSTRAP_ADMIN_EMAILS=<subconjunto da allowlist>`
+- `USDA_FDC_API_KEY=<chave privada opcional para o fallback USDA FoodData Central>`
 - `BACKUP_ENCRYPTION_KEY_B64=<32 bytes aleatórios codificados em base64>`
 - `CLINICAL_LICENSE_MNA_EHR_CONFIRMED=false`
 - `CLINICAL_LICENSE_MMSE_ELECTRONIC_CONFIRMED=false`

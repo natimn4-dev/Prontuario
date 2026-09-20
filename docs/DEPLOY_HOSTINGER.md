@@ -28,6 +28,7 @@ Configurar no painel de deploy:
 - `GOOGLE_CLIENT_SECRET=...`
 - `AUTH_ALLOWED_EMAILS=...`
 - `AUTH_BOOTSTRAP_ADMIN_EMAILS=...`
+- `USDA_FDC_API_KEY=<chave privada opcional para o fallback USDA FoodData Central>`
 
 Mudança de variável deve ser seguida de redeploy.
 

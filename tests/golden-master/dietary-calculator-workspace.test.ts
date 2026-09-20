@@ -23,6 +23,10 @@ const foodRoute = readFileSync(
   ),
   "utf8",
 );
+const dietaryService = readFileSync(
+  new URL("../../src/server/clinical/dietary-assessment.ts", import.meta.url),
+  "utf8",
+);
 
 test("calculadora nutricional tem fluxo explícito de registro, conferência, contexto e revisão", () => {
   for (const label of ["Registrar", "Conferir", "Contextualizar", "Revisar"])
@@ -125,4 +129,20 @@ test("busca alimentar entrega composição e mostra o valor nutricional da porç
     ".itemNutrients",
   ])
     assert.match(styles, new RegExp(className.replace(/[.]/g, "\\.")));
+});
+
+test("TACO é a fonte principal, USDA é fallback e não se avança sem item", () => {
+  assert.match(dietaryService, /searchTacoFoods\(q\)/);
+  assert.match(workspace, /TACO — NEPA\/UNICAMP/);
+  assert.match(workspace, /Fonte principal: TACO/);
+  assert.match(dietaryService, /FOOD_SOURCE_NOT_CONFIGURED/);
+  assert.match(dietaryService, /FOOD_SOURCE_RATE_LIMIT/);
+  assert.doesNotMatch(dietaryService, /DEMO_KEY/);
+  assert.match(
+    workspace,
+    /Adicione pelo menos um alimento antes de conferir porções e preparo/,
+  );
+  assert.match(workspace, /onClick=\{continueToNextStep\}/);
+  assert.match(workspace, /Nenhuma correspondência foi encontrada/);
+  assert.match(workspace, /role="status"/);
 });

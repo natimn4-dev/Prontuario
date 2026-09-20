@@ -6,6 +6,7 @@ import {
   buildDietaryPriorities,
   buildProteinComparison,
   confirmDietaryDraftItem,
+  dietaryFoodSearchQuery,
   nutrientsForGrams,
   parseDietaryNaturalLanguage,
   portionMetadata,
@@ -95,6 +96,14 @@ test("ovo explícito é unidade e não é convertido em porção de carne", () =
 test("ovo sem quantidade e omelete permanecem dados insuficientes", () => {
   const egg = parseDietaryNaturalLanguage("comi ovo")[0]; assert.equal(egg.quantity, null); assert.match(egg.issue ?? "", /informe quantas unidades/i);
   const omelet = parseDietaryNaturalLanguage("omelete")[0]; assert.equal(omelet.measure, null); assert.match(omelet.issue ?? "", /quantos ovos.*quantas pessoas/i);
+});
+
+test("fallback USDA adapta somente equivalências explícitas em português", () => {
+  assert.equal(dietaryFoodSearchQuery("ovo"), "egg whole");
+  assert.equal(dietaryFoodSearchQuery("  OVO COZIDO  "), "egg whole cooked");
+  assert.equal(dietaryFoodSearchQuery("arroz cozido"), "rice cooked");
+  assert.equal(dietaryFoodSearchQuery("frango"), "chicken");
+  assert.equal(dietaryFoodSearchQuery("alimento não mapeado"), "alimento não mapeado");
 });
 
 test("palma da mão é estimativa visual de alta incerteza, nunca peso exato", () => {
