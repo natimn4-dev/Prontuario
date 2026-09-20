@@ -38,7 +38,7 @@ test("STOPPFall novo expõe as 14 classes e calcula apenas classes presentes", (
   const scored = scoreStoppfallStructured(answers);
   assert.equal(scored.result.score, 3);
   assert.equal(scored.version, STOPPFALL_STRUCTURED_VERSION);
-  assert.match(scored.result.classification, /alerta|alto/i);
+  assert.match(scored.result.classification, /faixa local|maior carga/i);
 });
 
 test("endpoint substitui somente as versões novas sem remover os códigos longitudinais", () => {
