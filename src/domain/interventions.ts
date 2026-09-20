@@ -94,7 +94,7 @@ export const LEGACY_INTERVENTIONS: Record<string, InterventionByColor> = {
         "Cuide da pele e das áreas de pressão, com mudanças de posição e os recursos adequados à rotina da pessoa para reduzir o risco de feridas.",
         "Ajuste cama e cadeira para facilitar transferências confortáveis e seguras.",
       ],
-      medio: ["Programa de reabilitação motora contínuo, com metas funcionais definidas por escrito."],
+      medio: ["A reabilitação pode ser organizada com metas práticas, como melhorar transferências, equilíbrio ou participação nas atividades do dia, acompanhando a evolução ao longo do tempo."],
       cuidador: ["Peça ao fisioterapeuta que ensine uma forma de transferência confortável e segura para a pessoa e para quem ajuda."],
       encaminhamentos: ["Fisioterapia", "Terapia ocupacional", "Enfermagem"],
     },
@@ -198,7 +198,7 @@ export const LEGACY_INTERVENTIONS: Record<string, InterventionByColor> = {
       ],
       medio: [
         "Revisão formal da prescrição com desprescrição planejada e, quando disponível, apoio de farmacêutico clínico.",
-        "Reavaliar as doses conforme a função dos rins e do fígado.",
+        "Peça que as doses dos medicamentos sejam revistas levando em conta o funcionamento dos rins e do fígado.",
       ],
       cuidador: ["Mantenha uma lista atualizada dos medicamentos no celular ou na bolsa para ter essa informação disponível em qualquer atendimento."],
       encaminhamentos: ["Farmácia clínica"],
@@ -223,7 +223,7 @@ export const LEGACY_INTERVENTIONS: Record<string, InterventionByColor> = {
         "Se disponível, considerar avaliação de massa muscular (DXA ou bioimpedância) e de desempenho físico (velocidade de marcha ou SPPB) para confirmar o diagnóstico e classificar a gravidade.",
       ],
       cuidador: [
-        "Estimular caminhadas e atividades que exijam força (levantar, carregar objetos leves) no dia a dia, sem forçar além da tolerância — e ficar atento a quedas, que se tornam mais prováveis com a sarcopenia.",
+        "Inclua movimento nas atividades do dia que a pessoa consiga fazer com segurança, como levantar-se ou carregar objetos leves. Se houver instabilidade, cansaço importante ou medo de cair, reduza a exigência e peça orientação para ajustar a atividade.",
       ],
       encaminhamentos: ["Fisioterapia", "Nutrição"],
     },
@@ -251,7 +251,7 @@ export const LEGACY_INTERVENTIONS: Record<string, InterventionByColor> = {
       ],
       medio: [
         "Treino de força resistido supervisionado 2 a 3 vezes por semana.",
-        "Garantir ingestão de proteína em todas as refeições (carne, ovo, leite, queijo, feijão), conforme orientação do nutricionista.",
+        "Inclua fontes de proteína nas refeições, como carne, ovo, leite, queijo ou feijão, escolhendo quantidades que combinem com a alimentação habitual e com as necessidades clínicas da pessoa.",
       ],
       encaminhamentos: ["Fisioterapia", "Nutrição"],
     },
