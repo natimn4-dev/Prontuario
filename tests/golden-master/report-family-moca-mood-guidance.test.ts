@@ -205,9 +205,17 @@ test("cognição preservada não recebe orientação de supervisão própria de 
   ], "cognicao");
 
   assert.equal(preserved.state, "preserved");
-  assert.ok(preserved.guidance.some((item) => /não institua supervisão/i.test(item)));
-  assert.ok(preserved.guidance.some((item) => /reavalie se paciente ou familiar perceber mudança/i.test(item)));
-  assert.ok(!preserved.guidance.some((item) => /erros em medicamentos|apoio direto do cuidador/i.test(item)));
+  assert.ok(preserved.guidance.some((item) => /preserve a autonomia e a independência/i.test(item)));
+  assert.ok(preserved.guidance.some((item) => /participação ativa nas decisões/i.test(item)));
+  assert.ok(preserved.guidance.some((item) => /reserva cognitiva/i.test(item)));
+  assert.ok(preserved.guidance.some((item) => /alimentação saudável/i.test(item)));
+  assert.ok(preserved.guidance.some((item) => /reavalie se houver mudança cognitiva ou funcional nova e persistente/i.test(item)));
+  assert.ok(!preserved.guidance.some((item) => /supervisão nas tarefas complexas|erros em medicamentos|apoio direto do cuidador/i.test(item)));
+  assert.doesNotMatch(preserved.guidance.join(" "), /\bnão\b/i);
+  assert.doesNotMatch(preserved.guidance.join(" "), /vascular|metabólic/i);
+  assert.ok(preserved.evidenceReferences.some((reference) => reference.pmid === "42442374"));
+  assert.ok(preserved.evidenceReferences.some((reference) => reference.pmid === "25771249"));
+  assert.ok(preserved.evidenceReferences.some((reference) => reference.pmid === "31270114"));
 
   assert.equal(attention.state, "attention");
   assert.ok(attention.guidance.some((item) => /não é diagnóstico de demência/i.test(item)));
@@ -318,9 +326,49 @@ test("MoCA preservado com NPI positivo mantém cognição preservada no texto e 
   assert.equal(summary.state, "attention");
   assert.match(summary.results.find((item) => item.scaleCode === "cognitive_domain_observation")?.value ?? "", /Cognição Normal no rastreio/i);
   assert.doesNotMatch(guidance, /rastreio cognitivo foi positivo/i);
-  assert.match(guidance, /Memória\/orientação foi uma das áreas mais acometidas/i);
+  assert.doesNotMatch(guidance, /Memória\/orientação foi uma das áreas mais acometidas/i);
+  assert.match(guidance, /rastreio cognitivo desta consulta está preservado/i);
   assert.match(guidance, /NPI registrou sintomas neuropsiquiátricos/i);
   assert.match(guidance, /agitação, agressividade ou irritabilidade/i);
   assert.ok(summary.evidenceReferences.some((reference) => reference.pmid === "40051590"));
   assert.ok(summary.evidenceReferences.some((reference) => reference.pmid === "42563132"));
+});
+
+
+test("10-CS normal não recebe supervisão cognitiva por Lawton alterado", () => {
+  const summaries = buildReportDomainSummaries([
+    scale({
+      code: "dez_cs",
+      name: "10-CS",
+      dimension: "cognicao",
+      score: 9,
+      scoreText: "9/10",
+      classification: "Normal",
+      clinicalColor: "verde",
+    }),
+    scale({
+      code: "lawton",
+      name: "Lawton",
+      dimension: "funcionalidade",
+      score: 15,
+      scoreText: "15/21",
+      classification: "Dependência parcial em AIVD",
+      clinicalColor: "amarelo",
+    }),
+  ], EMPTY_INTRINSIC_CAPACITY);
+
+  const cognition = summaries.find((item) => item.code === "cognicao");
+  const functionality = summaries.find((item) => item.code === "funcionalidade");
+  assert.ok(cognition);
+  assert.ok(functionality);
+
+  assert.equal(cognition.state, "preserved");
+  assert.match(cognition.guidance.join(" "), /preserve a autonomia e a independência/i);
+  assert.match(cognition.guidance.join(" "), /reserva cognitiva/i);
+  assert.match(cognition.guidance.join(" "), /mudança cognitiva ou funcional nova e persistente/i);
+  assert.doesNotMatch(cognition.guidance.join(" "), /supervisão nas tarefas complexas|apoio direto do cuidador/i);
+  assert.doesNotMatch(cognition.guidance.join(" "), /\bnão\b/i);
+
+  assert.equal(functionality.state, "altered");
+  assert.match(functionality.guidance.join(" "), /atividades instrumentais|finanças, compras, transporte/i);
 });
