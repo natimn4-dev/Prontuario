@@ -27,6 +27,8 @@ test("bootstrap Google exato é público sem ampliar prefixos sensíveis", async
 
   assert.equal(isPublicRoute("/auth/google"), true);
   assert.equal(routeAccessFor({ pathname: "/auth/google", authenticated: false }), "public");
+  assert.equal(isPublicRoute("/auth/error"), true);
+  assert.equal(routeAccessFor({ pathname: "/auth/error", authenticated: false }), "public");
   const googleBootstrap = await guard(new NextRequest("https://prontuario.test/auth/google"));
   assert.equal(googleBootstrap.status, 200);
   assert.equal(googleBootstrap.headers.get("location"), null);
