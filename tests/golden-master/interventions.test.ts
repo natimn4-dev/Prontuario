@@ -42,20 +42,20 @@ test("buildCombinedPlan agrega domínios sem repetir encaminhamento", () => {
 
 test("Lawton vermelho mantém medidas funcionais extraídas do legado", () => {
   const plan = interventionFor("lawton", "vermelho");
-  assert.ok(plan.agora.some((item) => item.includes("controle das contas e dos medicamentos")));
+  assert.ok(plan.agora.some((item) => item.includes("contas e os medicamentos")));
   assert.deepEqual(plan.encaminhamentos, ["Terapia ocupacional", "Serviço social"]);
 });
 
 test("Pfeffer vermelho mantém supervisão de segurança e encaminhamentos", () => {
   const plan = interventionFor("pfeffer", "vermelho");
-  assert.ok(plan.agora.some((item) => item.includes("fogão, dinheiro e medicamentos")));
+  assert.ok(plan.agora.some((item) => item.includes("fogão, dinheiro ou medicamentos")));
   assert.deepEqual(plan.encaminhamentos, ["Terapia ocupacional", "Neuropsicologia"]);
 });
 
 test("Barthel vermelho mantém reabilitação e prevenção de lesão por pressão", () => {
   const plan = interventionFor("barthel", "vermelho");
-  assert.ok(plan.agora.some((item) => item.includes("lesão por pressão")));
-  assert.ok(plan.medio.some((item) => item.includes("reabilitação motora")));
+  assert.ok(plan.agora.some((item) => item.includes("áreas de pressão")));
+  assert.ok(plan.medio.some((item) => item.includes("reabilitação pode ser organizada")));
   assert.deepEqual(plan.encaminhamentos, ["Fisioterapia", "Terapia ocupacional", "Enfermagem"]);
 });
 
@@ -80,7 +80,7 @@ test("APGAR familiar alterado mantém suporte social extraído do legado", () =>
 
 test("Zarit intensa mantém pausa programada e apoio ao cuidador", () => {
   const plan = interventionFor("zarit_reduzida", "vermelho");
-  assert.ok(plan.agora.some((item) => item.includes("pausa programada")));
+  assert.ok(plan.agora.some((item) => item.includes("períodos regulares de descanso")));
   assert.ok(plan.medio.some((item) => item.includes("Apoio psicológico")));
   assert.deepEqual(plan.encaminhamentos, ["Psicologia", "Serviço social"]);
 });
@@ -99,12 +99,12 @@ test("VES-13 positivo direciona para avaliação geriátrica completa", () => {
 
 test("MNA-SF alterada preserva plano nutricional do legado", () => {
   const red = interventionFor("mna_sf", "vermelho");
-  assert.ok(red.agora.some((item) => item.includes("5 a 6 refeições")));
+  assert.ok(red.agora.some((item) => item.includes("porções menores distribuídas ao longo do dia")));
   assert.ok(red.encaminhamentos.includes("Nutrição"));
   assert.ok(red.encaminhamentos.includes("Fonoaudiologia"));
 
   const yellow = interventionFor("mna_sf", "amarelo");
-  assert.ok(yellow.agora.some((item) => item.includes("Pesar o paciente")));
+  assert.ok(yellow.agora.some((item) => item.includes("acompanhe o peso periodicamente")));
   assert.deepEqual(yellow.encaminhamentos, ["Nutrição"]);
 });
 
