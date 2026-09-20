@@ -1,6 +1,6 @@
 import { timingSafeEqual } from "node:crypto";
 import { headers } from "next/headers";
-import { auth, isAuthorizedEmail } from "./auth";
+import { auth, isWorkspaceAccessAuthorized } from "./auth";
 import { prisma } from "../db";
 import {
   assertAccessProfilePermission,
@@ -92,7 +92,7 @@ export async function requireAuthenticatedUser(permission?: Permission) {
   if (!user) throw new AccessForbiddenError();
 
   try {
-    if (!user.active || (!user.accessManaged && !isAuthorizedEmail(user.email))) {
+    if (!isWorkspaceAccessAuthorized(user)) {
       throw new Error("Usuário inativo ou fora do contrato de acesso autorizado.");
     }
 
