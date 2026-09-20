@@ -117,7 +117,6 @@ async function beginBirdSignature(input: {
   });
   if (!consultation) throw new Error("CONSULTATION_NOT_FOUND");
 
-  const config = getBirdConfig();
   const verificationToken = randomBytes(32).toString("base64url");
   const verificationUrl = `${appUrl()}/verificar/${verificationToken}`;
   const id = randomUUID();
@@ -133,6 +132,7 @@ async function beginBirdSignature(input: {
     consultationStatus: consultation.status,
     report,
   });
+  const config = getBirdConfig();
   const pdf = input.documentKind === "advance-directives"
     ? buildAdvanceDirectivesPdf({
         section: requireAdvanceDirectives(report),
