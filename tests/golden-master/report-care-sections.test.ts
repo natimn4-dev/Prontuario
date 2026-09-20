@@ -102,9 +102,9 @@ test("gastrostomia estruturada cria caixa de cuidados sem inventar volumes ou f�
     ...sections.gastrostomyCare.contactGuidance,
   ].join(" ");
   assert.match(text, /dieta enteral/i);
-  assert.match(text, /não triture comprimidos/i);
+  assert.match(text, /antes de triturar um comprimido/i);
   assert.match(text, /estoma/i);
-  assert.match(text, /volume de água individualmente orientado/i);
+  assert.match(text, /volume prescrito/i);
   assert.doesNotMatch(text, /\b\d+\s*mL\b/i);
   assert.doesNotMatch(text, /\b\d+\s*kcal\b/i);
 });
