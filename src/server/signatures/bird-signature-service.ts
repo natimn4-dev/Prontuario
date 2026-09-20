@@ -1,5 +1,6 @@
 import { randomBytes, randomUUID } from "node:crypto";
 import { buildProfessionalIdentity } from "@/domain/professional-identity";
+import { assertFinalReportSignatureEligibility } from "@/domain/report-signature-eligibility";
 import type { AgaAdvanceDirectivesReportSection } from "@/domain/report-overview";
 import { prisma } from "@/server/db";
 import { buildAdvanceDirectivesPdf } from "./advance-directives-pdf";
@@ -110,6 +111,12 @@ async function beginBirdSignature(input: {
   });
   if (!snapshot) throw new Error("REPORT_SNAPSHOT_NOT_FOUND");
 
+  const consultation = await prisma.consultation.findUnique({
+    where: { id: input.consultationId },
+    select: { status: true },
+  });
+  if (!consultation) throw new Error("CONSULTATION_NOT_FOUND");
+
   const config = getBirdConfig();
   const verificationToken = randomBytes(32).toString("base64url");
   const verificationUrl = `${appUrl()}/verificar/${verificationToken}`;
@@ -122,6 +129,10 @@ async function beginBirdSignature(input: {
     brandOwnerEmail: process.env.PROFESSIONAL_BRAND_OWNER_EMAIL,
   });
   const report = requireStructuredReport(snapshot.content, snapshot.patientId, snapshot.consultationId);
+  assertFinalReportSignatureEligibility({
+    consultationStatus: consultation.status,
+    report,
+  });
   const pdf = input.documentKind === "advance-directives"
     ? buildAdvanceDirectivesPdf({
         section: requireAdvanceDirectives(report),
