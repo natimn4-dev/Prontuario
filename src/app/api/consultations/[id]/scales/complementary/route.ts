@@ -90,9 +90,9 @@ import {
   scoreTenCsStructured,
 } from "@/domain/ten-cs-structured";
 import { requireConsultationAccess } from "@/server/auth/patient-access";
-import { requireAuthenticatedUser } from "@/server/auth/require-user";
 import { saveScaleAssessment } from "@/server/clinical/persistence";
 import { prisma } from "@/server/db";
+import { withClinicalPerformance } from "@/server/observability/clinical-performance";
 
 const QUICK_CODES = new Set<CognitiveQuickCode>(COGNITIVE_QUICK_DEFINITIONS.map((item) => item.code));
 type RequestScaleCode = ComplementaryScoreScaleCode
@@ -129,16 +129,11 @@ const DEFINITIONS = [
   withStructuredScaleEntry(EAT10_DEFINITION),
   withStructuredScaleEntry(WALKING_AID_CONTEXT_DEFINITION),
 ];
-const SUPPORTED = new Set<string>(DEFINITIONS.map((item) => item.code));
+export const COMPLEMENTARY_SCALE_DEFINITIONS = DEFINITIONS;
+const SUPPORTED = new Set<string>(COMPLEMENTARY_SCALE_DEFINITIONS.map((item) => item.code));
 
 async function consultationContext(consultationId: string) {
-  await requireConsultationAccess(consultationId, "patient.read");
-  const consultation = await prisma.consultation.findUnique({
-    where: { id: consultationId },
-    select: { id: true, patientId: true, status: true },
-  });
-  if (!consultation) throw new Error("CONSULTATION_NOT_FOUND");
-  return consultation;
+  return (await requireConsultationAccess(consultationId, "patient.read")).consultation;
 }
 
 function asRecord(value: unknown): Record<string, unknown> {
@@ -154,7 +149,7 @@ function parseBody(value: unknown): { scaleCode: RequestScaleCode; answers: Reco
 }
 
 function validateAgainstDefinition(scaleCode: RequestScaleCode, answers: Record<string, unknown>) {
-  const definition = DEFINITIONS.find((item) => item.code === scaleCode);
+  const definition = COMPLEMENTARY_SCALE_DEFINITIONS.find((item) => item.code === scaleCode);
   if (!definition) throw new Error("UNSUPPORTED_SCALE");
   const fields = definition.fields;
   const allowedIds = new Set<string>(fields.map((field) => field.id));
@@ -184,12 +179,11 @@ function failure(error: unknown) {
   return NextResponse.json({ code: "COMPLEMENTARY_SCALE_FAILED", message: "Não foi possível processar a escala complementar." }, { status: 500 });
 }
 
-export async function GET(_request: Request, context: { params: Promise<{ id: string }> }) {
+async function getComplementary(_request: Request, context: { params: Promise<{ id: string }> }) {
   try {
-    await requireAuthenticatedUser("patient.read");
     const { id } = await context.params;
     const consultation = await consultationContext(id);
-    const codes = DEFINITIONS.map((definition) => definition.code);
+    const codes = COMPLEMENTARY_SCALE_DEFINITIONS.map((definition) => definition.code);
     const consultations = await prisma.consultation.findMany({
       where: { patientId: consultation.patientId },
       select: { id: true, patientId: true, occurredAt: true, createdAt: true },
@@ -234,11 +228,11 @@ export async function GET(_request: Request, context: { params: Promise<{ id: st
   }
 }
 
-export async function POST(request: Request, context: { params: Promise<{ id: string }> }) {
+async function postComplementary(request: Request, context: { params: Promise<{ id: string }> }) {
   try {
-    await requireAuthenticatedUser("consultation.write");
     const { id } = await context.params;
-    const consultation = await consultationContext(id);
+    const access = await requireConsultationAccess(id, "consultation.write");
+    const consultation = access.consultation;
     if (consultation.status === "FINALIZED") {
       return NextResponse.json({ code: "CONSULTATION_FINALIZED", message: "Consulta finalizada não aceita nova avaliação." }, { status: 409 });
     }
@@ -294,6 +288,7 @@ export async function POST(request: Request, context: { params: Promise<{ id: st
       classification: scored.result.classification,
       interpretation: scored.result.interpretation,
       clinicalColor: scored.result.clinicalColor,
+      authorization: { user: access.user, consultation },
     });
 
     return NextResponse.json({
@@ -302,11 +297,24 @@ export async function POST(request: Request, context: { params: Promise<{ id: st
         consultationId: assessment.consultationId,
         scaleCode: assessment.scaleCode,
         scaleVersion: assessment.scaleVersion,
-        appliedAt: assessment.appliedAt,
+        scoreNumeric: assessment.scoreNumeric === null ? null : Number(assessment.scoreNumeric),
+        scoreText: assessment.scoreText,
+        classification: assessment.classification,
+        interpretation: assessment.interpretation,
+        clinicalColor: assessment.clinicalColor,
+        appliedAt: assessment.appliedAt.toISOString(),
       },
       result: scored.result,
     }, { status: 201 });
   } catch (error) {
     return failure(error);
   }
+}
+
+export async function GET(request: Request, context: { params: Promise<{ id: string }> }) {
+  return withClinicalPerformance(request, "consultation.scales.complementary.read", () => getComplementary(request, context));
+}
+
+export async function POST(request: Request, context: { params: Promise<{ id: string }> }) {
+  return withClinicalPerformance(request, "consultation.scales.complementary.write", () => postComplementary(request, context));
 }

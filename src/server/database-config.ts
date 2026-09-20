@@ -21,6 +21,19 @@ const SYNTHETIC_PREVIEW_DATABASE_CONFIG: DatabaseConfig = {
   connectionLimit: 1,
 };
 
+const DEFAULT_CONNECTION_LIMIT = 5;
+const MAX_CONNECTION_LIMIT = 10;
+
+function connectionLimitFromEnvironment(): number {
+  const raw = process.env.DATABASE_CONNECTION_LIMIT?.trim();
+  if (!raw) return DEFAULT_CONNECTION_LIMIT;
+  const parsed = Number(raw);
+  if (!Number.isInteger(parsed) || parsed < 1 || parsed > MAX_CONNECTION_LIMIT) {
+    return DEFAULT_CONNECTION_LIMIT;
+  }
+  return parsed;
+}
+
 export function databaseConfig(
   raw: string | undefined,
   environment: SyntheticPreviewEnvironment = {
@@ -45,6 +58,6 @@ export function databaseConfig(
     user: decodeURIComponent(url.username),
     password: decodeURIComponent(url.password),
     database: url.pathname.replace(/^\//, ""),
-    connectionLimit: 5,
+    connectionLimit: connectionLimitFromEnvironment(),
   };
 }

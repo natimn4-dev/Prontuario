@@ -6,6 +6,13 @@ const pageUrl = new URL("../../src/app/consultations/[id]/page.tsx", import.meta
 const workspaceUrl = new URL("../../src/components/consultations/consultation-workspace.tsx", import.meta.url);
 const soapUrl = new URL("../../src/components/consultations/soap-editor.tsx", import.meta.url);
 const reportTabsUrl = new URL("../../src/components/reports/report-workspace-tabs.tsx", import.meta.url);
+const noteServiceUrl = new URL("../../src/server/clinical/consultation-note.ts", import.meta.url);
+const scalesWorkspaceUrl = new URL("../../src/components/scales/clinical-scales-workspace.tsx", import.meta.url);
+const scalesWorkspaceRouteUrl = new URL("../../src/app/api/consultations/[id]/scales/workspace/route.ts", import.meta.url);
+const dietaryUrl = new URL("../../src/components/dietary/dietary-assessment-workspace.tsx", import.meta.url);
+const patientPageUrl = new URL("../../src/app/patients/[id]/page.tsx", import.meta.url);
+const problemServiceUrl = new URL("../../src/server/clinical/problem-workspace.ts", import.meta.url);
+const medicationServiceUrl = new URL("../../src/server/clinical/medication-workspace.ts", import.meta.url);
 
 async function text(url: URL) {
   return readFile(url, "utf8");
@@ -22,12 +29,11 @@ test("consulta não monta todos os workspaces na carga inicial", async () => {
 
   assert.match(workspace, /dynamic\(/);
   assert.match(workspace, /useState<WorkspaceSectionId>\("soap"\)/);
-  assert.match(workspace, /useState<Set<WorkspaceSectionId>>\(\(\) => new Set\(\["soap"\]\)\)/);
-  assert.match(workspace, /visited\.has\("problemas"\)/);
-  assert.match(workspace, /visited\.has\("medicamentos"\)/);
-  assert.match(workspace, /visited\.has\("escalas"\)/);
-  assert.match(workspace, /visited\.has\("relatorio"\)/);
-  assert.match(workspace, /visited\.has\("finalizacao"\)/);
+  assert.match(workspace, /useState<Set<WorkspaceSectionId>>\(new Set\(\)\)/);
+  assert.match(workspace, /function shouldMount\(sectionId/);
+  assert.match(workspace, /return active === sectionId \|\| dirtySections\.has\(sectionId\)/);
+  assert.doesNotMatch(workspace, /visited\.has/);
+  assert.match(workspace, /onDirtyChange=\{\(dirty\) => setSectionDirty\("soap", dirty\)\}/);
   assert.match(workspace, /hidden=\{active !==/);
 });
 
@@ -53,4 +59,56 @@ test("condutas não geram segundo editor nem segunda leitura de nota no relatór
   assert.match(reportTabs, /AgaReportDocumentPreview/);
   assert.doesNotMatch(reportTabs, /GeriatricConductWorkspace/);
   assert.doesNotMatch(reportTabs, /\/api\/consultations/);
+});
+
+test("SOAP preserva a transação segura sem reconstruir o contexto completo após a escrita", async () => {
+  const source = await text(noteServiceUrl);
+  const saveSource = source.slice(source.indexOf("export async function saveConsultationNote"));
+
+  assert.equal((saveSource.match(/noteContext\(tx/g) ?? []).length, 1);
+  assert.doesNotMatch(saveSource, /publicView\(await noteContext/);
+  assert.match(saveSource, /isolationLevel: "Serializable"/);
+  assert.match(saveSource, /auditEvent\.create/);
+  assert.match(saveSource, /expectedNoteVersion/);
+});
+
+test("Escalas abrem com uma leitura agregada e o salvamento devolve o estado persistido", async () => {
+  const [workspace, route] = await Promise.all([text(scalesWorkspaceUrl), text(scalesWorkspaceRouteUrl)]);
+
+  assert.equal((workspace.match(/fetchJson<ClinicalScalesWorkspacePayload>/g) ?? []).length, 1);
+  assert.match(workspace, /\/scales\/workspace/);
+  assert.doesNotMatch(workspace, /refreshStatus/);
+  assert.match(workspace, /setStatusView/);
+  assert.match(route, /scaleAssessment\.findMany/);
+  assert.match(route, /oncogeriatricPrefills/);
+});
+
+test("Alimentação atualiza o estado recalculado do PUT sem GET completo obrigatório", async () => {
+  const source = await text(dietaryUrl);
+  const saveSource = source.slice(source.indexOf("async function save"));
+
+  assert.match(saveSource, /setData\(/);
+  assert.doesNotMatch(saveSource, /await load\(\)/);
+});
+
+test("Página do paciente usa janela longitudinal inicial e mantém acesso ao histórico completo", async () => {
+  const source = await text(patientPageUrl);
+
+  assert.match(source, /historyValue === "full"/);
+  assert.match(source, /take: 24/);
+  assert.match(source, /take: 250/);
+  assert.match(source, /take: 25/);
+  assert.match(source, /Carregar histórico completo/);
+  assert.match(source, /fullHistory \? \{\} : \{ take: 24 \}/);
+});
+
+test("Problemas e medicamentos devolvem projeção mínima após a gravação", async () => {
+  const [problems, medications] = await Promise.all([text(problemServiceUrl), text(medicationServiceUrl)]);
+  const problemWrites = problems.slice(problems.indexOf("export async function createProblem"));
+  const medicationWrites = medications.slice(medications.indexOf("export async function createMedicationWithRegimen"));
+
+  assert.doesNotMatch(problemWrites, /publicView\(await context\(tx/);
+  assert.doesNotMatch(medicationWrites, /await workspaceContext\(tx, input\.consultationId\)\)\.view/);
+  assert.match(problemWrites, /auditEvent\.create/);
+  assert.match(medicationWrites, /auditEvent\.create/);
 });

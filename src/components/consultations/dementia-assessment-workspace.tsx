@@ -155,7 +155,7 @@ function TriStateSelect({ label, value, onChange, disabled, hint }: {
   );
 }
 
-export function DementiaAssessmentWorkspace({ consultationId }: { consultationId: string }) {
+export function DementiaAssessmentWorkspace({ consultationId, onDirtyChange }: { consultationId: string; onDirtyChange?: (dirty: boolean) => void }) {
   const [workspace, setWorkspace] = useState<DementiaAssessmentWorkspaceView>();
   const [draft, setDraft] = useState<DementiaAssessmentDraft>(() => emptyDementiaAssessmentDraft());
   const [activeStep, setActiveStep] = useState<StepId>("seguranca");
@@ -165,6 +165,8 @@ export function DementiaAssessmentWorkspace({ consultationId }: { consultationId
   const [dirty, setDirty] = useState(false);
   const [message, setMessage] = useState<string>();
   const [error, setError] = useState<string>();
+
+  useEffect(() => { onDirtyChange?.(dirty); }, [dirty, onDirtyChange]);
 
   const load = useCallback(async () => {
     setError(undefined);

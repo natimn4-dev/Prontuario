@@ -165,9 +165,11 @@ function contextLabels(context: DietaryClinicalContext | null) {
 export function DietaryAssessmentWorkspace({
   consultationId,
   patientName,
+  onDirtyChange,
 }: {
   consultationId: string;
   patientName?: string;
+  onDirtyChange?: (dirty: boolean) => void;
 }) {
   const [data, setData] = useState<LoadPayload | null>(null);
   const [meals, setMeals] = useState<UiDietaryMeal[]>(freshMeals);
@@ -318,6 +320,8 @@ export function DietaryAssessmentWorkspace({
     measure === "g" ? numberOrNull(quantity) : numberOrNull(grams);
   const selectedNutrients = portionNutrients(selectedFood, previewGrams);
   const mark = () => setDirty(true);
+
+  useEffect(() => { onDirtyChange?.(dirty); }, [dirty, onDirtyChange]);
 
   async function load() {
     setLoading(true);
@@ -674,15 +678,28 @@ export function DietaryAssessmentWorkspace({
           }),
         },
       );
-      const body = (await response.json()) as { error?: string };
+      const body = (await response.json()) as {
+        error?: string;
+        consultationId?: string;
+        updatedAt?: string;
+        assessment?: DietaryAssessmentSnapshot;
+      };
       if (!response.ok)
         throw new Error(
           body.error ?? "Não foi possível salvar a avaliação alimentar.",
         );
       setDirty(false);
+      if (body.assessment && body.updatedAt && body.consultationId) {
+        setData((current) => current ? {
+          ...current,
+          consultationId: body.consultationId!,
+          updatedAt: body.updatedAt!,
+          clinicalContext: body.assessment!.clinicalContext,
+          assessment: body.assessment!,
+        } : current);
+      }
       if (!options.silent)
         setMessage("Avaliação salva e recalculada no servidor.");
-      await load();
     } catch (cause) {
       setError(
         cause instanceof Error

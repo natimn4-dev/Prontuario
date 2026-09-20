@@ -16,7 +16,7 @@ test("consulta atual recebe somente referência da consulta imediatamente anteri
 });
 
 test("evolução anterior fica somente leitura e não preenche a evolução atual", () => {
-  assert.match(workspace, /<PreviousConsultationNote previousConsultation=\{previousConsultation\} \/>[\s\S]*?<SoapEditor consultationId=\{consultationId\} \/>/);
+  assert.match(workspace, /<PreviousConsultationNote previousConsultation=\{previousConsultation\} \/>[\s\S]*?<SoapEditor consultationId=\{consultationId\} onDirtyChange=/);
   assert.match(previousNote, /method: "GET"/);
   assert.match(previousNote, /cache: "no-store"/);
   assert.match(previousNote, /Este conteúdo não preenche nem altera a evolução atual/);

@@ -55,6 +55,8 @@ test("build de outra branch continua exigindo DATABASE_URL", () => {
 });
 
 test("configuração real preserva a URL do ambiente", () => {
+  const previous = process.env.DATABASE_CONNECTION_LIMIT;
+  delete process.env.DATABASE_CONNECTION_LIMIT;
   assert.deepEqual(
     databaseConfig("mysql://clinician:p%40ss@db.example.test:3307/prontuario"),
     {
@@ -66,4 +68,16 @@ test("configuração real preserva a URL do ambiente", () => {
       connectionLimit: 5,
     },
   );
+  if (previous === undefined) delete process.env.DATABASE_CONNECTION_LIMIT;
+  else process.env.DATABASE_CONNECTION_LIMIT = previous;
+});
+
+test("limite de conexões pode ser ajustado por ambiente dentro do teto seguro", () => {
+  const previous = process.env.DATABASE_CONNECTION_LIMIT;
+  process.env.DATABASE_CONNECTION_LIMIT = "7";
+  assert.equal(databaseConfig("mysql://clinician:secret@db.example.test/prontuario").connectionLimit, 7);
+  process.env.DATABASE_CONNECTION_LIMIT = "99";
+  assert.equal(databaseConfig("mysql://clinician:secret@db.example.test/prontuario").connectionLimit, 5);
+  if (previous === undefined) delete process.env.DATABASE_CONNECTION_LIMIT;
+  else process.env.DATABASE_CONNECTION_LIMIT = previous;
 });

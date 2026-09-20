@@ -52,6 +52,19 @@ Na Hostinger, o próprio `npm run build` já inclui o `PRESTART` formal descrito
 
 O Better Auth também executa a validação de ambiente ao iniciar em produção e falha fechado se a configuração mínima estiver insegura.
 
+### Observabilidade de performance
+
+Para uma janela controlada de medição, habilite `CLINICAL_PERFORMANCE_LOGGING=1`.
+As rotas clínicas instrumentadas emitem somente JSON operacional com `requestId`,
+rota, duração, contagem aproximada de operações Prisma, duração do banco,
+transações e resultado HTTP. Não são emitidos SQL, parâmetros, nomes, IDs de
+paciente ou texto clínico. Desabilite a variável após a janela de medição se o
+monitoramento central já não precisar desses eventos.
+
+`DATABASE_CONNECTION_LIMIT` controla o pool MariaDB por ambiente. O padrão é 5
+e o código aceita somente valores inteiros de 1 a 10; não aumente o valor em
+produção sem confirmar o limite do banco e observar saturação.
+
 ## 3. Smoke pós-deploy
 
 Com o domínio público apontando para a aplicação:

@@ -38,13 +38,10 @@ test("consulta expõe navegação por etapas responsiva sem montar todas as áre
   assert.match(workspaceSource, /aria-label="Áreas do prontuário"/);
   assert.match(workspaceSource, /aria-current=\{active === section\.id \? "step" : undefined\}/);
   assert.match(workspaceSource, /useState<WorkspaceSectionId>\("soap"\)/);
-  assert.match(workspaceSource, /new Set\(\["soap"\]\)/);
+  assert.match(workspaceSource, /new Set\(\)/);
   assert.match(workspaceSource, /dynamic\(/);
-  assert.match(workspaceSource, /visited\.has\("problemas"\)/);
-  assert.match(workspaceSource, /visited\.has\("medicamentos"\)/);
-  assert.match(workspaceSource, /visited\.has\("escalas"\)/);
-  assert.match(workspaceSource, /visited\.has\("relatorio"\)/);
-  assert.match(workspaceSource, /visited\.has\("finalizacao"\)/);
+  assert.match(workspaceSource, /dirtySections\.has/);
+  assert.doesNotMatch(workspaceSource, /visited\.has/);
   assert.match(workspaceSource, /hidden=\{active !==/);
   assert.match(workspaceSource, /professionalIdentity: ProfessionalIdentity/);
   assert.match(workspaceSource, /ReportWorkspaceTabs consultationId=\{consultationId\} professionalIdentity=\{professionalIdentity\}/);

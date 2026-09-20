@@ -23,6 +23,7 @@ import {
 import { requireConsultationAccess } from "../auth/patient-access.ts";
 import { prisma } from "../db.ts";
 import { consultationNoteVersion } from "./consultation-note-version.ts";
+import { measureClinicalTransaction } from "../observability/clinical-performance.ts";
 
 function clinicalColor(value: string | null): ClinicalColor | undefined {
   if (value === "verde" || value === "amarelo" || value === "vermelho" || value === "cinza") return value;
@@ -202,7 +203,7 @@ function prismaJson(value: unknown): Prisma.InputJsonValue {
 
 export async function getConsultationNote(consultationId: string): Promise<ConsultationNoteView> {
   await requireConsultationAccess(consultationId, "patient.read");
-  return prisma.$transaction(async (tx) => publicView(await noteContext(tx, consultationId)));
+  return measureClinicalTransaction(() => prisma.$transaction(async (tx) => publicView(await noteContext(tx, consultationId))));
 }
 
 export async function saveConsultationNote(input: {
@@ -222,7 +223,7 @@ export async function saveConsultationNote(input: {
     throw new Error("Versão da nota clínica ausente.");
   }
 
-  return prisma.$transaction(async (tx) => {
+  return measureClinicalTransaction(() => prisma.$transaction(async (tx) => {
     const context = await noteContext(tx, input.consultationId);
     if (context.consultation.status === "FINALIZED") {
       throw new ConsultationNoteError("CONSULTATION_FINALIZED", "Consulta finalizada é imutável.");
@@ -253,15 +254,18 @@ export async function saveConsultationNote(input: {
 
     const serialized = soapDraftToConsultationNoteJson(input.fields);
 
+    let updatedAt: Date;
     if (input.expectedNoteVersion) {
-      await tx.consultation.update({
+      const saved = await tx.consultation.update({
         where: { id: context.consultation.id },
         data: {
           subjective: prismaJson(serialized.subjective),
           objective: prismaJson(serialized.objective),
           plan: prismaJson(serialized.plan),
         },
+        select: { updatedAt: true },
       });
+      updatedAt = saved.updatedAt;
     } else {
       const updated = await tx.consultation.updateMany({
         where: {
@@ -283,6 +287,12 @@ export async function saveConsultationNote(input: {
           "A consulta foi alterada em outra sessão. Recarregue antes de salvar novamente.",
         );
       }
+      const saved = await tx.consultation.findUnique({
+        where: { id: context.consultation.id },
+        select: { updatedAt: true },
+      });
+      if (!saved) throw new ConsultationNoteError("CONSULTATION_NOT_FOUND", "Consulta não encontrada.");
+      updatedAt = saved.updatedAt;
     }
 
     if (input.examsText !== undefined) {
@@ -321,6 +331,18 @@ export async function saveConsultationNote(input: {
       },
     });
 
-    return publicView(await noteContext(tx, input.consultationId));
-  }, { isolationLevel: "Serializable" });
+    const responseContext = {
+      ...context,
+      consultation: {
+        ...context.consultation,
+        updatedAt,
+      },
+      fields: input.fields,
+      exams: input.examsText === undefined
+        ? context.exams
+        : { ...context.exams, current: normalizeClinicalExamText(input.examsText) },
+    };
+
+    return publicView(responseContext);
+  }, { isolationLevel: "Serializable" }));
 }

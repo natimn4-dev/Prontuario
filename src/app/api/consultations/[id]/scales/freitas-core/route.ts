@@ -6,9 +6,9 @@ import { PSYCHOSOCIAL_FREITAS_SCALES, scorePsychosocialFreitasScale, type Psycho
 import { electronicScaleLicenseFlagsFromEnvironment, electronicScaleRestriction, isElectronicScaleLicensed, unconfirmedElectronicScaleRestrictions } from "@/domain/clinical-config/electronic-scale-license-policy";
 import { scaleConsultationHorizonIds } from "@/domain/scale-consultation-horizon";
 import { requireConsultationAccess } from "@/server/auth/patient-access";
-import { requireAuthenticatedUser } from "@/server/auth/require-user";
 import { saveScaleAssessment } from "@/server/clinical/persistence";
 import { prisma } from "@/server/db";
+import { withClinicalPerformance } from "@/server/observability/clinical-performance";
 
 type ScaleCode = CoreFreitasScaleCode | ValidatedScaleCode | CognitiveFreitasScaleCode | PsychosocialFreitasScaleCode;
 const CORE = new Set<CoreFreitasScaleCode>(CORE_FREITAS_SCALES.map((item) => item.code));
@@ -16,16 +16,10 @@ const VALIDATED = new Set<ValidatedScaleCode>(VALIDATED_FREITAS_SCALES.map((item
 const COGNITIVE = new Set<CognitiveFreitasScaleCode>(COGNITIVE_FREITAS_SCALES.map((item) => item.code));
 const PSYCHOSOCIAL = new Set<PsychosocialFreitasScaleCode>(PSYCHOSOCIAL_FREITAS_SCALES.map((item) => item.code));
 const SUPPORTED = new Set<ScaleCode>([...CORE, ...VALIDATED, ...COGNITIVE, ...PSYCHOSOCIAL]);
-const DEFINITIONS = [...CORE_FREITAS_SCALES, ...VALIDATED_FREITAS_SCALES, ...COGNITIVE_FREITAS_SCALES, ...PSYCHOSOCIAL_FREITAS_SCALES];
+export const FREITAS_CORE_DEFINITIONS = [...CORE_FREITAS_SCALES, ...VALIDATED_FREITAS_SCALES, ...COGNITIVE_FREITAS_SCALES, ...PSYCHOSOCIAL_FREITAS_SCALES];
 
 async function consultationContext(consultationId: string) {
-  await requireConsultationAccess(consultationId, "patient.read");
-  const consultation = await prisma.consultation.findUnique({
-    where: { id: consultationId },
-    select: { id: true, patientId: true, status: true },
-  });
-  if (!consultation) throw new Error("CONSULTATION_NOT_FOUND");
-  return consultation;
+  return (await requireConsultationAccess(consultationId, "patient.read")).consultation;
 }
 
 async function consultationHorizonIds(patientId: string, targetConsultationId: string) {
@@ -64,13 +58,12 @@ function failure(error: unknown) {
   return NextResponse.json({ code: "FREITAS_SCALE_FAILED", message: "Não foi possível processar a avaliação geriátrica." }, { status: 500 });
 }
 
-export async function GET(_request: Request, context: { params: Promise<{ id: string }> }) {
+async function getFreitasCore(_request: Request, context: { params: Promise<{ id: string }> }) {
   try {
-    await requireAuthenticatedUser("patient.read");
     const { id } = await context.params;
     const consultation = await consultationContext(id);
     const licenseFlags = electronicScaleLicenseFlagsFromEnvironment(process.env);
-    const availableDefinitions = DEFINITIONS.filter((definition) => isElectronicScaleLicensed(definition.code, licenseFlags));
+  const availableDefinitions = FREITAS_CORE_DEFINITIONS.filter((definition) => isElectronicScaleLicensed(definition.code, licenseFlags));
     const availableCodes = availableDefinitions.map((definition) => definition.code as ScaleCode);
     const consultationIds = await consultationHorizonIds(consultation.patientId, id);
     const assessments = await prisma.scaleAssessment.findMany({
@@ -97,11 +90,11 @@ export async function GET(_request: Request, context: { params: Promise<{ id: st
   }
 }
 
-export async function POST(request: Request, context: { params: Promise<{ id: string }> }) {
+async function postFreitasCore(request: Request, context: { params: Promise<{ id: string }> }) {
   try {
-    await requireAuthenticatedUser("consultation.write");
     const { id } = await context.params;
-    const consultation = await consultationContext(id);
+    const access = await requireConsultationAccess(id, "consultation.write");
+    const consultation = access.consultation;
     if (consultation.status === "FINALIZED") return NextResponse.json({ code: "CONSULTATION_FINALIZED", message: "Consulta finalizada não aceita nova avaliação." }, { status: 409 });
     const { scaleCode, answers } = parseBody(await request.json());
     const licenseFlags = electronicScaleLicenseFlagsFromEnvironment(process.env);
@@ -120,12 +113,32 @@ export async function POST(request: Request, context: { params: Promise<{ id: st
       classification: scored.result.classification,
       interpretation: scored.result.interpretation,
       clinicalColor: scored.result.clinicalColor,
+      authorization: { user: access.user, consultation },
     });
     return NextResponse.json({
-      assessment: { id: assessment.id, consultationId: assessment.consultationId, scaleCode: assessment.scaleCode, scaleVersion: assessment.scaleVersion, appliedAt: assessment.appliedAt },
+      assessment: {
+        id: assessment.id,
+        consultationId: assessment.consultationId,
+        scaleCode: assessment.scaleCode,
+        scaleVersion: assessment.scaleVersion,
+        scoreNumeric: assessment.scoreNumeric === null ? null : Number(assessment.scoreNumeric),
+        scoreText: assessment.scoreText,
+        classification: assessment.classification,
+        interpretation: assessment.interpretation,
+        clinicalColor: assessment.clinicalColor,
+        appliedAt: assessment.appliedAt.toISOString(),
+      },
       result: scored.result,
     }, { status: 201 });
   } catch (error) {
     return failure(error);
   }
+}
+
+export async function GET(request: Request, context: { params: Promise<{ id: string }> }) {
+  return withClinicalPerformance(request, "consultation.scales.core.read", () => getFreitasCore(request, context));
+}
+
+export async function POST(request: Request, context: { params: Promise<{ id: string }> }) {
+  return withClinicalPerformance(request, "consultation.scales.core.write", () => postFreitasCore(request, context));
 }

@@ -46,7 +46,7 @@ export interface MedicationStatusWriteTransaction {
     consultationId: string;
     previousStatus: MedicationLifecycleStatus | null;
     newStatus: MedicationLifecycleStatus;
-  }): Promise<{ id: string }>;
+  }): Promise<{ id: string; createdAt?: Date | string }>;
   createAuditEvent(input: {
     userId: string;
     entityType: "MedicationStatusEvent";
@@ -59,7 +59,7 @@ export interface MedicationStatusWriteTransaction {
 }
 
 export interface MedicationStatusWriteDependencies {
-  authenticate(permission: "consultation.write"): Promise<{ user: { id: string } }>;
+  authenticate(permission: "consultation.write", consultationId: string): Promise<{ user: { id: string } }>;
   transaction<T>(operation: (tx: MedicationStatusWriteTransaction) => Promise<T>): Promise<T>;
 }
 
@@ -72,7 +72,7 @@ export function medicationStatusWriteService(
     newStatus: MedicationLifecycleStatus;
     requestId?: string;
   }) {
-    const { user } = await dependencies.authenticate("consultation.write");
+    const { user } = await dependencies.authenticate("consultation.write", input.consultationId);
 
     return dependencies.transaction(async (tx) => {
       const context = await tx.findWriteContext({
@@ -152,6 +152,7 @@ export function medicationStatusWriteService(
           ? context.previousExplicitStatus
           : null,
         newStatus: input.newStatus,
+        createdAt: event.createdAt instanceof Date ? event.createdAt.toISOString() : event.createdAt,
       };
     });
   }
