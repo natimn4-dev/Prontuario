@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import type { DietaryAssessmentInput } from "@/domain/dietary-assessment";
+import { AccessForbiddenError, AuthenticationRequiredError } from "@/server/auth/access-errors";
 import { withClinicalPerformance } from "@/server/observability/clinical-performance";
 import {
   DietaryAssessmentError,
@@ -28,6 +29,18 @@ export async function GET(request: Request, { params }: { params: Promise<{ id: 
       if (error instanceof DietaryAssessmentError) {
         return NextResponse.json({ error: error.message, code: error.code }, { status: status(error) });
       }
+      if (error instanceof AuthenticationRequiredError) {
+        return NextResponse.json(
+          { code: "AUTHENTICATION_REQUIRED", message: "Autenticação obrigatória." },
+          { status: 401, headers: { "Cache-Control": "private, no-store, max-age=0" } },
+        );
+      }
+      if (error instanceof AccessForbiddenError) {
+        return NextResponse.json(
+          { code: "ACCESS_FORBIDDEN", message: "Acesso não autorizado." },
+          { status: 403, headers: { "Cache-Control": "private, no-store, max-age=0" } },
+        );
+      }
       throw error;
     }
   });
@@ -55,6 +68,18 @@ export async function PUT(request: Request, { params }: { params: Promise<{ id: 
     } catch (error) {
       if (error instanceof DietaryAssessmentError) {
         return NextResponse.json({ error: error.message, code: error.code }, { status: status(error) });
+      }
+      if (error instanceof AuthenticationRequiredError) {
+        return NextResponse.json(
+          { code: "AUTHENTICATION_REQUIRED", message: "Autenticação obrigatória." },
+          { status: 401, headers: { "Cache-Control": "private, no-store, max-age=0" } },
+        );
+      }
+      if (error instanceof AccessForbiddenError) {
+        return NextResponse.json(
+          { code: "ACCESS_FORBIDDEN", message: "Acesso não autorizado." },
+          { status: 403, headers: { "Cache-Control": "private, no-store, max-age=0" } },
+        );
       }
       throw error;
     }
