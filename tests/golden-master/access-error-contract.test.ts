@@ -1,4 +1,5 @@
 import assert from "node:assert/strict";
+import { readFileSync } from "node:fs";
 import test from "node:test";
 import {
   AccessForbiddenError,
@@ -23,4 +24,13 @@ test("erros de acesso mantêm reconhecimento mesmo quando reconstruídos por out
 test("type guards de acesso não aceitam erros genéricos", () => {
   assert.equal(isAccessForbiddenError(new Error("outro erro")), false);
   assert.equal(isAuthenticationRequiredError(new Error("outro erro")), false);
+});
+
+
+test("rota alimentar preserva 401/403 também para erros vindos do serviço clínico", () => {
+  const route = readFileSync("src/app/api/consultations/[id]/dietary-assessment/route.ts", "utf8");
+  assert.match(route, /isAuthenticationRequiredError\(error\)/);
+  assert.match(route, /AUTHENTICATION_REQUIRED/);
+  assert.match(route, /isAccessForbiddenError\(error\)/);
+  assert.match(route, /ACCESS_FORBIDDEN/);
 });
