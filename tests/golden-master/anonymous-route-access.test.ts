@@ -25,7 +25,7 @@ test("login, autenticação e health permanecem públicos, sem sessão e sem cac
     return false;
   });
 
-  for (const pathname of ["/login", "/auth/google", "/api/auth/session", "/api/auth/callback/google", "/api/health"]) {
+  for (const pathname of ["/login", "/auth/google", "/auth/error", "/api/auth/session", "/api/auth/callback/google", "/api/health"]) {
     assert.equal(isPublicRoute(pathname), true);
     const response = await guard(new NextRequest(`https://prontuario.test${pathname}`));
     assert.equal(response.status, 200);
