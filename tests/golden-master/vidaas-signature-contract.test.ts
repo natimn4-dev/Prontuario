@@ -88,7 +88,7 @@ test("fluxo clínico exige revisão separada e oferece assinatura do relatório 
   assert.match(panel, /Confirmo a revisão clínica final do relatório/);
   assert.match(panel, /Confirmo a revisão final das diretivas antecipadas/);
   assert.match(panel, /reports\/advance-directives\/signatures\/vidaas/);
-  assert.match(panel, /Finalizar e assinar com VIDaaS/);
+  assert.match(panel, /Assinar \$\{documentLabel\} com VIDaaS/);
   assert.match(panel, /Abrir \/ imprimir PDF assinado/);
   assert.match(service, /beginAdvanceDirectivesVidaasSignature/);
   assert.match(service, /buildAdvanceDirectivesPdf/);
