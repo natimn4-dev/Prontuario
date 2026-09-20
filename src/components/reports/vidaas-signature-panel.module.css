@@ -13,6 +13,26 @@
 .copy h3 { margin: 4px 0 8px; }
 .copy p { margin: 0; color: var(--muted); line-height: 1.55; }
 .eyebrow { color: var(--primary-strong); font-size: 11px; font-weight: 800; letter-spacing: .06em; text-transform: uppercase; }
+.gateNotice,
+.readyNotice {
+  grid-column: 1 / -1;
+  margin: 0;
+  padding: 10px 12px;
+  border-radius: 10px;
+  font-size: 13px;
+  line-height: 1.45;
+}
+.gateNotice {
+  border: 1px solid #ead29d;
+  background: #fff7e8;
+  color: #775917;
+}
+.readyNotice {
+  border: 1px solid #b7d8c3;
+  background: #edf7f1;
+  color: #2f6245;
+  font-weight: 700;
+}
 .documentOptions { display: grid; gap: 12px; }
 .documentOption {
   display: grid;
