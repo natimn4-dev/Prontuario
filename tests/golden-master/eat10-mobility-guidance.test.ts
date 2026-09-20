@@ -112,7 +112,7 @@ test("preensão reduzida gera risco de queda e orientação fisioterapêutica se
   assert.doesNotMatch(mobility?.results.map((result) => result.value).join(" ") ?? "", /não utiliza dispositivo|sem dispositivo/i);
   assert.match(guidance, /chance de quedas/i);
   assert.match(guidance, /Fisioterapia/i);
-  assert.match(guidance, /força de membros inferiores, equilíbrio, marcha, transferências/i);
+  assert.match(guidance, /força das pernas, equilíbrio, marcha e transferências/i);
   assert.doesNotMatch(guidance, /bengala|andador|muletas|cadeira de rodas/i);
   assert.ok(mobility?.evidenceReferences.some((reference) => reference.pmid === "37155689"));
 });
@@ -121,7 +121,7 @@ test("orientação de dispositivo só aparece quando o uso está registrado e é
   const mobility = mobilityDomain({ usesWalkingAid: 1, walkingAidType: "Andador" });
   const guidance = mobility?.guidance.join(" ") ?? "";
 
-  assert.match(guidance, /uso de andador/i);
+  assert.match(guidance, /usa andador/i);
   assert.match(guidance, /ajuste, a forma de uso/i);
   assert.match(guidance, /fisioterapeuta/i);
   assert.doesNotMatch(guidance, /bengala, andador/i);
