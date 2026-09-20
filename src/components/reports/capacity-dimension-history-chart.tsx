@@ -185,7 +185,7 @@ function DimensionTimeline({
           const title = `${dimension.label}: ${STATUS_LABEL[cell.status]}. ${cell.statusReason}${instruments.length ? ` Instrumentos: ${instruments.join(" | ")}.` : ""}`;
           const isInflection = inflectionKeys.has(`${dimension.code}:${cell.consultationId}`);
 
-          if (isComparable(cell.status) && cell.comparabilityKey) {
+          if (isComparable(cell.status)) {
             return (
               <g key={`${dimension.code}-${cell.consultationId}`}>
                 {isInflection ? <circle className={styles.inflectionHalo} cx={x} cy={STATUS_Y[cell.status]} r={8} /> : null}
@@ -370,7 +370,7 @@ export function CapacityDimensionHistoryChart({
             ) : null}
             <div className={styles.frameworkHeader}>
               <strong>Capacidade intrínseca</strong>
-              <span>Cinco domínios OMS — cada um com sua própria trajetória</span>
+              <span>Locomoção, cognição, humor, vitalidade, audição e visão — trajetórias separadas</span>
             </div>
             {intrinsicDimensions.map((dimension) => (
               <DimensionTimeline
@@ -403,7 +403,7 @@ export function CapacityDimensionHistoryChart({
 
       <div className={styles.readingGuide}>
         <strong>Como ler</strong>
-        <span>Acima = sem redução • centro = atenção • abaixo = redução. A linha só continua quando instrumento e versão são comparáveis.</span>
+        <span>Acima = sem redução • centro = atenção • abaixo = redução. Todo estado válido é exibido; a linha só continua quando instrumento e versão são comparáveis.</span>
         <span>Trecho tracejado = houve consulta intermediária sem reaplicação; compara somente os dois resultados medidos e não implica estabilidade no intervalo.</span>
         <span>Círculo cinza = não avaliada • quadrado = registro sem estado • losango = resultados discordantes. O estado mais recente fica no badge à esquerda.</span>
       </div>
