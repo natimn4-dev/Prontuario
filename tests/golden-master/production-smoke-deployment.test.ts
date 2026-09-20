@@ -20,9 +20,10 @@ test("production smoke waits for managed-host redeploy without an overly short r
   assert.match(workflow, /sleep 30/);
 });
 
-test("production smoke rejeita interface de login antiga mesmo quando a release responde saudável", () => {
+test("production smoke exige login direto e fallback compatível explícito", () => {
   assert.match(smoke, /href="\/auth\/google"/);
-  assert.match(smoke, /Se o prontuário estiver aberto dentro de outro aplicativo/);
+  assert.match(smoke, /href="\/auth\/google\?manual=1"/);
+  assert.match(smoke, /redireciona diretamente para o Google/);
 });
 
 test("production smoke fails bounded network calls instead of hanging indefinitely", () => {
