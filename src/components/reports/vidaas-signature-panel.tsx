@@ -1,6 +1,8 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { isFinalReportSnapshot } from "@/domain/report-signature-eligibility";
+import type { ReportSigningSnapshot } from "./report-signing-snapshot";
 import styles from "./vidaas-signature-panel.module.css";
 
 type SignatureStart = { authorizationUrl?: unknown; message?: unknown };
@@ -23,13 +25,26 @@ function providerLabel(provider: SignatureProvider): string {
   return provider === "bird" ? "Bird ID" : "VIDaaS";
 }
 
-export function VidaasSignaturePanel({ consultationId }: { consultationId: string }) {
+export function VidaasSignaturePanel({
+  consultationId,
+  snapshot,
+}: {
+  consultationId: string;
+  snapshot: ReportSigningSnapshot | null;
+}) {
   const [agaReviewConfirmed, setAgaReviewConfirmed] = useState(false);
   const [directivesReviewConfirmed, setDirectivesReviewConfirmed] = useState(false);
   const [loadingKey, setLoadingKey] = useState<LoadingKey | null>(null);
   const [error, setError] = useState("");
   const [signedDocumentId, setSignedDocumentId] = useState("");
   const [signedDocumentKind, setSignedDocumentKind] = useState<DocumentKind | "">("");
+
+  const finalizedSnapshotReady = Boolean(snapshot && isFinalReportSnapshot(snapshot));
+
+  function snapshotReadyFor(kind: DocumentKind): boolean {
+    if (!snapshot || !finalizedSnapshotReady) return false;
+    return kind === "aga" || snapshot.hasAdvanceDirectives;
+  }
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
@@ -41,20 +56,25 @@ export function VidaasSignaturePanel({ consultationId }: { consultationId: strin
     }
   }, []);
 
+  useEffect(() => {
+    setAgaReviewConfirmed(false);
+    setDirectivesReviewConfirmed(false);
+    setError("");
+  }, [snapshot?.id]);
+
   async function finalizeAndSign(kind: DocumentKind, provider: SignatureProvider) {
     const reviewConfirmed = kind === "aga" ? agaReviewConfirmed : directivesReviewConfirmed;
-    if (!reviewConfirmed || loadingKey) return;
+    if (!reviewConfirmed || loadingKey || !snapshotReadyFor(kind) || !snapshot) return;
     const nextLoadingKey: LoadingKey = `${kind}:${provider}`;
     setLoadingKey(nextLoadingKey);
     setError("");
     try {
-      // O servidor seleciona a última prévia AGA gerada por este médico.
-      // Relatório e diretivas são extraídos do mesmo snapshot imutável já revisado.
-      // O provedor é escolhido explicitamente a cada documento, sem fallback automático.
+      // A assinatura usa explicitamente o mesmo snapshot final exibido e revisado.
+      // O servidor revalida o status FINALIZED e rejeita snapshots gerados antes da finalização.
       const signatureResponse = await fetch(endpointFor(consultationId, kind, provider), {
         method: "POST",
         headers: { "content-type": "application/json", accept: "application/json" },
-        body: JSON.stringify({}),
+        body: JSON.stringify({ snapshotId: snapshot.id }),
       });
       const signatureResult = await signatureResponse.json() as SignatureStart;
       if (!signatureResponse.ok || typeof signatureResult.authorizationUrl !== "string") {
@@ -72,21 +92,23 @@ export function VidaasSignaturePanel({ consultationId }: { consultationId: strin
   }
 
   function providerButtons(kind: DocumentKind, reviewConfirmed: boolean) {
+    const ready = snapshotReadyFor(kind);
+    const documentLabel = kind === "aga" ? "relatório final" : "diretivas";
     return (
       <>
         <button
           type="button"
           onClick={() => void finalizeAndSign(kind, "vidaas")}
-          disabled={!reviewConfirmed || Boolean(loadingKey)}
+          disabled={!reviewConfirmed || !ready || Boolean(loadingKey)}
         >
-          {loadingKey === `${kind}:vidaas` ? "Preparando assinatura…" : "Finalizar e assinar com VIDaaS"}
+          {loadingKey === `${kind}:vidaas` ? "Preparando assinatura…" : `Assinar ${documentLabel} com VIDaaS`}
         </button>
         <button
           type="button"
           onClick={() => void finalizeAndSign(kind, "bird")}
-          disabled={!reviewConfirmed || Boolean(loadingKey)}
+          disabled={!reviewConfirmed || !ready || Boolean(loadingKey)}
         >
-          {loadingKey === `${kind}:bird` ? "Preparando assinatura…" : "Finalizar e assinar com Bird ID"}
+          {loadingKey === `${kind}:bird` ? "Preparando assinatura…" : `Assinar ${documentLabel} com Bird ID`}
         </button>
       </>
     );
@@ -114,11 +136,25 @@ export function VidaasSignaturePanel({ consultationId }: { consultationId: strin
         </p>
       </div>
 
+      {!snapshot ? (
+        <p className={styles.gateNotice} role="status">
+          Finalize a consulta e gere uma nova prévia. A assinatura ficará vinculada exatamente à versão final que você revisar.
+        </p>
+      ) : !finalizedSnapshotReady ? (
+        <p className={styles.gateNotice} role="status">
+          Esta prévia foi gerada antes da finalização. Finalize a consulta e gere uma nova prévia para habilitar a assinatura.
+        </p>
+      ) : (
+        <p className={styles.readyNotice} role="status">
+          Prévia final v{snapshot.version} pronta para revisão e assinatura.
+        </p>
+      )}
+
       <div className={styles.documentOptions}>
         <article className={styles.documentOption}>
           <div>
             <strong>Relatório de Avaliação Geriátrica</strong>
-            <p>Assina o relatório AGA final exatamente a partir da última prévia gerada por você.</p>
+            <p>Assina exatamente a prévia final exibida acima, depois da finalização da consulta.</p>
           </div>
           {signedResult("aga") ?? (
             <div className={styles.actions}>
@@ -127,7 +163,7 @@ export function VidaasSignaturePanel({ consultationId }: { consultationId: strin
                   type="checkbox"
                   checked={agaReviewConfirmed}
                   onChange={(event) => setAgaReviewConfirmed(event.target.checked)}
-                  disabled={Boolean(loadingKey)}
+                  disabled={Boolean(loadingKey) || !snapshotReadyFor("aga")}
                 />
                 <span>
                   <strong>Confirmo a revisão clínica final do relatório</strong>
@@ -151,7 +187,7 @@ export function VidaasSignaturePanel({ consultationId }: { consultationId: strin
                   type="checkbox"
                   checked={directivesReviewConfirmed}
                   onChange={(event) => setDirectivesReviewConfirmed(event.target.checked)}
-                  disabled={Boolean(loadingKey)}
+                  disabled={Boolean(loadingKey) || !snapshotReadyFor("advance-directives")}
                 />
                 <span>
                   <strong>Confirmo a revisão final das diretivas antecipadas</strong>

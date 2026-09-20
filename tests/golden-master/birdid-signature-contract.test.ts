@@ -35,8 +35,8 @@ test("VIDaaS permanece disponível e Bird é uma segunda opção explícita", ()
   assert.match(panel, /reports\/advance-directives\/signatures\/bird/);
   assert.match(panel, /Confirmo a revisão clínica final do relatório/);
   assert.match(panel, /Confirmo a revisão final das diretivas antecipadas/);
-  assert.match(panel, /Finalizar e assinar com VIDaaS/);
-  assert.match(panel, /Finalizar e assinar com Bird ID/);
+  assert.match(panel, /Assinar \$\{documentLabel\} com VIDaaS/);
+  assert.match(panel, /Assinar \$\{documentLabel\} com Bird ID/);
   assert.match(vidaasClient, /PAdES_AD_RB/);
   assert.match(vidaasCallback, /completeAgaVidaasSignature/);
 });

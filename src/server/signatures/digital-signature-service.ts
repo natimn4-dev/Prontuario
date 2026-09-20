@@ -1,5 +1,6 @@
 import { randomBytes, randomUUID } from "node:crypto";
 import { buildProfessionalIdentity } from "@/domain/professional-identity";
+import { assertFinalReportSignatureEligibility } from "@/domain/report-signature-eligibility";
 import type { AgaAdvanceDirectivesReportSection } from "@/domain/report-overview";
 import { prisma } from "@/server/db";
 import { buildAdvanceDirectivesPdf } from "./advance-directives-pdf";
@@ -116,7 +117,12 @@ async function beginVidaasSignature(input: {
   });
   if (!snapshot) throw new Error("REPORT_SNAPSHOT_NOT_FOUND");
 
-  const config = await getVidaasConfigForUser(input.user);
+  const consultation = await prisma.consultation.findUnique({
+    where: { id: input.consultationId },
+    select: { status: true },
+  });
+  if (!consultation) throw new Error("CONSULTATION_NOT_FOUND");
+
   const verificationToken = randomBytes(32).toString("base64url");
   const verificationUrl = `${appUrl()}/verificar/${verificationToken}`;
   const id = randomUUID();
@@ -128,6 +134,11 @@ async function beginVidaasSignature(input: {
     brandOwnerEmail: process.env.PROFESSIONAL_BRAND_OWNER_EMAIL,
   });
   const report = requireStructuredReport(snapshot.content, snapshot.patientId, snapshot.consultationId);
+  assertFinalReportSignatureEligibility({
+    consultationStatus: consultation.status,
+    report,
+  });
+  const config = await getVidaasConfigForUser(input.user);
   const pdf = input.documentKind === "advance-directives"
     ? buildAdvanceDirectivesPdf({
         section: requireAdvanceDirectives(report),
