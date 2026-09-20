@@ -26,7 +26,16 @@ type CoreDefinition = {
   questions: readonly CoreQuestion[];
 };
 type ApplicationGuide = readonly { title: string; items: readonly string[] }[];
-type ComplementaryField = { id: string; label: string; choices?: readonly Choice[]; number?: NumericRule; display?: "checkbox"; optional?: boolean; instrument?: string };
+type ComplementaryField = {
+  id: string;
+  label: string;
+  choices?: readonly Choice[];
+  number?: NumericRule;
+  display?: "checkbox";
+  optional?: boolean;
+  instrument?: string;
+  showWhen?: { fieldId: string; equals: number | string };
+};
 type ComplementaryDefinition = {
   code: string;
   version: string;
@@ -375,6 +384,10 @@ export function ClinicalScalesWorkspace({ consultationId }: { consultationId: st
   function preparedAnswers(fields: readonly (CoreQuestion | ComplementaryField)[]): Record<string, number | string> {
     const output: Record<string, number | string> = {};
     for (const field of fields) {
+      if ("showWhen" in field && field.showWhen) {
+        const controlling = answers[field.showWhen.fieldId] ?? "";
+        if (controlling !== String(field.showWhen.equals)) continue;
+      }
       const raw = answers[field.id] ?? (field.display === "checkbox" ? "0" : "");
       if (raw === "" && "optional" in field && field.optional) continue;
       if (raw === "") throw new Error(`Preencha ${field.label} antes de salvar.`);
@@ -456,9 +469,18 @@ export function ClinicalScalesWorkspace({ consultationId }: { consultationId: st
   }
 
   function renderComplementary(definition: ComplementaryDefinition) {
-    const visibleFields = definition.code === "cognitive_domain_observation"
-      ? definition.fields.filter((field) => !field.instrument || field.instrument === answers.instrument || field.id === "instrument")
-      : definition.fields;
+    const visibleFields = definition.fields.filter((field) => {
+      if (definition.code === "cognitive_domain_observation"
+        && field.instrument
+        && field.instrument !== answers.instrument
+        && field.id !== "instrument") {
+        return false;
+      }
+      if (field.showWhen) {
+        return (answers[field.showWhen.fieldId] ?? "") === String(field.showWhen.equals);
+      }
+      return true;
+    });
     return <>
       <p className={styles.instruction}>{definition.instruction}</p>
       {definition.applicationGuide?.length ? <details className={styles.guide}>

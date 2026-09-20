@@ -34,6 +34,16 @@ import {
   scoreIsi,
 } from "@/domain/isi";
 import {
+  EAT10_CODE,
+  EAT10_DEFINITION,
+  scoreEat10,
+} from "@/domain/eat10";
+import {
+  WALKING_AID_CONTEXT_CODE,
+  WALKING_AID_CONTEXT_DEFINITION,
+  scoreWalkingAidContext,
+} from "@/domain/walking-aid-context";
+import {
   NPI_STRUCTURED_CODE,
   NPI_STRUCTURED_DEFINITION,
   scoreNpiStructured,
@@ -85,7 +95,13 @@ import { saveScaleAssessment } from "@/server/clinical/persistence";
 import { prisma } from "@/server/db";
 
 const QUICK_CODES = new Set<CognitiveQuickCode>(COGNITIVE_QUICK_DEFINITIONS.map((item) => item.code));
-type RequestScaleCode = ComplementaryScoreScaleCode | typeof ISI_CODE | typeof SARC_CALF_STRUCTURED_CODE | typeof COGNITIVE_DOMAIN_OBSERVATION_CODE | typeof NPI_STRUCTURED_CODE;
+type RequestScaleCode = ComplementaryScoreScaleCode
+  | typeof ISI_CODE
+  | typeof SARC_CALF_STRUCTURED_CODE
+  | typeof COGNITIVE_DOMAIN_OBSERVATION_CODE
+  | typeof NPI_STRUCTURED_CODE
+  | typeof EAT10_CODE
+  | typeof WALKING_AID_CONTEXT_CODE;
 const DEFINITIONS = [
   ...COMPLEMENTARY_SCORE_SCALES
     .filter((item) => !QUICK_CODES.has(item.code as CognitiveQuickCode))
@@ -110,6 +126,8 @@ const DEFINITIONS = [
   COGNITIVE_DOMAIN_OBSERVATION_DEFINITION,
   NPI_STRUCTURED_DEFINITION,
   ISI_QUICK_DEFINITION,
+  withStructuredScaleEntry(EAT10_DEFINITION),
+  withStructuredScaleEntry(WALKING_AID_CONTEXT_DEFINITION),
 ];
 const SUPPORTED = new Set<string>(DEFINITIONS.map((item) => item.code));
 
@@ -160,7 +178,7 @@ function failure(error: unknown) {
   const code = error instanceof Error ? error.message : "UNKNOWN";
   if (code === "CONSULTATION_NOT_FOUND") return NextResponse.json({ code, message: "Consulta não encontrada." }, { status: 404 });
   if (code === "INVALID_REQUEST" || code === "UNSUPPORTED_SCALE") return NextResponse.json({ code, message: "Requisição de escala complementar inválida." }, { status: 400 });
-  if (error instanceof Error && /Valor inválido|Escala complementar|interpretar|Escolaridade|Pontuação|campo não permitido|Perfil cognitivo|NPI|ISI_|10-CS|SARC-F|SARC-CalF|STOPPFall|Cornell|CAM|LACE|G8|Charlson|ESAS/i.test(error.message)) {
+  if (error instanceof Error && /Valor inválido|Escala complementar|interpretar|Escolaridade|Pontuação|campo não permitido|Perfil cognitivo|NPI|ISI_|10-CS|SARC-F|SARC-CalF|STOPPFall|Cornell|CAM|LACE|G8|Charlson|ESAS|EAT-10|dispositivo de locomoção/i.test(error.message)) {
     return NextResponse.json({ code: "INVALID_SCALE_ANSWERS", message: error.message }, { status: 400 });
   }
   return NextResponse.json({ code: "COMPLEMENTARY_SCALE_FAILED", message: "Não foi possível processar a escala complementar." }, { status: 500 });
@@ -255,6 +273,10 @@ export async function POST(request: Request, context: { params: Promise<{ id: st
                               ? scoreStructuredEsas(answers)
                               : scaleCode === ISI_CODE
                                 ? scoreIsi(answers)
+                                : scaleCode === EAT10_CODE
+                                  ? scoreEat10(answers)
+                                  : scaleCode === WALKING_AID_CONTEXT_CODE
+                                    ? scoreWalkingAidContext(answers)
                                 : scaleCode === COGNITIVE_DOMAIN_OBSERVATION_CODE
                                   ? scoreCognitiveDomainObservation(answers)
                                   : scaleCode === NPI_STRUCTURED_CODE

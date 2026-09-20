@@ -10,6 +10,8 @@ import { LEGACY_INTERVENTIONS } from "./interventions.ts";
 import { ISI_VERSION } from "./isi.ts";
 import { CRASH_MNA_SF_VERSION, ECOG_VERSION } from "./oncogeriatric-scales.ts";
 import { SARC_CALF_STRUCTURED_VERSION } from "./sarcf-structured.ts";
+import { EAT10_VERSION } from "./eat10.ts";
+import { WALKING_AID_CONTEXT_VERSION } from "./walking-aid-context.ts";
 
 export type GeriatricDimension =
   | "funcionalidade"
@@ -58,7 +60,9 @@ const METADATA = {
   frail_br: ["FRAIL-BR", "FRAIL-BR", "fragilidade"],
   sarcf: ["SARC-F", "SARC-F", "mobilidade"],
   sarc_calf: ["SARC-CalF — rastreio de sarcopenia", "SARC-CalF", "nutricao"],
+  eat10: ["EAT-10 — rastreio de disfagia", "EAT-10", "nutricao"],
   preensao: ["Força de preensão", "Preensão", "mobilidade"],
+  walking_aid_context: ["Dispositivo de auxílio à locomoção", "Dispositivo de locomoção", "mobilidade"],
   velocidade_marcha: ["Velocidade de marcha", "Marcha", "mobilidade"],
   sentar_levantar_5x: ["Sentar-levantar 5x", "5x cadeira", "mobilidade"],
   sppb: ["SPPB", "SPPB", "mobilidade"],
@@ -97,7 +101,11 @@ export const SCALE_CATALOG: Readonly<Record<string, ScaleCatalogEntry>> = Object
               ? ISI_VERSION
               : code === "sarc_calf"
                 ? SARC_CALF_STRUCTURED_VERSION
-                : LEGACY_CONFIG_VERSION,
+                : code === "eat10"
+                  ? EAT10_VERSION
+                  : code === "walking_aid_context"
+                    ? WALKING_AID_CONTEXT_VERSION
+                    : LEGACY_CONFIG_VERSION,
       name,
       shortName,
       dimension,

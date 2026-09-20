@@ -31,6 +31,7 @@ const PROBLEM_RULES: readonly ProblemRule[] = [
   { key: "chemotherapy-toxicity", type: "CLINICAL", title: "Risco de toxicidade grave por quimioterapia — adaptação local", scales: ["crash_mna_sf"] },
   { key: "sarcopenia-performance", type: "GERIATRIC", title: "Risco de sarcopenia / desempenho físico reduzido", scales: ["sarcf", "preensao", "velocidade_marcha", "sentar_levantar_5x", "sppb"] },
   { key: "nutritional-risk", type: "GERIATRIC", title: "Risco nutricional / desnutrição", scales: ["mna_sf"] },
+  { key: "dysphagia-risk", type: "GERIATRIC", title: "Risco de disfagia", scales: ["eat10"] },
   { key: "medication-risk", type: "CLINICAL", title: "Risco relacionado a medicamentos / polifarmácia", scales: ["polifarmacia", "stoppfall"] },
   { key: "social-support", type: "GERIATRIC", title: "Vulnerabilidade da rede de suporte familiar/social", scales: ["apgar_familiar"] },
   { key: "caregiver-burden", type: "GERIATRIC", title: "Sobrecarga do cuidador", scales: ["zarit_reduzida", "zarit_paliativo_7_ms2013"] },
