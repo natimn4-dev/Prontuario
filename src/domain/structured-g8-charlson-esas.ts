@@ -107,10 +107,10 @@ export const CHARLSON_STRUCTURED_DEFINITION = {
     },
     {
       title: "Leitura local preservada",
-      items: ["0–2: baixa carga; 3–4: carga moderada; 5 ou mais: alta carga de comorbidades."],
+      items: ["0–2 / 3–4 / ≥5 são faixas locais de apresentação do prontuário. Não correspondem a categorias validadas de mortalidade individual."],
     },
   ],
-  sourceNote: "Pesos clássicos e faixas históricas do prontuário preservados; a mudança é de UX e cálculo estruturado, sem alteração dos pesos clínicos.",
+  sourceNote: "Pesos clássicos do Charlson preservados. As faixas 0–2 / 3–4 / ≥5 são agrupamentos locais de apresentação e não categorias prognósticas validadas do índice original.",
   fields: [
     ...charlsonIndependentFields.map((item) => ({
       id: item.id,
@@ -163,9 +163,9 @@ export const ESAS_STRUCTURED_DEFINITION = {
   instruction: "Pontue cada um dos nove sintomas de 0 a 10. O sistema soma automaticamente o total de 0 a 90 e destaca na interpretação os sintomas com intensidade ≥7.",
   applicationGuide: [
     { title: "Escala de intensidade", items: ["0 = ausência ou melhor situação possível; 10 = pior intensidade possível.", "Registre todos os nove itens para permitir comparação longitudinal segura."] },
-    { title: "Regra preservada do prontuário", items: ["Total 0–9: carga leve; 10–29: moderada; 30–90: alta.", "Sintoma individual ≥7 recebe destaque clínico independente do total."] },
+    { title: "Regra local do prontuário", items: ["A soma 0–9 / 10–29 / 30–90 é um agrupamento local de apresentação, não um ponto de corte universal validado do ESAS.", "Sintoma individual ≥7 recebe destaque clínico independente do total e deve ser interpretado separadamente."] },
   ],
-  sourceNote: "Estrutura e regras preservadas do inventário clínico testado do projeto: 9 itens 0–10, total 0–90 e destaque individual ≥7.",
+  sourceNote: "Estrutura de 9 itens 0–10 e total 0–90 preservada. As faixas da soma global e o destaque ≥7 são regras operacionais do prontuário; decisões clínicas devem considerar cada sintoma individual.",
   fields: esasFields.map((item) => ({
     id: item.id,
     label: item.label,

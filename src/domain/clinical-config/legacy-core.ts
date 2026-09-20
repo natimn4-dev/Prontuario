@@ -57,8 +57,8 @@ export const SARCF: ItemScaleConfig = {
   name: "SARC-F — Rastreio de Sarcopenia",
   itemIds: ["sf1", "sf2", "sf3", "sf4", "sf5"],
   ranges: [
-    { min: 0, max: 3, classe: "Baixo risco de sarcopenia", cor: "verde", texto: "Rastreio negativo. Manter atividade física regular com componente de força e reavaliar periodicamente, principalmente se surgir perda de peso, quedas ou declínio funcional novo." },
-    { min: 4, max: 10, classe: "Rastreio positivo — sarcopenia provável", cor: "vermelho", texto: "Pontuação ≥ 4 sugere sarcopenia (EWGSOP2). Prosseguir com força de preensão palmar ou teste de sentar-levantar 5 vezes — se alterados, a sarcopenia já é considerada provável e justifica iniciar tratamento. A confirmação (massa muscular, quando houver acesso a DXA/bioimpedância) e a gravidade (velocidade de marcha ou SPPB) completam a avaliação quando disponíveis." },
+    { min: 0, max: 3, classe: "Rastreio não positivo para sarcopenia", cor: "verde", texto: "SARC-F < 4: rastreio não positivo nesta aplicação. Reavaliar se houver perda de força, quedas, perda de peso ou declínio funcional." },
+    { min: 4, max: 10, classe: "Rastreio positivo para sarcopenia", cor: "vermelho", texto: "SARC-F ≥ 4 identifica pessoa que deve prosseguir para avaliação de força muscular. Pelo EWGSOP2, sarcopenia provável requer baixa força muscular; o SARC-F isolado é ferramenta de busca de casos e não estabelece sarcopenia provável ou confirmada." },
   ],
 };
 
@@ -67,9 +67,9 @@ export const SPPB: ItemScaleConfig = {
   name: "SPPB — Short Physical Performance Battery",
   itemIds: ["s1", "s2", "s3"],
   ranges: [
-    { min: 10, max: 12, classe: "Desempenho bom", cor: "verde", texto: "Desempenho físico preservado." },
-    { min: 7, max: 9, classe: "Desempenho moderado", cor: "amarelo", texto: "Desempenho físico moderadamente reduzido — candidato a treino físico supervisionado." },
-    { min: 0, max: 6, classe: "Desempenho baixo", cor: "vermelho", texto: "Desempenho físico reduzido — maior risco de incapacidade e eventos adversos; priorizar investigação e intervenção." },
+    { min: 10, max: 12, classe: "Desempenho bom — faixa histórica local", cor: "verde", texto: "Agrupamento histórico do aplicativo para apresentação. Para novas avaliações, a versão SPPB Freitas/Py usa o corte EWGSOP2 ≤ 8 para baixo desempenho físico." },
+    { min: 7, max: 9, classe: "Desempenho intermediário — faixa histórica local", cor: "amarelo", texto: "Agrupamento histórico do aplicativo para apresentação; não corresponde a uma categoria EWGSOP2 validada. Para novas avaliações, interpretar o SPPB versionado e seus tempos brutos." },
+    { min: 0, max: 6, classe: "Desempenho baixo — faixa histórica local", cor: "vermelho", texto: "Agrupamento histórico do aplicativo para apresentação. Para novas avaliações, a versão SPPB Freitas/Py usa o corte EWGSOP2 ≤ 8 para baixo desempenho físico." },
   ],
 };
 
@@ -159,7 +159,7 @@ export const TEN_CS_EDUCATION_ADJUSTMENTS: Record<string, number> = {
 };
 
 export const TEN_CS_EDUCATION_NOTE =
-  "O legado agrupa a escolaridade de 1 a 4 anos e aplica +1 ponto a toda a faixa; em paciente com exatamente 4 anos de estudo, confirmar clinicamente se o ajuste se aplica.";
+  "Compatibilidade histórica: o AGA legado agrupava 1 a 4 anos e aplicava +1 ponto. Para novas avaliações, usar a versão estruturada 10-CS-Edu: sem escolaridade formal +2; 1 a 3 anos +1; 4 anos ou mais +0, limitado a 10 pontos. Não recalcular silenciosamente avaliações históricas.";
 
 export const KPS: ItemScaleConfig = {
   id: "kps",
@@ -239,18 +239,18 @@ export const STOPP_FALL: ItemScaleConfig = {
     {
       min: 1,
       max: 2,
-      classe: "Atenção medicamentosa",
+      classe: "Atenção — faixa local do prontuário",
       cor: "amarelo",
       texto:
-        "Uma a duas classes de risco em uso — avaliar a real necessidade de cada uma, possibilidade de redução de dose ou substituição por alternativa mais segura.",
+        "Uma a duas classes STOPPFall identificadas. A estratificação por contagem é uma regra local de priorização e não uma categoria de risco validada pelo consenso STOPPFall; revisar indicação, sintomas, quedas e possibilidade de desprescrição individualmente.",
     },
     {
       min: 3,
       max: 14,
-      classe: "Alto risco medicamentoso para quedas",
+      classe: "Maior carga de classes — faixa local do prontuário",
       cor: "vermelho",
       texto:
-        "Três ou mais classes de risco em uso simultâneo — revisão formal prioritária, com desprescrição planejada e, quando disponível, apoio de farmacêutico clínico.",
+        "Três ou mais classes STOPPFall identificadas. A faixa é uma regra local de priorização, não um ponto de corte validado do consenso. Priorizar revisão medicamentosa individualizada; nenhuma classe determina retirada automática.",
     },
   ],
 };
@@ -366,9 +366,9 @@ export const CHARLSON_WEIGHTS = {
 } as const;
 
 export const CHARLSON_RANGES: ScoreRange[] = [
-  { min: 0, max: 2, classe: "Carga de comorbidade baixa", cor: "verde", texto: "Baixa carga de comorbidades. Mortalidade concorrente estimada como baixa." },
-  { min: 3, max: 4, classe: "Carga de comorbidade moderada", cor: "amarelo", texto: "Carga intermediária de comorbidades — considerar o conjunto das doenças nas decisões terapêuticas." },
-  { min: 5, max: 99, classe: "Carga de comorbidade alta", cor: "vermelho", texto: "Alta carga de comorbidades — maior risco de mortalidade concorrente e de eventos adversos. Interpretar em conjunto com funcionalidade, fragilidade e metas de cuidado." },
+  { min: 0, max: 2, classe: "Carga de comorbidade baixa — faixa local", cor: "verde", texto: "Faixa local de apresentação do prontuário. O índice deve ser interpretado pelo valor e pelos componentes; esta faixa não é uma categoria de mortalidade individual validada." },
+  { min: 3, max: 4, classe: "Carga de comorbidade moderada — faixa local", cor: "amarelo", texto: "Faixa local de apresentação do prontuário. Considerar o conjunto das comorbidades, funcionalidade, fragilidade e contexto clínico; não converter a faixa em prognóstico individual." },
+  { min: 5, max: 99, classe: "Carga de comorbidade alta — faixa local", cor: "vermelho", texto: "Faixa local de apresentação do prontuário. O escore sugere maior carga de comorbidades, mas a categoria não corresponde a uma probabilidade individual validada de mortalidade." },
 ];
 
 export const MNA_SF: ItemScaleConfig = {
@@ -394,9 +394,9 @@ export const FAST_RANGES: ScoreRange[] = [
 
 export const PPS_ALLOWED_VALUES = [10,20,30,40,50,60,70,80,90,100] as const;
 export const PPS_RANGES: ScoreRange[] = [
-  { min: 70, max: 100, classe: "Estável", cor: "verde", texto: "Funcionalidade preservada ou levemente reduzida." },
-  { min: 40, max: 60, classe: "Transição", cor: "amarelo", texto: "Funcionalidade em declínio; revisar metas e suporte conforme contexto clínico." },
-  { min: 10, max: 30, classe: "Declínio avançado", cor: "vermelho", texto: "Funcionalidade muito reduzida; priorizar conforto, controle de sintomas e suporte à família conforme metas de cuidado." },
+  { min: 70, max: 100, classe: "PPS 70–100% — faixa local de apresentação", cor: "verde", texto: "Agrupamento local para visualização do desempenho funcional. O PPS descreve o estado funcional no momento e esta faixa não estima tempo de vida individual." },
+  { min: 40, max: 60, classe: "PPS 40–60% — faixa local de apresentação", cor: "amarelo", texto: "Agrupamento local para visualização do desempenho funcional. Revisar necessidades de suporte e metas de cuidado conforme o contexto; não usar a faixa isoladamente como previsão prognóstica." },
+  { min: 10, max: 30, classe: "PPS 10–30% — faixa local de apresentação", cor: "vermelho", texto: "Agrupamento local para visualização de funcionalidade muito reduzida. Priorizar avaliação de sintomas e necessidades de cuidado conforme metas definidas; não converter a faixa em estimativa individual de sobrevida." },
 ];
 
 export const ESAS: ItemScaleConfig = {
@@ -404,9 +404,9 @@ export const ESAS: ItemScaleConfig = {
   name: "ESAS — Escala de Avaliação de Sintomas de Edmonton",
   itemIds: ["es1","es2","es3","es4","es5","es6","es7","es8","es9"],
   ranges: [
-    { min: 0, max: 9, classe: "Carga de sintomas leve", cor: "verde", texto: "Baixa carga global de sintomas no momento da avaliação." },
-    { min: 10, max: 29, classe: "Carga de sintomas moderada", cor: "amarelo", texto: "Carga global moderada; tratar os sintomas identificados e reavaliar." },
-    { min: 30, max: 90, classe: "Carga de sintomas alta", cor: "vermelho", texto: "Alta carga global de sintomas; controle sintomático é prioridade clínica." },
+    { min: 0, max: 9, classe: "Carga global baixa — faixa local", cor: "verde", texto: "Faixa local baseada na soma dos nove sintomas. A interpretação clínica deve priorizar cada sintoma individual e sua intensidade, mesmo quando o total é baixo." },
+    { min: 10, max: 29, classe: "Carga global moderada — faixa local", cor: "amarelo", texto: "Faixa local baseada na soma dos nove sintomas. Identificar quais sintomas contribuem para o total e direcionar avaliação e tratamento a cada um." },
+    { min: 30, max: 90, classe: "Carga global alta — faixa local", cor: "vermelho", texto: "Faixa local baseada na soma dos nove sintomas. A soma não substitui a avaliação individual; sintomas intensos ou urgentes devem ser priorizados independentemente do total." },
   ],
 };
 

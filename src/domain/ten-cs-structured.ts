@@ -17,7 +17,7 @@ export const TEN_CS_STRUCTURED_DEFINITION = {
   instruction:
     "Preencha orientação temporal, fluência verbal e evocação. A etapa de aprendizado das três palavras não pontua e não deve ser registrada aqui. O servidor soma os componentes, aplica automaticamente o ajuste educacional do 10-CS-Edu e limita o resultado a 10 pontos.",
   sourceNote:
-    "Apolinario D et al. Int J Geriatr Psychiatry. 2016;31:4-12. DOI 10.1002/gps.4282. O resultado é rastreio cognitivo e não estabelece diagnóstico isoladamente.",
+    "Apolinario D et al. Int J Geriatr Psychiatry. 2016;31:4-12. DOI 10.1002/gps.4282. Ajuste educacional da versão 10-CS-Edu: sem escolaridade formal +2; 1 a 3 anos +1; 4 anos ou mais +0, com máximo de 10 pontos. O resultado é rastreio cognitivo e não estabelece diagnóstico isoladamente.",
   fields: [
     { id: "orientationYear", label: "Orientação — ano atual", choices: binaryChoices },
     { id: "orientationMonth", label: "Orientação — mês atual", choices: binaryChoices },

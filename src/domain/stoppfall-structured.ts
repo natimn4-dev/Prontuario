@@ -26,13 +26,13 @@ export const STOPPFALL_STRUCTURED_DEFINITION = {
       title: "Como interpretar",
       items: [
         "0: nenhuma classe identificada.",
-        "1–2: atenção no protocolo atual.",
-        "3–14: alerta alto no protocolo atual.",
+        "1–2: faixa local de atenção do prontuário.",
+        "3–14: faixa local de maior prioridade para revisão medicamentosa.",
         "A presença de uma classe não determina retirada automática: revisar indicação, sintomas, quedas e risco de retirada com a equipe.",
       ],
     },
   ],
-  sourceNote: "Classes baseadas no consenso STOPPFall (PMID 33349863); faixas 0 / 1–2 / 3–14 preservadas do golden master.",
+  sourceNote: "As 14 classes são baseadas no consenso STOPPFall (PMID 33349863). As faixas 0 / 1–2 / 3–14 são uma regra local histórica de priorização do prontuário e não um ponto de corte de risco validado pelo consenso.",
   fields: [
     classField("anticholinergics", "Anticolinérgicos"),
     classField("diuretics", "Diuréticos"),
