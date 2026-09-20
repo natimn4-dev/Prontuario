@@ -1,0 +1,39 @@
+name: Apply oncogeriatria safe patch
+
+on:
+  push:
+    branches:
+      - refactor/oncogeriatria-safe-longitudinal-persistence
+
+permissions:
+  contents: write
+
+jobs:
+  apply:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Reconstruct and verify payload
+        run: |
+          set -euo pipefail
+          cat .patch/oncogeriatria-safe-refactor.b64.part* | base64 -d > .patch/oncogeriatria-safe-refactor.tar.xz
+          echo "fe74b90605c958515806683706944350171023d3738714e25fb7c14a29ab1f88  .patch/oncogeriatria-safe-refactor.tar.xz" | sha256sum -c -
+          xz -t .patch/oncogeriatria-safe-refactor.tar.xz
+      - name: Apply payload
+        run: |
+          set -euo pipefail
+          tar -xJf .patch/oncogeriatria-safe-refactor.tar.xz --strip-components=1
+          rm -rf .patch
+          rm -f .github/workflows/apply-oncogeriatria-patch.yml
+      - name: Commit exact patch
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          git diff --cached --check
+          git commit -m "refactor(onco): aplicar persistência longitudinal segura"
+          git push origin HEAD
