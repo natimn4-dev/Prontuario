@@ -1,9 +1,12 @@
 import { notFound } from "next/navigation";
 import { PrintButton } from "@/components/program55/print-button";
 import { Program55Nav } from "@/components/program55/program55-nav";
+import { CapacityDimensionHistoryChart } from "@/components/reports/capacity-dimension-history-chart";
+import { buildProblemCapacityMilestones } from "@/domain/capacity-timeline-milestones";
 import { program55CheckpointLabel } from "@/domain/program55/checkpoints";
 import { isProgram55Eligible } from "@/domain/program55/eligibility";
 import { isProgram55Enabled } from "@/domain/program55/feature";
+import { buildProgram55CapacityHistory, program55LinkedConsultationIds } from "@/domain/program55/capacity-history";
 import { confirmedGlimSummaryFromStructuredData } from "@/domain/program55/glim";
 import { requireAuthenticatedUser } from "@/server/auth/require-user";
 import { prisma } from "@/server/db";
@@ -27,7 +30,7 @@ export default async function Program55MapaPage({ params }: { params: Promise<{ 
           checkpoints: {
             orderBy: { referenceDate: "asc" },
             select: {
-              id: true, checkpointType: true, referenceDate: true, status: true,
+              id: true, checkpointType: true, referenceDate: true, status: true, coordinatingConsultationId: true,
               bodyComposition: { orderBy: { measuredAt: "desc" }, take: 1, select: { measuredAt: true, weightKg: true, bmi: true, waistCm: true, bodyFatPercent: true, fatMassKg: true, fatFreeMassKg: true, muscleMassKg: true, sourceLabel: true } },
               professionalAssessments: { select: { discipline: true, status: true, structuredData: true, sharedSummary: true, assessedAt: true, author: { select: { name: true } } } },
             },
@@ -36,14 +39,50 @@ export default async function Program55MapaPage({ params }: { params: Promise<{ 
         },
       },
       scaleAssessments: {
-        orderBy: { appliedAt: "desc" }, take: 12,
-        select: { id: true, scaleCode: true, scaleVersion: true, scoreNumeric: true, scoreText: true, classification: true, appliedAt: true, scaleDefinition: { select: { name: true, dimension: true } } },
+        orderBy: { appliedAt: "desc" },
+        select: {
+          id: true, patientId: true, consultationId: true, scaleCode: true, scaleVersion: true,
+          scoreNumeric: true, scoreText: true, classification: true, interpretation: true, clinicalColor: true, appliedAt: true,
+          scaleDefinition: { select: { name: true, dimension: true, sourceCitation: true, definitionHash: true } },
+        },
+      },
+      consultations: { select: { id: true, patientId: true, occurredAt: true, createdAt: true } },
+      problems: {
+        select: {
+          patientId: true, originConsultationId: true, title: true, description: true, createdAt: true,
+          events: { orderBy: { createdAt: "asc" }, select: { patientId: true, consultationId: true, note: true, createdAt: true } },
+        },
       },
     },
   });
   if (!patient || !isProgram55Eligible(patient.birthDate) || !patient.program55Enrollment) notFound();
   const enrollment = patient.program55Enrollment;
   const checkpoints = enrollment.checkpoints;
+  const linkedConsultationIds = program55LinkedConsultationIds(checkpoints);
+  const linkedConsultationSet = new Set(linkedConsultationIds);
+  const linkedAssessments = linkedAssessments.filter((assessment) => linkedConsultationSet.has(assessment.consultationId));
+  const milestones = buildProblemCapacityMilestones({ patientId: patient.id, problems: patient.problems, consultationIds: linkedConsultationIds });
+  const capacityHistory = buildProgram55CapacityHistory({
+    patientId: patient.id,
+    checkpoints,
+    consultations: patient.consultations,
+    assessments: linkedAssessments.map((assessment) => ({
+      id: assessment.id,
+      patientId: assessment.patientId,
+      consultationId: assessment.consultationId,
+      scaleCode: assessment.scaleCode,
+      scaleVersion: assessment.scaleVersion,
+      scoreNumeric: assessment.scoreNumeric === null ? null : Number(assessment.scoreNumeric),
+      scoreText: assessment.scoreText,
+      classification: assessment.classification,
+      interpretation: assessment.interpretation,
+      clinicalColor: assessment.clinicalColor as "verde" | "amarelo" | "vermelho" | null,
+      appliedAt: assessment.appliedAt,
+      sourceCitation: assessment.scaleDefinition?.sourceCitation,
+      definitionHash: assessment.scaleDefinition?.definitionHash,
+    })),
+    milestones,
+  });
   const currentCheckpoint = checkpoints.find((item) => item.status !== "REVIEWED") ?? checkpoints.at(-1);
   const nextCheckpoint = checkpoints.find((item) => item.referenceDate >= new Date() && item.status !== "REVIEWED") ?? checkpoints.at(-1);
   const latestBody = [...checkpoints].reverse().find((item) => item.bodyComposition.length)?.bodyComposition[0];
@@ -73,7 +112,7 @@ export default async function Program55MapaPage({ params }: { params: Promise<{ 
         <section className="card"><h2>Áreas que merecem atenção</h2>{activeGoals.length ? <ul>{activeGoals.map((goal) => <li key={goal.id}><strong>{goal.domain}:</strong> {goal.objective}</li>)}</ul> : <p>Sem prioridade ativa registrada no Programa 55+.</p>}</section>
       </div>
 
-      <section className="panel" style={{ marginTop: 20 }}><h2>Indicadores principais</h2>{patient.scaleAssessments.length ? <div style={{ overflowX: "auto" }}><table style={{ width: "100%", borderCollapse: "collapse" }}><thead><tr><th>Avaliação</th><th>Resultado</th><th>Classificação registrada</th><th>Data</th></tr></thead><tbody>{patient.scaleAssessments.map((assessment) => <tr key={assessment.id} style={{ borderTop: "1px solid var(--line)" }}><td style={{ padding: 9 }}>{assessment.scaleDefinition?.name ?? assessment.scaleCode}<div className="muted">{assessment.scaleCode} · v{assessment.scaleVersion}</div></td><td style={{ padding: 9 }}>{assessment.scoreNumeric?.toString() ?? assessment.scoreText ?? "—"}</td><td style={{ padding: 9 }}>{assessment.classification ?? "Sem classificação registrada"}</td><td style={{ padding: 9 }}>{date(assessment.appliedAt)}</td></tr>)}</tbody></table></div> : <p>Sem instrumentos registrados.</p>}</section>
+      <section className="panel" style={{ marginTop: 20 }}><h2>Indicadores principais</h2>{linkedAssessments.length ? <div style={{ overflowX: "auto" }}><table style={{ width: "100%", borderCollapse: "collapse" }}><thead><tr><th>Avaliação</th><th>Resultado</th><th>Classificação registrada</th><th>Data</th></tr></thead><tbody>{linkedAssessments.map((assessment) => <tr key={assessment.id} style={{ borderTop: "1px solid var(--line)" }}><td style={{ padding: 9 }}>{assessment.scaleDefinition?.name ?? assessment.scaleCode}<div className="muted">{assessment.scaleCode} · v{assessment.scaleVersion}</div></td><td style={{ padding: 9 }}>{assessment.scoreNumeric?.toString() ?? assessment.scoreText ?? "—"}</td><td style={{ padding: 9 }}>{assessment.classification ?? "Sem classificação registrada"}</td><td style={{ padding: 9 }}>{date(assessment.appliedAt)}</td></tr>)}</tbody></table></div> : <p>Sem instrumentos registrados.</p>}</section>
 
       <section className="panel" style={{ marginTop: 20 }}><h2>Composição corporal</h2>{latestBody ? <div className="grid" style={{ gridTemplateColumns: "repeat(auto-fit, minmax(150px, 1fr))" }}><div><span className="muted">Peso</span><strong style={{ display: "block" }}>{value(latestBody.weightKg, " kg")}</strong></div><div><span className="muted">IMC</span><strong style={{ display: "block" }}>{value(latestBody.bmi)}</strong></div><div><span className="muted">Cintura</span><strong style={{ display: "block" }}>{value(latestBody.waistCm, " cm")}</strong></div><div><span className="muted">Gordura</span><strong style={{ display: "block" }}>{value(latestBody.bodyFatPercent, "%")}</strong></div><div><span className="muted">Massa muscular</span><strong style={{ display: "block" }}>{value(latestBody.muscleMassKg, " kg")}</strong></div><div><span className="muted">Data/origem</span><strong style={{ display: "block" }}>{date(latestBody.measuredAt)} · {latestBody.sourceLabel ?? "origem não registrada"}</strong></div></div> : <p>Sem composição corporal registrada.</p>}</section>
 
@@ -83,11 +122,11 @@ export default async function Program55MapaPage({ params }: { params: Promise<{ 
         return <section className="panel" style={{ marginTop: 20 }} key={discipline}><h2>{title}</h2>{discipline === "NUTRITION" && confirmedGlimSummary ? <div className="notice"><strong>GLIM confirmado pela equipe</strong><span>{confirmedGlimSummary}</span></div> : null}<p>{assessment?.sharedSummary || "Sem resumo compartilhável registrado."}</p>{assessment ? <p className="muted">{disciplineLabel[discipline]} · {assessment.author.name} · {date(assessment.assessedAt)}</p> : null}</section>;
       })}
 
-      <section className="panel" style={{ marginTop: 20 }}><h2>Cognição</h2>{patient.scaleAssessments.filter((assessment) => (assessment.scaleDefinition?.dimension ?? "").normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().includes("cogni")).length ? <ul>{patient.scaleAssessments.filter((assessment) => (assessment.scaleDefinition?.dimension ?? "").normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().includes("cogni")).map((assessment) => <li key={assessment.id}>{assessment.scaleDefinition?.name ?? assessment.scaleCode}: {assessment.scoreNumeric?.toString() ?? assessment.scoreText ?? "—"}{assessment.classification ? ` · ${assessment.classification}` : ""} ({date(assessment.appliedAt)})</li>)}</ul> : <p>Sem avaliação cognitiva registrada nesta visão.</p>}</section>
+      <section className="panel" style={{ marginTop: 20 }}><h2>Cognição</h2>{linkedAssessments.filter((assessment) => (assessment.scaleDefinition?.dimension ?? "").normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().includes("cogni")).length ? <ul>{linkedAssessments.filter((assessment) => (assessment.scaleDefinition?.dimension ?? "").normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().includes("cogni")).map((assessment) => <li key={assessment.id}>{assessment.scaleDefinition?.name ?? assessment.scaleCode}: {assessment.scoreNumeric?.toString() ?? assessment.scoreText ?? "—"}{assessment.classification ? ` · ${assessment.classification}` : ""} ({date(assessment.appliedAt)})</li>)}</ul> : <p>Sem avaliação cognitiva registrada nesta visão.</p>}</section>
 
       <section className="panel" style={{ marginTop: 20 }}><h2>Prioridades para os próximos 90 dias</h2>{activeGoals.length ? <ul>{activeGoals.map((goal) => <li key={goal.id}><strong>{goal.objective}</strong>{goal.indicator ? ` · indicador: ${goal.indicator}` : ""}{goal.targetValue ? ` · meta: ${goal.targetValue}` : ""}{goal.dueDate ? ` · prazo: ${date(goal.dueDate)}` : ""}</li>)}</ul> : <p>Sem metas ativas registradas.</p>}</section>
 
-      <section className="panel" style={{ marginTop: 20 }}><h2>Evolução longitudinal</h2><div style={{ overflowX: "auto" }}><table style={{ width: "100%", borderCollapse: "collapse" }}><thead><tr><th>Checkpoint</th><th>Data prevista</th><th>Status</th><th>Peso registrado</th></tr></thead><tbody>{checkpoints.map((checkpoint) => <tr key={checkpoint.id} style={{ borderTop: "1px solid var(--line)" }}><td style={{ padding: 9 }}>{program55CheckpointLabel(checkpoint.checkpointType)}</td><td style={{ padding: 9 }}>{date(checkpoint.referenceDate)}</td><td style={{ padding: 9 }}>{checkpoint.status}</td><td style={{ padding: 9 }}>{value(checkpoint.bodyComposition[0]?.weightKg, " kg")}</td></tr>)}</tbody></table></div></section>
+      <section className="panel" style={{ marginTop: 20 }}><h2>Evolução longitudinal</h2><div style={{ overflowX: "auto" }}><table style={{ width: "100%", borderCollapse: "collapse" }}><thead><tr><th>Checkpoint</th><th>Data prevista</th><th>Status</th><th>Peso registrado</th></tr></thead><tbody>{checkpoints.map((checkpoint) => <tr key={checkpoint.id} style={{ borderTop: "1px solid var(--line)" }}><td style={{ padding: 9 }}>{program55CheckpointLabel(checkpoint.checkpointType)}</td><td style={{ padding: 9 }}>{date(checkpoint.referenceDate)}</td><td style={{ padding: 9 }}>{checkpoint.status}</td><td style={{ padding: 9 }}>{value(checkpoint.bodyComposition[0]?.weightKg, " kg")}</td></tr>)}</tbody></table></div><div style={{ marginTop: 18 }}><CapacityDimensionHistoryChart history={capacityHistory} context="final-report" /></div></section>
 
       <section className="panel" style={{ marginTop: 20 }}><h2>Recomendações registradas pela equipe</h2>{Array.from(latestProfessional.entries()).filter(([, assessment]) => assessment.sharedSummary).length ? <ul>{Array.from(latestProfessional.entries()).filter(([, assessment]) => assessment.sharedSummary).map(([discipline, assessment]) => <li key={discipline}><strong>{disciplineLabel[discipline]}:</strong> {assessment.sharedSummary}</li>)}</ul> : <p>Sem recomendações compartilháveis registradas.</p>}<p className="muted">Notas profissionais restritas de psicologia não são incluídas neste documento.</p></section>
 
