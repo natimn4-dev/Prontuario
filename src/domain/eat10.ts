@@ -49,7 +49,7 @@ function answer(raw: Record<string, unknown>, id: string): number {
 }
 
 export function scoreEat10(raw: Record<string, unknown>) {
-  const allowed = new Set(EAT10_DEFINITION.fields.map((field) => field.id));
+  const allowed = new Set<string>(EAT10_DEFINITION.fields.map((field) => field.id));
   if (Object.keys(raw).some((id) => !allowed.has(id))) throw new Error("EAT-10 contém campo não permitido.");
 
   const answers = Object.fromEntries(EAT10_DEFINITION.fields.map((field) => [field.id, answer(raw, field.id)]));
