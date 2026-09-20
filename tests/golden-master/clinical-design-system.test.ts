@@ -73,7 +73,7 @@ test("relatório e impressão carregam camada premium e preservam relatório ani
   assert.match(branding, /professional-signature/);
 });
 
-test("gráfico longitudinal aprovado reproduz o modelo visual por seis dimensões", () => {
+test("gráfico longitudinal aprovado reproduz o modelo visual por sete trajetórias", () => {
   const chart = source("src/components/reports/capacity-dimension-history-chart.tsx");
   const reportDocument = source("src/components/reports/aga-report-document-preview.tsx");
   const css = source("src/components/reports/capacity-dimension-history-chart.module.css");
@@ -87,7 +87,7 @@ test("gráfico longitudinal aprovado reproduz o modelo visual por seis dimensõe
   assert.match(chart, /<polyline/);
   assert.match(chart, /Independência funcional/);
   assert.match(chart, /Capacidade intrínseca/);
-  assert.match(chart, /Cinco domínios OMS/);
+  assert.match(chart, /Locomoção, cognição, humor, vitalidade, audição e visão/);
   assert.match(chart, /ABVD\/AIVD/);
   assert.match(chart, /methodologyBadge/);
   assert.match(chart, /targetLabel[\s\S]*?mais recente/);
