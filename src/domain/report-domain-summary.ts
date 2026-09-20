@@ -79,8 +79,8 @@ type FrailtyGuidanceProfile = "robust" | "pre-frail" | "frail";
 const FRAILTY_GUIDANCE: Readonly<Record<FrailtyGuidanceProfile, DomainGuidance>> = {
   robust: {
     actions: [
-      "O FRAIL-BR não identificou critérios de fragilidade nesta consulta: o perfil é robusto. O objetivo é preservar a reserva e a independência, mantendo atividade física regular com força, equilíbrio e resistência, em intensidade compatível com a capacidade e a segurança da pessoa.",
-      "Mantenha alimentação suficiente e variada, hidratação conforme o plano clínico, sono regular e participação social e em atividades significativas. Na ausência de declínio, não é necessário tratar a pessoa como frágil; reavalie se surgirem perda de peso não intencional, fadiga persistente, redução de força, quedas ou perda funcional.",
+      "O FRAIL-BR não mostrou sinais de fragilidade nesta consulta. Vale manter o que já ajuda a preservar força, equilíbrio, disposição e independência, com atividade física regular em um ritmo confortável e seguro.",
+      "Mantenha uma alimentação variada, ofereça líquidos ao longo do dia, cuide do sono e preserve o convívio social e as atividades de que a pessoa gosta. Se aparecerem perda de peso sem intenção, cansaço persistente, redução de força, quedas ou dificuldade nova nas atividades do dia, converse com a equipe.",
     ],
     evidenceReferences: [
       {
@@ -93,8 +93,8 @@ const FRAILTY_GUIDANCE: Readonly<Record<FrailtyGuidanceProfile, DomainGuidance>>
   },
   "pre-frail": {
     actions: [
-      "O FRAIL-BR indica pré-fragilidade — uma janela de oportunidade para evitar progressão. Priorize exercício multicomponente, com força e equilíbrio, adaptado à capacidade e com supervisão quando houver risco; revise nutrição, perda de peso, quedas e medicamentos com a equipe.",
-      "Interrompa períodos prolongados sentado ou deitado com atividades seguras e curtas, preservando a participação nas tarefas do dia. Avise a equipe se houver mais fadiga, fraqueza, quedas, redução da ingestão ou dificuldade para caminhar e levantar-se.",
+      "O FRAIL-BR mostrou sinais de pré-fragilidade. Este é um bom momento para fortalecer a reserva: inclua exercícios de força e equilíbrio de forma gradual e segura e converse com a equipe sobre alimentação, perda de peso, quedas e medicamentos que possam estar contribuindo para a fraqueza.",
+      "Evite passar muitas horas seguidas sentado ou deitado quando for possível se movimentar com segurança. Pequenos períodos de atividade ao longo do dia podem ajudar. Procure a equipe se houver mais cansaço, fraqueza, quedas, redução da alimentação ou dificuldade crescente para caminhar ou levantar-se.",
     ],
     evidenceReferences: [
       {
@@ -113,8 +113,8 @@ const FRAILTY_GUIDANCE: Readonly<Record<FrailtyGuidanceProfile, DomainGuidance>>
   },
   frail: {
     actions: [
-      "O FRAIL-BR indica fragilidade e maior vulnerabilidade a doenças e outros estressores. Organize avaliação e plano individualizados, combinando exercício funcional e resistido supervisionado quando seguro, cuidado nutricional, revisão de medicamentos, prevenção de quedas e investigação de causas reversíveis.",
-      "Planeje o dia em etapas curtas, oferecendo ajuda antes da exaustão sem retirar toda a participação possível. Comunique perda de peso, redução da ingestão, piora da força, quedas, dificuldade para levantar ou caminhar e qualquer declínio funcional recente.",
+      "O FRAIL-BR mostrou fragilidade, o que significa que a pessoa pode sentir mais os efeitos de doenças, internações ou outros períodos de estresse. O cuidado pode ser organizado em etapas, com atenção à força, alimentação, medicamentos, prevenção de quedas e causas tratáveis de piora.",
+      "Organize o dia com pausas e ofereça ajuda antes que a pessoa fique exausta, preservando sua participação no que ainda consegue fazer. Avise a equipe se houver perda de peso, redução da alimentação, piora da força, quedas ou dificuldade nova para levantar, caminhar ou realizar as atividades habituais.",
     ],
     evidenceReferences: [
       {
@@ -136,9 +136,9 @@ const FRAILTY_GUIDANCE: Readonly<Record<FrailtyGuidanceProfile, DomainGuidance>>
 const COGNITIVE_SCREEN_GUIDANCE: Readonly<Record<"preserved" | "attention" | "altered", DomainGuidance>> = {
   preserved: {
     actions: [
-      "O rastreio cognitivo desta consulta está preservado. Preserve a autonomia e a independência nas atividades habituais, estimulando participação ativa nas decisões, na organização da rotina e nas atividades que a pessoa realiza com segurança.",
-      "Para favorecer a reserva cognitiva, mantenha atividade física regular e atividades mentalmente desafiadoras e significativas — por exemplo, aprender uma habilidade nova, participar de cursos, ler e discutir conteúdos, praticar música, jogos de estratégia ou atividades manuais — variando os desafios e progredindo conforme interesse e conforto. Mantenha também convívio social e participação em grupos ou atividades significativas.",
-      "Cuide dos hábitos que ajudam a manter a saúde do cérebro: alimentação saudável, atividade física regular, sono adequado, convívio social e correção de perda auditiva e visual quando presente. Reavalie se houver mudança cognitiva ou funcional nova e persistente.",
+      "O rastreio cognitivo desta consulta está preservado. Mantenha a autonomia nas atividades habituais e a participação ativa nas decisões, na organização da rotina e nas escolhas do dia a dia.",
+      "Para fortalecer a reserva cognitiva, incentive atividades que tragam interesse e desafio na medida certa: aprender algo novo, ler e conversar sobre o que leu, praticar música, jogos de estratégia, trabalhos manuais, cursos ou outras atividades de que a pessoa goste. Atividade física e convívio social também fazem parte desse cuidado.",
+      "Uma alimentação saudável, sono de boa qualidade, atividade física, convívio social e cuidado com visão e audição ajudam a proteger a saúde do cérebro. Se aparecer uma mudança persistente de memória, raciocínio ou autonomia, vale reavaliar.",
     ],
     evidenceReferences: [
       {
@@ -169,8 +169,8 @@ const COGNITIVE_SCREEN_GUIDANCE: Readonly<Record<"preserved" | "attention" | "al
   },
   attention: {
     actions: [
-      "O rastreio cognitivo foi positivo para possível comprometimento cognitivo, mas um rastreio positivo não é diagnóstico de demência. Confirme o achado em avaliação clínica estruturada, considerando escolaridade, relato do paciente e informante, funcionalidade, humor, sono, visão, audição, medicamentos e causas potencialmente reversíveis.",
-      "Preserve a autonomia que permanece segura. Ofereça lembretes ou supervisão apenas nas tarefas em que existam erros ou risco observável e organize seguimento para definir se há comprometimento cognitivo, sua repercussão funcional e necessidade de investigação adicional.",
+      "O rastreio cognitivo mostrou um sinal de atenção. Isso não significa, sozinho, diagnóstico de demência. Vale aprofundar a avaliação considerando escolaridade, mudanças percebidas no dia a dia, autonomia, humor, sono, visão, audição, medicamentos e outras causas que possam afetar a cognição.",
+      "Mantenha a autonomia no que continua sendo feito com segurança. Nas tarefas em que começaram a aparecer erros ou insegurança, ofereça apoio de forma discreta e proporcional à dificuldade, enquanto a avaliação é aprofundada.",
     ],
     evidenceReferences: [{
       label: "Diretriz DETeCD-ADRD para avaliação diagnóstica de suspeita de comprometimento cognitivo",
@@ -181,8 +181,8 @@ const COGNITIVE_SCREEN_GUIDANCE: Readonly<Record<"preserved" | "attention" | "al
   },
   altered: {
     actions: [
-      "O rastreio cognitivo foi claramente alterado e aumenta a necessidade de investigação, mas não estabelece sozinho diagnóstico de demência nem sua causa. Faça avaliação clínica e funcional estruturada, com história evolutiva, informante, revisão de humor, sono, visão, audição, medicamentos e causas potencialmente reversíveis, além de exames complementares quando clinicamente indicados.",
-      "Se já houver erros em medicamentos, finanças, deslocamentos ou outras tarefas de risco, organize apoio direto nessas atividades sem retirar a participação segura nas demais. Confusão, sonolência ou piora cognitiva de início súbito deve ser tratada como mudança aguda e avaliada prontamente.",
+      "O rastreio cognitivo veio bastante alterado e merece uma avaliação mais detalhada, mas esse resultado, sozinho, não define diagnóstico de demência nem sua causa. A investigação deve considerar a história das mudanças, a autonomia no dia a dia, humor, sono, visão, audição, medicamentos e outras condições que possam interferir na cognição.",
+      "Se já houver erros em medicamentos, finanças, deslocamentos ou outras tarefas de risco, ofereça ajuda direta nessas situações e preserve a participação no que ainda é seguro. Confusão, sonolência ou piora cognitiva que apareça de repente precisa de avaliação rápida.",
     ],
     evidenceReferences: [{
       label: "Diretriz DETeCD-ADRD para avaliação diagnóstica de suspeita de comprometimento cognitivo",
@@ -196,22 +196,22 @@ const COGNITIVE_SCREEN_GUIDANCE: Readonly<Record<"preserved" | "attention" | "al
 const FRAILTY_STATE_FALLBACK_GUIDANCE: Readonly<Record<Exclude<ReportDomainState, "not-assessed">, DomainGuidance>> = {
   preserved: {
     actions: [
-      "A avaliação de fragilidade desta consulta não sinalizou vulnerabilidade. Preserve autonomia, atividade física regular, alimentação adequada e participação social; não aplique rotinas de cuidado destinadas a pessoas frágeis apenas por causa da idade.",
-      "Reavalie se surgirem perda de peso sem intenção, fadiga persistente, redução de força, quedas ou perda funcional nova.",
+      "A avaliação de fragilidade desta consulta não mostrou sinais de vulnerabilidade. Mantenha autonomia, atividade física, alimentação variada e participação social, respeitando o ritmo e as preferências da pessoa.",
+      "Converse com a equipe se surgirem perda de peso sem intenção, cansaço persistente, redução de força, quedas ou dificuldade nova nas atividades do dia.",
     ],
     evidenceReferences: FRAILTY_GUIDANCE.robust.evidenceReferences,
   },
   attention: {
     actions: [
-      "A avaliação mostrou sinal de vulnerabilidade ou pré-fragilidade. Esta é uma oportunidade de intervenção precoce: revise atividade física, força e equilíbrio, estado nutricional, quedas, doenças e medicamentos de forma individualizada.",
-      "Preserve a independência nas tarefas seguras e acompanhe a evolução; procure a equipe se houver progressão de fadiga, fraqueza, perda de peso, quedas ou dificuldade para levantar e caminhar.",
+      "A avaliação mostrou sinais iniciais de vulnerabilidade ou pré-fragilidade. Vale aproveitar este momento para fortalecer a reserva, com atenção à atividade física, força, equilíbrio, alimentação, quedas, doenças e medicamentos.",
+      "Preserve a independência nas tarefas que continuam seguras e procure a equipe se houver aumento do cansaço ou da fraqueza, perda de peso, quedas ou dificuldade crescente para levantar e caminhar.",
     ],
     evidenceReferences: FRAILTY_GUIDANCE["pre-frail"].evidenceReferences,
   },
   altered: {
     actions: [
-      "A avaliação sinalizou fragilidade ou vulnerabilidade relevante. Organize um plano geriátrico individualizado para identificar causas modificáveis e integrar exercício seguro, nutrição, revisão de medicamentos, prevenção de quedas e suporte funcional.",
-      "Apoie as tarefas de maior risco sem retirar toda a autonomia possível e comunique declínio funcional recente, perda de peso, piora da força, quedas ou redução importante da ingestão.",
+      "A avaliação mostrou fragilidade ou vulnerabilidade importante. O cuidado pode ser organizado em prioridades práticas: recuperar ou preservar força, cuidar da alimentação, revisar medicamentos, reduzir o risco de quedas e oferecer ajuda nas atividades em que ela realmente é necessária.",
+      "Ofereça apoio nas tarefas de maior risco sem retirar a participação da pessoa no que ela ainda consegue fazer. Avise a equipe se houver perda recente de autonomia, peso ou força, novas quedas ou redução importante da alimentação.",
     ],
     evidenceReferences: FRAILTY_GUIDANCE.frail.evidenceReferences,
   },
@@ -220,9 +220,9 @@ const FRAILTY_STATE_FALLBACK_GUIDANCE: Readonly<Record<Exclude<ReportDomainState
 const DOMAIN_GUIDANCE: Readonly<Partial<Record<string, DomainGuidance>>> = {
   funcionalidade: {
     actions: [
-      "Facilite as atividades em que houve dificuldade com organização do ambiente, utensílios simples e ajuda apenas na medida necessária, preservando a participação segura.",
-      "Observe e anote mudanças em banho, vestir-se, alimentação, transferências e tarefas domésticas para discutir na próxima revisão.",
-      "Se a dificuldade estiver aumentando, peça à equipe que revise barreiras do domicílio e a necessidade de treinamento funcional individualizado.",
+      "Nas atividades que ficaram mais difíceis, organize o ambiente e ofereça ajuda apenas no que for necessário, deixando a pessoa participar do restante no próprio ritmo.",
+      "Perceba se banho, vestir-se, alimentação, transferências ou tarefas da casa passaram a exigir mais ajuda e conte essas mudanças na próxima consulta.",
+      "Se a dificuldade estiver aumentando, vale revisar com a equipe o que pode ser adaptado em casa e quais movimentos ou tarefas podem ser treinados para trazer mais segurança e independência.",
     ],
     evidenceReferences: [{
       label: "Intervenções de terapia ocupacional para atividades de vida diária em idosos",
@@ -233,8 +233,8 @@ const DOMAIN_GUIDANCE: Readonly<Partial<Record<string, DomainGuidance>>> = {
   },
   fragilidade: {
     actions: [
-      "Interprete a fragilidade junto com funcionalidade, força, mobilidade, nutrição, doenças e medicamentos; o resultado isolado não substitui avaliação clínica individualizada.",
-      "Avise a equipe se houver perda de peso sem intenção, redução de força, mais dificuldade para levantar ou caminhar, quedas ou cansaço que esteja aumentando.",
+      "O resultado de fragilidade ganha mais sentido quando é visto junto com força, mobilidade, alimentação, doenças, medicamentos e autonomia no dia a dia.",
+      "Procure a equipe se houver perda de peso sem intenção, redução de força, dificuldade crescente para levantar ou caminhar, quedas ou cansaço que esteja aumentando.",
     ],
     evidenceReferences: [
       {
@@ -253,9 +253,9 @@ const DOMAIN_GUIDANCE: Readonly<Partial<Record<string, DomainGuidance>>> = {
   },
   medicamentos: {
     actions: [
-      "Mantenha uma lista única e atualizada de medicamentos, doses e horários e leve-a a consultas, urgências e internações.",
-      "Não inicie, suspenda, substitua ou ajuste medicamentos por conta própria; dúvidas e mudanças devem ser confirmadas pela equipe responsável.",
-      "Avise a equipe após nova queda, tontura, sonolência, confusão, sangramento, hipoglicemia ou dificuldade para organizar os horários.",
+      "Mantenha uma lista simples e atualizada com os medicamentos, doses e horários e leve essa lista sempre que houver consulta, atendimento de urgência ou internação.",
+      "Se surgir dúvida sobre algum medicamento ou vontade de mudar dose ou horário, converse primeiro com a equipe para fazer a mudança com segurança.",
+      "Procure a equipe se aparecerem queda, tontura, sonolência, confusão, sangramento, hipoglicemia ou dificuldade para organizar os horários dos remédios.",
     ],
     evidenceReferences: [
       {
@@ -274,9 +274,9 @@ const DOMAIN_GUIDANCE: Readonly<Partial<Record<string, DomainGuidance>>> = {
   },
   "suporte-social": {
     actions: [
-      "Divida tarefas de cuidado entre pessoas disponíveis e deixe por escrito quem ajuda em medicamentos, alimentação, higiene, deslocamentos e consultas.",
-      "Programe pausas regulares e uma pessoa de apoio para o cuidador; sobrecarga persistente deve ser comunicada à equipe.",
-      "Use orientação e treinamento prático para lidar com tarefas difíceis e alterações de comportamento, respeitando limites do paciente e do cuidador.",
+      "Quando houver mais de uma pessoa disponível para ajudar, divida as tarefas de forma clara para que o cuidado não fique concentrado em uma só pessoa.",
+      "Reserve momentos de descanso para quem cuida e combine quem pode substituir quando for preciso. Se o cansaço estiver ficando difícil de sustentar, converse com a equipe.",
+      "Peça ajuda prática para as tarefas que estão mais difíceis e para mudanças de comportamento, sempre respeitando os limites, as preferências e a dignidade de quem recebe e de quem oferece o cuidado.",
     ],
     evidenceReferences: [{
       label: "Intervenção multicomponente REACH II para cuidadores de pessoas com demência",
@@ -348,8 +348,8 @@ const LATE_LIFE_DEPRESSION_EVIDENCE: readonly IntrinsicCapacityEvidenceReference
 ];
 
 const IADL_FAMILY_GUIDANCE: readonly string[] = [
-  "Atenção às atividades fora do domicílio ou mais complexas, como finanças, compras, transporte, organização da casa e medicamentos. Essa fase é de autonomia vigiada: preserve o que a pessoa ainda faz com segurança e acompanhe de perto o que já traz risco ou erros.",
-  "Evite retirar toda a independência de uma vez. Ofereça ajuda proporcional à dificuldade e reavalie se novas tarefas passarem a exigir supervisão.",
+  "Algumas atividades mais complexas, como finanças, compras, transporte, organização da casa e medicamentos, podem precisar de ajuda por perto. Preserve o que a pessoa ainda faz bem e ofereça apoio apenas onde começaram a aparecer erros ou insegurança.",
+  "Mantenha a participação da pessoa nas decisões e tarefas que continuam possíveis. Aumente a ajuda aos poucos, apenas onde a dificuldade realmente apareceu.",
 ];
 
 function unique(items: readonly string[]): string[] {
@@ -419,14 +419,14 @@ function mobilityTargetedGuidance(scales: readonly AgaScaleReportSection[]): Dom
   const actions: string[] = [];
   if (reducedGrip) {
     actions.push(
-      "A força de preensão está reduzida. Esse achado é um marcador de menor força muscular e se associa a maior risco de quedas: revise quedas e quase quedas, marcha, equilíbrio, transferências e a capacidade de levantar-se da cadeira.",
-      "Fisioterapia: avaliar força de membros inferiores, equilíbrio, marcha, transferências e segurança no ambiente; estruturar exercício multicomponente com fortalecimento/resistência e treino de equilíbrio, com progressão individual e supervisão conforme o risco.",
-      "Mantenha corredores e o caminho até o banheiro livres, bem iluminados e sem tapetes soltos; comunique nova queda, quase queda ou piora para caminhar.",
+      "A força de preensão veio reduzida. Isso pode acompanhar uma redução de força muscular e maior chance de quedas. Vale observar se houve quedas ou quase quedas e se caminhar, manter o equilíbrio, levantar da cadeira ou fazer transferências ficou mais difícil.",
+      "A fisioterapia pode ajudar a avaliar força das pernas, equilíbrio, marcha e transferências e a montar um programa de fortalecimento e equilíbrio que avance no ritmo e na segurança da pessoa.",
+      "Deixe os caminhos mais usados, especialmente até o banheiro, livres de obstáculos, bem iluminados e sem tapetes soltos. Conte à equipe se houver nova queda, quase tombo ou piora para caminhar.",
     );
   }
   if (device) {
     actions.push(
-      `Como há uso de ${device.toLocaleLowerCase("pt-BR")}, peça ao fisioterapeuta para conferir altura e ajuste, técnica, lado de uso quando aplicável, estabilidade e segurança nos trajetos habituais; deixe o dispositivo ao alcance antes de levantar.`,
+      `Como a pessoa usa ${device.toLocaleLowerCase("pt-BR")}, vale pedir ao fisioterapeuta que confira o ajuste, a forma de uso e a segurança nos trajetos do dia a dia. Deixe o dispositivo sempre ao alcance antes de levantar.`,
     );
   }
 
@@ -456,10 +456,10 @@ function eat10TargetedGuidance(scales: readonly AgaScaleReportSection[]): Domain
 
   return {
     actions: [
-      "O EAT-10 foi positivo para risco de disfagia. Organize avaliação clínica aprofundada da deglutição, geralmente com fonoaudiólogo; o rastreio isolado não diagnostica disfagia nem aspiração.",
-      "Até a avaliação, ofereça alimentos e líquidos somente quando a pessoa estiver desperta e bem posicionada, de preferência sentada e ereta; use ambiente tranquilo, pequenas quantidades, ritmo lento e pausas, respeitando a consistência já orientada pela equipe.",
-      "Não espesse líquidos nem mude a textura da dieta por conta própria. Consistência, volume, manobras posturais e outras estratégias devem ser individualizados após avaliação da deglutição.",
-      "Avise a equipe se houver tosse ou engasgos nas refeições, voz molhada após engolir, sensação de alimento parado, refeições muito demoradas, redução persistente da ingestão ou perda de peso. Engasgo com dificuldade para respirar exige atendimento imediato.",
+      "O EAT-10 mostrou sinais de dificuldade para engolir. Vale fazer uma avaliação mais detalhada da deglutição, geralmente com fonoaudiólogo. Esse rastreio é um sinal de atenção e, sozinho, não confirma disfagia nem aspiração.",
+      "Enquanto aguarda a avaliação, ofereça alimentos e líquidos quando a pessoa estiver desperta, confortável e bem sentada. Prefira um ambiente tranquilo, pequenas quantidades, ritmo lento e pausas entre as ofertas.",
+      "Evite engrossar líquidos ou mudar a textura dos alimentos sem uma avaliação da deglutição. A melhor consistência, o volume de cada oferta e as estratégias de posicionamento dependem de como a pessoa engole.",
+      "Procure a equipe se houver tosse ou engasgos durante as refeições, voz molhada depois de engolir, sensação de alimento parado, refeições muito demoradas, redução persistente da alimentação ou perda de peso. Engasgo com dificuldade para respirar exige atendimento imediato.",
     ],
     evidenceReferences: [
       {
@@ -541,7 +541,7 @@ const COGNITIVE_GUIDANCE_GROUPS: readonly CognitiveGuidanceGroup[] = [
       { id: "meem_orientation_temporal", max: 5 }, { id: "meem_orientation_spatial", max: 5 },
       { id: "meem_registration", max: 3 }, { id: "meem_recall", max: 3 },
     ],
-    action: "Memória/orientação foi uma das áreas mais acometidas: use agenda, calendário ou quadro visual, mantenha objetos importantes em locais fixos e introduza lembretes simples. Supervisão de medicamentos, fogo/cozinha ou deslocamentos deve ser proporcional aos erros e riscos realmente observados.",
+    action: "Memória e orientação foram áreas de maior dificuldade. Agenda, calendário, quadro visual e objetos importantes sempre no mesmo lugar podem ajudar. Em medicamentos, cozinha ou deslocamentos, ofereça ajuda apenas na medida dos erros ou riscos que realmente apareceram.",
   },
   {
     label: "atenção e funções executivas",
@@ -549,7 +549,7 @@ const COGNITIVE_GUIDANCE_GROUPS: readonly CognitiveGuidanceGroup[] = [
       { id: "moca_attention", max: 6 }, { id: "moca_abstraction", max: 2 },
       { id: "meem_attention", max: 5 }, { id: "meem_commands", max: 3 },
     ],
-    action: "Atenção/funções executivas foi uma das áreas mais acometidas: divida tarefas complexas em etapas curtas, reduza estímulos simultâneos e confira atividades de maior risco, como finanças e organização de medicamentos, quando houver erros observáveis.",
+    action: "Atenção e organização do pensamento foram áreas de maior dificuldade. Divida tarefas mais complexas em passos curtos, reduza distrações e acompanhe mais de perto finanças ou medicamentos se já houver erros nessas atividades.",
   },
   {
     label: "linguagem",
@@ -558,14 +558,14 @@ const COGNITIVE_GUIDANCE_GROUPS: readonly CognitiveGuidanceGroup[] = [
       { id: "meem_naming", max: 2 }, { id: "meem_repetition", max: 1 },
       { id: "meem_writing", max: 1 }, { id: "meem_reading", max: 1 },
     ],
-    action: "Linguagem foi uma das áreas mais acometidas: fale devagar, use frases curtas e objetivas, dê tempo para resposta e complemente com gestos ou pistas visuais quando necessário. Se a dificuldade persistir e interferir na comunicação, discuta avaliação fonoaudiológica.",
+    action: "A linguagem foi uma das áreas de maior dificuldade. Fale devagar, use frases curtas, dê tempo para a resposta e apoie a conversa com gestos ou pistas visuais quando isso ajudar. Se a dificuldade estiver atrapalhando a comunicação, vale conversar sobre avaliação fonoaudiológica.",
   },
   {
     label: "habilidades visuoespaciais/visuoconstrutivas",
     fields: [
       { id: "moca_visuospatial", max: 5 }, { id: "meem_diagram_copy", max: 1 },
     ],
-    action: "Habilidades visuoespaciais/visuoconstrutivas foram uma das áreas mais acometidas: melhore a iluminação e a organização visual do ambiente, retire obstáculos e tapetes soltos e revise segurança em rotas desconhecidas e direção veicular quando aplicável.",
+    action: "A percepção visual do espaço foi uma das áreas de maior dificuldade. Boa iluminação, ambiente organizado e menos obstáculos podem ajudar. Se houver insegurança em trajetos desconhecidos ou ao dirigir, converse com a equipe sobre formas mais seguras de manter a mobilidade.",
   },
 ];
 
@@ -770,6 +770,11 @@ function familyScaleName(scale: AgaScaleReportSection): string {
   return scale.name;
 }
 
+function shouldShowFamilyResult(scale: AgaScaleReportSection): boolean {
+  if (scale.code !== "walking_aid_context") return true;
+  return collectedValues(scale).get("usesWalkingAid") === "1";
+}
+
 export function buildReportDomainSummaries(
   scales: readonly AgaScaleReportSection[],
   intrinsicCapacity: IntrinsicCapacityGuidance,
@@ -787,6 +792,8 @@ export function buildReportDomainSummaries(
   return DIMENSION_ORDER.flatMap((dimension): ReportDomainSummary[] => {
     const dimensionScales = grouped.get(dimension);
     if (!dimensionScales?.length) return [];
+    const familyVisibleScales = dimensionScales.filter(shouldShowFamilyResult);
+    if (familyVisibleScales.length === 0) return [];
 
     const state = stateFor(dimensionScales, dimension);
     const intrinsicCode = INTRINSIC_DOMAIN_FOR_DIMENSION[dimension];
@@ -872,7 +879,7 @@ export function buildReportDomainSummaries(
       label: DIMENSION_LABELS[dimension] ?? dimension,
       state,
       stateLabel: stateLabelFor(state),
-      results: dimensionScales.map((scale) => ({
+      results: familyVisibleScales.map((scale) => ({
         scaleCode: scale.code,
         scaleName: familyScaleName(scale),
         value: familyResultValue(scale),
