@@ -314,7 +314,7 @@ const DOMAIN_GUIDANCE: Readonly<Partial<Record<string, DomainGuidance>>> = {
   sintomas: {
     actions: [
       "Anote a intensidade dos sintomas no mesmo horário e informe quais interferem em sono, alimentação, mobilidade ou atividades do dia.",
-      "Use o canal combinado com a equipe quando um sintoma piorar, surgir de forma nova ou deixar de responder às medidas já orientadas.",
+      "Procure a equipe se um sintoma piorar, aparecer de forma nova ou continuar incomodando mesmo depois das medidas que costumavam ajudar.",
       "Sintoma intenso isolado deve ser comunicado mesmo que a soma global da escala pareça baixa.",
     ],
     evidenceReferences: [{
@@ -620,7 +620,7 @@ function npiNonPharmacologicalGuidance(scales: readonly AgaScaleReportSection[])
     actions.push("Para delírios ou alucinações, evite confronto para provar que a percepção está errada; reconheça a emoção, redirecione com calma, reduza estímulos e revise iluminação, visão e audição. Mudança súbita ou flutuação importante requer avaliação clínica.");
   }
   if (positive.some((item) => /Agitação|Irritabilidade/.test(item))) {
-    actions.push("Para agitação, agressividade ou irritabilidade, reduza ruído e aglomeração, fale uma pessoa por vez e use atividades individualizadas, música ou movimento seguro conforme preferências e resposta da pessoa.");
+    actions.push("Para agitação, agressividade ou irritabilidade, reduza ruído e aglomeração, fale uma pessoa por vez e tente música, movimento ou outra atividade de que a pessoa goste, observando o que a deixa mais tranquila.");
   }
   if (positive.includes("Ansiedade")) {
     actions.push("Para ansiedade, antecipe o que será feito, explique antes de tocar ou mover a pessoa, mantenha rotina e reduza mudanças abruptas ou situações excessivamente estimulantes.");
