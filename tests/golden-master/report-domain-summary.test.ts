@@ -261,9 +261,11 @@ test("rastreio cognitivo negativo e positivo geram orientações claramente dife
   const markedlyAltered = makeDomain(15, "vermelho");
 
   assert.equal(negative?.state, "preserved");
-  assert.match(negative?.guidance.join(" ") ?? "", /não identificou déficit cognitivo/i);
-  assert.match(negative?.guidance.join(" ") ?? "", /não institua supervisão/i);
-  assert.doesNotMatch(negative?.guidance.join(" ") ?? "", /rastreio cognitivo foi positivo/i);
+  assert.match(negative?.guidance.join(" ") ?? "", /rastreio cognitivo desta consulta está preservado/i);
+  assert.match(negative?.guidance.join(" ") ?? "", /preserve a autonomia e a independência/i);
+  assert.match(negative?.guidance.join(" ") ?? "", /alimentação saudável/i);
+  assert.match(negative?.guidance.join(" ") ?? "", /reserva cognitiva/i);
+  assert.doesNotMatch(negative?.guidance.join(" ") ?? "", /supervisão nas tarefas complexas|apoio direto do cuidador|rastreio cognitivo foi positivo/i);
 
   assert.equal(positive?.state, "attention");
   assert.match(positive?.guidance.join(" ") ?? "", /rastreio cognitivo foi positivo/i);

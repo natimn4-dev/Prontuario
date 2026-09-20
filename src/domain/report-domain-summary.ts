@@ -136,21 +136,34 @@ const FRAILTY_GUIDANCE: Readonly<Record<FrailtyGuidanceProfile, DomainGuidance>>
 const COGNITIVE_SCREEN_GUIDANCE: Readonly<Record<"preserved" | "attention" | "altered", DomainGuidance>> = {
   preserved: {
     actions: [
-      "O rastreio cognitivo desta consulta não identificou déficit cognitivo. Na ausência de queixa persistente ou perda funcional, preserve a autonomia e não institua supervisão de medicamentos, finanças ou outras tarefas apenas por causa da idade.",
-      "O foco é manutenção da saúde cognitiva: atividade física regular, convívio social, sono adequado, correção de déficits auditivos e visuais e bom controle dos fatores de risco vascular. Reavalie se paciente ou familiar perceber mudança nova e persistente de memória, linguagem, orientação, julgamento ou desempenho nas atividades do dia a dia.",
+      "O rastreio cognitivo desta consulta está preservado. Preserve a autonomia e a independência nas atividades habituais, estimulando participação ativa nas decisões, na organização da rotina e nas atividades que a pessoa realiza com segurança.",
+      "Para favorecer a reserva cognitiva, mantenha atividade física regular e atividades mentalmente desafiadoras e significativas — por exemplo, aprender uma habilidade nova, participar de cursos, ler e discutir conteúdos, praticar música, jogos de estratégia ou atividades manuais — variando os desafios e progredindo conforme interesse e conforto. Mantenha também convívio social e participação em grupos ou atividades significativas.",
+      "Cuide dos hábitos que ajudam a manter a saúde do cérebro: alimentação saudável, atividade física regular, sono adequado, convívio social e correção de perda auditiva e visual quando presente. Reavalie se houver mudança cognitiva ou funcional nova e persistente.",
     ],
     evidenceReferences: [
       {
         label: "LatAm-FINGERS: intervenção multidomínio para prevenção do declínio cognitivo na América Latina",
         pmid: "42442374",
         url: "https://pubmed.ncbi.nlm.nih.gov/42442374/",
-        relevance: "Ensaio clínico randomizado latino-americano: intervenção multidomínio em idosos sob risco apoia a promoção de atividade física, alimentação saudável, estímulo cognitivo e controle de fatores vasculares, sem transformar prevenção em tratamento de demência.",
+        relevance: "Ensaio clínico randomizado em 11 países latino-americanos: uma intervenção estruturada com atividade física, alimentação, treino cognitivo e manejo de fatores de risco produziu maior melhora cognitiva que aconselhamento flexível em idosos sob risco.",
       },
       {
-        label: "ACHIEVE: intervenção auditiva e declínio cognitivo",
-        pmid: "37478886",
-        url: "https://pubmed.ncbi.nlm.nih.gov/37478886/",
-        relevance: "Ensaio clínico: o cuidado auditivo é relevante para a saúde e a comunicação; o efeito cognitivo foi mais evidente em participantes com maior risco, sem justificar promessa universal.",
+        label: "FINGER: intervenção multidomínio e manutenção da cognição",
+        pmid: "25771249",
+        url: "https://pubmed.ncbi.nlm.nih.gov/25771249/",
+        relevance: "Ensaio clínico randomizado: dieta, exercício, treino cognitivo e monitoramento de risco vascular, combinados, melhoraram ou mantiveram o desempenho cognitivo em idosos sob risco.",
+      },
+      {
+        label: "Educação continuada e atividades cognitivamente estimulantes",
+        pmid: "31270114",
+        url: "https://pubmed.ncbi.nlm.nih.gov/31270114/",
+        relevance: "Revisão sistemática: educação continuada e atividades de lazer cognitivamente estimulantes se associam a maior reserva cognitiva e melhor desempenho; a evidência para prevenção isolada de demência permanece menos definitiva que a abordagem multidomínio.",
+      },
+      {
+        label: "Lancet Commission 2024 — prevenção, intervenção e cuidado em demência",
+        pmid: "39096926",
+        url: "https://pubmed.ncbi.nlm.nih.gov/39096926/",
+        relevance: "Relatório de comissão: estratégias de redução de risco ao longo da vida incluem atividade física, participação social e manejo de fatores vasculares, metabólicos, sensoriais e outros riscos modificáveis.",
       },
     ],
   },
@@ -528,7 +541,7 @@ function cognitiveGuidanceFor(
 ): DomainGuidance {
   const screenState = cognitiveScreenState(scales);
   const screenGuidance = screenState ? COGNITIVE_SCREEN_GUIDANCE[screenState] : undefined;
-  const targeted = targetedCognitiveGuidance(scales);
+  const targeted = screenState === "preserved" ? [] : targetedCognitiveGuidance(scales);
   const npiGuidance = npiNonPharmacologicalGuidance(scales);
   const npiEvidence: IntrinsicCapacityEvidenceReference[] = npiGuidance.length > 0 ? [
     {
@@ -694,11 +707,16 @@ export function buildReportDomainSummaries(
     const genericGuidance = unique([
       ...(stateAwareGuidance?.actions ?? alteredIntrinsicGuidance?.actions ?? intrinsicGuidance?.actions ?? domainGuidance?.actions ?? []),
     ]);
-    const functionallyContextualized = contextualFamilyGuidance(
-      dimension,
-      genericGuidance,
-      functionalContext,
-    );
+    // Dependência funcional pode ter causas motoras, sensoriais ou clínicas e não deve
+    // transformar uma cognição preservada em orientação de supervisão cognitiva.
+    // A necessidade de apoio funcional permanece descrita na linha Funcionalidade.
+    const functionallyContextualized = dimension === "cognicao" && state === "preserved"
+      ? genericGuidance
+      : contextualFamilyGuidance(
+          dimension,
+          genericGuidance,
+          functionalContext,
+        );
     const gdsScore = dimension === "humor" ? currentGdsScore(dimensionScales) : undefined;
     const isAlteredGds = typeof gdsScore === "number" && gdsScore >= 6;
     const isIadlSupport = dimension === "funcionalidade" && functionalContext.level === "iadl-support";
@@ -716,7 +734,9 @@ export function buildReportDomainSummaries(
               immobilityContext,
             );
     const cognitionGuidanceLimit = dimension === "cognicao"
-      ? (npiPositiveDomains(dimensionScales).length > 0 ? 5 : targetedCognitiveGuidance(dimensionScales).length > 0 ? 4 : 2)
+      ? state === "preserved"
+        ? 3
+        : (npiPositiveDomains(dimensionScales).length > 0 ? 5 : targetedCognitiveGuidance(dimensionScales).length > 0 ? 4 : 2)
       : 2;
     const guidance = unique(contextGuidance).slice(0, isAlteredGds ? 3 : cognitionGuidanceLimit);
     const requiresMedicalGuidance = (state === "altered" || state === "attention") && guidance.length === 0;
