@@ -297,12 +297,22 @@ export function AgaReportDocumentPreview({
     setError("");
     setClinicalReviewConfirmed(false);
     setActiveTab("aga");
+    onSigningSnapshotChange?.(null);
     try {
       const response = await fetch(`/api/consultations/${consultationId}/reports/aga`, { method: "POST" });
-      const result = await response.json();
+      const result = await response.json() as GeneratedReportResponse & { message?: string };
       if (!response.ok) throw new Error(result.message ?? "Não foi possível gerar o relatório.");
       setGenerated(result);
+      onSigningSnapshotChange?.({
+        id: result.snapshot.id,
+        version: result.snapshot.version,
+        consultationStatus: result.report.consultationStatus,
+        draftContext: result.report.draftContext,
+        hasAdvanceDirectives: Boolean(result.report.advanceDirectives),
+      });
     } catch (caught) {
+      setGenerated(null);
+      onSigningSnapshotChange?.(null);
       setError(caught instanceof Error ? caught.message : "Não foi possível gerar o relatório.");
     } finally {
       setLoading(false);
