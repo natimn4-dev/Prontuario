@@ -177,12 +177,12 @@ try {
   const login = await request(base, "/login", "follow");
   if (login.status !== 200) blocked(`/login respondeu HTTP ${login.status}.`);
   const loginHtml = await login.text();
-  if (!loginHtml.includes("Entrar com Google")) blocked("/login não contém a ação de autenticação Google.");
+  if (!loginHtml.includes("Continuar com Google")) blocked("/login não contém a ação de autenticação Google.");
   if (!loginHtml.includes('href="/auth/google"')) {
     await logLoginDeliveryMismatch(base, login, loginHtml);
     blocked("/login não contém o link navegável vigente para autenticação Google.");
   }
-  if (!loginHtml.includes("Se o prontuário estiver aberto dentro de outro aplicativo")) blocked("/login não corresponde à interface de acesso vigente.");
+  if (!loginHtml.includes("Usar modo compatível") || !loginHtml.includes('href="/auth/google?manual=1"')) blocked("/login não oferece fallback explícito para navegadores internos.");
 
   await startGoogleOAuth(base);
   await startGoogleOAuthViaPublicEntrypoint(base);
@@ -209,6 +209,6 @@ console.log("- /api/health/auth confirmou prontidão estática do OAuth");
 console.log("- CSS e JavaScript do Next.js presentes e entregues com HTTP 200");
 console.log("- /login contém o link navegável e a interface de acesso vigentes");
 console.log("- endpoint canônico do Better Auth iniciou Google OAuth com state e Set-Cookie");
-console.log("- /auth/google exige gesto explícito, sem auto-redirecionamento, e preserva state/PKCE");
-console.log("- /auth/google oferece fallback de novo contexto para navegadores internos");
+console.log("- /auth/google redireciona diretamente para o Google e preserva state/PKCE");
+console.log("- /auth/google?manual=1 mantém fallback por gesto explícito para navegadores internos");
 console.log("- rotas clínicas, incluindo /programa-55 e /oncogeriatria, não estão abertas anonimamente");
