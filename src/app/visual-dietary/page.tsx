@@ -8,10 +8,13 @@ import {
   buildDietaryPriorities,
   buildProteinComparison,
   nutrientsForGrams,
+  portionMetadata,
   summarizeDietaryAssessment,
+  type DietaryAssessmentInput,
   type DietaryAssessmentSnapshot,
   type DietaryClinicalContext,
   type DietaryConfirmedMeal,
+  type DietaryFoodDraft,
   type DietaryFoodComposition,
 } from "@/domain/dietary-assessment";
 
@@ -160,6 +163,58 @@ function previewPayload() {
   };
 }
 
+function previewPayloadFromInput(
+  previous: ReturnType<typeof previewPayload>,
+  input: DietaryAssessmentInput,
+) {
+  if (!previous.assessment) return previous;
+  const meals = input.meals.map((meal) => ({
+    ...meal,
+    items: meal.items.map((item) => {
+      const withComposition = item as DietaryFoodDraft & {
+        composition?: DietaryFoodComposition | null;
+      };
+      const composition = withComposition.composition ?? null;
+      const grams = item.measure === "g" ? item.quantity : item.grams;
+      return {
+        ...item,
+        grams: grams ?? null,
+        ...portionMetadata(item.measure, grams ?? null),
+        composition,
+        nutrients:
+          composition && grams != null && grams > 0
+            ? nutrientsForGrams(composition.nutrientsPer100g, grams)
+            : null,
+      };
+    }),
+  })) as DietaryConfirmedMeal[];
+  const summarized = summarizeDietaryAssessment(
+    meals,
+    input.clinicalContext.weightKg,
+  );
+  const updatedAt = new Date().toISOString();
+  const assessment = {
+    ...previous.assessment,
+    meals,
+    targets: input.targets,
+    clinicalContext: input.clinicalContext,
+    summary: summarized.summary,
+    proteinByMeal: summarized.proteinByMeal,
+    proteinComparison: buildProteinComparison(
+      summarized.summary,
+      input.targets,
+      input.clinicalContext,
+    ),
+    orientationDraft:
+      input.orientationDraft ?? previous.assessment.orientationDraft,
+    orientationReviewed: Boolean(input.orientationReviewed),
+    includeInReport: Boolean(input.includeInReport),
+    includeInSoap: Boolean(input.includeInSoap),
+    updatedAt,
+  };
+  return { ...previous, updatedAt, assessment };
+}
+
 const searchResults = (query: string) => {
   const normalized = query.toLowerCase();
   const foods = [previewFood, previewRice];
@@ -173,7 +228,7 @@ export default function VisualDietaryPreviewPage() {
 
   useEffect(() => {
     const originalFetch = window.fetch.bind(window);
-    const payload = previewPayload();
+    let payload = previewPayload();
     window.fetch = async (input, init) => {
       const url =
         typeof input === "string"
@@ -193,6 +248,13 @@ export default function VisualDietaryPreviewPage() {
         });
       }
       if (url.endsWith("/dietary-assessment") && init?.method === "PUT") {
+        const body =
+          typeof init.body === "string"
+            ? (JSON.parse(init.body) as { assessment?: DietaryAssessmentInput })
+            : null;
+        if (body?.assessment) {
+          payload = previewPayloadFromInput(payload, body.assessment);
+        }
         return new Response(JSON.stringify(payload), {
           headers: { "content-type": "application/json" },
         });

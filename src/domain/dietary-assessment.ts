@@ -81,6 +81,29 @@ export type DietaryFoodItem = DietaryFoodDraft & {
   nutrients: DietaryNutrients | null;
 };
 
+/**
+ * Enriches a clinician-entered draft with the selected food composition.
+ * The server repeats this hydration before persisting the snapshot; this
+ * helper only keeps the editable workspace numerically coherent meanwhile.
+ */
+export function confirmDietaryDraftItem(
+  draft: DietaryFoodDraft,
+  composition: DietaryFoodComposition | null | undefined,
+): DietaryFoodItem {
+  const grams = draft.measure === "g" ? draft.quantity : draft.grams;
+  const metadata = portionMetadata(draft.measure, grams ?? null);
+  return {
+    ...draft,
+    grams: grams ?? null,
+    ...metadata,
+    composition: composition ?? null,
+    nutrients:
+      composition && grams != null && grams > 0
+        ? nutrientsForGrams(composition.nutrientsPer100g, grams)
+        : null,
+  };
+}
+
 export type DietaryMeal = { id: string; label: string; items: DietaryFoodDraft[] };
 export type DietaryConfirmedMeal = Omit<DietaryMeal, "items"> & { items: DietaryFoodItem[] };
 

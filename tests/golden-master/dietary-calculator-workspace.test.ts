@@ -114,7 +114,9 @@ test("busca alimentar entrega composição e mostra o valor nutricional da porç
     workspace,
     /Informe a quantidade\s+em gramas para calcular esta porção/,
   );
-  assert.match(workspace, /composition: selectedFood/);
+  assert.match(workspace, /confirmDietaryDraftItem\(draft, selectedFood\)/);
+  assert.match(workspace, /Ca \{format\(nutrients\.calciumMg, 0\)\} mg/);
+  assert.match(workspace, /Estimativa atualizada com o rascunho local/);
   assert.match(workspace, /foodSearchController\.current\?\.abort\(\)/);
   for (const className of [
     ".nutrientPreview",
