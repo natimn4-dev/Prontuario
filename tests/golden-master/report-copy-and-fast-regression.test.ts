@@ -71,8 +71,8 @@ test("FAST preserva a semântica do estágio: 6.3 não é convertido indevidamen
 
 test("vitalidade mantém orientação familiar prática e referência geriátrica verificável", () => {
   const vitality = intrinsicCapacityGuidanceForDomain("vitalidade");
-  assert.ok(vitality.actions.some((item) => item.includes("alimentação possível e prazerosa")));
-  assert.ok(vitality.actions.some((item) => item.includes("líquidos ao longo do dia")));
+  assert.ok(vitality.actions.some((item) => item.includes("refeições mais agradáveis e menos cansativas")));
+  assert.ok(vitality.actions.some((item) => item.includes("Ofereça líquidos várias vezes ao longo do dia")));
   assert.ok(vitality.attentionSigns.some((item) => item.includes("perda de peso sem intenção")));
   assert.ok(vitality.evidenceReferences.some((reference) => reference.pmid === "35306388"));
 });
