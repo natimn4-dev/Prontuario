@@ -208,7 +208,7 @@ const ADL_SUPPORT_GUIDANCE: Readonly<Record<string, readonly string[]>> = {
 
 const IADL_SUPPORT_GUIDANCE: Readonly<Record<string, readonly string[]>> = {
   funcionalidade: [
-    "Concentre a ajuda nas atividades que ficaram mais difíceis, como finanças, compras, transporte, organização da casa e medicamentos, e preserve a independência nas atividades básicas que continuam seguras.",
+    "Concentre a ajuda nas atividades instrumentais que ficaram mais difíceis, como finanças, compras, transporte, organização da casa e medicamentos, e preserve a independência nas atividades básicas que continuam seguras.",
     "Aumente a ajuda apenas onde houver dificuldade ou risco e observe se alguma nova tarefa começa a precisar de apoio.",
   ],
   cognicao: [
