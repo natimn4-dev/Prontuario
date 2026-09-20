@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import type { DietaryAssessmentInput } from "@/domain/dietary-assessment";
 import { withConsultationPatientAccess } from "@/server/auth/consultation-route-guard";
+import { isAccessForbiddenError, isAuthenticationRequiredError } from "@/server/auth/access-errors";
 import {
   DietaryAssessmentError,
   getDietaryAssessment,
@@ -27,6 +28,12 @@ export async function GET(_request: Request, { params }: { params: Promise<{ id:
     } catch (error) {
       if (error instanceof DietaryAssessmentError) {
         return NextResponse.json({ error: error.message, code: error.code }, { status: status(error) });
+      }
+      if (isAuthenticationRequiredError(error)) {
+        return NextResponse.json({ code: "AUTHENTICATION_REQUIRED", message: "Autenticação obrigatória." }, { status: 401 });
+      }
+      if (isAccessForbiddenError(error)) {
+        return NextResponse.json({ code: "ACCESS_FORBIDDEN", message: "Acesso não autorizado." }, { status: 403 });
       }
       throw error;
     }
@@ -55,6 +62,12 @@ export async function PUT(request: Request, { params }: { params: Promise<{ id: 
     } catch (error) {
       if (error instanceof DietaryAssessmentError) {
         return NextResponse.json({ error: error.message, code: error.code }, { status: status(error) });
+      }
+      if (isAuthenticationRequiredError(error)) {
+        return NextResponse.json({ code: "AUTHENTICATION_REQUIRED", message: "Autenticação obrigatória." }, { status: 401 });
+      }
+      if (isAccessForbiddenError(error)) {
+        return NextResponse.json({ code: "ACCESS_FORBIDDEN", message: "Acesso não autorizado." }, { status: 403 });
       }
       throw error;
     }
