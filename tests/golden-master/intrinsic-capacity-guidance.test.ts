@@ -33,7 +33,7 @@ test("MNA-SF e SARC-CalF sinalizam Vitalidade; FRAIL-BR permanece contextual", (
   assert.ok(!guidance.alteredDomains.some((domain) => domain.triggeredBy.includes("FRAIL-BR")));
   assert.match(vitality.whyItMatters, /estado nutricional e o rastreio de vulnerabilidade muscular pelo SARC-CalF/i);
   assert.match(vitality.whyItMatters, /junto com força, funcionalidade e condições clínicas/i);
-  assert.ok(vitality.actions.some((action) => /SARC-CalF estiver positivo/i.test(action)));
+  assert.ok(vitality.actions.some((action) => /SARC-CalF vier positivo/i.test(action)));
   assert.ok(vitality.evidenceReferences.some((reference) => reference.pmid === "27650212"));
 });
 
@@ -45,7 +45,7 @@ test("SARC-CalF positivo isolado aciona Vitalidade, sem ser promovido a diagnós
   assert.deepEqual(guidance.alteredDomains.map((domain) => domain.code), ["vitalidade"]);
   const vitality = guidance.alteredDomains[0];
   assert.deepEqual(vitality?.triggeredBy, ["SARC-CalF"]);
-  assert.ok(vitality?.actions.some((action) => /não confirma o diagnóstico isoladamente/i.test(action)));
+  assert.ok(vitality?.actions.some((action) => /sozinho, não confirma sarcopenia/i.test(action)));
 });
 
 test("FRAIL-BR isolado não define automaticamente locomoção ou vitalidade", () => {
