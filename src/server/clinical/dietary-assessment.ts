@@ -6,6 +6,7 @@ import {
   buildDietaryPriorities,
   buildProteinComparison,
   calciumReferenceMg,
+  dietaryFoodSearchQuery,
   fiberReferenceG,
   nutrientsForGrams,
   portionMetadata,
@@ -19,6 +20,7 @@ import {
   type DietaryFoodComposition,
 } from "../../domain/dietary-assessment";
 import { buildConditionalDietaryGuidance, guidanceAsText } from "../../domain/dietary-guidance";
+import { getTacoFood, searchTacoFoods } from "./taco-food-catalog";
 import { requireConsultationAccess } from "../auth/patient-access";
 import { prisma } from "../db";
 import { measureClinicalTransaction } from "../observability/clinical-performance";
@@ -87,24 +89,52 @@ async function fdc(path: string, init?: RequestInit) {
     clearTimeout(timer);
   }
 }
+function fdcApiKey() {
+  const key = process.env.USDA_FDC_API_KEY?.trim();
+  if (!key) {
+    throw new DietaryAssessmentError(
+      "FOOD_SOURCE_NOT_CONFIGURED",
+      "A base alimentar ainda não está configurada neste ambiente. Configure USDA_FDC_API_KEY para buscar alimentos.",
+    );
+  }
+  return key;
+}
+function throwFdcAvailabilityError(response: Response, action: "buscar" | "validar"): never {
+  if (response.status === 429) {
+    throw new DietaryAssessmentError(
+      "FOOD_SOURCE_RATE_LIMIT",
+      `A USDA limitou temporariamente as tentativas de ${action} alimentos. Configure uma chave USDA_FDC_API_KEY própria ou tente novamente mais tarde.`,
+    );
+  }
+  throw new DietaryAssessmentError(
+    "FOOD_SOURCE",
+    action === "buscar"
+      ? `USDA FoodData Central indisponível (${response.status}).`
+      : `Não foi possível validar o alimento USDA (${response.status}).`,
+  );
+}
 export async function searchDietaryFoods(query: string) {
   const q = query.trim().slice(0, 120);
   if (q.length < 2) return [];
-  const key = process.env.USDA_FDC_API_KEY?.trim() || "DEMO_KEY";
+  const tacoFoods = searchTacoFoods(q);
+  if (tacoFoods.length) return tacoFoods;
+  const key = process.env.USDA_FDC_API_KEY?.trim();
+  if (!key) return [];
+  const providerQuery = dietaryFoodSearchQuery(q);
   const response = await fdc(`/foods/search?api_key=${encodeURIComponent(key)}`, {
     method: "POST",
     headers: { "content-type": "application/json" },
-    body: JSON.stringify({ query: q, pageSize: 8, dataType: ["Foundation", "SR Legacy", "Survey (FNDDS)"] }),
+    body: JSON.stringify({ query: providerQuery, pageSize: 8, dataType: ["Foundation", "SR Legacy", "Survey (FNDDS)"] }),
   });
-  if (!response.ok) throw new DietaryAssessmentError("FOOD_SOURCE", `USDA FoodData Central indisponível (${response.status}).`);
+  if (!response.ok) throwFdcAvailabilityError(response, "buscar");
   const body = await response.json() as { foods?: FF[] };
   return (body.foods ?? []).filter((food) => food.fdcId && food.description && (!food.dataType || TYPES.has(food.dataType))).map(normalizeFood);
 }
 async function getFood(id: string) {
   if (!/^\d{1,12}$/.test(id)) throw new DietaryAssessmentError("FOOD_SOURCE", "Identificador USDA inválido.");
-  const key = process.env.USDA_FDC_API_KEY?.trim() || "DEMO_KEY";
+  const key = fdcApiKey();
   const response = await fdc(`/food/${id}?api_key=${encodeURIComponent(key)}`);
-  if (!response.ok) throw new DietaryAssessmentError("FOOD_SOURCE", `Não foi possível validar o alimento USDA (${response.status}).`);
+  if (!response.ok) throwFdcAvailabilityError(response, "validar");
   const food = normalizeFood(await response.json() as FF);
   if (food.dataType && !TYPES.has(food.dataType)) throw new DietaryAssessmentError("FOOD_SOURCE", "Tipo de dado alimentar não habilitado neste MVP.");
   return food;
@@ -158,17 +188,27 @@ export async function getDietaryAssessment(id: string) {
 }
 
 async function hydrate(input: DietaryAssessmentInput): Promise<DietaryConfirmedMeal[]> {
-  const ids = [...new Set(input.meals.flatMap((meal) => meal.items).map((item) => item.food).filter(Boolean).map((food) => {
-    if (food!.provider !== "USDA_FDC") throw new DietaryAssessmentError("SOURCE_NOT_AVAILABLE", "TBCA permanece prioritária, mas requer integração licenciada antes do uso automático.");
-    return food!.sourceId;
-  }))];
-  const entries = await Promise.all(ids.map(async (id) => [id, await getFood(id)] as const));
-  const compositionMap = new Map(entries);
+  const references = [...new Map(input.meals.flatMap((meal) => meal.items)
+    .map((item) => item.food)
+    .filter((food): food is NonNullable<typeof food> => Boolean(food))
+    .map((food) => [`${food.provider}:${food.sourceId}`, food])).values()];
+  const entries = await Promise.all(references.map(async (reference) => {
+    if (reference.provider === "TACO") {
+      const food = getTacoFood(reference.sourceId);
+      if (!food) throw new DietaryAssessmentError("FOOD_SOURCE", "Alimento TACO não encontrado na versão validada do catálogo.");
+      return [`TACO:${reference.sourceId}`, food] as const;
+    }
+    if (reference.provider === "USDA_FDC") {
+      return [`USDA_FDC:${reference.sourceId}`, await getFood(reference.sourceId)] as const;
+    }
+    throw new DietaryAssessmentError("SOURCE_NOT_AVAILABLE", "TBCA requer autorização antes do uso automático; selecione um alimento TACO ou USDA.");
+  }));
+  const compositionMap = new Map<string, DietaryFoodComposition>(entries);
   return input.meals.map((meal) => ({
     id: meal.id,
     label: meal.label.trim(),
     items: meal.items.map((item) => {
-      const composition = item.food ? compositionMap.get(item.food.sourceId) ?? null : null;
+      const composition = item.food ? compositionMap.get(`${item.food.provider}:${item.food.sourceId}`) ?? null : null;
       const grams = item.measure === "g" ? item.quantity : item.grams;
       const metadata = portionMetadata(item.measure, grams ?? null);
       const calculable = Boolean(composition && grams != null && grams > 0);
@@ -232,7 +272,7 @@ export async function saveDietaryAssessment(args: { consultationId: string; expe
     const evidenceBundle = DIETARY_CLINICAL_REFERENCES.map((source) => `${source.id} ${source.version}: ${source.url}`).join(" | ");
 
     const ruleTrace = [
-      { rule: "nutrient_calculation_v2", reference: "USDA FoodData Central + quantidade confirmada", version: "2", condition: "alimento validado e gramas disponíveis", result: "quantidade × composição por 100 g; item sem gramas não entra no total" },
+      { rule: "nutrient_calculation_v3", reference: "TACO/NEPA-UNICAMP 4ª edição; USDA FoodData Central como fallback + quantidade confirmada", version: "3", condition: "alimento validado e gramas disponíveis", result: "quantidade × composição por 100 g; item sem gramas não entra no total" },
       { rule: "portion_uncertainty_v2", reference: "PMID 8429287 + PMID 33650974 + PMID 32153884", version: "2026-09", condition: "recordatório alimentar autorreferido", result: "medidas caseiras e estimativas visuais mantêm origem e incerteza; nenhum peso universal é presumido" },
       { rule: "calcium_reference_v1", reference: "NIH ODS / NASEM DRI", version: "2026-06", condition: "idade e sexo disponíveis", result: String(calciumReferenceMg(context.ageYears, context.sex) ?? "sem referência automática") },
       { rule: "fiber_reference_v1", reference: "NASEM DRI", version: "DRI", condition: "idade >= 51 e sexo disponível", result: String(fiberReferenceG(context.ageYears, context.sex) ?? "sem referência automática") },

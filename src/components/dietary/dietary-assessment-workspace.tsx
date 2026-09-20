@@ -212,6 +212,7 @@ export function DietaryAssessmentWorkspace({
   >([]);
   const [loading, setLoading] = useState(true);
   const [searching, setSearching] = useState(false);
+  const [foodSearchAttempted, setFoodSearchAttempted] = useState(false);
   const [saving, setSaving] = useState(false);
   const [dirty, setDirty] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
@@ -417,6 +418,7 @@ export function DietaryAssessmentWorkspace({
     if (trimmed.length < 2) {
       foodSearchController.current?.abort();
       setFoodResults([]);
+      setFoodSearchAttempted(false);
       setSelectedFood(null);
       setSearching(false);
       return;
@@ -534,6 +536,7 @@ export function DietaryAssessmentWorkspace({
     const controller = new AbortController();
     foodSearchController.current = controller;
     setSearching(true);
+    setFoodSearchAttempted(false);
     setError(null);
     setSelectedFood(null);
     try {
@@ -547,7 +550,10 @@ export function DietaryAssessmentWorkspace({
       };
       if (!response.ok)
         throw new Error(body.error ?? "A base de alimentos não respondeu.");
-      if (!controller.signal.aborted) setFoodResults(body.foods ?? []);
+      if (!controller.signal.aborted) {
+        setFoodResults(body.foods ?? []);
+        setFoodSearchAttempted(true);
+      }
     } catch (cause) {
       if (cause instanceof DOMException && cause.name === "AbortError") return;
       setError(
@@ -724,6 +730,14 @@ export function DietaryAssessmentWorkspace({
     ].join("\n");
     await navigator.clipboard.writeText(text);
     setMessage("Síntese copiada.");
+  }
+  function continueToNextStep() {
+    if (step === 1 && totalItems === 0) {
+      setError("Adicione pelo menos um alimento antes de conferir porções e preparo.");
+      return;
+    }
+    setError(null);
+    setStep((current) => (current + 1) as 1 | 2 | 3 | 4);
   }
   if (loading)
     return (
@@ -913,6 +927,7 @@ export function DietaryAssessmentWorkspace({
                     value={foodQuery}
                     onChange={(event) => {
                       setFoodQuery(event.target.value);
+                      setFoodSearchAttempted(false);
                       setSelectedFood(null);
                     }}
                     placeholder="Ex.: ovo, arroz cozido, frango…"
@@ -944,9 +959,11 @@ export function DietaryAssessmentWorkspace({
                     >
                       <strong>{food.description}</strong>
                       <span>
-                        {food.provider === "USDA_FDC"
-                          ? "USDA FoodData Central"
-                          : "TBCA"}{" "}
+                        {food.provider === "TACO"
+                          ? "TACO — NEPA/UNICAMP"
+                          : food.provider === "USDA_FDC"
+                            ? "USDA FoodData Central"
+                            : "TBCA"}{" "}
                         · {food.dataType ?? "tipo não informado"}
                       </span>
                       <span className={styles.nutrientLine}>
@@ -958,6 +975,12 @@ export function DietaryAssessmentWorkspace({
                     </button>
                   ))}
                 </div>
+              ) : null}
+              {!searching && foodSearchAttempted && foodResults.length === 0 ? (
+                <p className={styles.searchEmpty} role="status">
+                  Nenhuma correspondência foi encontrada. Revise o nome do
+                  alimento ou tente um termo mais simples.
+                </p>
               ) : null}
               {selectedFood ? (
                 <div className={styles.portionPanel}>
@@ -1745,8 +1768,10 @@ export function DietaryAssessmentWorkspace({
                       {energyCheck?.note}
                     </p>
                     <p className={styles.sourceNote}>
-                      Fonte operacional: USDA FoodData Central. Medidas caseiras
-                      e estimativas visuais permanecem marcadas para revisão.
+                      Fonte principal: TACO — NEPA/UNICAMP, 4ª edição. A USDA
+                      FoodData Central é usada somente quando a TACO não contém
+                      correspondência. Medidas caseiras e estimativas visuais
+                      permanecem marcadas para revisão.
                     </p>
                   </details>
                 </>
@@ -1864,9 +1889,7 @@ export function DietaryAssessmentWorkspace({
               <button
                 type="button"
                 className={styles.primaryButton}
-                onClick={() =>
-                  setStep((current) => (current + 1) as 1 | 2 | 3 | 4)
-                }
+                onClick={continueToNextStep}
               >
                 Continuar
               </button>

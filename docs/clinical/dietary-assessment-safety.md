@@ -8,6 +8,14 @@ O recordatório alimentar é autorreferido e não é tratado como medição exat
 
 Cada item calculável registra alimento/fonte, quantidade, unidade, gramas informados ou estimados, origem da quantidade e grau de incerteza. Nutrientes só são calculados quando alimento e massa utilizada estão suficientemente identificados. A composição nutricional é revalidada no servidor e a versão da fonte permanece no snapshot.
 
+## Catálogo alimentar em português
+
+A fonte operacional principal é a **TACO — Tabela Brasileira de Composição de Alimentos, 4ª edição revisada e ampliada (NEPA/UNICAMP, 2011)**. O catálogo local foi gerado da planilha oficial disponibilizada em `https://www.nepa.unicamp.br/arquivo/uploads/taco-4a-edicao/taco-4a-edicao-2/`, SHA-256 `a66b8ec528daeabc63bc2b015fc9bd8c6d76b941c2fc0ed93a4311d449302d14`.
+
+Dos 597 alimentos da planilha, 566 possuem valor numérico, `Tr` ou `NA` para todos os sete nutrientes usados pela calculadora. Linhas com célula em branco ou `*` (análise em reavaliação) em qualquer desses nutrientes são excluídas para que ausência de dado não seja convertida em zero. `Tr` e `NA` são representados por zero conforme o contrato numérico atual, preservando a interpretação da legenda da fonte. A USDA FoodData Central é consultada somente quando a busca em português não encontra correspondência na TACO e existe uma chave própria configurada.
+
+A publicação TACO permite reprodução total ou parcial com citação da fonte. O arquivo original não é alterado; a importação seleciona os campos necessários, mantém identificador e descrição e registra a versão no snapshot clínico.
+
 ## Porções
 
 - Ovo: quantidade em unidades. `1 ovo` significa uma unidade média de ovo inteiro; `2 ovos`, duas unidades. O sistema não converte três ovos em porção de carne, frango ou peixe.

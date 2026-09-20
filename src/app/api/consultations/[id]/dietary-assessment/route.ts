@@ -13,7 +13,7 @@ const status = (error: DietaryAssessmentError) => (
     ? 404
     : ["CONCURRENT_CHANGE", "FINALIZED"].includes(error.code)
       ? 409
-      : ["SOURCE_NOT_AVAILABLE", "FOOD_SOURCE"].includes(error.code)
+      : ["SOURCE_NOT_AVAILABLE", "FOOD_SOURCE", "FOOD_SOURCE_NOT_CONFIGURED", "FOOD_SOURCE_RATE_LIMIT"].includes(error.code)
         ? 422
         : 400
 );

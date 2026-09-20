@@ -502,6 +502,15 @@
   border-color: #628f80;
   background: #edf5f2;
 }
+.searchEmpty {
+  margin: 0.8rem 0 0;
+  border: 1px solid #e2d9c4;
+  border-radius: 10px;
+  background: #fbf8ef;
+  padding: 0.7rem 0.8rem;
+  color: #665a3f;
+  font-size: 0.84rem;
+}
 .flags {
   display: flex;
   flex-wrap: wrap;

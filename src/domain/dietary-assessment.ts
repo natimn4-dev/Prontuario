@@ -11,7 +11,7 @@ export type DietaryNutrients = {
 };
 
 export type DietaryFoodReference = {
-  provider: "USDA_FDC" | "TBCA";
+  provider: "TACO" | "USDA_FDC" | "TBCA";
   sourceId: string;
   description: string;
   dataType?: string;
@@ -343,6 +343,42 @@ export const ZERO_NUTRIENTS: DietaryNutrients = {
   calciumMg: 0,
   sodiumMg: 0,
 };
+
+const DIETARY_FOOD_SEARCH_ALIASES: Record<string, string> = {
+  ovo: "egg whole",
+  ovos: "eggs whole",
+  "ovo inteiro": "egg whole",
+  "ovos inteiros": "eggs whole",
+  "ovo cozido": "egg whole cooked",
+  "ovos cozidos": "eggs whole cooked",
+  "ovo frito": "fried egg",
+  "ovos fritos": "fried eggs",
+  "clara de ovo": "egg white",
+  "claras de ovo": "egg whites",
+  "gema de ovo": "egg yolk",
+  "gemas de ovo": "egg yolks",
+  "arroz cozido": "rice cooked",
+  "arroz branco cozido": "rice white cooked",
+  "arroz integral cozido": "rice brown cooked",
+  frango: "chicken",
+  "peito de frango": "chicken breast",
+};
+
+/**
+ * Mantém o texto da médica como rótulo do relato, mas adapta termos comuns em
+ * português somente quando a busca precisa recorrer ao fallback USDA.
+ * Somente equivalências explícitas são aplicadas; termos desconhecidos não são
+ * inferidos nem traduzidos silenciosamente.
+ */
+export function dietaryFoodSearchQuery(value: string): string {
+  const query = value.trim().slice(0, 120);
+  const normalized = query
+    .normalize("NFD")
+    .replace(/\p{Diacritic}/gu, "")
+    .toLowerCase()
+    .replace(/\s+/g, " ");
+  return DIETARY_FOOD_SEARCH_ALIASES[normalized] ?? query;
+}
 
 const positive = (value: unknown): value is number =>
   typeof value === "number" && Number.isFinite(value) && value > 0;
