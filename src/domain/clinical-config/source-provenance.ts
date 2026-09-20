@@ -47,6 +47,24 @@ export const SOURCE_PROVENANCE: Record<string, ClinicalSourceProvenance> = {
     note:
       "Adaptação institucional não validada externamente. Mantém os demais componentes da CRASH, mas atribui 0 ponto ao MNA-SF 12-14 e 2 pontos ao MNA-SF 0-11. Não deve ser apresentada como equivalente à CRASH original nem usada isoladamente para decidir tratamento.",
   },
+  eat10: {
+    scaleId: "eat10",
+    status: "confirmed-primary",
+    legacyVersion: "eat10-br-goncalves-2013-v1",
+    primaryReference:
+      "Belafsky PC et al. Ann Otol Rhinol Laryngol. 2008;117(12):919-924. PMID 19140539; Gonçalves MIR, Remaili CB, Behlau M. CoDAS. 2013;25(6):601-604. PMID 24626972.",
+    note:
+      "O EAT-10 é um instrumento autorreferido de 10 itens, cada um pontuado de 0 a 4, total 0–40. O estudo original e a adaptação transcultural brasileira sustentam o ponto de corte ≥3 como rastreio positivo para risco de disfagia. O resultado é rastreio e não diagnostica disfagia ou aspiração isoladamente.",
+  },
+  walking_aid_context: {
+    scaleId: "walking_aid_context",
+    status: "confirmed-institutional",
+    legacyVersion: "walking-aid-context-2026-09-v1",
+    primaryReference:
+      "Registro clínico contextual institucional; não é escala nem instrumento de pontuação.",
+    note:
+      "Registra apenas se a pessoa utiliza dispositivo de auxílio à locomoção e qual o tipo. Não altera isoladamente a classificação do domínio e só deve gerar orientações sobre dispositivo quando o uso estiver explicitamente registrado.",
+  },
   sarc_calf: {
     scaleId: "sarc_calf",
     status: "confirmed-primary",
