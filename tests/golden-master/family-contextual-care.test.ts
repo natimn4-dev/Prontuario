@@ -97,7 +97,7 @@ test("via GTT ativa cuidados específicos de gastrostomia sem inventar dieta, vo
   const guidance = gastrostomyFamilyGuidance();
   const text = [...guidance.now, ...guidance.caregiver, ...guidance.contact].join(" ");
   assert.match(text, /dieta enteral/i);
-  assert.match(text, /não triture comprimidos/i);
+  assert.match(text, /antes de triturar um comprimido/i);
   assert.match(text, /estoma/i);
   assert.match(text, /volume prescrito/i);
   assert.doesNotMatch(text, /\b\d+\s*mL\b/i);
