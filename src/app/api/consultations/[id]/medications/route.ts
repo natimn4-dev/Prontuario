@@ -4,7 +4,7 @@ import {
   getMedicationWorkspace,
 } from "@/server/clinical/medication-workspace";
 import { medicationWorkspaceHttpHandlers } from "@/server/clinical/medication-workspace-http";
-import { withConsultationPatientAccess } from "@/server/auth/consultation-route-guard";
+import { withClinicalPerformance } from "@/server/observability/clinical-performance";
 
 const handlers = medicationWorkspaceHttpHandlers({
   getMedicationWorkspace,
@@ -14,10 +14,10 @@ const handlers = medicationWorkspaceHttpHandlers({
 
 export async function GET(request: Request, context: { params: Promise<{ id: string }> }) {
   const { id } = await context.params;
-  return withConsultationPatientAccess(id, () => handlers.GET(request, id));
+  return withClinicalPerformance(request, "consultation.medications.read", () => handlers.GET(request, id));
 }
 
 export async function POST(request: Request, context: { params: Promise<{ id: string }> }) {
   const { id } = await context.params;
-  return withConsultationPatientAccess(id, () => handlers.POST(request, id));
+  return withClinicalPerformance(request, "consultation.medications.write", () => handlers.POST(request, id));
 }

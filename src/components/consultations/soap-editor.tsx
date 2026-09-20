@@ -191,7 +191,7 @@ function asCompletedScaleResults(results: readonly ScaleStatusItem[]): Completed
   }));
 }
 
-export function SoapEditor({ consultationId }: { consultationId: string }) {
+export function SoapEditor({ consultationId, onDirtyChange }: { consultationId: string; onDirtyChange?: (dirty: boolean) => void }) {
   const [view, setView] = useState<NoteView | null>(null);
   const [medications, setMedications] = useState<MedicationItem[]>([]);
   const [medicationLoadState, setMedicationLoadState] = useState<AuxiliaryLoadState>("idle");
@@ -203,6 +203,8 @@ export function SoapEditor({ consultationId }: { consultationId: string }) {
   const [dirty, setDirty] = useState(false);
   const [dismissedSuggestions, setDismissedSuggestions] = useState<Set<string>>(new Set());
   const [feedback, setFeedback] = useState<{ kind: "error" | "success"; text: string } | null>(null);
+
+  useEffect(() => { onDirtyChange?.(dirty); }, [dirty, onDirtyChange]);
 
   async function load() {
     setLoading(true);

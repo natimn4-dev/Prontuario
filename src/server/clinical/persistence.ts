@@ -1,4 +1,5 @@
 import { prisma } from "../db";
+import { requireConsultationAccess } from "../auth/patient-access";
 import { requireAuthenticatedUser } from "../auth/require-user";
 import type { Prisma } from "../../generated/prisma/client";
 import type { MedicationMoment as DatabaseMedicationMoment } from "../../generated/prisma/enums";
@@ -42,10 +43,13 @@ export async function saveScaleAssessment(input: {
   classification?: string;
   interpretation?: string;
   clinicalColor?: string;
+  authorization?: {
+    user: { id: string };
+    consultation: { id: string; patientId: string; status: string };
+  };
 }) {
-  await requireAuthenticatedUser("consultation.write");
-
-  const consultation = await consultationContext(input.consultationId);
+  const authorization = input.authorization ?? await requireConsultationAccess(input.consultationId, "consultation.write");
+  const consultation = input.authorization?.consultation ?? authorization.consultation;
 
   if (consultation.status === "FINALIZED") {
     throw new Error("Consulta finalizada não aceita alteração de escala.");

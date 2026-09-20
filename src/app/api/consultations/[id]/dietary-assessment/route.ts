@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import type { DietaryAssessmentInput } from "@/domain/dietary-assessment";
-import { withConsultationPatientAccess } from "@/server/auth/consultation-route-guard";
+import { withClinicalPerformance } from "@/server/observability/clinical-performance";
 import {
   DietaryAssessmentError,
   getDietaryAssessment,
@@ -17,9 +17,9 @@ const status = (error: DietaryAssessmentError) => (
         : 400
 );
 
-export async function GET(_request: Request, { params }: { params: Promise<{ id: string }> }) {
+export async function GET(request: Request, { params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
-  return withConsultationPatientAccess(id, async () => {
+  return withClinicalPerformance(request, "consultation.dietary.read", async () => {
     try {
       return NextResponse.json(await getDietaryAssessment(id), {
         headers: { "Cache-Control": "private, no-store" },
@@ -35,7 +35,7 @@ export async function GET(_request: Request, { params }: { params: Promise<{ id:
 
 export async function PUT(request: Request, { params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
-  return withConsultationPatientAccess(id, async () => {
+  return withClinicalPerformance(request, "consultation.dietary.write", async () => {
     try {
       const body = await request.json() as {
         expectedUpdatedAt?: string;

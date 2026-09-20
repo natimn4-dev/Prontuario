@@ -4,6 +4,7 @@ import { requireConsultationAccess } from "@/server/auth/patient-access";
 import { requireAuthenticatedUser } from "@/server/auth/require-user";
 import { saveScaleAssessment } from "@/server/clinical/persistence";
 import { scaleConsultationHorizonIds } from "@/domain/scale-consultation-horizon";
+import { withClinicalPerformance } from "@/server/observability/clinical-performance";
 import {
   CRASH_MNA_SF_VERSION,
   ECOG_VERSION,
@@ -39,7 +40,7 @@ async function eligiblePrefillAssessments(consultationId: string) {
   });
 }
 
-export async function GET(_request: Request, context: { params: Promise<{ id: string }> }) {
+async function getOncogeriatrics(_request: Request, context: { params: Promise<{ id: string }> }) {
   try {
     await requireAuthenticatedUser("consultation.write");
     const { id } = await context.params;
@@ -86,10 +87,10 @@ async function matchingAutofillSources(consultationId: string, input: Pick<Crash
   });
 }
 
-export async function POST(request: Request, context: { params: Promise<{ id: string }> }) {
+async function postOncogeriatrics(request: Request, context: { params: Promise<{ id: string }> }) {
   try {
     const { id } = await context.params;
-    await requireConsultationAccess(id, "consultation.write");
+    const access = await requireConsultationAccess(id, "consultation.write");
     const body = await request.json() as Record<string, unknown>;
 
     if (body.scaleCode === "ecog") {
@@ -105,6 +106,7 @@ export async function POST(request: Request, context: { params: Promise<{ id: st
         classification: result.classe,
         interpretation: result.texto,
         clinicalColor: result.cor,
+        authorization: { user: access.user, consultation: access.consultation },
       });
       return NextResponse.json({ assessment, result }, { status: 201 });
     }
@@ -131,6 +133,7 @@ export async function POST(request: Request, context: { params: Promise<{ id: st
         classification: result.classe,
         interpretation: result.texto,
         clinicalColor: result.cor,
+        authorization: { user: access.user, consultation: access.consultation },
       });
       return NextResponse.json({ assessment, result }, { status: 201 });
     }
@@ -141,4 +144,12 @@ export async function POST(request: Request, context: { params: Promise<{ id: st
       message: error instanceof Error ? error.message : "Não foi possível salvar a escala.",
     }, { status: 400 });
   }
+}
+
+export async function GET(request: Request, context: { params: Promise<{ id: string }> }) {
+  return withClinicalPerformance(request, "consultation.scales.oncogeriatrics.read", () => getOncogeriatrics(request, context));
+}
+
+export async function POST(request: Request, context: { params: Promise<{ id: string }> }) {
+  return withClinicalPerformance(request, "consultation.scales.oncogeriatrics.write", () => postOncogeriatrics(request, context));
 }

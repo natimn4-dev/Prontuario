@@ -54,13 +54,16 @@ async function responseMessage(response: Response, fallback: string): Promise<st
   return body.message || fallback;
 }
 
-export function AdvanceDirectivesWorkspace({ consultationId }: { consultationId: string }) {
+export function AdvanceDirectivesWorkspace({ consultationId, onDirtyChange }: { consultationId: string; onDirtyChange?: (dirty: boolean) => void }) {
   const [workspace, setWorkspace] = useState<AdvanceDirectiveWorkspaceView>();
   const [draft, setDraft] = useState<AdvanceDirectiveDraft>(() => emptyAdvanceDirectiveDraft());
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState<string>();
   const [error, setError] = useState<string>();
+  const [dirty, setDirty] = useState(false);
+
+  useEffect(() => { onDirtyChange?.(dirty); }, [dirty, onDirtyChange]);
 
   const load = useCallback(async () => {
     setError(undefined);
@@ -69,6 +72,7 @@ export function AdvanceDirectivesWorkspace({ consultationId }: { consultationId:
     const next = await response.json() as AdvanceDirectiveWorkspaceView;
     setWorkspace(next);
     setDraft(draftFromRecord(next.current));
+    setDirty(false);
   }, [consultationId]);
 
   useEffect(() => {
@@ -78,6 +82,7 @@ export function AdvanceDirectivesWorkspace({ consultationId }: { consultationId:
 
   function update<K extends keyof AdvanceDirectiveDraft>(key: K, value: AdvanceDirectiveDraft[K]) {
     setDraft((current) => ({ ...current, [key]: value }));
+    setDirty(true);
     setMessage(undefined);
   }
 
@@ -100,6 +105,7 @@ export function AdvanceDirectivesWorkspace({ consultationId }: { consultationId:
       const next = await response.json() as AdvanceDirectiveWorkspaceView;
       setWorkspace(next);
       setDraft(draftFromRecord(next.current));
+      setDirty(false);
       setMessage(`Versão ${next.latestVersion} registrada sem alterar as versões anteriores.`);
     } catch (caught) {
       setError(caught instanceof Error ? caught.message : "Não foi possível salvar este registro.");

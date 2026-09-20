@@ -22,8 +22,9 @@ import {
   type MedicationWorkspaceRegimenRecord,
   type MedicationWorkspaceView,
 } from "../../domain/medication-workspace.ts";
-import { requireAuthenticatedUser } from "../auth/require-user.ts";
+import { requireConsultationAccess } from "../auth/patient-access.ts";
 import { prisma } from "../db.ts";
+import { measureClinicalTransaction } from "../observability/clinical-performance.ts";
 
 const DATABASE_TO_MOMENT: Readonly<Record<DatabaseMedicationMoment, MedicationMoment>> = {
   MORNING: "manha", LUNCH: "almoco", AFTERNOON: "tarde", EVENING: "noite", BEDTIME: "ao_deitar", AS_NEEDED: "se_necessario",
@@ -150,34 +151,68 @@ function regimenData(validated: ReturnType<typeof validateMedicationPlanItem>) {
 }
 
 export async function getMedicationWorkspace(consultationId: string): Promise<MedicationWorkspaceView> {
-  await requireAuthenticatedUser("patient.read");
-  return prisma.$transaction(async (tx) => (await workspaceContext(tx, consultationId)).view);
+  await requireConsultationAccess(consultationId, "patient.read");
+  return measureClinicalTransaction(() => prisma.$transaction(async (tx) => (await workspaceContext(tx, consultationId)).view));
 }
 
 export async function createMedicationWithRegimen(input: RegimenInput & { consultationId: string; name: string; presentation?: string; requestId?: string }): Promise<MedicationWorkspaceView> {
-  const { user } = await requireAuthenticatedUser("consultation.write");
-  return prisma.$transaction(async (tx) => {
+  const { user } = await requireConsultationAccess(input.consultationId, "consultation.write");
+  return measureClinicalTransaction(() => prisma.$transaction(async (tx) => {
     const context = await workspaceContext(tx, input.consultationId); assertEditable(context);
     const name = input.name.trim(); const presentation = input.presentation?.trim() || undefined;
     if (!name) throw new Error("Nome do medicamento é obrigatório.");
     const validated = validateMedicationPlanItem({ id: "new-medication", medicationText: [name, presentation].filter(Boolean).join(" "), doseInstruction: input.doseInstruction, route: input.route, frequency: input.frequency, schedule: input.schedule, moments: input.moments, continuous: input.continuous, instructions: input.instructions });
     const medication = await tx.medication.create({ data: { patientId: context.consultation.patientId, name, presentation, route: validated.route, status: "ACTIVE" }, select: { id: true } });
-    await tx.medicationRegimen.create({ data: { medicationId: medication.id, patientId: context.consultation.patientId, consultationId: context.consultation.id, ...regimenData(validated) } });
+    const regimen = await tx.medicationRegimen.create({ data: { medicationId: medication.id, patientId: context.consultation.patientId, consultationId: context.consultation.id, ...regimenData(validated) }, select: { id: true } });
     await tx.medicationStatusEvent.create({ data: { medicationId: medication.id, patientId: context.consultation.patientId, consultationId: context.consultation.id, previousStatus: null, newStatus: "ACTIVE" } });
     await tx.auditEvent.create({ data: { userId: user.id, entityType: "Medication", entityId: medication.id, action: "medication.create", requestId: input.requestId, outcome: "success", reasonCode: "prospective-medication-reconciliation" } });
-    return (await workspaceContext(tx, input.consultationId)).view;
-  }, { isolationLevel: "Serializable" });
+    const medicationItem: MedicationWorkspaceView["items"][number] = {
+      medicationId: medication.id,
+      name,
+      presentation,
+      medicationText: [name, presentation].filter(Boolean).join(" "),
+      doseInstruction: validated.doseInstruction,
+      route: validated.route,
+      frequency: normalizeMedicationFrequency(validated.frequency, validated.moments),
+      schedule: normalizeMedicationSchedule(validated.schedule) ?? undefined,
+      needsScheduleReview: validated.needsScheduleReview ?? false,
+      moments: [...validated.moments],
+      continuous: validated.continuous ?? false,
+      instructions: validated.instructions,
+      status: "ACTIVE",
+      statusSource: "explicit-history",
+      regimenId: regimen.id,
+    };
+    return {
+      ...context.view,
+      items: [...context.view.items, medicationItem].sort((a, b) => a.medicationText.localeCompare(b.medicationText, "pt-BR")),
+    };
+  }, { isolationLevel: "Serializable" }));
 }
 
 export async function addMedicationRegimen(input: RegimenInput & { consultationId: string; medicationId: string; requestId?: string }): Promise<MedicationWorkspaceView> {
-  const { user } = await requireAuthenticatedUser("consultation.write");
-  return prisma.$transaction(async (tx) => {
+  const { user } = await requireConsultationAccess(input.consultationId, "consultation.write");
+  return measureClinicalTransaction(() => prisma.$transaction(async (tx) => {
     const context = await workspaceContext(tx, input.consultationId); assertEditable(context);
     const medication = await tx.medication.findFirst({ where: { id: input.medicationId, patientId: context.consultation.patientId }, select: { id: true, name: true, presentation: true } });
     if (!medication) throw new MedicationWorkspaceError("MEDICATION_NOT_FOUND", "Medicamento não encontrado nesta paciente.");
     const validated = validateMedicationPlanItem({ id: medication.id, medicationText: [medication.name, medication.presentation].filter(Boolean).join(" "), doseInstruction: input.doseInstruction, route: input.route, frequency: input.frequency, schedule: input.schedule, moments: input.moments, continuous: input.continuous, instructions: input.instructions });
-    await tx.medicationRegimen.create({ data: { medicationId: medication.id, patientId: context.consultation.patientId, consultationId: context.consultation.id, ...regimenData(validated) } });
+    const regimen = await tx.medicationRegimen.create({ data: { medicationId: medication.id, patientId: context.consultation.patientId, consultationId: context.consultation.id, ...regimenData(validated) }, select: { id: true } });
     await tx.auditEvent.create({ data: { userId: user.id, entityType: "Medication", entityId: medication.id, action: "medication.regimen.add", requestId: input.requestId, outcome: "success", reasonCode: "new-regimen-current-consultation" } });
-    return (await workspaceContext(tx, input.consultationId)).view;
-  }, { isolationLevel: "Serializable" });
+    return {
+      ...context.view,
+      items: context.view.items.map((item) => item.medicationId === medication.id ? {
+        ...item,
+        doseInstruction: validated.doseInstruction,
+        route: validated.route,
+        frequency: normalizeMedicationFrequency(validated.frequency, validated.moments),
+        schedule: normalizeMedicationSchedule(validated.schedule) ?? undefined,
+        needsScheduleReview: validated.needsScheduleReview ?? false,
+        moments: [...validated.moments],
+        continuous: validated.continuous ?? false,
+        instructions: validated.instructions,
+        regimenId: regimen.id,
+      } : item),
+    };
+  }, { isolationLevel: "Serializable" }));
 }

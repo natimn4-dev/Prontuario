@@ -7,7 +7,7 @@ import {
   type CapacityTimelineAssessment,
 } from "@/domain/capacity-dimension-history";
 import { buildProblemCapacityMilestones } from "@/domain/capacity-timeline-milestones";
-import { isProblemLogicalDeletionNote } from "@/domain/as-of-consultation";
+import { isProblemLogicalDeletionNote, PROBLEM_LOGICAL_DELETION_NOTE } from "@/domain/as-of-consultation";
 import type { ClinicalProblem } from "@/domain/problems";
 import { isProgram55Eligible } from "@/domain/program55/eligibility";
 import { isProgram55Enabled } from "@/domain/program55/feature";
@@ -15,8 +15,17 @@ import { hasAccessProfilePermission } from "@/domain/security/auth-policy";
 import { requirePatientAccess } from "@/server/auth/patient-access";
 import { prisma } from "@/server/db";
 
-export default async function PatientPage({ params }: { params: Promise<{ id: string }> }) {
+export default async function PatientPage({
+  params,
+  searchParams,
+}: {
+  params: Promise<{ id: string }>;
+  searchParams: Promise<{ history?: string | string[] }>;
+}) {
   const { id } = await params;
+  const query = await searchParams;
+  const historyValue = Array.isArray(query.history) ? query.history[0] : query.history;
+  const fullHistory = historyValue === "full";
   const { user } = await requirePatientAccess(id, "patient.read");
   const canWriteConsultation = hasAccessProfilePermission({
     role: user.role,
@@ -33,6 +42,7 @@ export default async function PatientPage({ params }: { params: Promise<{ id: st
       needsIdentityReview: true,
       baselineConsultationId: true,
       problems: {
+        where: { events: { none: { note: { contains: PROBLEM_LOGICAL_DELETION_NOTE } } } },
         orderBy: [{ priority: "asc" }, { createdAt: "asc" }],
         select: {
           id: true,
@@ -45,7 +55,8 @@ export default async function PatientPage({ params }: { params: Promise<{ id: st
           originConsultationId: true,
           createdAt: true,
           events: {
-            orderBy: { createdAt: "asc" },
+            orderBy: fullHistory ? { createdAt: "asc" } : { createdAt: "desc" },
+            ...(fullHistory ? {} : { take: 25 }),
             select: {
               patientId: true,
               consultationId: true,
@@ -57,10 +68,12 @@ export default async function PatientPage({ params }: { params: Promise<{ id: st
       },
       consultations: {
         orderBy: [{ occurredAt: "desc" }, { createdAt: "desc" }, { id: "desc" }],
+        ...(fullHistory ? {} : { take: 24 }),
         select: { id: true, type: true, status: true, occurredAt: true, createdAt: true },
       },
       scaleAssessments: {
-        orderBy: { appliedAt: "asc" },
+        orderBy: fullHistory ? [{ appliedAt: "asc" }, { id: "asc" }] : [{ appliedAt: "desc" }, { id: "desc" }],
+        ...(fullHistory ? {} : { take: 250 }),
         select: {
           id: true,
           patientId: true,
@@ -91,6 +104,7 @@ export default async function PatientPage({ params }: { params: Promise<{ id: st
   );
 
   const milestones = buildProblemCapacityMilestones({ patientId: patient.id, problems: visibleProblems });
+  const assessmentsForHistory = fullHistory ? patient.scaleAssessments : [...patient.scaleAssessments].reverse();
 
   const capacityHistory = buildCapacityDimensionHistory({
     patientId: patient.id,
@@ -100,7 +114,7 @@ export default async function PatientPage({ params }: { params: Promise<{ id: st
       occurredAt: consultation.occurredAt,
       createdAt: consultation.createdAt,
     })),
-    assessments: patient.scaleAssessments.map((assessment): CapacityTimelineAssessment => ({
+    assessments: assessmentsForHistory.map((assessment): CapacityTimelineAssessment => ({
       id: assessment.id,
       patientId: assessment.patientId,
       consultationId: assessment.consultationId,
@@ -145,8 +159,10 @@ export default async function PatientPage({ params }: { params: Promise<{ id: st
                 baselineConsultationId={patient.baselineConsultationId}
               />
             ) : null}
+            {fullHistory ? <a href={`/patients/${patient.id}`}>Usar janela recente</a> : <a href={`/patients/${patient.id}?history=full#consultas`}>Carregar histórico completo</a>}
           </div>
         </div>
+        <p className="muted">{fullHistory ? "Histórico completo carregado para esta visualização." : "Exibindo as 24 consultas mais recentes e até 250 avaliações; o restante permanece disponível ao carregar o histórico completo."}</p>
         {patient.consultations.length ? (
           <ul className="clean-list">
             {patient.consultations.map((consultation) => (

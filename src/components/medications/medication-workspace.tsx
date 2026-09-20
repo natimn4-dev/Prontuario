@@ -134,34 +134,35 @@ function formFromItem(item: Item): Form {
   };
 }
 
-function RegimenFields({ form, setForm, includeName }: { form: Form; setForm: (value: Form) => void; includeName: boolean }) {
-  function toggle(moment: MedicationMoment) { setForm({ ...form, moments: form.moments.includes(moment) ? form.moments.filter((item) => item !== moment) : [...form.moments, moment] }); }
+function RegimenFields({ form, setForm, includeName, onDirtyChange }: { form: Form; setForm: (value: Form) => void; includeName: boolean; onDirtyChange?: () => void }) {
+  function update(next: Form) { onDirtyChange?.(); setForm(next); }
+  function toggle(moment: MedicationMoment) { update({ ...form, moments: form.moments.includes(moment) ? form.moments.filter((item) => item !== moment) : [...form.moments, moment] }); }
   function setFrequency(frequency: MedicationFrequency) {
     const moments = frequency === "AS_NEEDED"
       ? ["se_necessario" as MedicationMoment]
       : form.frequency === "AS_NEEDED"
         ? []
         : form.moments;
-    setForm({ ...form, frequency, moments });
+    update({ ...form, frequency, moments });
   }
 
   return <div className={styles.formGrid}>
-    {includeName ? <><label>Medicamento<input value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} placeholder="Losartana" /></label><label>Dose/apresentação<input value={form.presentation} onChange={(e) => setForm({ ...form, presentation: e.target.value })} placeholder="50 mg" /></label></> : null}
-    <label>Dose em uso<input value={form.doseInstruction} onChange={(e) => setForm({ ...form, doseInstruction: e.target.value })} placeholder="1 comprimido" /></label>
+    {includeName ? <><label>Medicamento<input value={form.name} onChange={(e) => update({ ...form, name: e.target.value })} placeholder="Losartana" /></label><label>Dose/apresentação<input value={form.presentation} onChange={(e) => update({ ...form, presentation: e.target.value })} placeholder="50 mg" /></label></> : null}
+    <label>Dose em uso<input value={form.doseInstruction} onChange={(e) => update({ ...form, doseInstruction: e.target.value })} placeholder="1 comprimido" /></label>
     <label>Frequência<select value={form.frequency} onChange={(e) => setFrequency(e.target.value as MedicationFrequency)}>{FREQUENCIES.map((frequency) => <option key={frequency} value={frequency}>{MEDICATION_FREQUENCY_LABELS[frequency]}</option>)}</select></label>
 
     <fieldset className={styles.moments}>
       <legend>Via de administração</legend>
-      {ROUTES.map((route) => <label key={route}><input type="radio" name={`${includeName ? "new" : "edit"}-medication-route`} checked={form.routeChoice === route} onChange={() => setForm({ ...form, routeChoice: route })} />{route}</label>)}
-      {form.routeChoice === "Outra via" ? <label>Especifique<input value={form.otherRoute} onChange={(e) => setForm({ ...form, otherRoute: e.target.value })} placeholder="Ex.: inalatória" maxLength={120} /></label> : null}
+      {ROUTES.map((route) => <label key={route}><input type="radio" name={`${includeName ? "new" : "edit"}-medication-route`} checked={form.routeChoice === route} onChange={() => update({ ...form, routeChoice: route })} />{route}</label>)}
+      {form.routeChoice === "Outra via" ? <label>Especifique<input value={form.otherRoute} onChange={(e) => update({ ...form, otherRoute: e.target.value })} placeholder="Ex.: inalatória" maxLength={120} /></label> : null}
     </fieldset>
 
-    {form.frequency === "WEEKLY" ? <label>Dia da semana (opcional ao cadastrar)<select value={form.dayOfWeek} onChange={(e) => setForm({ ...form, dayOfWeek: e.target.value })}><option value="">Revisar depois</option>{Object.entries(MEDICATION_DAY_OF_WEEK_LABELS).map(([value, label]) => <option value={value} key={value}>{label}</option>)}</select></label> : null}
-    {form.frequency === "MONTHLY" ? <><label>Dia do mês (opcional)<input type="number" min={1} max={31} value={form.dayOfMonth} onChange={(e) => setForm({ ...form, dayOfMonth: e.target.value })} placeholder="1–31" /></label><label>Ou detalhe seguro da programação<input value={form.monthlyNote} onChange={(e) => setForm({ ...form, monthlyNote: e.target.value })} placeholder="Ex.: primeiro dia útil" maxLength={160} /></label></> : null}
+    {form.frequency === "WEEKLY" ? <label>Dia da semana (opcional ao cadastrar)<select value={form.dayOfWeek} onChange={(e) => update({ ...form, dayOfWeek: e.target.value })}><option value="">Revisar depois</option>{Object.entries(MEDICATION_DAY_OF_WEEK_LABELS).map(([value, label]) => <option value={value} key={value}>{label}</option>)}</select></label> : null}
+    {form.frequency === "MONTHLY" ? <><label>Dia do mês (opcional)<input type="number" min={1} max={31} value={form.dayOfMonth} onChange={(e) => update({ ...form, dayOfMonth: e.target.value })} placeholder="1–31" /></label><label>Ou detalhe seguro da programação<input value={form.monthlyNote} onChange={(e) => update({ ...form, monthlyNote: e.target.value })} placeholder="Ex.: primeiro dia útil" maxLength={160} /></label></> : null}
 
     {form.frequency !== "AS_NEEDED" ? <fieldset className={styles.moments}><legend>{form.frequency === "DAILY" ? "Horários" : "Horário no dia (opcional)"}</legend>{MEDICATION_MOMENTS.filter((moment) => moment !== "se_necessario").map((moment) => <label key={moment}><input type="checkbox" checked={form.moments.includes(moment)} onChange={() => toggle(moment)} />{MEDICATION_MOMENT_LABELS[moment]}</label>)}</fieldset> : <p className={styles.wide}>“Se necessário” é registrado como frequência estruturada e não como horário diário.</p>}
-    <label className={styles.inline}><input type="checkbox" checked={form.continuous} onChange={(e) => setForm({ ...form, continuous: e.target.checked })} />Uso contínuo</label>
-    <label className={styles.wide}>Observações<textarea value={form.instructions} onChange={(e) => setForm({ ...form, instructions: e.target.value })} rows={2} /></label>
+    <label className={styles.inline}><input type="checkbox" checked={form.continuous} onChange={(e) => update({ ...form, continuous: e.target.checked })} />Uso contínuo</label>
+    <label className={styles.wide}>Observações<textarea value={form.instructions} onChange={(e) => update({ ...form, instructions: e.target.value })} rows={2} /></label>
     {(form.frequency === "WEEKLY" && !form.dayOfWeek) || (form.frequency === "MONTHLY" && !form.dayOfMonth && !form.monthlyNote.trim()) ? <p className={styles.wide} role="status">A programação pode ser salva para revisão, mas o plano não será liberado para impressão até o dia/programação ser completado.</p> : null}
   </div>;
 }
@@ -172,7 +173,7 @@ function canSaveRegimen(form: Form): boolean {
   return true;
 }
 
-export function MedicationWorkspace({ consultationId, patientName }: { consultationId: string; patientName: string }) {
+export function MedicationWorkspace({ consultationId, patientName, onDirtyChange }: { consultationId: string; patientName: string; onDirtyChange?: (dirty: boolean) => void }) {
   const [view, setView] = useState<View | null>(null);
   const [loading, setLoading] = useState(true);
   const [feedback, setFeedback] = useState<string | null>(null);
@@ -182,6 +183,14 @@ export function MedicationWorkspace({ consultationId, patientName }: { consultat
   const [editingForm, setEditingForm] = useState<Form>(EMPTY_FORM);
   const [statusChoice, setStatusChoice] = useState<Record<string, Exclude<MedicationStatus, "UNKNOWN">>>({});
   const [statusConfirmed, setStatusConfirmed] = useState<Record<string, boolean>>({});
+
+  useEffect(() => {
+    const dirty = JSON.stringify(form) !== JSON.stringify(EMPTY_FORM)
+      || editingId !== null
+      || Object.keys(statusChoice).length > 0
+      || Object.keys(statusConfirmed).length > 0;
+    onDirtyChange?.(dirty);
+  }, [editingId, form, onDirtyChange, statusChoice, statusConfirmed]);
 
   async function load() {
     setLoading(true);
@@ -232,11 +241,20 @@ export function MedicationWorkspace({ consultationId, patientName }: { consultat
     setSaving(true); setFeedback(null);
     try {
       const response = await fetch(`/api/consultations/${consultationId}/medications/status`, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ medicationId: item.medicationId, newStatus: selected }) });
-      const body = await response.json().catch(() => null) as { message?: string } | null;
+      const body = await response.json().catch(() => null) as { message?: string; medicationId?: string; newStatus?: MedicationStatus; createdAt?: string } | null;
       if (!response.ok) throw new Error(body?.message || "Não foi possível alterar o status.");
       setStatusConfirmed((current) => ({ ...current, [item.medicationId]: false }));
       setStatusChoice((current) => { const next = { ...current }; delete next[item.medicationId]; return next; });
-      await load(); window.dispatchEvent(new CustomEvent("clinical-medications-changed", { detail: { consultationId } }));
+      setView((current) => current ? {
+        ...current,
+        items: current.items.map((candidate) => candidate.medicationId === item.medicationId
+          ? { ...candidate, status: body?.newStatus ?? selected, statusSource: "explicit-history" as const }
+          : candidate),
+        suspendedHistory: selected === "SUSPENDED"
+          ? [...current.suspendedHistory, { medicationId: item.medicationId, medicationText: item.medicationText, suspendedAt: body?.createdAt ?? new Date().toISOString() }]
+          : current.suspendedHistory,
+      } : current);
+      window.dispatchEvent(new CustomEvent("clinical-medications-changed", { detail: { consultationId } }));
     } catch (cause) { setFeedback(cause instanceof Error ? cause.message : "Não foi possível alterar o status."); }
     finally { setSaving(false); }
   }

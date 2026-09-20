@@ -1,7 +1,7 @@
 "use client";
 
 import dynamic from "next/dynamic";
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import type { ProfessionalIdentity } from "@/domain/professional-identity";
 import {
   PreviousConsultationNote,
@@ -95,20 +95,16 @@ export function ConsultationWorkspace({
   returnContext?: { href: string; label: string };
 }) {
   const [active, setActive] = useState<WorkspaceSectionId>("soap");
-  const [visited, setVisited] = useState<Set<WorkspaceSectionId>>(() => new Set(["soap"]));
+  const [dirtySections, setDirtySections] = useState<Set<WorkspaceSectionId>>(new Set());
 
   useEffect(() => {
     const initial = sectionFromHash();
-    if (initial) {
-      setActive(initial);
-      setVisited((current) => new Set([...current, initial]));
-    }
+    if (initial) setActive(initial);
 
     function onHashChange() {
       const next = sectionFromHash();
       if (!next) return;
       setActive(next);
-      setVisited((current) => new Set([...current, next]));
     }
 
     window.addEventListener("hashchange", onHashChange);
@@ -119,10 +115,22 @@ export function ConsultationWorkspace({
 
   function select(sectionId: WorkspaceSectionId) {
     setActive(sectionId);
-    setVisited((current) => new Set([...current, sectionId]));
     if (typeof window !== "undefined") {
       window.history.replaceState(null, "", `${window.location.pathname}${window.location.search}#${sectionId}`);
     }
+  }
+
+  const setSectionDirty = useCallback((sectionId: WorkspaceSectionId, dirty: boolean) => {
+    setDirtySections((current) => {
+      const next = new Set(current);
+      if (dirty) next.add(sectionId);
+      else next.delete(sectionId);
+      return next;
+    });
+  }, []);
+
+  function shouldMount(sectionId: WorkspaceSectionId): boolean {
+    return active === sectionId || dirtySections.has(sectionId);
   }
 
   return (
@@ -165,18 +173,18 @@ export function ConsultationWorkspace({
             <span>Etapa atual</span>
             <h2>{SECTIONS[activeIndex]?.label ?? "Consulta"}</h2>
           </div>
-          <small>As etapas já abertas permanecem preservadas na tela para não perder rascunhos ao navegar.</small>
+          <small>Etapas sem alterações não permanecem montadas em segundo plano; rascunhos ativos são preservados até serem salvos.</small>
         </header>
 
-        {visited.has("problemas") ? (
+        {shouldMount("problemas") ? (
           <div id="problemas" hidden={active !== "problemas"} className={styles.panel}>
-            <ProblemWorkspace consultationId={consultationId} />
+            <ProblemWorkspace consultationId={consultationId} onDirtyChange={(dirty) => setSectionDirty("problemas", dirty)} />
           </div>
         ) : null}
 
-        {visited.has("medicamentos") ? (
+        {shouldMount("medicamentos") ? (
           <div id="medicamentos" hidden={active !== "medicamentos"} className={styles.panel}>
-            <MedicationWorkspace consultationId={consultationId} patientName={patientName} />
+            <MedicationWorkspace consultationId={consultationId} patientName={patientName} onDirtyChange={(dirty) => setSectionDirty("medicamentos", dirty)} />
             <div className={styles.documentActionBar} aria-label="Ações da tabela de medicamentos">
               <div><strong>Tabela de medicamentos</strong><span>Abra o documento separado para revisar e imprimir. As salvaguardas de identidade e reconciliação continuam valendo.</span></div>
               <a className={styles.documentAction} href={`/consultations/${consultationId}/medications/print`} target="_blank" rel="noreferrer">Abrir e imprimir tabela</a>
@@ -184,45 +192,45 @@ export function ConsultationWorkspace({
           </div>
         ) : null}
 
-        {visited.has("alimentacao") ? (
+        {shouldMount("alimentacao") ? (
           <div id="alimentacao" hidden={active !== "alimentacao"} className={styles.panel}>
-            <DietaryAssessmentWorkspace consultationId={consultationId} patientName={patientName} />
+            <DietaryAssessmentWorkspace consultationId={consultationId} patientName={patientName} onDirtyChange={(dirty) => setSectionDirty("alimentacao", dirty)} />
           </div>
         ) : null}
 
-        {visited.has("soap") ? (
+        {shouldMount("soap") ? (
           <div id="soap" hidden={active !== "soap"} className={styles.panel}>
             <PreviousConsultationNote previousConsultation={previousConsultation} />
-            <SoapEditor consultationId={consultationId} />
+            <SoapEditor consultationId={consultationId} onDirtyChange={(dirty) => setSectionDirty("soap", dirty)} />
           </div>
         ) : null}
 
-        {visited.has("escalas") ? (
+        {shouldMount("escalas") ? (
           <div id="escalas" hidden={active !== "escalas"} className={styles.panel}>
-            <ClinicalScalesWorkspace consultationId={consultationId} />
+            <ClinicalScalesWorkspace consultationId={consultationId} onDirtyChange={(dirty) => setSectionDirty("escalas", dirty)} />
           </div>
         ) : null}
 
-        {visited.has("diretivas") ? (
+        {shouldMount("diretivas") ? (
           <div id="diretivas" hidden={active !== "diretivas"} className={styles.panel}>
-            <AdvanceDirectivesWorkspace consultationId={consultationId} />
+            <AdvanceDirectivesWorkspace consultationId={consultationId} onDirtyChange={(dirty) => setSectionDirty("diretivas", dirty)} />
           </div>
         ) : null}
 
-        {visited.has("demencia") ? (
+        {shouldMount("demencia") ? (
           <div id="demencia" hidden={active !== "demencia"} className={styles.panel}>
             <CognitiveDomainProfileWorkspace consultationId={consultationId} />
-            <DementiaAssessmentWorkspace consultationId={consultationId} />
+            <DementiaAssessmentWorkspace consultationId={consultationId} onDirtyChange={(dirty) => setSectionDirty("demencia", dirty)} />
           </div>
         ) : null}
 
-        {visited.has("relatorio") ? (
+        {shouldMount("relatorio") ? (
           <div id="relatorio" hidden={active !== "relatorio"} className={styles.panel}>
             <ReportWorkspaceTabs consultationId={consultationId} professionalIdentity={professionalIdentity} />
           </div>
         ) : null}
 
-        {visited.has("finalizacao") ? (
+        {shouldMount("finalizacao") ? (
           <div id="finalizacao" hidden={active !== "finalizacao"} className={styles.panel}>
             <ConsultationFinalizationPanel consultationId={consultationId} />
           </div>

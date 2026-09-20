@@ -21,6 +21,7 @@ import {
 import { buildConditionalDietaryGuidance, guidanceAsText } from "../../domain/dietary-guidance";
 import { requireConsultationAccess } from "../auth/patient-access";
 import { prisma } from "../db";
+import { measureClinicalTransaction } from "../observability/clinical-performance";
 
 export class DietaryAssessmentError extends Error {
   constructor(public code: string, message: string) {
@@ -194,7 +195,7 @@ export async function saveDietaryAssessment(args: { consultationId: string; expe
   if (!Number.isFinite(expected.getTime())) throw new DietaryAssessmentError("INVALID_VERSION", "Versão da consulta inválida.");
   const meals = await hydrate(args.assessment);
 
-  return prisma.$transaction(async (tx) => {
+  return measureClinicalTransaction(() => prisma.$transaction(async (tx) => {
     const consultation = await tx.consultation.findUnique({
       where: { id: args.consultationId },
       select: { id: true, patientId: true, status: true, occurredAt: true, updatedAt: true, assessment: true, patient: { select: { birthDate: true, sex: true } } },
@@ -271,5 +272,5 @@ export async function saveDietaryAssessment(args: { consultationId: string; expe
     if (count.count !== 1) throw new DietaryAssessmentError("CONCURRENT_CHANGE", "A consulta mudou em outra sessão. Recarregue antes de salvar.");
     await tx.auditEvent.create({ data: { userId: auth.user.id, entityType: "Consultation", entityId: consultation.id, action: "consultation.dietary-assessment.update", requestId: args.requestId, outcome: "success", reasonCode: "dietary-assessment-v1" } });
     return { consultationId: consultation.id, updatedAt: now, assessment: record };
-  }, { isolationLevel: "Serializable" });
+  }, { isolationLevel: "Serializable" }));
 }

@@ -90,6 +90,12 @@ type PreviousAssessment = {
   consultationId: string;
 } | null;
 type OncogeriatricPrefills = { meem: PreviousAssessment; mnaSf: PreviousAssessment; ecog: PreviousAssessment };
+type ClinicalScalesWorkspacePayload = {
+  core: CoreView;
+  complementary: ComplementaryView;
+  status: StatusView;
+  oncogeriatricPrefills: OncogeriatricPrefills;
+};
 type ResultPayload = {
   score?: number | null;
   scoreText?: string;
@@ -234,7 +240,7 @@ function fieldInput(
   return <input value={value} disabled={disabled} onChange={(event) => onChange(event.target.value)} />;
 }
 
-export function ClinicalScalesWorkspace({ consultationId }: { consultationId: string }) {
+export function ClinicalScalesWorkspace({ consultationId, onDirtyChange }: { consultationId: string; onDirtyChange?: (dirty: boolean) => void }) {
   const [coreView, setCoreView] = useState<CoreView | null>(null);
   const [complementaryView, setComplementaryView] = useState<ComplementaryView | null>(null);
   const [statusView, setStatusView] = useState<StatusView | null>(null);
@@ -245,8 +251,11 @@ export function ClinicalScalesWorkspace({ consultationId }: { consultationId: st
   const [resultState, setResultState] = useState<ScopedWorkspaceValue<ResultPayload>>(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [dirty, setDirty] = useState(false);
   const [feedbackState, setFeedbackState] = useState<ScopedWorkspaceValue<Feedback>>(null);
   const [oncogeriatricReadWarning, setOncogeriatricReadWarning] = useState<string | null>(null);
+
+  useEffect(() => { onDirtyChange?.(dirty); }, [dirty, onDirtyChange]);
 
   async function fetchJson<T>(url: string): Promise<T> {
     const response = await fetch(url, { cache: "no-store" });
@@ -255,39 +264,25 @@ export function ClinicalScalesWorkspace({ consultationId }: { consultationId: st
     return body;
   }
 
-  async function refreshStatus() {
-    const status = await fetchJson<StatusView>(`/api/consultations/${consultationId}/scales/status`);
-    setStatusView(status);
-  }
-
   useEffect(() => {
     let active = true;
     setLoading(true);
     setFeedbackState(null);
-    Promise.all([
-      fetchJson<CoreView>(`/api/consultations/${consultationId}/scales/freitas-core`),
-      fetchJson<ComplementaryView>(`/api/consultations/${consultationId}/scales/complementary`),
-      fetchJson<StatusView>(`/api/consultations/${consultationId}/scales/status`),
-    ])
-      .then(([core, complementary, status]) => {
+    fetchJson<ClinicalScalesWorkspacePayload>(`/api/consultations/${consultationId}/scales/workspace`)
+      .then((payload) => {
         if (!active) return;
-        setCoreView(core);
-        setComplementaryView(complementary);
-        setStatusView(status);
+        setCoreView(payload.core);
+        setComplementaryView(payload.complementary);
+        setStatusView(payload.status);
+        setOncogeriatricPrefills(payload.oncogeriatricPrefills);
+        setDirty(false);
+        setOncogeriatricReadWarning(null);
       })
       .catch((error) => active && setFeedbackState({
         scopeKey: null,
         value: { kind: "error", text: error instanceof Error ? error.message : "Não foi possível carregar as escalas." },
       }))
       .finally(() => active && setLoading(false));
-
-    fetchJson<OncogeriatricPrefills>(`/api/consultations/${consultationId}/scales/oncogeriatrics`)
-      .then((prefills) => {
-        if (!active) return;
-        setOncogeriatricPrefills(prefills);
-        setOncogeriatricReadWarning(null);
-      })
-      .catch(() => active && setOncogeriatricReadWarning("Os dados de pré-preenchimento oncogeriátrico não puderam ser carregados. Os campos permanecem disponíveis para preenchimento manual, conforme sua permissão."));
 
     return () => { active = false; };
   }, [consultationId]);
@@ -378,6 +373,7 @@ export function ClinicalScalesWorkspace({ consultationId }: { consultationId: st
 
   function setAnswer(id: string, value: string) {
     setAnswers((current) => ({ ...current, [id]: value }));
+    setDirty(true);
     setFeedbackState(null);
   }
 
@@ -436,10 +432,33 @@ export function ClinicalScalesWorkspace({ consultationId }: { consultationId: st
       }
 
       const response = await fetch(url, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(body) });
-      const payload = await response.json().catch(() => null) as { result?: ResultPayload; message?: string } | null;
+      const payload = await response.json().catch(() => null) as {
+        result?: ResultPayload;
+        assessment?: {
+          id: string;
+          scaleCode: string;
+          scaleVersion: string;
+          scoreNumeric: number | null;
+          scoreText: string | null;
+          classification: string | null;
+          interpretation: string | null;
+          clinicalColor: string | null;
+          appliedAt: string;
+        };
+        message?: string;
+      } | null;
       if (!response.ok || !payload) throw new Error(payload?.message ?? "Não foi possível salvar a avaliação.");
       setResultState(payload.result ? { scopeKey: savingScaleKey, value: payload.result } : null);
-      await refreshStatus();
+      if (payload.assessment) {
+        setStatusView((current) => current ? {
+          ...current,
+          latest: [
+            ...current.latest.filter((item) => item.scaleCode !== payload.assessment!.scaleCode),
+            { ...payload.assessment!, consultationId },
+          ],
+        } : current);
+      }
+      setDirty(false);
       setFeedbackState({
         scopeKey: savingScaleKey,
         value: { kind: "success", text: "Avaliação salva nesta consulta. O resultado permanece sujeito à revisão médica." },

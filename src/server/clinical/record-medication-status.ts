@@ -4,8 +4,9 @@ import {
   medicationStatusAsOf,
   type MedicationLifecycleStatus,
 } from "../../domain/medication-status-history.ts";
-import { requireAuthenticatedUser } from "../auth/require-user.ts";
+import { requireConsultationAccess } from "../auth/patient-access.ts";
 import { prisma } from "../db.ts";
+import { measureClinicalTransaction } from "../observability/clinical-performance.ts";
 import {
   medicationStatusWriteService,
   type MedicationStatusWriteTransaction,
@@ -99,8 +100,8 @@ async function medicationWriteContext(
 }
 
 const service = medicationStatusWriteService({
-  authenticate: requireAuthenticatedUser,
-  transaction: async (operation) => prisma.$transaction(async (tx) => operation({
+  authenticate: (permission, consultationId) => requireConsultationAccess(consultationId, permission),
+  transaction: async (operation) => measureClinicalTransaction(() => prisma.$transaction(async (tx) => operation({
     findWriteContext: (input) => medicationWriteContext(tx, input),
     updateCurrentMedicationStatus: async ({
       medicationId,
@@ -120,12 +121,12 @@ const service = medicationStatusWriteService({
     },
     createStatusEvent: async (input) => tx.medicationStatusEvent.create({
       data: input,
-      select: { id: true },
+      select: { id: true, createdAt: true },
     }),
     createAuditEvent: async (input) => {
       await tx.auditEvent.create({ data: input });
     },
-  } satisfies MedicationStatusWriteTransaction), { isolationLevel: "Serializable" }),
+  } satisfies MedicationStatusWriteTransaction), { isolationLevel: "Serializable" })),
 });
 
 export const recordMedicationStatusChange = service.recordStatusChange;

@@ -8,14 +8,15 @@ import {
   type DementiaAssessmentDraft,
   type DementiaAssessmentWorkspaceView,
 } from "../../domain/dementia-assessment.ts";
-import { requireAuthenticatedUser } from "../auth/require-user.ts";
+import { requireConsultationAccess } from "../auth/patient-access.ts";
 import { prisma } from "../db.ts";
+import { measureClinicalTransaction } from "../observability/clinical-performance.ts";
 import { DementiaAssessmentError } from "./dementia-assessment-errors.ts";
 import { dementiaAssessmentWorkspaceContext } from "./dementia-assessment-workspace-context.ts";
 
 export async function getDementiaAssessmentWorkspace(consultationId: string): Promise<DementiaAssessmentWorkspaceView> {
-  await requireAuthenticatedUser("patient.read");
-  return prisma.$transaction((tx) => dementiaAssessmentWorkspaceContext(tx, consultationId));
+  await requireConsultationAccess(consultationId, "patient.read");
+  return measureClinicalTransaction(() => prisma.$transaction((tx) => dementiaAssessmentWorkspaceContext(tx, consultationId)));
 }
 
 export async function saveDementiaAssessmentRecord(input: {
@@ -24,10 +25,10 @@ export async function saveDementiaAssessmentRecord(input: {
   draft: DementiaAssessmentDraft;
   requestId?: string;
 }): Promise<DementiaAssessmentWorkspaceView> {
-  const { user } = await requireAuthenticatedUser("consultation.write");
+  const { user } = await requireConsultationAccess(input.consultationId, "consultation.write");
 
   try {
-    return await prisma.$transaction(async (tx) => {
+    return await measureClinicalTransaction(() => prisma.$transaction(async (tx) => {
       const consultation = await tx.consultation.findUnique({
         where: { id: input.consultationId },
         select: { id: true, patientId: true, status: true },
@@ -114,7 +115,7 @@ export async function saveDementiaAssessmentRecord(input: {
       });
 
       return dementiaAssessmentWorkspaceContext(tx, consultation.id);
-    }, { isolationLevel: "Serializable" });
+    }, { isolationLevel: "Serializable" }));
   } catch (error) {
     if (error instanceof DementiaAssessmentError) throw error;
     const code = typeof error === "object" && error && "code" in error ? String(error.code) : "";

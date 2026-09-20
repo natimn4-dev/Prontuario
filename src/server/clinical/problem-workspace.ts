@@ -14,8 +14,9 @@ import {
   type ProblemWorkspaceView,
   normalizeProblemTitleKey,
 } from "../../domain/problem-workspace.ts";
-import { requireAuthenticatedUser } from "../auth/require-user.ts";
+import { requireConsultationAccess } from "../auth/patient-access.ts";
 import { prisma } from "../db.ts";
+import { measureClinicalTransaction } from "../observability/clinical-performance.ts";
 
 async function context(tx: Prisma.TransactionClient, consultationId: string) {
   const consultation = await tx.consultation.findUnique({
@@ -72,13 +73,13 @@ function assertEditable(input: Awaited<ReturnType<typeof context>>): void {
 }
 
 export async function getProblemWorkspace(consultationId: string): Promise<ProblemWorkspaceView> {
-  await requireAuthenticatedUser("patient.read");
-  return prisma.$transaction(async (tx) => publicView(await context(tx, consultationId)));
+  await requireConsultationAccess(consultationId, "patient.read");
+  return measureClinicalTransaction(() => prisma.$transaction(async (tx) => publicView(await context(tx, consultationId))));
 }
 
 export async function createProblem(command: CreateProblemCommand): Promise<ProblemWorkspaceView> {
-  const { user } = await requireAuthenticatedUser("consultation.write");
-  return prisma.$transaction(async (tx) => {
+  const { user } = await requireConsultationAccess(command.consultationId, "consultation.write");
+  return measureClinicalTransaction(() => prisma.$transaction(async (tx) => {
     const current = await context(tx, command.consultationId); assertEditable(current);
     const title = command.title.trim(); if (!title) throw new Error("Título do problema é obrigatório.");
     const titleKey = normalizeProblemTitleKey(title);
@@ -94,13 +95,25 @@ export async function createProblem(command: CreateProblemCommand): Promise<Prob
     const created = await tx.clinicalProblem.create({ data: { patientId: current.consultation.patientId, originConsultationId: current.consultation.id, type: command.type, status: "ACTIVE", title, description: command.description?.trim() || undefined }, select: { id: true } });
     await tx.problemEvent.create({ data: { problemId: created.id, patientId: current.consultation.patientId, consultationId: current.consultation.id, previousStatus: null, newStatus: "ACTIVE" } });
     await tx.auditEvent.create({ data: { userId: user.id, entityType: "ClinicalProblem", entityId: created.id, action: "problem.create", requestId: command.requestId, outcome: "success", reasonCode: command.type === "GERIATRIC" ? "geriatric-problem" : "clinical-problem" } });
-    return publicView(await context(tx, command.consultationId));
-  }, { isolationLevel: "Serializable" });
+    return publicView({
+      ...current,
+      problems: [...current.problems, {
+        id: created.id,
+        patientId: current.consultation.patientId,
+        type: command.type,
+        status: "ACTIVE",
+        title,
+        description: command.description?.trim() || undefined,
+        priority: undefined,
+        canDelete: true,
+      }],
+    });
+  }, { isolationLevel: "Serializable" }));
 }
 
 export async function deleteProblem(command: DeleteProblemCommand): Promise<ProblemWorkspaceView> {
-  const { user } = await requireAuthenticatedUser("consultation.write");
-  return prisma.$transaction(async (tx) => {
+  const { user } = await requireConsultationAccess(command.consultationId, "consultation.write");
+  return measureClinicalTransaction(() => prisma.$transaction(async (tx) => {
     const current = await context(tx, command.consultationId); assertEditable(current);
     const projected = current.problems.find((problem) => problem.id === command.problemId);
     if (!projected) throw new ProblemWorkspaceError("PROBLEM_NOT_FOUND", "Problema não encontrado nesta consulta.");
@@ -136,13 +149,16 @@ export async function deleteProblem(command: DeleteProblemCommand): Promise<Prob
         reasonCode: "created-in-current-consultation",
       },
     });
-    return publicView(await context(tx, command.consultationId));
-  }, { isolationLevel: "Serializable" });
+    return publicView({
+      ...current,
+      problems: current.problems.map((problem) => problem.id === projected.id ? { ...problem, status: "RESOLVED" as const } : problem),
+    });
+  }, { isolationLevel: "Serializable" }));
 }
 
 export async function changeProblemStatus(command: ChangeProblemStatusCommand): Promise<ProblemWorkspaceView> {
-  const { user } = await requireAuthenticatedUser("consultation.write");
-  return prisma.$transaction(async (tx) => {
+  const { user } = await requireConsultationAccess(command.consultationId, "consultation.write");
+  return measureClinicalTransaction(() => prisma.$transaction(async (tx) => {
     const current = await context(tx, command.consultationId); assertEditable(current);
     const projected = current.problems.find((problem) => problem.id === command.problemId);
     if (!projected) throw new ProblemWorkspaceError("PROBLEM_NOT_FOUND", "Problema não encontrado nesta consulta.");
@@ -151,6 +167,9 @@ export async function changeProblemStatus(command: ChangeProblemStatusCommand): 
     if (updated.count !== 1) throw new ProblemWorkspaceError("PROBLEM_CHANGED", "O problema foi alterado em outra sessão. Recarregue antes de tentar novamente.");
     await tx.problemEvent.create({ data: { problemId: projected.id, patientId: current.consultation.patientId, consultationId: current.consultation.id, previousStatus: projected.status, newStatus: command.newStatus } });
     await tx.auditEvent.create({ data: { userId: user.id, entityType: "ClinicalProblem", entityId: projected.id, action: "problem.status.change", requestId: command.requestId, outcome: "success", reasonCode: `${projected.status.toLowerCase()}-to-${command.newStatus.toLowerCase()}` } });
-    return publicView(await context(tx, command.consultationId));
-  }, { isolationLevel: "Serializable" });
+    return publicView({
+      ...current,
+      problems: current.problems.map((problem) => problem.id === projected.id ? { ...problem, status: command.newStatus } : problem),
+    });
+  }, { isolationLevel: "Serializable" }));
 }

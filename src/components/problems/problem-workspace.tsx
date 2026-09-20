@@ -138,7 +138,7 @@ function ProblemCard({
   );
 }
 
-export function ProblemWorkspace({ consultationId }: { consultationId: string }) {
+export function ProblemWorkspace({ consultationId, onDirtyChange }: { consultationId: string; onDirtyChange?: (dirty: boolean) => void }) {
   const [view, setView] = useState<WorkspaceView | null>(null);
   const [loading, setLoading] = useState(true);
   const [type, setType] = useState<ProblemType>("CLINICAL");
@@ -148,6 +148,10 @@ export function ProblemWorkspace({ consultationId }: { consultationId: string })
   const [saving, setSaving] = useState(false);
   const [feedback, setFeedback] = useState<string | null>(null);
   const [statusMessage, setStatusMessage] = useState<string | null>(null);
+
+  useEffect(() => {
+    onDirtyChange?.(Boolean(title.trim() || description.trim() || selectedGeriatricPreset));
+  }, [description, onDirtyChange, selectedGeriatricPreset, title]);
 
   async function load() {
     setLoading(true);

@@ -25,13 +25,6 @@ export default async function ConsultationPage({
 }) {
   const { user } = await requireAuthenticatedUser("patient.read");
   const { id } = await params;
-  const consultationScope = await prisma.consultation.findUnique({
-    where: { id },
-    select: { patientId: true },
-  });
-  if (!consultationScope) notFound();
-  await assertPatientAccessForUser(user, consultationScope.patientId);
-
   const professionalIdentity = buildProfessionalIdentity({
     name: user.name,
     email: user.email,
@@ -56,6 +49,7 @@ export default async function ConsultationPage({
     },
   });
   if (!consultation) notFound();
+  await assertPatientAccessForUser(user, consultation.patient.id);
 
   const context = buildConsultationContextViewModel({
     consultationId: consultation.id,
