@@ -12,3 +12,11 @@ test("rota de inspeção alimentar é pública somente para o preview sintético
   assert.match(source, /window\.fetch/);
   assert.doesNotMatch(source, /DATABASE_URL|BETTER_AUTH_SECRET/);
 });
+
+test("prévia alimentar preserva o item incluído no PUT do fluxo", () => {
+  const source = readFileSync("src/app/visual-dietary/page.tsx", "utf8");
+
+  assert.match(source, /previewPayloadFromInput/);
+  assert.match(source, /JSON\.parse\(init\.body\)/);
+  assert.match(source, /payload = previewPayloadFromInput\(payload, body\.assessment\)/);
+});

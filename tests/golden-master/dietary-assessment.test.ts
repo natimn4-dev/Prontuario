@@ -5,6 +5,7 @@ import {
   buildDietaryOrientation,
   buildDietaryPriorities,
   buildProteinComparison,
+  confirmDietaryDraftItem,
   nutrientsForGrams,
   parseDietaryNaturalLanguage,
   portionMetadata,
@@ -28,6 +29,38 @@ test("A — duas porções do mesmo alimento totalizam 2 × uma porção", () =>
   const per100g: DietaryNutrients = { energyKcal: 120, proteinG: 8, carbohydratesG: 15, fatG: 4, fiberG: 3, calciumMg: 80, sodiumMg: 40 };
   const one = nutrientsForGrams(per100g, 75); const two = nutrientsForGrams(per100g, 150);
   for (const key of Object.keys(one) as Array<keyof DietaryNutrients>) assert.equal(two[key], one[key] * 2);
+});
+
+test("alimento selecionado vira item calculável com proteína e cálcio", () => {
+  const composition = {
+    provider: "USDA_FDC" as const,
+    sourceId: "123",
+    description: "Alimento sintético",
+    nutrientsPer100g: {
+      energyKcal: 100,
+      proteinG: 20,
+      carbohydratesG: 5,
+      fatG: 2,
+      fiberG: 1,
+      calciumMg: 80,
+      sodiumMg: 10,
+    },
+  };
+  const item = confirmDietaryDraftItem(
+    {
+      id: "item",
+      label: composition.description,
+      quantity: 75,
+      measure: "g",
+      grams: 75,
+      gramsSource: "direct-grams",
+      estimated: false,
+      food: composition,
+    },
+    composition,
+  );
+  assert.equal(item.nutrients?.proteinG, 15);
+  assert.equal(item.nutrients?.calciumMg, 60);
 });
 
 test("B — checagem energética cruza fonte com 4P + 4C + 9G", () => {

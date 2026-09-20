@@ -4,17 +4,20 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import {
   DEFAULT_MEALS,
   HOUSEHOLD_MEASURES,
+  confirmDietaryDraftItem,
   dietarySnapshotNeedsRuleReview,
   nutrientsForGrams,
   parseDietaryNaturalLanguage,
   portionMetadata,
   renalProteinReference,
   roundForDisplay,
+  summarizeDietaryAssessment,
   type DietaryAssessmentInput,
   type DietaryAssessmentSnapshot,
   type DietaryClinicalContext,
   type DietaryFoodDraft,
   type DietaryFoodComposition,
+  type DietaryFoodItem,
   type DietaryMeal,
   type DietaryTargets,
   type HouseholdMeasure,
@@ -27,6 +30,7 @@ import styles from "./dietary-assessment-workspace.module.css";
 type UiDietaryItem = DietaryFoodDraft & {
   observation?: string;
   composition?: DietaryFoodComposition | null;
+  nutrients?: DietaryFoodItem["nutrients"];
 };
 type UiDietaryMeal = Omit<DietaryMeal, "items"> & { items: UiDietaryItem[] };
 type FoodResult = DietaryFoodComposition;
@@ -127,7 +131,7 @@ function PortionNutrientLine({
     <small className={styles.itemNutrients}>
       {format(nutrients.energyKcal, 0)} kcal · P {format(nutrients.proteinG, 1)}{" "}
       g · C {format(nutrients.carbohydratesG, 1)} g · G{" "}
-      {format(nutrients.fatG, 1)} g
+      {format(nutrients.fatG, 1)} g · Ca {format(nutrients.calciumMg, 0)} mg
     </small>
   ) : null;
 }
@@ -218,9 +222,6 @@ export function DietaryAssessmentWorkspace({
   );
   const assessment = data?.assessment ?? null;
   const snapshotNeedsReview = dietarySnapshotNeedsRuleReview(assessment);
-  const energyCheck = assessment
-    ? crossCheckDietaryEnergy(assessment.summary)
-    : null;
   const renalContext: DietaryClinicalContext = {
     ...(data?.clinicalContext ?? {}),
     renalEgfrMlMinPer1_73: nonNegativeNumberOrNull(renalEgfr),
@@ -260,6 +261,59 @@ export function DietaryAssessmentWorkspace({
   const totalItems = meals.reduce((sum, meal) => sum + meal.items.length, 0);
   const comparison = assessment?.proteinComparison;
   const isFinalized = data?.status === "FINALIZED";
+  const draftCalculation = useMemo(
+    () =>
+      summarizeDietaryAssessment(
+        meals.map((meal) => ({
+          ...meal,
+          items: meal.items.map((item) => ({
+            ...item,
+            composition: item.composition ?? null,
+            nutrients:
+              item.composition && item.grams != null
+                ? nutrientsForGrams(
+                    item.composition.nutrientsPer100g,
+                    item.grams,
+                  )
+                : item.nutrients ?? null,
+          })),
+        })),
+        renalContext.weightKg,
+      ),
+    [meals, renalContext.weightKg],
+  );
+  const displayedSummary = assessment
+    ? dirty
+      ? draftCalculation.summary
+      : assessment.summary
+    : dirty && totalItems
+      ? draftCalculation.summary
+      : null;
+  const displayedItems: Array<
+    Pick<
+      DietaryFoodDraft,
+      "id" | "label" | "quantity" | "measure" | "grams" | "uncertainty"
+    >
+  > = dirty
+    ? meals.flatMap((meal) => meal.items).map((item) => ({
+        id: item.id,
+        label: item.label,
+        quantity: item.quantity,
+        measure: item.measure,
+        grams: item.grams,
+        uncertainty: item.uncertainty,
+      }))
+    : (assessment?.meals.flatMap((meal) => meal.items) ?? []).map((item) => ({
+        id: item.id,
+        label: item.label,
+        quantity: item.quantity,
+        measure: item.measure,
+        grams: item.grams,
+        uncertainty: item.uncertainty,
+      }));
+  const energyCheck = displayedSummary
+    ? crossCheckDietaryEnergy(displayedSummary)
+    : null;
   const previewGrams =
     measure === "g" ? numberOrNull(quantity) : numberOrNull(grams);
   const selectedNutrients = portionNutrients(selectedFood, previewGrams);
@@ -526,8 +580,7 @@ export function DietaryAssessmentWorkspace({
       meals.find((meal) => meal.id === mealId)?.id ?? meals[0]?.id;
     if (!targetMealId)
       return setError("Nenhuma refeição disponível para receber o alimento.");
-    const parsedGrams = measure === "g" ? parsedQuantity : numberOrNull(grams);
-    const item: UiDietaryItem = {
+    const draft: DietaryFoodDraft = {
       id:
         typeof crypto !== "undefined" && "randomUUID" in crypto
           ? crypto.randomUUID()
@@ -535,16 +588,19 @@ export function DietaryAssessmentWorkspace({
       label: selectedFood.description,
       quantity: parsedQuantity,
       measure,
-      grams: parsedGrams,
-      ...portionMetadata(measure, parsedGrams),
+      grams: measure === "g" ? parsedQuantity : numberOrNull(grams),
+      gramsSource: null,
+      estimated: false,
       food: {
         provider: selectedFood.provider,
         sourceId: selectedFood.sourceId,
         description: selectedFood.description,
         dataType: selectedFood.dataType,
       },
-      composition: selectedFood,
       qualityFlags,
+    };
+    const item: UiDietaryItem = {
+      ...confirmDietaryDraftItem(draft, selectedFood),
       observation: observation.trim() || undefined,
     };
     mark();
@@ -1563,33 +1619,39 @@ export function DietaryAssessmentWorkspace({
                 </div>
                 <small>Revisão médica antes do uso em SOAP/relatório.</small>
               </div>
-              {assessment ? (
+              {displayedSummary ? (
                 <>
+                  {dirty ? (
+                    <div className={styles.reviewHint}>
+                      Estimativa atualizada com o rascunho local. Salve e recalcule
+                      para confirmar o resultado no servidor.
+                    </div>
+                  ) : null}
                   <div className={styles.metrics}>
                     <div>
                       <span>Proteína</span>
                       <strong>
-                        {format(assessment.summary.proteinG, 1)} g
+                        {format(displayedSummary.proteinG, 1)} g
                       </strong>
                       <small>
-                        {format(assessment.summary.proteinGPerKg, 2)} g/kg/d
+                        {format(displayedSummary.proteinGPerKg, 2)} g/kg/d
                       </small>
                     </div>
                     <div>
                       <span>Cálcio</span>
                       <strong>
-                        {format(assessment.summary.calciumMg, 0)} mg
+                        {format(displayedSummary.calciumMg, 0)} mg
                       </strong>
                       <small>miligramas/dia</small>
                     </div>
                     <div>
                       <span>Carboidratos</span>
                       <strong>
-                        {format(assessment.summary.carbohydratesG, 1)} g
+                        {format(displayedSummary.carbohydratesG, 1)} g
                       </strong>
                       <small>
                         {format(
-                          assessment.summary.carbohydrateEnergyPercent,
+                          displayedSummary.carbohydrateEnergyPercent,
                           0,
                         )}
                         % da energia
@@ -1598,18 +1660,18 @@ export function DietaryAssessmentWorkspace({
                     <div>
                       <span>Energia</span>
                       <strong>
-                        {format(assessment.summary.energyKcal, 0)} kcal
+                        {format(displayedSummary.energyKcal, 0)} kcal
                       </strong>
                       <small>
-                        {format(assessment.summary.energyKcalPerKg, 1)}{" "}
+                        {format(displayedSummary.energyKcalPerKg, 1)}{" "}
                         kcal/kg/d
                       </small>
                     </div>
                   </div>
-                  {assessment.summary.incompleteItems ? (
+                  {displayedSummary.incompleteItems ? (
                     <div className={styles.warning}>
                       <strong>Dados insuficientes:</strong>{" "}
-                      {assessment.summary.incompleteItems} item(ns) não entraram
+                      {displayedSummary.incompleteItems} item(ns) não entraram
                       no total.
                     </div>
                   ) : null}
@@ -1626,7 +1688,7 @@ export function DietaryAssessmentWorkspace({
                         : "Peso não disponível"}
                     </small>
                   </div>
-                  {assessment.conditionalGuidance?.length ? (
+                  {assessment?.conditionalGuidance?.length ? (
                     <div
                       className={styles.priorityList}
                       aria-label="Orientações condicionais para revisão clínica"
@@ -1644,9 +1706,7 @@ export function DietaryAssessmentWorkspace({
                   ) : null}
                   <details className={styles.technical}>
                     <summary>Detalhes técnicos e rastreabilidade</summary>
-                    {assessment.meals
-                      .flatMap((meal) => meal.items)
-                      .map((item) => (
+                    {displayedItems.map((item) => (
                         <div key={item.id} className={styles.technicalItem}>
                           <strong>{item.label}</strong>
                           <span>
