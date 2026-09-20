@@ -156,8 +156,8 @@ test("EAT-10 positivo gera orientação fonoaudiológica e oferta segura sem mud
 
   assert.equal(nutrition?.state, "altered");
   assert.match(guidance, /fonoaudiólogo/i);
-  assert.match(guidance, /sentada e ereta/i);
-  assert.match(guidance, /Não espesse líquidos nem mude a textura/i);
+  assert.match(guidance, /bem sentada/i);
+  assert.match(guidance, /Evite engrossar líquidos ou mudar a textura/i);
   assert.ok(nutrition?.evidenceReferences.some((reference) => reference.pmid === "19140539"));
   assert.ok(nutrition?.evidenceReferences.some((reference) => reference.pmid === "24626972"));
   assert.ok(nutrition?.evidenceReferences.some((reference) => reference.pmid === "40543044"));
