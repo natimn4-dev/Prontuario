@@ -1,39 +1,116 @@
-name: Apply oncogeriatria safe patch
+name: Materialize and validate oncogeriatria patch
 
 on:
-  push:
-    branches:
-      - refactor/oncogeriatria-safe-longitudinal-persistence
+  pull_request:
+    branches: [main]
 
 permissions:
   contents: write
 
 jobs:
-  apply:
-    if: github.actor != 'github-actions[bot]'
+  materialize-and-validate:
+    if: github.event.pull_request.head.repo.full_name == github.repository
     runs-on: ubuntu-latest
+    timeout-minutes: 25
+    services:
+      mysql:
+        image: mysql:8.4
+        env:
+          MYSQL_ROOT_PASSWORD: ci_root_password
+          MYSQL_DATABASE: prontuario_ci
+          MYSQL_USER: ci_user
+          MYSQL_PASSWORD: ci_password
+        ports:
+          - 3306:3306
+        options: >-
+          --health-cmd="mysqladmin ping -h 127.0.0.1 -uci_user -pci_password"
+          --health-interval=5s
+          --health-timeout=5s
+          --health-retries=20
+    env:
+      NODE_ENV: production
+      APP_URL: https://prontuario-ci.example.com
+      DATABASE_URL: mysql://ci_user:ci_password@127.0.0.1:3306/prontuario_ci
+      BETTER_AUTH_SECRET: ci-only-secret-that-is-longer-than-thirty-two-characters
+      GOOGLE_CLIENT_ID: ci-client.apps.googleusercontent.com
+      GOOGLE_CLIENT_SECRET: ci-only-google-secret
+      AUTH_ALLOWED_EMAILS: admin-ci@example.com,medica-ci@example.com
+      AUTH_BOOTSTRAP_ADMIN_EMAILS: admin-ci@example.com
+      BACKUP_ENCRYPTION_KEY_B64: CQkJCQkJCQkJCQkJCQkJCQkJCQkJCQkJCQkJCQkJCQk=
+      TEST_DATABASE_URL: mysql://ci_user:ci_password@127.0.0.1:3306/prontuario_ci
     steps:
       - uses: actions/checkout@v4
         with:
+          ref: ${{ github.event.pull_request.head.ref }}
           fetch-depth: 0
-      - name: Reconstruct and verify payload
+      - name: Reconstruct and verify exact patch
+        shell: bash
         run: |
           set -euo pipefail
           cat .patch/oncogeriatria-safe-refactor.b64.part* | base64 -d > .patch/oncogeriatria-safe-refactor.tar.xz
           echo "fe74b90605c958515806683706944350171023d3738714e25fb7c14a29ab1f88  .patch/oncogeriatria-safe-refactor.tar.xz" | sha256sum -c -
           xz -t .patch/oncogeriatria-safe-refactor.tar.xz
-      - name: Apply payload
-        run: |
-          set -euo pipefail
           tar -xJf .patch/oncogeriatria-safe-refactor.tar.xz --strip-components=1
           rm -rf .patch
           rm -f .github/workflows/apply-oncogeriatria-patch.yml
-      - name: Commit exact patch
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - name: Exact patch whitespace check
+        run: git diff --check origin/main...HEAD || true
+      - name: Repository safety check
+        run: npm run validate:repo
+      - name: Backup/restore encrypted roundtrip
+        env:
+          NODE_ENV: test
+        run: npm run test:backup
+      - name: Install dependencies
+        run: npm ci
+      - name: Generate Prisma Client
+        run: npm run prisma:generate
+      - name: Apply migrations to ephemeral MySQL
+        run: npx prisma migrate deploy
+      - name: MySQL concurrency and patient isolation
+        run: npm run test:integration
+      - name: Clinical golden master
+        run: npm run test:golden
+      - name: Domain typecheck
+        run: npm run typecheck:domain
+      - name: Full typecheck
+        run: npm run typecheck
+      - name: Production build
+        run: npm run build
+      - name: Audit production dependencies
+        run: npm audit --omit=dev --audit-level=critical
+      - name: Authenticated E2E smoke on ephemeral data
+        env:
+          CI: "true"
+          NODE_ENV: development
+          APP_URL: http://127.0.0.1:3100
+          E2E_BASE_URL: http://127.0.0.1:3100
+          E2E_AUTH_ENABLED: "1"
+          E2E_AUTH_SECRET: ci-e2e-secret-with-at-least-thirty-two-characters
+        shell: bash
         run: |
           set -euo pipefail
-          git config user.name "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          npm run dev -- --hostname 127.0.0.1 --port 3100 > /tmp/prontuario-e2e-next.log 2>&1 &
+          SERVER_PID=$!
+          trap 'kill "$SERVER_PID" 2>/dev/null || true; cat /tmp/prontuario-e2e-next.log || true' EXIT
+          for attempt in $(seq 1 40); do
+            if curl -fsS --max-time 3 http://127.0.0.1:3100/login >/dev/null; then break; fi
+            if [[ "$attempt" -eq 40 ]]; then echo "Servidor E2E não iniciou." >&2; exit 1; fi
+            sleep 1
+          done
+          npm run test:e2e:auth
+      - name: Commit tested materialized patch
+        shell: bash
+        run: |
+          set -euo pipefail
+          rm -f .github/workflows/apply-oncogeriatria-patch.yml
           git add -A
           git diff --cached --check
-          git commit -m "refactor(onco): aplicar persistência longitudinal segura"
-          git push origin HEAD
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git commit -m "refactor(onco): persistência longitudinal segura"
+          git push origin HEAD:${{ github.event.pull_request.head.ref }}
