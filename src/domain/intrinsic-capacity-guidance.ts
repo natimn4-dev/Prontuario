@@ -51,14 +51,14 @@ const DOMAIN_CONTENT: Readonly<Record<IntrinsicCapacityDomainCode, Omit<Intrinsi
     label: "Locomoção",
     whyItMatters: "Reúne força, equilíbrio e marcha necessários para se movimentar com segurança.",
     actions: [
-      "Mantenha corredores e o caminho até o banheiro livres, bem iluminados e sem tapetes soltos.",
-      "Use bengala, andador, corrimão ou supervisão somente do modo já orientado pela equipe; deixe o apoio ao alcance antes de levantar.",
-      "Faça apenas os exercícios e caminhadas que já foram considerados seguros, com companhia quando houver risco de queda.",
-      "Anote quedas, quase quedas e atividades que passaram a exigir ajuda para contar à equipe.",
+      "Deixe os caminhos mais usados, especialmente até o banheiro, livres de obstáculos, bem iluminados e sem tapetes soltos.",
+      "Se levantar ou caminhar estiver mais difícil, ofereça apoio por perto e organize o ambiente para que a pessoa se movimente com mais confiança e segurança.",
+      "Prefira exercícios e caminhadas que a pessoa consiga fazer com segurança e sem medo. Quando houver instabilidade ou receio de cair, vale ter alguém por perto.",
+      "Conte à equipe se acontecer uma queda, um quase tombo ou se alguma atividade começar a exigir mais ajuda do que antes.",
     ],
     attentionSigns: [
-      "Avise a equipe se houver nova queda, piora progressiva para caminhar ou necessidade crescente de ajuda.",
-      "Procure atendimento imediato após queda com trauma importante ou se surgir incapacidade súbita de ficar em pé ou mover um membro.",
+      "Procure a equipe se houver nova queda, piora para caminhar ou necessidade de ajuda maior do que o habitual.",
+      "Procure atendimento imediato após uma queda com trauma importante ou se a pessoa, de repente, não conseguir ficar em pé ou mover um braço ou uma perna.",
     ],
     evidenceReferences: [{
       label: "Exercício para prevenção de quedas em idosos na comunidade",
@@ -71,10 +71,10 @@ const DOMAIN_CONTENT: Readonly<Record<IntrinsicCapacityDomainCode, Omit<Intrinsi
     label: "Cognição",
     whyItMatters: "Inclui memória, orientação, atenção e capacidade de organizar informações e tarefas.",
     actions: [
-      "Mantenha rotina previsível, calendário e relógio visíveis; antecipe mudanças com frases curtas.",
-      "Dê uma orientação por vez, confirme que foi compreendida e ofereça tempo para a resposta.",
-      "Organize compromissos, finanças e medicamentos com o apoio do cuidador no nível de supervisão definido pela equipe.",
-      "Garanta iluminação adequada e que óculos e aparelhos auditivos habituais estejam disponíveis e funcionando.",
+      "Uma rotina previsível costuma trazer mais segurança. Deixe calendário e relógio visíveis e avise mudanças com antecedência, usando frases simples.",
+      "Fale uma coisa de cada vez, com calma, e dê tempo para a pessoa compreender e responder.",
+      "Nas tarefas que começaram a trazer erros ou insegurança, como medicamentos, finanças ou compromissos, ofereça ajuda de perto sem retirar a participação da pessoa no que ela ainda consegue fazer bem.",
+      "Boa iluminação, óculos adequados e aparelho auditivo funcionando ajudam a pessoa a entender melhor o ambiente e participar das atividades do dia.",
     ],
     attentionSigns: [
       "Avise a equipe se esquecimentos começarem a comprometer alimentação, higiene, segurança, dinheiro ou uso correto dos medicamentos.",
@@ -99,10 +99,10 @@ const DOMAIN_CONTENT: Readonly<Record<IntrinsicCapacityDomainCode, Omit<Intrinsi
     label: "Capacidade psicológica",
     whyItMatters: "Abrange principalmente humor, motivação, bem-estar emocional e participação social.",
     actions: [
-      "Mantenha rotina previsível e oportunidades de participação em atividades significativas escolhidas pelo paciente.",
-      "Planeje diariamente uma atividade simples e significativa, sem cobrança por desempenho.",
-      "Mantenha contato frequente com pessoas de confiança e escute mudanças de humor sem minimizar o relato.",
-      "Registre por alguns dias alterações de humor, ansiedade, interesse e participação para discutir com a equipe.",
+      "Mantenha uma rotina que faça sentido para a pessoa e inclua atividades de que ela goste ou que tragam sensação de propósito.",
+      "Convide para pelo menos uma atividade simples e agradável ao longo do dia, sem cobrança por desempenho.",
+      "Favoreça o contato com pessoas de confiança e acolha mudanças de humor com escuta e sem minimizar o que a pessoa está sentindo.",
+      "Se perceber mudança de humor, ansiedade, perda de interesse ou isolamento, anote o que aconteceu e compartilhe com a equipe na próxima conversa.",
     ],
     attentionSigns: [
       "Avise a equipe se tristeza, ansiedade, apatia, irritabilidade ou recusa de atividades persistirem ou piorarem.",
@@ -127,15 +127,15 @@ const DOMAIN_CONTENT: Readonly<Record<IntrinsicCapacityDomainCode, Omit<Intrinsi
     label: "Vitalidade",
     whyItMatters: "Vitalidade representa a reserva que o organismo usa para enfrentar doenças e manter as atividades do dia. Nesta versão, o estado nutricional e o rastreio de vulnerabilidade muscular pelo SARC-CalF são sinais acompanhados e devem ser interpretados junto com força, funcionalidade e condições clínicas.",
     actions: [
-      "Priorize uma alimentação possível e prazerosa: ofereça refeições menores e mais frequentes quando grandes volumes cansarem ou reduzirem a aceitação, mantendo as orientações nutricionais já definidas para a pessoa.",
-      "Facilite líquidos ao longo do dia e deixe bebidas ao alcance quando isso for seguro, sempre respeitando eventual restrição de líquidos orientada pela equipe.",
-      "Acompanhe mudanças que ajudam a perceber perda de reserva: peso, roupas mais folgadas, redução das porções, perda de apetite, dificuldade para mastigar ou engolir e cansaço maior para comer.",
-      "Quando o SARC-CalF estiver positivo, leve o resultado à equipe para avaliação de sarcopenia, incluindo revisão de força e desempenho físico, estado nutricional e causas reversíveis; o rastreio não confirma o diagnóstico isoladamente.",
-      "Preserve atividade e participação conforme tolerância. Quando clinicamente seguro, priorize exercício resistido e funcional planejado de acordo com capacidade, risco de quedas e orientação da equipe.",
+      "Para tornar as refeições mais agradáveis e menos cansativas, ofereça porções menores ao longo do dia quando refeições grandes forem difíceis. Valorize alimentos de que a pessoa gosta, respeite o ritmo da refeição e procure manter esse momento tranquilo e prazeroso.",
+      "Ofereça líquidos várias vezes ao longo do dia, em pequenas quantidades e nos horários de melhor aceitação. Se foi combinado um limite diário de líquidos, distribua essa quantidade ao longo do dia para facilitar a hidratação sem ultrapassar o volume recomendado.",
+      "Observe sinais simples que podem mostrar perda de força ou de reserva: roupas ficando mais folgadas, porções menores, falta de apetite, dificuldade para mastigar ou engolir e cansaço maior durante as refeições.",
+      "Se o SARC-CalF vier positivo, converse com a equipe sobre uma avaliação mais completa de força, mobilidade e nutrição. Esse resultado é um sinal de atenção e, sozinho, não confirma sarcopenia.",
+      "Ajude a pessoa a continuar ativa nas tarefas que fazem parte da sua rotina e que consegue realizar com segurança. Exercícios de força e movimentos funcionais podem ser incluídos de forma gradual, respeitando a capacidade, o equilíbrio e o risco de quedas.",
     ],
     attentionSigns: [
-      "Avise a equipe se houver perda de peso sem intenção, queda persistente da ingestão, piora do apetite, redução progressiva de força ou desempenho, quedas recorrentes ou cansaço crescente.",
-      "Procure avaliação rápida se houver engasgo com falta de ar, incapacidade de ingerir líquidos, redução importante da urina, sonolência fora do habitual ou prostração importante.",
+      "Procure a equipe se houver perda de peso sem intenção, apetite muito menor, redução persistente da alimentação, perda de força, quedas repetidas ou cansaço que esteja aumentando.",
+      "Procure avaliação rápida se houver engasgo com falta de ar, dificuldade importante para beber líquidos, redução marcante da urina, sonolência diferente do habitual ou prostração intensa.",
     ],
     evidenceReferences: [
       {
@@ -156,13 +156,13 @@ const DOMAIN_CONTENT: Readonly<Record<IntrinsicCapacityDomainCode, Omit<Intrinsi
     label: "Capacidade sensorial",
     whyItMatters: "Visão e audição sustentam comunicação, orientação, mobilidade e participação social.",
     actions: [
-      "Use iluminação uniforme, contraste nos degraus e objetos de uso diário sempre no mesmo local.",
-      "Reduza ruído de fundo, fale de frente para o paciente e confirme a mensagem sem gritar.",
-      "Limpe, carregue e guarde óculos e aparelhos auditivos conforme a rotina habitual; observe se deixaram de funcionar bem.",
-      "Leve óculos, aparelhos e lista de dificuldades às avaliações de visão ou audição já programadas.",
+      "Mantenha boa iluminação, destaque degraus e deixe os objetos mais usados em locais fáceis de encontrar.",
+      "Reduza o ruído ao redor, fale de frente para a pessoa e confirme se ela ouviu bem, sem precisar elevar a voz.",
+      "Mantenha óculos e aparelhos auditivos limpos, carregados e fáceis de encontrar. Se parecer que deixaram de ajudar como antes, vale revisar o funcionamento.",
+      "Nas consultas de visão ou audição, leve os óculos ou aparelhos usados no dia a dia e conte quais dificuldades têm aparecido em casa.",
     ],
     attentionSigns: [
-      "Avise a equipe se a dificuldade para ver ou ouvir estiver aumentando quedas, isolamento ou erros nas tarefas diárias.",
+      "Converse com a equipe se a dificuldade para ver ou ouvir estiver aumentando quedas, isolamento ou erros nas atividades do dia.",
       "Perda súbita de visão ou audição, dor ocular intensa ou novo sintoma neurológico requer avaliação urgente.",
     ],
     evidenceReferences: [{

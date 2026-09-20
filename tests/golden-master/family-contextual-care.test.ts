@@ -67,7 +67,7 @@ test("problema geriátrico Imobilidade aplica as mesmas prioridades sem inventar
     immobility,
     gastrostomyPresent: false,
   });
-  assert.match(contextual.now.join(" "), /imobilidade está registrada como problema geriátrico/i);
+  assert.match(contextual.now.join(" "), /imobilidade está registrada como um problema atual/i);
   assert.match(contextual.caregiver.join(" "), /transferências/i);
   assert.doesNotMatch(contextual.now.join(" "), /treino de força/i);
 });
@@ -86,7 +86,7 @@ test("tabela resume imobilidade sem repetir literalmente o plano detalhado", () 
   });
 
   assert.equal(summary.length, 1);
-  assert.match(summary[0]!, /consolidadas no Plano de cuidados/i);
+  assert.match(summary[0]!, /cuidado deve priorizar conforto/i);
   assert.ok(!detailed.now.includes(summary[0]!));
   assert.ok(!detailed.caregiver.includes(summary[0]!));
 });
@@ -97,9 +97,9 @@ test("via GTT ativa cuidados específicos de gastrostomia sem inventar dieta, vo
   const guidance = gastrostomyFamilyGuidance();
   const text = [...guidance.now, ...guidance.caregiver, ...guidance.contact].join(" ");
   assert.match(text, /dieta enteral/i);
-  assert.match(text, /não triture comprimidos/i);
+  assert.match(text, /antes de triturar um comprimido/i);
   assert.match(text, /estoma/i);
-  assert.match(text, /volume de água individualmente orientado/i);
+  assert.match(text, /volume prescrito/i);
   assert.doesNotMatch(text, /\b\d+\s*mL\b/i);
   assert.doesNotMatch(text, /\b\d+\s*kcal\b/i);
 });

@@ -147,9 +147,9 @@ test("MEEM exibe as faixas de rastreio solicitadas", () => {
 
 test("FRAIL-BR diferencia orientações para robusto, pré-frágil e frágil", () => {
   const cases = [
-    { score: 0, color: "verde" as const, marker: "não identificou critérios de fragilidade" },
-    { score: 1, color: "amarelo" as const, marker: "indica pré-fragilidade" },
-    { score: 3, color: "vermelho" as const, marker: "indica fragilidade" },
+    { score: 0, color: "verde" as const, marker: "não mostrou sinais de fragilidade" },
+    { score: 1, color: "amarelo" as const, marker: "mostrou sinais de pré-fragilidade" },
+    { score: 3, color: "vermelho" as const, marker: "mostrou fragilidade" },
   ];
 
   const summaries = cases.map((current) => domainSummary([
@@ -205,11 +205,11 @@ test("cognição preservada não recebe orientação de supervisão própria de 
   ], "cognicao");
 
   assert.equal(preserved.state, "preserved");
-  assert.ok(preserved.guidance.some((item) => /preserve a autonomia e a independência/i.test(item)));
+  assert.ok(preserved.guidance.some((item) => /mantenha a autonomia nas atividades habituais/i.test(item)));
   assert.ok(preserved.guidance.some((item) => /participação ativa nas decisões/i.test(item)));
   assert.ok(preserved.guidance.some((item) => /reserva cognitiva/i.test(item)));
   assert.ok(preserved.guidance.some((item) => /alimentação saudável/i.test(item)));
-  assert.ok(preserved.guidance.some((item) => /reavalie se houver mudança cognitiva ou funcional nova e persistente/i.test(item)));
+  assert.ok(preserved.guidance.some((item) => /mudança persistente de memória, raciocínio ou autonomia/i.test(item)));
   assert.ok(!preserved.guidance.some((item) => /supervisão nas tarefas complexas|erros em medicamentos|apoio direto do cuidador/i.test(item)));
   assert.doesNotMatch(preserved.guidance.join(" "), /\bnão\b/i);
   assert.doesNotMatch(preserved.guidance.join(" "), /vascular|metabólic/i);
@@ -218,12 +218,12 @@ test("cognição preservada não recebe orientação de supervisão própria de 
   assert.ok(preserved.evidenceReferences.some((reference) => reference.pmid === "31270114"));
 
   assert.equal(attention.state, "attention");
-  assert.ok(attention.guidance.some((item) => /não é diagnóstico de demência/i.test(item)));
-  assert.ok(attention.guidance.some((item) => /supervisão apenas nas tarefas/i.test(item)));
+  assert.ok(attention.guidance.some((item) => /não significa, sozinho, diagnóstico de demência/i.test(item)));
+  assert.ok(attention.guidance.some((item) => /apoio de forma discreta e proporcional à dificuldade/i.test(item)));
 
   assert.equal(altered.state, "altered");
-  assert.ok(altered.guidance.some((item) => /não estabelece sozinho diagnóstico de demência/i.test(item)));
-  assert.ok(altered.guidance.some((item) => /apoio direto nessas atividades/i.test(item)));
+  assert.ok(altered.guidance.some((item) => /sozinho, não define diagnóstico de demência/i.test(item)));
+  assert.ok(altered.guidance.some((item) => /ofereça ajuda direta nessas situações/i.test(item)));
   assert.ok(altered.evidenceReferences.some((reference) => reference.pmid === "39713942"));
   assert.notDeepEqual(preserved.guidance, altered.guidance);
 });
@@ -261,13 +261,13 @@ test("GDS alterada nunca aparece como preservada e recebe orientação específi
   assert.ok(attention.evidenceReferences.some((reference) => reference.pmid === "40809860"));
 });
 
-test("dependência apenas em AIVD usa linguagem de autonomia vigiada", () => {
+test("dependência apenas em AIVD usa linguagem de apoio proporcional", () => {
   const summary = domainSummary([
     scale({ code: "katz", name: "Katz", dimension: "funcionalidade", score: 6, scoreText: "6/6" }),
     scale({ code: "lawton", name: "Lawton", dimension: "funcionalidade", score: 15, scoreText: "15/21" }),
   ], "funcionalidade");
 
-  assert.ok(summary.guidance.some((item) => item.includes("autonomia vigiada")));
+  assert.ok(summary.guidance.some((item) => item.includes("atividades mais complexas") && item.includes("ajuda por perto")));
   assert.ok(summary.results.some((result) => result.scaleName.includes("ABVD — atividades básicas da vida diária")));
   assert.ok(summary.results.some((result) => result.scaleName.includes("AIVD — atividades instrumentais da vida diária")));
 });
@@ -363,9 +363,9 @@ test("10-CS normal não recebe supervisão cognitiva por Lawton alterado", () =>
   assert.ok(functionality);
 
   assert.equal(cognition.state, "preserved");
-  assert.match(cognition.guidance.join(" "), /preserve a autonomia e a independência/i);
+  assert.match(cognition.guidance.join(" "), /mantenha a autonomia nas atividades habituais/i);
   assert.match(cognition.guidance.join(" "), /reserva cognitiva/i);
-  assert.match(cognition.guidance.join(" "), /mudança cognitiva ou funcional nova e persistente/i);
+  assert.match(cognition.guidance.join(" "), /mudança persistente de memória, raciocínio ou autonomia/i);
   assert.doesNotMatch(cognition.guidance.join(" "), /supervisão nas tarefas complexas|apoio direto do cuidador/i);
   assert.doesNotMatch(cognition.guidance.join(" "), /\bnão\b/i);
 

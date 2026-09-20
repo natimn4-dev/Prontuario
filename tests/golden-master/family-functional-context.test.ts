@@ -55,7 +55,7 @@ test("FAST 7d não apaga dependência em ABVD identificada pelo Katz", () => {
   assert.match(context.sourceSummary, /Katz 2/);
 
   const guidance = contextualFamilyGuidance("funcionalidade", ["Orientação genérica"], context).join(" ");
-  assert.match(guidance, /dependência importante para atividades básicas/i);
+  assert.match(guidance, /necessidade importante de ajuda nas atividades básicas/i);
   assert.match(guidance, /banho, vestir-se, higiene, alimentação e transferências/i);
   assert.doesNotMatch(guidance, /Orientação genérica/i);
 });
@@ -63,7 +63,7 @@ test("FAST 7d não apaga dependência em ABVD identificada pelo Katz", () => {
 test("FAST continua sendo fallback funcional quando Katz Barthel e Lawton não foram aplicados", () => {
   const context = deriveFamilyFunctionalContext([scale("fast", 7.4)]);
   const guidance = contextualFamilyGuidance("funcionalidade", ["Orientação genérica"], context).join(" ");
-  assert.match(guidance, /assistência integral/i);
+  assert.match(guidance, /ajuda muito ampla nas atividades básicas/i);
   assert.match(guidance, /conforto, segurança e dignidade/i);
 });
 
@@ -79,7 +79,7 @@ test("Katz com dependência severa eleva orientação para ajuda nas atividades 
   assert.equal(context.katzScore, 2);
   assert.match(context.sourceSummary, /Katz 2/);
   const guidance = contextualFamilyGuidance("funcionalidade", ["Orientação genérica"], context).join(" ");
-  assert.match(guidance, /dependência importante/i);
+  assert.match(guidance, /necessidade importante de ajuda/i);
   assert.match(guidance, /banho, vestir-se, higiene, alimentação e transferências/i);
 });
 
@@ -93,8 +93,7 @@ test("Katz com dependência moderada orienta ajuda e supervisão em ABVD", () =>
 
   assert.equal(context.level, "adl-support");
   const guidance = contextualFamilyGuidance("funcionalidade", ["Orientação genérica"], context).join(" ");
-  assert.match(guidance, /atividades básicas/i);
-  assert.match(guidance, /supervisão ou ajuda física/i);
+  assert.match(guidance, /em quais atividades a pessoa precisa de ajuda/i);
 });
 
 test("Barthel grave pode elevar necessidade de ajuda mesmo sem FAST avançado", () => {
@@ -107,7 +106,7 @@ test("Barthel grave pode elevar necessidade de ajuda mesmo sem FAST avançado", 
 
   assert.equal(context.level, "high-dependence");
   const guidance = contextualFamilyGuidance("funcionalidade", ["Orientação genérica"], context).join(" ");
-  assert.match(guidance, /dependência importante/i);
+  assert.match(guidance, /necessidade importante de ajuda/i);
   assert.match(guidance, /banho, vestir-se, higiene, alimentação e transferências/i);
 });
 
@@ -123,7 +122,7 @@ test("Lawton alterado contextualiza AIVD sem transformar dependência instrument
   const guidance = contextualFamilyGuidance("funcionalidade", ["Orientação genérica"], context).join(" ");
   assert.match(guidance, /atividades instrumentais/i);
   assert.match(guidance, /finanças, compras, transporte/i);
-  assert.doesNotMatch(guidance, /assistência integral/i);
+  assert.doesNotMatch(guidance, /ajuda muito ampla nas atividades básicas/i);
 });
 
 test("FAST 7d adapta cognição para comunicação e cuidado, sem exigir desempenho independente", () => {
@@ -132,7 +131,7 @@ test("FAST 7d adapta cognição para comunicação e cuidado, sem exigir desempe
     "Use calendário e relógio para orientar tarefas independentes.",
   ], context).join(" ");
 
-  assert.match(guidance, /comunicação simples, calma e afetiva/i);
-  assert.match(guidance, /sinais não verbais/i);
-  assert.match(guidance, /sem exigir orientação temporal, memória ou execução independente/i);
+  assert.match(guidance, /comunicação calma e afetuosa/i);
+  assert.match(guidance, /expressões, gestos/i);
+  assert.match(guidance, /em vez de cobrar memória ou orientação/i);
 });

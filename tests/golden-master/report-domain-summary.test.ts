@@ -154,7 +154,7 @@ test("FAST 7d com Katz dependente mantém alteração e orientação baseada em 
   assert.equal(functionality?.state, "altered");
   assert.equal(functionality?.stateLabel, "Alteração identificada — requer atenção");
   const guidance = functionality?.guidance.join(" ") ?? "";
-  assert.match(guidance, /dependência importante para atividades básicas/i);
+  assert.match(guidance, /necessidade importante de ajuda nas atividades básicas/i);
   assert.match(guidance, /banho, vestir-se, higiene, alimentação e transferências/i);
   assert.doesNotMatch(guidance, /consolidadas no Plano de cuidados/i);
   assert.doesNotMatch(guidance, /ajuda apenas na medida necessária/i);
@@ -189,17 +189,17 @@ test("fragilidade usa orientações clinicamente distintas para robusto, pré-fr
   const frail = makeDomain(3, "vermelho");
 
   assert.equal(robust?.state, "preserved");
-  assert.match(robust?.guidance.join(" ") ?? "", /perfil é robusto/i);
-  assert.match(robust?.guidance.join(" ") ?? "", /não é necessário tratar a pessoa como frágil/i);
+  assert.match(robust?.guidance.join(" ") ?? "", /não mostrou sinais de fragilidade/i);
+  assert.match(robust?.guidance.join(" ") ?? "", /preservar força, equilíbrio, disposição e independência/i);
   assert.doesNotMatch(robust?.guidance.join(" ") ?? "", /maior vulnerabilidade|plano geriátrico individualizado/i);
 
   assert.equal(preFrail?.state, "attention");
   assert.match(preFrail?.guidance.join(" ") ?? "", /pré-fragilidade/i);
-  assert.match(preFrail?.guidance.join(" ") ?? "", /oportunidade/i);
+  assert.match(preFrail?.guidance.join(" ") ?? "", /bom momento para fortalecer a reserva/i);
 
   assert.equal(frail?.state, "altered");
-  assert.match(frail?.guidance.join(" ") ?? "", /indica fragilidade/i);
-  assert.match(frail?.guidance.join(" ") ?? "", /plano individualizado/i);
+  assert.match(frail?.guidance.join(" ") ?? "", /mostrou fragilidade/i);
+  assert.match(frail?.guidance.join(" ") ?? "", /cuidado pode ser organizado em etapas/i);
 
   assert.notDeepEqual(robust?.guidance, preFrail?.guidance);
   assert.notDeepEqual(preFrail?.guidance, frail?.guidance);
@@ -229,8 +229,8 @@ test("fragilidade preservada sem FRAIL-BR não cai em orientação genérica de 
     .find((item) => item.code === "fragilidade");
 
   assert.equal(domain?.state, "preserved");
-  assert.match(domain?.guidance.join(" ") ?? "", /não sinalizou vulnerabilidade/i);
-  assert.match(domain?.guidance.join(" ") ?? "", /não aplique rotinas de cuidado destinadas a pessoas frágeis/i);
+  assert.match(domain?.guidance.join(" ") ?? "", /não mostrou sinais de vulnerabilidade/i);
+  assert.match(domain?.guidance.join(" ") ?? "", /respeitando o ritmo e as preferências da pessoa/i);
 });
 
 test("rastreio cognitivo negativo e positivo geram orientações claramente diferentes", () => {
@@ -262,19 +262,19 @@ test("rastreio cognitivo negativo e positivo geram orientações claramente dife
 
   assert.equal(negative?.state, "preserved");
   assert.match(negative?.guidance.join(" ") ?? "", /rastreio cognitivo desta consulta está preservado/i);
-  assert.match(negative?.guidance.join(" ") ?? "", /preserve a autonomia e a independência/i);
+  assert.match(negative?.guidance.join(" ") ?? "", /mantenha a autonomia nas atividades habituais/i);
   assert.match(negative?.guidance.join(" ") ?? "", /alimentação saudável/i);
   assert.match(negative?.guidance.join(" ") ?? "", /reserva cognitiva/i);
   assert.doesNotMatch(negative?.guidance.join(" ") ?? "", /supervisão nas tarefas complexas|apoio direto do cuidador|rastreio cognitivo foi positivo/i);
 
   assert.equal(positive?.state, "attention");
-  assert.match(positive?.guidance.join(" ") ?? "", /rastreio cognitivo foi positivo/i);
-  assert.match(positive?.guidance.join(" ") ?? "", /não é diagnóstico de demência/i);
-  assert.match(positive?.guidance.join(" ") ?? "", /avaliação clínica estruturada/i);
+  assert.match(positive?.guidance.join(" ") ?? "", /rastreio cognitivo mostrou um sinal de atenção/i);
+  assert.match(positive?.guidance.join(" ") ?? "", /não significa, sozinho, diagnóstico de demência/i);
+  assert.match(positive?.guidance.join(" ") ?? "", /aprofundar a avaliação/i);
 
   assert.equal(markedlyAltered?.state, "altered");
-  assert.match(markedlyAltered?.guidance.join(" ") ?? "", /claramente alterado/i);
-  assert.match(markedlyAltered?.guidance.join(" ") ?? "", /não estabelece sozinho diagnóstico de demência/i);
+  assert.match(markedlyAltered?.guidance.join(" ") ?? "", /veio bastante alterado/i);
+  assert.match(markedlyAltered?.guidance.join(" ") ?? "", /sozinho, não define diagnóstico de demência/i);
   assert.ok(positive?.evidenceReferences.some((reference) => reference.pmid === "39713942"));
   assert.ok(negative?.evidenceReferences.some((reference) => reference.pmid === "42442374"));
 

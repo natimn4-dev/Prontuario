@@ -60,11 +60,11 @@ export const LEGACY_INTERVENTIONS: Record<string, InterventionByColor> = {
   lawton: {
     vermelho: {
       agora: [
-        "Assumir em conjunto o controle das contas e dos medicamentos, mantendo o paciente informado das decisões.",
-        "Organizar os remédios em caixa semanal (segunda a domingo, manhã/tarde/noite), preparada por um familiar.",
+        "Acompanhe mais de perto as contas e os medicamentos, mantendo a pessoa informada e participando das decisões sempre que possível.",
+        "Uma caixa semanal pode facilitar os horários dos medicamentos. Deixe uma pessoa de confiança responsável por conferir o preenchimento e as doses.",
       ],
       medio: ["Terapia ocupacional para adaptar tarefas domésticas e treinar rotinas com apoio."],
-      cuidador: ["Escrever a rotina do dia em uma folha grande fixada na cozinha: horários dos remédios, refeições e caminhada."],
+      cuidador: ["Uma rotina visual simples, em local fácil de ver, pode ajudar a lembrar horários de medicamentos, refeições e outras atividades do dia."],
       encaminhamentos: ["Terapia ocupacional", "Serviço social"],
     },
     amarelo: {
@@ -76,30 +76,30 @@ export const LEGACY_INTERVENTIONS: Record<string, InterventionByColor> = {
   pfeffer: {
     vermelho: {
       agora: [
-        "Não deixar o paciente responsável sozinho por fogão, dinheiro e medicamentos até nova reavaliação.",
-        "Avaliar a segurança de sair sozinho de casa; se houver risco de se perder, providenciar identificação com nome e telefone no bolso ou pulseira.",
+        "Se já houve erros com fogão, dinheiro ou medicamentos, mantenha uma pessoa de confiança por perto nessas tarefas até a reavaliação.",
+        "Se houver risco de se perder ao sair de casa, combine companhia nos trajetos e use uma identificação discreta com nome e telefone de contato.",
       ],
       medio: ["Investigação de causa do declínio funcional e reabilitação cognitiva."],
-      cuidador: ["Manter a rotina previsível e o ambiente organizado — mudanças bruscas de rotina pioram a confusão."],
+      cuidador: ["Uma rotina previsível e um ambiente organizado podem trazer mais segurança; avise mudanças com antecedência sempre que possível."],
       encaminhamentos: ["Terapia ocupacional", "Neuropsicologia"],
     },
     amarelo: {
-      agora: ["Supervisionar de perto o uso dos medicamentos e o manejo do dinheiro."],
+      agora: ["Acompanhe de perto medicamentos e finanças se já houver erros ou insegurança nessas tarefas."],
       encaminhamentos: ["Terapia ocupacional"],
     },
   },
   barthel: {
     vermelho: {
       agora: [
-        "Prevenir lesão por pressão: mudança de posição a cada 2 horas quando acamado, hidratação da pele e colchão adequado.",
-        "Adequar a cama e a cadeira à altura que facilite a transferência.",
+        "Cuide da pele e das áreas de pressão, com mudanças de posição e os recursos adequados à rotina da pessoa para reduzir o risco de feridas.",
+        "Ajuste cama e cadeira para facilitar transferências confortáveis e seguras.",
       ],
-      medio: ["Programa de reabilitação motora contínuo, com metas funcionais definidas por escrito."],
-      cuidador: ["Aprender com o fisioterapeuta a técnica correta de transferência — protege as costas do cuidador e evita quedas."],
+      medio: ["A reabilitação pode ser organizada com metas práticas, como melhorar transferências, equilíbrio ou participação nas atividades do dia, acompanhando a evolução ao longo do tempo."],
+      cuidador: ["Peça ao fisioterapeuta que ensine uma forma de transferência confortável e segura para a pessoa e para quem ajuda."],
       encaminhamentos: ["Fisioterapia", "Terapia ocupacional", "Enfermagem"],
     },
     amarelo: {
-      agora: ["Adaptar o ambiente para preservar a independência nas atividades que ainda são feitas sozinho."],
+      agora: ["Adapte o ambiente para que a pessoa continue fazendo, com segurança, as atividades que ainda consegue realizar sozinha."],
       encaminhamentos: ["Fisioterapia"],
     },
   },
@@ -113,34 +113,34 @@ export const LEGACY_INTERVENTIONS: Record<string, InterventionByColor> = {
   apgar_familiar: {
     vermelho: {
       agora: [
-        "Identificar uma pessoa de referência que possa acompanhar as consultas e ajudar na organização do cuidado.",
-        "Avaliação com serviço social para mapear a rede disponível e os benefícios a que o paciente tem direito.",
+        "Escolha uma pessoa de referência para acompanhar consultas e ajudar a organizar o cuidado quando for necessário.",
+        "O serviço social pode ajudar a identificar pessoas, serviços e benefícios que possam apoiar a família no cuidado.",
       ],
-      medio: ["Considerar grupos de convivência, centro-dia ou atividades comunitárias para reduzir o isolamento."],
+      medio: ["Se fizer sentido para a pessoa, grupos de convivência, centro-dia ou atividades comunitárias podem ampliar o contato social e reduzir o isolamento."],
       encaminhamentos: ["Serviço social", "Psicologia"],
       contato: ["Sobrecarga da família ou dificuldade em manter o cuidado combinado."],
       urgencia: ["Suspeita de maus-tratos, negligência, violência ou abuso financeiro: Disque 100 (24 horas, gratuito) ou Delegacia do Idoso."],
     },
     amarelo: {
-      agora: ["Conversar em família sobre a divisão das tarefas de cuidado."],
+      agora: ["Converse em família sobre como dividir as tarefas para que o cuidado não fique concentrado em uma só pessoa."],
       encaminhamentos: ["Serviço social"],
     },
   },
   zarit_reduzida: {
     vermelho: {
       agora: [
-        "O cuidador precisa de pausa programada: pelo menos meio dia por semana livre, com substituição combinada previamente.",
-        "Dividir formalmente as tarefas entre os familiares, por escrito.",
+        "Reserve períodos regulares de descanso para quem cuida e combine com antecedência quem poderá assumir o cuidado nesses momentos.",
+        "Divida as tarefas entre familiares ou pessoas próximas de forma clara; deixar essa combinação por escrito pode facilitar a rotina.",
       ],
       medio: [
         "Apoio psicológico ao cuidador e participação em grupo de apoio.",
         "Avaliar cuidador formal, centro-dia ou serviço de apoio domiciliar.",
       ],
-      cuidador: ["Cuidar de si não é abandono. Um cuidador esgotado adoece e o cuidado piora para os dois."],
+      cuidador: ["Quem cuida também precisa de descanso, apoio e tempo para a própria saúde. Dividir responsabilidades ajuda a sustentar o cuidado por mais tempo."],
       encaminhamentos: ["Psicologia", "Serviço social"],
     },
     amarelo: {
-      agora: ["Programar pausas regulares e dividir tarefas entre os familiares."],
+      agora: ["Programe pausas regulares para quem cuida e divida as tarefas entre as pessoas disponíveis."],
       encaminhamentos: ["Serviço social"],
     },
   },
@@ -167,44 +167,44 @@ export const LEGACY_INTERVENTIONS: Record<string, InterventionByColor> = {
   mna_sf: {
     vermelho: {
       agora: [
-        "Fracionar a alimentação: 5 a 6 refeições menores por dia, em vez de 3 grandes.",
-        "Incluir uma fonte de proteína em todas as refeições (ovo, carne, frango, peixe, queijo, leite, feijão).",
-        "Não usar dietas restritivas (sem sal, sem açúcar, sem gordura) sem indicação médica — em idoso com risco nutricional elas fazem mais mal que bem.",
+        "Se refeições grandes cansarem ou reduzirem a aceitação, ofereça porções menores distribuídas ao longo do dia.",
+        "Inclua fontes de proteína nas refeições de acordo com a alimentação habitual, como ovos, carnes, peixes, leite, queijo ou feijão.",
+        "Evite retirar vários alimentos de uma vez quando há risco nutricional. Restrições devem ter um motivo claro e ser ajustadas para que a alimentação continue suficiente e prazerosa.",
       ],
       medio: [
         "Avaliação com nutricionista para plano individualizado e decisão sobre suplemento.",
         "Avaliação odontológica se houver dor ao mastigar ou prótese mal adaptada.",
       ],
-      cuidador: ["Servir os alimentos preferidos, com boa aparência e temperatura agradável. Comer acompanhado aumenta a ingestão."],
+      cuidador: ["Valorize alimentos de que a pessoa gosta, com boa apresentação e temperatura agradável. Quando ela gostar de companhia, fazer a refeição junto pode tornar esse momento mais prazeroso."],
       encaminhamentos: ["Nutrição", "Odontologia", "Fonoaudiologia"],
       contato: [
         "Engasgo frequente, tosse durante as refeições ou voz molhada depois de beber água.",
-        "Recusa alimentar por mais de dois dias seguidos.",
+        "Procure a equipe se houver recusa persistente de alimentos ou redução importante da ingestão.",
       ],
     },
     amarelo: {
-      agora: ["Pesar o paciente uma vez por mês, sempre na mesma balança e no mesmo horário, e anotar em um caderno."],
+      agora: ["Quando for possível pesar com segurança, acompanhe o peso periodicamente e anote mudanças importantes para compartilhar na consulta."],
       medio: ["Avaliação nutricional preventiva."],
       encaminhamentos: ["Nutrição"],
-      contato: ["Perda de peso continuada apesar das orientações."],
+      contato: ["Procure a equipe se a perda de peso continuar ou se a alimentação estiver ficando cada vez mais difícil."],
     },
   },
   polifarmacia: {
     vermelho: {
       agora: [
-        "Trazer TODAS as caixas de remédio, incluindo os que não foram receitados, vitaminas e chás, na próxima consulta — inclusive os que 'já não toma mais'.",
-        "Organizar os medicamentos em caixa semanal com divisões por horário.",
-        "Não suspender nada por conta própria: a retirada precisa ser feita com o médico, uma medicação por vez.",
+        "Na próxima consulta, leve todas as caixas de medicamentos, vitaminas e outros produtos usados em casa, inclusive os que foram suspensos recentemente.",
+        "Uma caixa semanal com divisões por horário pode facilitar a rotina de medicamentos quando for adequada para aquela prescrição.",
+        "Se houver dúvida sobre algum medicamento ou vontade de suspender algo, converse com o médico antes para planejar a mudança com segurança.",
       ],
       medio: [
         "Revisão formal da prescrição com desprescrição planejada e, quando disponível, apoio de farmacêutico clínico.",
-        "Reavaliar as doses conforme a função dos rins e do fígado.",
+        "Peça que as doses dos medicamentos sejam revistas levando em conta o funcionamento dos rins e do fígado.",
       ],
-      cuidador: ["Manter uma lista atualizada dos medicamentos no celular e uma cópia impressa na bolsa, para levar a qualquer atendimento."],
+      cuidador: ["Mantenha uma lista atualizada dos medicamentos no celular ou na bolsa para ter essa informação disponível em qualquer atendimento."],
       encaminhamentos: ["Farmácia clínica"],
       contato: [
-        "Tontura ao levantar, quedas, sonolência excessiva ou confusão nova — podem ser efeito de medicamento. Não aumente nenhuma dose por conta própria.",
-        "Qualquer medicamento novo prescrito por outro profissional.",
+        "Tontura ao levantar, quedas, sonolência excessiva ou confusão nova podem estar relacionadas aos medicamentos. Se isso acontecer, procure a equipe antes de mudar qualquer dose.",
+        "Avise a equipe quando outro profissional iniciar um medicamento novo, para manter a lista e as combinações atualizadas.",
       ],
     },
     amarelo: {
@@ -223,7 +223,7 @@ export const LEGACY_INTERVENTIONS: Record<string, InterventionByColor> = {
         "Se disponível, considerar avaliação de massa muscular (DXA ou bioimpedância) e de desempenho físico (velocidade de marcha ou SPPB) para confirmar o diagnóstico e classificar a gravidade.",
       ],
       cuidador: [
-        "Estimular caminhadas e atividades que exijam força (levantar, carregar objetos leves) no dia a dia, sem forçar além da tolerância — e ficar atento a quedas, que se tornam mais prováveis com a sarcopenia.",
+        "Inclua movimento nas atividades do dia que a pessoa consiga fazer com segurança, como levantar-se ou carregar objetos leves. Se houver instabilidade, cansaço importante ou medo de cair, reduza a exigência e peça orientação para ajustar a atividade.",
       ],
       encaminhamentos: ["Fisioterapia", "Nutrição"],
     },
@@ -251,7 +251,7 @@ export const LEGACY_INTERVENTIONS: Record<string, InterventionByColor> = {
       ],
       medio: [
         "Treino de força resistido supervisionado 2 a 3 vezes por semana.",
-        "Garantir ingestão de proteína em todas as refeições (carne, ovo, leite, queijo, feijão), conforme orientação do nutricionista.",
+        "Inclua fontes de proteína nas refeições, como carne, ovo, leite, queijo ou feijão, escolhendo quantidades que combinem com a alimentação habitual e com as necessidades clínicas da pessoa.",
       ],
       encaminhamentos: ["Fisioterapia", "Nutrição"],
     },
@@ -294,18 +294,18 @@ export const LEGACY_INTERVENTIONS: Record<string, InterventionByColor> = {
     vermelho: {
       agora: [
         "Adequar o ambiente para reduzir riscos e manter rotina previsível.",
-        "Planejar supervisão diária e registrar preferências/diretivas enquanto isso ainda for possível.",
+        "Organize o apoio diário e registre preferências importantes de cuidado enquanto a pessoa ainda consegue expressá-las com clareza.",
       ],
       medio: [
         "Terapia ocupacional para adaptar tarefas e orientar o cuidador.",
-        "Avaliar sobrecarga do cuidador e necessidade de revezamento ou apoio domiciliar.",
-        "Antecipar prevenção de lesão por pressão e disfagia conforme a dependência progride.",
+        "Converse sobre o cansaço de quem cuida e sobre a possibilidade de revezamento ou apoio domiciliar quando a rotina estiver pesada.",
+        "À medida que a dependência aumenta, fique atento à pele e a sinais de dificuldade para engolir para que esses cuidados sejam discutidos cedo.",
       ],
       encaminhamentos: ["Terapia ocupacional", "Fisioterapia", "Fonoaudiologia", "Cuidados paliativos"],
       contato: ["Perda funcional abrupta ou fora da sequência habitual merece investigação de causa aguda."],
     },
     amarelo: {
-      agora: ["Supervisionar atividades instrumentais de maior risco, como finanças, medicamentos e direção."],
+      agora: ["Acompanhe mais de perto finanças, medicamentos e direção se essas atividades já estiverem trazendo erros ou insegurança."],
       medio: ["Investigar causas reversíveis e reavaliar o estágio funcional periodicamente."],
       encaminhamentos: ["Terapia ocupacional", "Neuropsicologia"],
     },

@@ -95,12 +95,12 @@ export function deriveEstablishedImmobilityContext(input: {
 function mobilityOpening(context: EstablishedImmobilityContext): string {
   if (context.source === "FAST_7C_OR_HIGHER") {
     if ((context.fastScore ?? 0) >= 7.4) {
-      return `O FAST ${context.fastStage ?? "7d"} indica perda da deambulação e incapacidade de manter-se sentado sem apoio. O foco do cuidado é posicionamento seguro, transferências assistidas e prevenção das complicações da imobilidade; não se estabelece meta de marcha independente.`;
+      return `O FAST ${context.fastStage ?? "7d"} mostra que a pessoa já não caminha de forma independente e precisa de apoio para permanecer sentada. O cuidado passa a priorizar posições confortáveis e seguras, transferências assistidas e prevenção das complicações da imobilidade.`;
     }
-    return "O FAST 7c indica perda da capacidade de deambular de forma independente. O foco do cuidado é mobilidade assistida, transferências seguras e prevenção das complicações da imobilidade; não se estabelece meta de marcha independente.";
+    return "O FAST 7c mostra que a pessoa já não caminha de forma independente. O cuidado passa a priorizar mobilidade assistida, transferências seguras, conforto e prevenção das complicações da imobilidade.";
   }
 
-  return "A imobilidade está registrada como problema geriátrico. O foco do cuidado é posicionamento seguro, mobilidade e transferências assistidas e prevenção das complicações da imobilidade; não se estabelece meta de marcha independente enquanto esse problema permanecer ativo.";
+  return "A imobilidade está registrada como um problema atual. O cuidado passa a priorizar posições confortáveis e seguras, mobilidade assistida, transferências cuidadosas e prevenção das complicações de permanecer muito tempo na mesma posição.";
 }
 
 export function establishedImmobilityGuidance(
@@ -111,15 +111,15 @@ export function establishedImmobilityGuidance(
   return {
     now: [
       mobilityOpening(context),
-      "Realize mudanças de posição e mobilização de acordo com a tolerância e com as orientações já recebidas da equipe, observando dor, falta de ar, fadiga ou desconforto.",
-      "Observe diariamente a pele e as áreas de pressão, especialmente regiões em contato prolongado com cama, cadeira ou dispositivos de apoio.",
+      "Mude a posição e faça as mobilizações devagar, observando como a pessoa reage. Pare e ajuste se houver dor, falta de ar, cansaço importante ou desconforto.",
+      "Observe a pele todos os dias, principalmente nas áreas que ficam mais tempo em contato com a cama, a cadeira ou outros apoios.",
     ],
     caregiver: [
-      "Nas transferências e cuidados no leito ou na cadeira, utilize a ajuda humana e os recursos de apoio já orientados pela equipe; evite manobras improvisadas que coloquem paciente ou cuidador em risco.",
-      "Organize o ambiente para permitir aproximação segura do cuidador e dos equipamentos de apoio utilizados no dia a dia.",
+      "Nas transferências e nos cuidados no leito ou na cadeira, use ajuda suficiente para que o movimento seja seguro e confortável para a pessoa e para quem cuida. Evite tentar sozinho um movimento que pareça pesado ou instável.",
+      "Deixe espaço livre ao redor da cama, da cadeira e dos locais de transferência para facilitar a aproximação de quem ajuda e dos equipamentos usados no dia a dia.",
     ],
     contact: [
-      "Comunique à equipe nova dor durante mobilização, vermelhidão persistente, feridas, piora súbita da tolerância às transferências ou mudança importante do padrão habitual de mobilidade.",
+      "Procure a equipe se surgir dor nova durante a movimentação, vermelhidão que não melhora, feridas, piora súbita nas transferências ou mudança importante na mobilidade habitual.",
     ],
   };
 }
@@ -142,7 +142,7 @@ export function contextualizeImmobilityDomainGuidance(
     ? `FAST ${context.fastStage ?? "7c"}`
     : "imobilidade registrada";
   return [
-    `${stage}: há limitação de mobilidade estabelecida. As orientações práticas de posicionamento, transferências assistidas, proteção da pele e prevenção de complicações estão consolidadas no Plano de cuidados e orientações para a família.`,
+    `${stage}: a mobilidade está bastante limitada. O cuidado deve priorizar conforto, mudanças de posição, transferências assistidas, proteção da pele e prevenção das complicações da imobilidade.`,
   ];
 }
 
@@ -165,20 +165,20 @@ export function hasGastrostomyMedicationRoute(items: readonly ContextMedicationI
 export function gastrostomyFamilyGuidance(): ContextualFamilyCareGuidance {
   return {
     now: [
-      "Higienize as mãos antes de manipular a gastrostomia, a dieta, a água ou os medicamentos e mantenha as conexões e utensílios limpos conforme o treinamento recebido.",
-      "Administre a dieta enteral conforme o plano já definido pela equipe, respeitando fórmula, volume, velocidade, horários e oferta de água individualizados; não faça mudanças por conta própria.",
-      "Durante a administração da dieta, mantenha o paciente adequadamente posicionado e com a cabeceira elevada conforme orientação da equipe, mantendo o posicionamento após a dieta pelo período orientado para reduzir risco de refluxo e aspiração.",
-      "Faça a lavagem da sonda com água antes e depois da dieta e dos medicamentos, e entre medicamentos diferentes, usando o volume de água individualmente orientado pela equipe; restrição de líquidos e características da sonda podem exigir volumes diferentes.",
+      "Lave as mãos antes de mexer na gastrostomia, na dieta, na água ou nos medicamentos e mantenha conexões e utensílios limpos.",
+      "Use a fórmula, o volume, a velocidade e os horários prescritos para a dieta enteral. Se algo estiver difícil ou precisar mudar, converse com a equipe antes de fazer ajustes.",
+      "Durante a dieta, mantenha a pessoa bem posicionada e com a cabeceira elevada. Depois, mantenha essa posição pelo tempo combinado para ajudar a reduzir refluxo e aspiração.",
+      "Lave a sonda com água antes e depois da dieta e dos medicamentos, e entre medicamentos diferentes, usando o volume prescrito. Se houver um limite diário de líquidos, conte também essa água no total do dia.",
     ],
     caregiver: [
-      "Administre os medicamentos separadamente e não os misture diretamente à fórmula da dieta. Confirme se cada medicamento e apresentação podem ser usados pela gastrostomia.",
-      "Não triture comprimidos ou abra cápsulas sem confirmação profissional: formas de liberação modificada, revestimento entérico e outras apresentações podem não ser seguras ou adequadas para administração pela sonda.",
-      "Mantenha a pele ao redor do estoma limpa e seca e observe diariamente vermelhidão persistente, inchaço, dor, secreção, sangramento ou vazamento de conteúdo ao redor da gastrostomia.",
-      "Se houver resistência para lavar ou administrar conteúdo pela sonda, não force a passagem. Utilize apenas as medidas de desobstrução que tenham sido previamente ensinadas pela equipe.",
+      "Dê os medicamentos separadamente e não os misture diretamente à fórmula da dieta. Antes de usar um medicamento pela gastrostomia, confirme se aquela apresentação pode ser administrada pela sonda.",
+      "Antes de triturar um comprimido ou abrir uma cápsula, confirme se isso pode ser feito. Algumas apresentações perdem a segurança ou o efeito quando são abertas ou trituradas.",
+      "Mantenha a pele ao redor do estoma limpa e seca e observe todos os dias se apareceu vermelhidão que não melhora, inchaço, dor, secreção, sangramento ou vazamento.",
+      "Se houver resistência para lavar ou usar a sonda, não force. Pare e procure orientação para evitar machucar a pessoa ou danificar a gastrostomia.",
     ],
     contact: [
-      "Entre em contato com a equipe se houver obstrução persistente, vazamento importante, dor nova, sangramento, secreção, piora da pele ao redor do estoma, vômitos recorrentes ou intolerância à dieta.",
-      "Se a gastrostomia deslocar ou sair, procure orientação assistencial imediatamente e não tente recolocá-la sem treinamento e orientação específicos.",
+      "Procure a equipe se houver obstrução persistente, vazamento importante, dor nova, sangramento, secreção, piora da pele ao redor do estoma, vômitos repetidos ou dificuldade para tolerar a dieta.",
+      "Se a gastrostomia deslocar ou sair, procure atendimento imediatamente e não tente recolocá-la em casa.",
     ],
   };
 }

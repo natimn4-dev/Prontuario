@@ -139,80 +139,80 @@ export function deriveFamilyFunctionalContext(
 
 const ADVANCED_DEMENTIA_GUIDANCE: Readonly<Record<string, readonly string[]>> = {
   funcionalidade: [
-    "O estágio funcional indica dependência muito avançada. Organize o cuidado para assistência integral nas atividades básicas, priorizando conforto, segurança e dignidade; não se espera que a pessoa realize tarefas sozinha.",
-    "Nas transferências, mudanças de posição, higiene e cuidados no leito ou na cadeira, use a ajuda humana e os recursos já orientados pela equipe, evitando manobras improvisadas.",
-    "Observe diariamente pele, áreas de pressão, dor durante a mobilização e desconforto com a posição; comunique feridas, vermelhidão persistente ou dor nova à equipe.",
-    "Mudança súbita em vigília, interação, mobilidade ou tolerância aos cuidados deve ser considerada alteração do estado habitual e comunicada precocemente.",
+    "O estágio funcional mostra necessidade de ajuda muito ampla nas atividades básicas. Organize o cuidado para que banho, vestir-se, higiene, alimentação e transferências aconteçam com conforto, segurança e dignidade, preservando a participação que ainda for possível.",
+    "Nas transferências, mudanças de posição, higiene e cuidados no leito ou na cadeira, use ajuda suficiente para que o movimento seja confortável e seguro para a pessoa e para quem cuida.",
+    "Observe a pele todos os dias e perceba se alguma posição causa dor ou desconforto. Feridas, vermelhidão que não melhora ou dor nova merecem ser comunicadas à equipe.",
+    "Se houver uma mudança súbita no nível de alerta, na interação, na mobilidade ou na forma como a pessoa tolera os cuidados, procure a equipe sem esperar a próxima consulta.",
   ],
   cognicao: [
-    "Em demência avançada, use comunicação simples, calma e afetiva. Dê preferência a frases curtas, contato visual, toque quando bem tolerado e leitura de sinais não verbais de dor, medo ou desconforto.",
-    "Mantenha rotina previsível e ambiente familiar, mas sem exigir orientação temporal, memória ou execução independente de tarefas que já não correspondem ao estágio funcional.",
-    "O cuidador deve assumir a organização de medicamentos, compromissos e decisões práticas do dia a dia conforme os acordos já definidos com a família e a equipe.",
-    "Confusão ou sonolência de início recente, agitação muito diferente do padrão habitual ou redução abrupta da interação merece avaliação clínica.",
+    "Na demência avançada, uma comunicação calma e afetuosa costuma ajudar mais. Use frases curtas, contato visual e toque quando a pessoa receber bem, observando também expressões, gestos e outros sinais de dor, medo ou desconforto.",
+    "Mantenha uma rotina previsível e um ambiente familiar. Em vez de cobrar memória ou orientação, ofereça pistas simples e conduza as atividades no ritmo da pessoa.",
+    "Deixe medicamentos, compromissos e outras decisões práticas sob responsabilidade de uma pessoa de confiança, mantendo a pessoa cuidada incluída nas escolhas sempre que isso ainda for possível.",
+    "Confusão ou sonolência que apareça de repente, agitação muito diferente do habitual ou redução abrupta da interação merecem avaliação rápida.",
   ],
   mobilidade: [
-    "Na demência avançada, adapte a mobilidade ao desempenho funcional já estabelecido. Use assistência compatível com a capacidade atual e não proponha marcha independente quando ela já não fizer parte do desempenho habitual.",
-    "Mude a posição e realize mobilização apenas conforme tolerância e orientações já recebidas, observando dor, falta de ar, fadiga e segurança do cuidador.",
-    "Mantenha o ambiente livre para permitir aproximação segura do cuidador e dos equipamentos de apoio já utilizados.",
+    "Na demência avançada, a mobilidade deve acompanhar o que a pessoa realmente consegue fazer hoje. Ofereça a ajuda necessária para transferências e deslocamentos, priorizando segurança e conforto.",
+    "Mude a posição e faça as mobilizações de forma lenta e cuidadosa. Pare e ajuste se houver dor, falta de ar, cansaço importante ou insegurança para quem está ajudando.",
+    "Deixe espaço livre ao redor da cama, cadeira e locais de transferência para facilitar a aproximação de quem ajuda e dos equipamentos usados no dia a dia.",
   ],
   nutricao: [
-    "Ofereça alimentação e líquidos com supervisão compatível com o grau de dependência e com as orientações de consistência e posicionamento já definidas pela equipe.",
-    "Observe tosse, engasgos, voz molhada após engolir, refeições muito prolongadas, recusa persistente ou redução importante da ingestão e comunique essas mudanças à equipe.",
-    "Priorize conforto, ritmo lento e boa aceitação, sem forçar ingestão quando houver desconforto ou dificuldade evidente.",
+    "Ofereça alimentos e líquidos com a ajuda necessária para que a refeição aconteça com calma, em boa posição e sem pressa.",
+    "Procure a equipe se aparecerem tosse ou engasgos durante as refeições, voz molhada depois de engolir, refeições muito demoradas, recusa persistente ou redução importante da alimentação.",
+    "Priorize conforto, ritmo lento e boa aceitação. Se houver desconforto ou dificuldade evidente para engolir, pare a oferta e observe antes de insistir.",
   ],
   fragilidade: [
-    "A vulnerabilidade deve ser interpretada junto da dependência avançada: priorize prevenção de quedas durante transferências, proteção da pele, conforto, sono e reconhecimento precoce de intercorrências.",
-    "Evite metas genéricas de exercício independente quando elas não forem compatíveis com o estágio funcional; siga somente mobilização e atividades já consideradas seguras pela equipe.",
+    "Com dependência avançada, vale concentrar o cuidado no que traz mais conforto e segurança: transferências cuidadosas, proteção da pele, sono, alimentação possível e reconhecimento rápido de mudanças no estado habitual.",
+    "Prefira movimentos e atividades compatíveis com a capacidade atual, sem transformar exercício independente em uma obrigação. A meta é preservar conforto, participação e mobilidade possível.",
   ],
   "suporte-social": [
-    "Distribua tarefas do cuidado entre as pessoas disponíveis e deixe claro quem responde por higiene, alimentação, medicações, mudanças de posição, consultas e contatos com a equipe.",
-    "Planeje descanso e substituição periódica do cuidador principal. Sobrecarga, exaustão ou dificuldade para realizar transferências e higiene com segurança devem ser comunicadas à equipe.",
-    "Nas conversas com a equipe, alinhe prioridades de cuidado, conforto e decisões futuras com a família e com as preferências previamente conhecidas da pessoa.",
+    "Quando houver mais de uma pessoa disponível, dividam as tarefas de cuidado de forma clara para que higiene, alimentação, medicamentos, mudanças de posição e consultas não fiquem concentrados em uma só pessoa.",
+    "Reserve momentos de descanso para quem cuida e combine quem pode ajudar nos períodos mais cansativos. Se houver exaustão ou dificuldade para fazer transferências ou higiene com segurança, converse com a equipe.",
+    "Nas conversas sobre o cuidado, tragam para o centro o que é mais importante para a pessoa e para a família: conforto, rotina, preferências e prioridades para os próximos passos.",
   ],
   medicamentos: [
-    "Mantenha a lista de medicamentos e horários sob responsabilidade de um cuidador definido, levando a lista atualizada a consultas, urgências e internações.",
-    "Não inicie, suspenda, substitua ou ajuste medicamentos por conta própria. Sonolência nova, quedas nas transferências, sangramento, hipoglicemia ou dificuldade de administração devem ser comunicados à equipe.",
+    "Escolha uma pessoa de referência para organizar os medicamentos e horários e mantenha uma lista atualizada para levar a consultas, atendimentos de urgência e internações.",
+    "Se surgir dúvida ou necessidade de mudar algum medicamento, converse primeiro com a equipe. Procure ajuda se aparecerem sonolência nova, quedas nas transferências, sangramento, hipoglicemia ou dificuldade para administrar os remédios.",
   ],
   sensorial: [
-    "Favoreça conforto e reconhecimento com voz familiar, iluminação suave e recursos visuais ou auditivos habituais quando forem bem tolerados.",
-    "Não exija respostas verbais ou desempenho em tarefas para avaliar bem-estar; observe expressão facial, postura, vocalizações e mudanças de comportamento.",
+    "Uma voz familiar, iluminação confortável e os recursos de visão ou audição que a pessoa costuma usar podem ajudar no reconhecimento e no bem-estar.",
+    "Para perceber bem-estar ou desconforto, observe também expressão facial, postura, vocalizações e mudanças de comportamento, mesmo quando a pessoa fala pouco ou não consegue responder.",
   ],
 };
 
 const HIGH_DEPENDENCE_GUIDANCE: Readonly<Record<string, readonly string[]>> = {
   funcionalidade: [
-    "Há dependência importante para atividades básicas. Planeje quem ajuda em banho, vestir-se, higiene, alimentação e transferências, evitando deixar tarefas de risco sem supervisão.",
-    "Adapte o nível de participação ao que a pessoa ainda consegue fazer de forma segura, sem transformar preservação de autonomia em obrigação ou risco.",
-    "Observe aumento da necessidade de ajuda, dor nas transferências, nova perda de mobilidade e alterações de pele e comunique à equipe.",
+    "Há necessidade importante de ajuda nas atividades básicas. Combine quem poderá apoiar no banho, vestir-se, higiene, alimentação e transferências, mantendo companhia nas situações em que há risco.",
+    "Deixe a pessoa participar das etapas que ainda consegue fazer com segurança, sem transformar autonomia em cobrança.",
+    "Procure a equipe se a pessoa passar a precisar de muito mais ajuda, sentir dor nas transferências, perder mobilidade ou apresentar feridas ou vermelhidão persistente na pele.",
   ],
   cognicao: [
-    "Use instruções curtas e uma etapa por vez. Quando a dependência já é importante, o cuidador deve assumir tarefas de segurança como medicamentos, finanças e organização de consultas.",
-    "Mantenha rotina previsível e reduza exigências que provoquem frustração, oferecendo escolhas simples quando isso for possível e seguro.",
+    "Use instruções curtas e uma etapa por vez. Em medicamentos, finanças e organização de consultas, deixe uma pessoa de confiança acompanhar de perto quando já houver erros ou insegurança.",
+    "Mantenha uma rotina previsível e ofereça escolhas simples sempre que possível. Reduza cobranças que estejam trazendo frustração ou ansiedade.",
   ],
   mobilidade: [
-    "Priorize transferências seguras, supervisão ao levantar e uso correto dos apoios já indicados. Não estimule marcha sem a assistência necessária.",
-    "Registre quedas, quase quedas e situações em que o cuidador passou a precisar de mais ajuda para mobilizar a pessoa.",
+    "Nas transferências e ao levantar, fique por perto e ofereça a ajuda necessária. Se caminhar exigir assistência, acompanhe todo o trajeto.",
+    "Conte à equipe se houver quedas, quase tombos ou se quem cuida passar a precisar de mais ajuda para movimentar a pessoa.",
   ],
 };
 
 const ADL_SUPPORT_GUIDANCE: Readonly<Record<string, readonly string[]>> = {
   funcionalidade: [
-    "Defina claramente em quais atividades básicas a pessoa precisa de supervisão ou ajuda física e mantenha independência apenas nas etapas que continuam seguras.",
-    "Evite fazer tudo pela pessoa quando ela ainda consegue participar, mas não deixe sem ajuda atividades com risco de queda, erro de medicação, higiene inadequada ou alimentação insegura.",
-    "Anote quais atividades passaram a exigir mais ajuda desde a última consulta para facilitar a revisão longitudinal.",
+    "Identifique em quais atividades a pessoa precisa de ajuda e preserve sua participação nas etapas que ainda consegue fazer com segurança.",
+    "Ofereça ajuda sem antecipar tudo o que a pessoa ainda consegue fazer. Nas situações com risco de queda, erro de medicação ou alimentação insegura, fique por perto e participe mais ativamente.",
+    "Perceba quais atividades passaram a exigir mais ajuda desde a última consulta e conte essas mudanças na próxima revisão.",
   ],
   cognicao: [
-    "Associe orientações cognitivas ao desempenho funcional real: use lembretes e rotina para o que ainda é possível, e transfira ao cuidador as tarefas que já apresentam risco ou erros repetidos.",
+    "Use lembretes e rotina nas tarefas em que isso ainda ajuda. Nas atividades que já apresentam erros repetidos ou risco, ofereça apoio direto de uma pessoa de confiança.",
   ],
 };
 
 const IADL_SUPPORT_GUIDANCE: Readonly<Record<string, readonly string[]>> = {
   funcionalidade: [
-    "Concentre o apoio nas atividades instrumentais que já apresentam dificuldade, como finanças, compras, transporte, organização da casa e medicamentos, preservando as atividades básicas que permanecem seguras.",
-    "Use supervisão proporcional ao risco e revise periodicamente se novas tarefas passaram a exigir ajuda.",
+    "Concentre a ajuda nas atividades instrumentais que ficaram mais difíceis, como finanças, compras, transporte, organização da casa e medicamentos, e preserve a independência nas atividades básicas que continuam seguras.",
+    "Aumente a ajuda apenas onde houver dificuldade ou risco e observe se alguma nova tarefa começa a precisar de apoio.",
   ],
   cognicao: [
-    "Use listas, rotina, calendário e supervisão nas tarefas complexas. Se houver erros em finanças, medicamentos ou deslocamentos, não dependa apenas de lembretes: organize apoio direto do cuidador.",
+    "Listas, rotina e calendário podem ajudar nas tarefas complexas. Se já houver erros em finanças, medicamentos ou deslocamentos, combine apoio direto de uma pessoa de confiança em vez de depender apenas de lembretes.",
   ],
 };
 
