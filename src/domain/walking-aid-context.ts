@@ -35,7 +35,7 @@ export const WALKING_AID_CONTEXT_DEFINITION = {
 } as const;
 
 export function scoreWalkingAidContext(raw: Record<string, unknown>) {
-  const allowed = new Set(WALKING_AID_CONTEXT_DEFINITION.fields.map((field) => field.id));
+  const allowed = new Set<string>(WALKING_AID_CONTEXT_DEFINITION.fields.map((field) => field.id));
   if (Object.keys(raw).some((id) => !allowed.has(id))) throw new Error("Dispositivo de locomoção contém campo não permitido.");
 
   const usesWalkingAid = raw.usesWalkingAid;
@@ -49,6 +49,7 @@ export function scoreWalkingAidContext(raw: Record<string, unknown>) {
         scoreText: "Não utiliza dispositivo de locomoção",
         classification: "Sem dispositivo de auxílio à locomoção registrado",
         interpretation: "Registro contextual. Nenhuma orientação sobre bengala, andador ou outro dispositivo deve ser gerada a partir deste campo.",
+        clinicalColor: undefined,
       },
       version: WALKING_AID_CONTEXT_VERSION,
     };
@@ -67,6 +68,7 @@ export function scoreWalkingAidContext(raw: Record<string, unknown>) {
       scoreText: walkingAidType,
       classification: "Utiliza dispositivo de auxílio à locomoção",
       interpretation: "Registro contextual para individualizar orientações de segurança. O uso do dispositivo, isoladamente, não classifica o domínio de locomoção/equilíbrio.",
+      clinicalColor: undefined,
     },
     version: WALKING_AID_CONTEXT_VERSION,
   };
