@@ -14,6 +14,7 @@ const dietaryRouteUrl = new URL("../../src/app/api/consultations/[id]/dietary-as
 const patientPageUrl = new URL("../../src/app/patients/[id]/page.tsx", import.meta.url);
 const problemServiceUrl = new URL("../../src/server/clinical/problem-workspace.ts", import.meta.url);
 const medicationServiceUrl = new URL("../../src/server/clinical/medication-workspace.ts", import.meta.url);
+const authenticatedSmokeUrl = new URL("../../scripts/smoke-authenticated-ci.ts", import.meta.url);
 
 async function text(url: URL) {
   return readFile(url, "utf8");
@@ -101,15 +102,24 @@ test("Rota alimentar preserva a fronteira HTTP de autenticação e isolamento", 
   assert.match(source, /status: 403/);
 });
 
-test("Página do paciente usa janela longitudinal inicial e mantém acesso ao histórico completo", async () => {
+test("Página do paciente prioriza o carregamento integral estável durante a recuperação de produção", async () => {
   const source = await text(patientPageUrl);
 
-  assert.match(source, /historyValue === "full"/);
-  assert.match(source, /take: 24/);
-  assert.match(source, /take: 250/);
-  assert.match(source, /take: 25/);
-  assert.match(source, /Carregar histórico completo/);
-  assert.match(source, /fullHistory \? \{\} : \{ take: 24 \}/);
+  assert.doesNotMatch(source, /historyValue === "full"/);
+  assert.doesNotMatch(source, /take: 24/);
+  assert.doesNotMatch(source, /take: 250/);
+  assert.doesNotMatch(source, /take: 25/);
+  assert.doesNotMatch(source, /Carregar histórico completo/);
+  assert.match(source, /orderBy: \[\{ occurredAt: "desc" \}/);
+  assert.match(source, /orderBy: \{ appliedAt: "asc" \}/);
+  assert.match(source, /buildCapacityDimensionHistory/);
+});
+
+test("E2E autenticado abre a página real de um paciente sintético", async () => {
+  const smoke = await text(authenticatedSmokeUrl);
+
+  assert.match(smoke, /\/patients\/\$\{assignedPatientId\}/);
+  assert.match(smoke, /patientPage\.status[\s\S]*200/);
 });
 
 test("Problemas e medicamentos devolvem projeção mínima após a gravação", async () => {
