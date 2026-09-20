@@ -630,7 +630,7 @@ class StyledPdfBuilder {
       this.fillRect(MARGIN + 1, cursorTop - rowHeight + 1, labelWidth - 2, rowHeight - 2, "#fbf9fd");
       const labelLines = this.wrappedLines(dimension.label, labelWidth - 14, 7.4, true);
       labelLines.slice(0, 2).forEach((line, index) => this.text(line, MARGIN + 7, cursorTop - 13 - index * 9, 7.4, FONT_BOLD, COLORS.primaryStrong));
-      const latest = dimension.cells.at(-1)?.status ?? "not-assessed";
+      const latest = [...dimension.cells].reverse().find((cell) => cell.assessments.length > 0)?.status ?? "not-assessed";
       this.text(
         latest === "preserved" ? "Sem redução" : latest === "attention" ? "Atenção" : latest === "altered" ? "Redução" : "Registro",
         MARGIN + 7,
@@ -680,6 +680,20 @@ class StyledPdfBuilder {
       this.text(formatShortDate(consultation.occurredAt), x - 12, axisY, 5.8, FONT_BODY, COLORS.muted);
     });
     this.y = cursorTop - 8;
+    if (history.inflectionPoints.length > 0) {
+      const inflectionItems = history.inflectionPoints.map((point) => {
+        const direction = point.direction === "worsened" ? "piora observada" : "melhora observada";
+        const context = point.milestones.length
+          ? point.milestones.map((milestone) => milestone.note ? `${milestone.title} — ${milestone.note}` : milestone.title).join("; ")
+          : "Motivo não registrado";
+        return `${formatShortDate(point.occurredAt)} · ${point.dimensionLabel} — ${direction}. Contexto registrado: ${context}.`;
+      });
+      const height = this.measureBullets(inflectionItems, CONTENT_WIDTH, 7.2, 9.2) + 18;
+      this.ensureSpace(height);
+      this.text("Pontos de inflexão e contexto documentado", MARGIN, this.y - 7.6, 7.6, FONT_BOLD, COLORS.primaryStrong);
+      this.y -= 13;
+      this.y -= this.drawBulletsAt(inflectionItems, MARGIN, this.y, CONTENT_WIDTH, 7.2, 9.2, COLORS.ink) + 4;
+    }
     const note = "Mudanças que aconteceram em períodos próximos podem estar relacionadas ou não. O gráfico não define a causa da mudança.";
     const noteLines = this.wrappedLines(note, CONTENT_WIDTH, 7.2);
     this.ensureSpace(noteLines.length * 9 + 8);
