@@ -133,6 +133,16 @@ async function main() {
 
   await seed();
 
+  const patientPage = await request(
+    `/patients/${assignedPatientId}`,
+    true,
+  );
+  assert.equal(
+    patientPage.status,
+    200,
+    `A página autenticada do paciente sintético falhou com HTTP ${patientPage.status}.`,
+  );
+
   const anonymous = await request(
     `/api/consultations/${assignedConsultationId}/dietary-assessment`,
     false,
@@ -171,6 +181,7 @@ async function main() {
   console.log("AUTHENTICATED_CI_E2E=SMOKE_OK");
   console.log("- usuário sintético autenticado exclusivamente pelo contexto de CI");
   console.log("- MySQL efêmero validado");
+  console.log("- página autenticada do paciente sintético retornou 200");
   console.log("- rota alimentar protegida retornou 401 sem autenticação");
   console.log("- paciente atribuído retornou 200");
   console.log("- paciente não atribuído retornou 403 e gerou auditoria");
