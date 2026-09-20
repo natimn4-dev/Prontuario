@@ -60,7 +60,7 @@ export default async function Program55MapaPage({ params }: { params: Promise<{ 
   const checkpoints = enrollment.checkpoints;
   const linkedConsultationIds = program55LinkedConsultationIds(checkpoints);
   const linkedConsultationSet = new Set(linkedConsultationIds);
-  const linkedAssessments = linkedAssessments.filter((assessment) => linkedConsultationSet.has(assessment.consultationId));
+  const linkedAssessments = patient.scaleAssessments.filter((assessment) => linkedConsultationSet.has(assessment.consultationId));
   const milestones = buildProblemCapacityMilestones({ patientId: patient.id, problems: patient.problems, consultationIds: linkedConsultationIds });
   const capacityHistory = buildProgram55CapacityHistory({
     patientId: patient.id,
