@@ -18,14 +18,14 @@ Uma escala só recebe o status **testada** depois que seus pontos de corte e sua
 | `meem` | Cognição | testada | cortes por escolaridade |
 | `dez_cs` | Cognição | testada | novas avaliações: 0 anos +2; 1–3 anos +1; ≥4 anos +0; limite 10; faixas ≤5 / 6–7 / ≥8. Regra 1–4 anos permanece apenas no legado histórico |
 | `frail_br` | Fragilidade | testada | 0 / 1–2 / 3–5 |
-| `sarcf` | Nutrição/sarcopenia | testada | 0–3 / 4–10 |
+| `sarcf` | Nutrição/sarcopenia | testada | 0–3 / 4–10; ≥4 é rastreio/case-finding e não estabelece sarcopenia provável isoladamente |
 | `preensao` | Mobilidade/sarcopenia | testada | feminino 16; masculino 27 kgF |
 | `velocidade_marcha` | Mobilidade | testada | 4/tempo; ≤0,8 m/s alterado |
 | `sentar_levantar_5x` | Mobilidade | testada | ≤15 normal; >15 reduzido |
-| `sppb` | Mobilidade | testada | 10–12 / 7–9 / 0–6 |
+| `sppb` | Mobilidade | testada | versão atual Freitas/Py: tempos/subescores e corte ≤8 para baixo desempenho físico; faixas 0–6 / 7–9 / 10–12 permanecem somente no legado histórico |
 | `antropometria` | Nutrição | testada | IMC, perda ponderal, panturrilha |
 | `polifarmacia` | Medicações | testada | 0–1 / 2–3 / 4–7 |
-| `stoppfall` | Medicações/quedas | testada | 0 / 1–2 / 3–14 |
+| `stoppfall` | Medicações/quedas | testada | 14 classes do consenso; faixas 0 / 1–2 / 3–14 são priorização local, não ponto de corte validado de risco |
 | `kps` | Prognóstico | testada | 90–100 / 70–80 / 10–60 |
 | `lace` | Transição de cuidado | testada | pesos do legado + 0–4 / 5–9 / 10–19 |
 | `g8` | Rastreio oncogeriátrico | testada | ≤14 positivo; ≥14,5 negativo, incluindo meio ponto |
@@ -39,7 +39,7 @@ Uma escala só recebe o status **testada** depois que seus pontos de corte e sua
 | `zarit_paliativo_7_ms2013` | Suporte social/cuidador | testada | 7 itens 1–5; 7–14 leve / 15–21 moderada / 22 lacuna da fonte / 23–35 grave |
 | `fast` | Cognição/funcionalidade | testada | estágios discretos 1–7f; faixas do legado preservadas |
 | `pps` | Cuidados paliativos/funcionalidade | testada | níveis 10–100; faixas locais 70–100 / 40–60 / 10–30 |
-| `esas` | Cuidados paliativos/sintomas | testada | 9 itens 0–10, total 0–90 + destaque individual >=7 |
+| `esas` | Cuidados paliativos/sintomas | testada | 9 itens 0–10, total 0–90; faixas da soma são locais + destaque individual >=7 |
 | `cfs` | Fragilidade | pendente | não localizada no golden master; requer versão/fonte antes da implementação |
 | `prevent` | Risco cardiovascular | mapeada | fluxo manual e faixas identificados |
 
