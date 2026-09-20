@@ -132,6 +132,6 @@ test("FAST 7d adapta cognição para comunicação e cuidado, sem exigir desempe
   ], context).join(" ");
 
   assert.match(guidance, /comunicação calma e afetuosa/i);
-  assert.match(guidance, /sinais não verbais/i);
+  assert.match(guidance, /expressões, gestos/i);
   assert.match(guidance, /em vez de cobrar memória ou orientação/i);
 });
