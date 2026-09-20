@@ -14,6 +14,10 @@ import {
   assertProductionEnvironment,
   isSyntheticDietaryPreviewEnvironment,
 } from "../../domain/security/environment";
+import {
+  isWorkspaceSessionAuthorized,
+  type WorkspaceSessionUser,
+} from "../../domain/security/route-access";
 
 const appUrl = process.env.APP_URL ?? "http://localhost:3000";
 const allowedEmails = parseEmailSet(process.env.AUTH_ALLOWED_EMAILS);
@@ -56,6 +60,13 @@ export function isAuthorizedEmail(email: string): boolean {
   return usesApprovedProductionAccessContract()
     ? false
     : isEmailAllowed(email, allowedEmails);
+}
+
+export function isWorkspaceAccessAuthorized(
+  user: WorkspaceSessionUser | null | undefined,
+): boolean {
+  const emailAuthorized = Boolean(user?.email && isAuthorizedEmail(user.email));
+  return isWorkspaceSessionAuthorized(user, emailAuthorized);
 }
 
 async function findActiveAccessGrant(email: string) {
@@ -232,7 +243,7 @@ export const auth = betterAuth({
           if (!user) {
             throw new APIError("UNAUTHORIZED", { message: "Usuário não encontrado." });
           }
-          if (!user.active || (!user.accessManaged && !isAuthorizedEmail(user.email))) {
+          if (!isWorkspaceAccessAuthorized(user)) {
             throw new APIError("FORBIDDEN", { message: "Acesso ao prontuário revogado." });
           }
           return { data: session };

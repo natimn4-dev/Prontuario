@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { buildPublicAuthReadiness } from "@/domain/security/auth-readiness";
+import { WORKSPACE_ACCESS_CONTRACT_VERSION } from "@/domain/security/route-access";
 import { currentVidaasFailureClass } from "@/domain/vidaas-diagnostic";
 import { prisma } from "@/server/db";
 
@@ -30,6 +31,7 @@ export async function GET(request: Request) {
 
   return NextResponse.json({
     ...readiness,
+    accessContract: WORKSPACE_ACCESS_CONTRACT_VERSION,
     vidaasFailureClass: currentVidaasFailureClass(latestAttempt),
   }, {
     status: readiness.status === "ready" ? 200 : 503,

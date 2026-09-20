@@ -2,7 +2,6 @@ import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import test from "node:test";
 import { NextRequest } from "next/server.js";
-import { parseEmailSet } from "../../src/domain/security/auth-policy.ts";
 import {
   isPublicRoute,
   isWorkspaceSessionAuthorized,
@@ -82,14 +81,14 @@ test("API clínica anônima falha com 401 e não redireciona", async () => {
   }
 });
 
-test("sessão validada libera áreas protegidas sem ampliar rotas públicas", async () => {
-  const allowedEmails = parseEmailSet("authorized@example.test");
+test("sessão de identidade aprovada libera áreas protegidas sem ampliar rotas públicas", async () => {
   const user: WorkspaceSessionUser = {
     id: "user-authorized",
     email: "authorized@example.test",
     active: true,
+    accessManaged: false,
   };
-  const guard = createRequestGuard(async () => isWorkspaceSessionAuthorized(user, allowedEmails));
+  const guard = createRequestGuard(async () => isWorkspaceSessionAuthorized(user, true));
   assert.equal(isPublicRoute("/api/authentic-data"), false);
 
   for (const pathname of ["/", "/patients/patient-synthetic", "/consultations/consultation-synthetic", "/api/patients"]) {
@@ -101,30 +100,45 @@ test("sessão validada libera áreas protegidas sem ampliar rotas públicas", as
   }
 });
 
-test("usuário removido da allowlist é bloqueado mesmo com sessão", async () => {
-  const allowedEmails = parseEmailSet("other-authorized@example.test");
+test("usuário com acesso gerenciado ativo não depende de autorização legada do email", async () => {
+  const user: WorkspaceSessionUser = {
+    id: "user-managed",
+    email: "managed@example.test",
+    active: true,
+    accessManaged: true,
+  };
+
+  assert.equal(isWorkspaceSessionAuthorized(user, false), true);
+  const guard = createRequestGuard(async () => isWorkspaceSessionAuthorized(user, false));
+  const response = await guard(new NextRequest("https://prontuario.test/patients/new"));
+  assert.equal(response.status, 200);
+  assert.equal(response.headers.get("location"), null);
+});
+
+test("usuário sem acesso gerenciado nem identidade aprovada é bloqueado mesmo com sessão", async () => {
   const user: WorkspaceSessionUser = {
     id: "user-removed",
     email: "removed@example.test",
     active: true,
+    accessManaged: false,
   };
-  const guard = createRequestGuard(async () => isWorkspaceSessionAuthorized(user, allowedEmails));
+  const guard = createRequestGuard(async () => isWorkspaceSessionAuthorized(user, false));
 
-  assert.equal(isWorkspaceSessionAuthorized(user, allowedEmails), false);
+  assert.equal(isWorkspaceSessionAuthorized(user, false), false);
   const response = await guard(new NextRequest("https://prontuario.test/patients/new"));
   assert.equal(response.headers.get("location"), "https://prontuario.test/login");
 });
 
-test("usuário inativo é bloqueado mesmo permanecendo na allowlist", async () => {
-  const allowedEmails = parseEmailSet("inactive@example.test");
+test("usuário inativo é bloqueado mesmo com identidade aprovada", async () => {
   const user: WorkspaceSessionUser = {
     id: "user-inactive",
     email: "inactive@example.test",
     active: false,
+    accessManaged: false,
   };
-  const guard = createRequestGuard(async () => isWorkspaceSessionAuthorized(user, allowedEmails));
+  const guard = createRequestGuard(async () => isWorkspaceSessionAuthorized(user, true));
 
-  assert.equal(isWorkspaceSessionAuthorized(user, allowedEmails), false);
+  assert.equal(isWorkspaceSessionAuthorized(user, true), false);
   const response = await guard(new NextRequest("https://prontuario.test/consultations/abc"));
   assert.equal(response.headers.get("location"), "https://prontuario.test/login");
 });

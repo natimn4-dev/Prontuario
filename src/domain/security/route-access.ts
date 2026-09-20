@@ -1,11 +1,12 @@
-import { isEmailAllowed } from "./auth-policy.ts";
-
 export type RouteAccess = "public" | "authenticated" | "redirect-login" | "unauthorized-api";
+
+export const WORKSPACE_ACCESS_CONTRACT_VERSION = "managed-or-approved-v2" as const;
 
 export interface WorkspaceSessionUser {
   id?: string | null;
   email?: string | null;
   active?: boolean | null;
+  accessManaged?: boolean | null;
 }
 
 function normalizedPath(pathname: string): string {
@@ -37,13 +38,13 @@ export function isPublicRoute(pathname: string): boolean {
 
 export function isWorkspaceSessionAuthorized(
   user: WorkspaceSessionUser | null | undefined,
-  allowedEmails: ReadonlySet<string>,
+  emailAuthorized: boolean,
 ): boolean {
   return Boolean(
     user?.id
       && user.email
       && user.active === true
-      && isEmailAllowed(user.email, allowedEmails),
+      && (user.accessManaged === true || emailAuthorized),
   );
 }
 
