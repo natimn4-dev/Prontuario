@@ -2,6 +2,7 @@ import { CLINICAL_RELEASE_ID } from "../src/domain/clinical-release.ts";
 import { ONCOGERIATRIA_VERSION } from "../src/domain/oncogeriatria/feature.ts";
 import { validateGoogleOAuthBootstrap } from "../src/domain/oauth-bootstrap-smoke.ts";
 import { PROGRAM55_MAX_AGE, PROGRAM55_MIN_AGE } from "../src/domain/program55/eligibility.ts";
+import { WORKSPACE_ACCESS_CONTRACT_VERSION } from "../src/domain/security/route-access.ts";
 
 const REQUEST_TIMEOUT_MS = 15_000;
 
@@ -171,8 +172,11 @@ try {
 
   const authHealth = await request(base, "/api/health/auth", "follow");
   if (authHealth.status !== 200) blocked(`/api/health/auth respondeu HTTP ${authHealth.status}.`);
-  const authHealthBody = await authHealth.json().catch(() => null) as { status?: string } | null;
+  const authHealthBody = await authHealth.json().catch(() => null) as { status?: string; accessContract?: string } | null;
   if (authHealthBody?.status !== "ready") blocked("/api/health/auth não confirmou prontidão estática do OAuth.");
+  if (authHealthBody.accessContract !== WORKSPACE_ACCESS_CONTRACT_VERSION) {
+    blocked(`/api/health/auth expõe contrato de acesso diferente do esperado (${authHealthBody.accessContract ?? "ausente"}).`);
+  }
 
   const login = await request(base, "/login", "follow");
   if (login.status !== 200) blocked(`/login respondeu HTTP ${login.status}.`);
@@ -205,7 +209,7 @@ console.log(`- release confirmada: ${CLINICAL_RELEASE_ID}`);
 console.log("- /api/health confirmou banco ok e resposta não cacheável");
 console.log(`- Programa 55+ confirmado ativo para ${PROGRAM55_MIN_AGE}–${PROGRAM55_MAX_AGE} anos e schema longitudinal pronto`);
 console.log(`- Oncogeriatria confirmada ativa, schema pronto e versão ${ONCOGERIATRIA_VERSION}`);
-console.log("- /api/health/auth confirmou prontidão estática do OAuth");
+console.log(`- /api/health/auth confirmou OAuth e contrato de acesso ${WORKSPACE_ACCESS_CONTRACT_VERSION}`);
 console.log("- CSS e JavaScript do Next.js presentes e entregues com HTTP 200");
 console.log("- /login contém o link navegável e a interface de acesso vigentes");
 console.log("- endpoint canônico do Better Auth iniciou Google OAuth com state e Set-Cookie");
