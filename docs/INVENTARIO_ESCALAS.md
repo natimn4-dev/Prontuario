@@ -16,7 +16,7 @@ Uma escala só recebe o status **testada** depois que seus pontos de corte e sua
 | `cam` | Cognição/delirium | testada | algoritmo 1∧2∧(3∨4) + alerta urgente se positivo |
 | `moca` | Cognição | testada | 0–17 / 18–25 / 26–30 |
 | `meem` | Cognição | testada | cortes por escolaridade |
-| `dez_cs` | Cognição | testada | soma, ajuste educacional, limite 10 e faixas ≤5 / 6–7 / ≥8 |
+| `dez_cs` | Cognição | testada | novas avaliações: 0 anos +2; 1–3 anos +1; ≥4 anos +0; limite 10; faixas ≤5 / 6–7 / ≥8. Regra 1–4 anos permanece apenas no legado histórico |
 | `frail_br` | Fragilidade | testada | 0 / 1–2 / 3–5 |
 | `sarcf` | Nutrição/sarcopenia | testada | 0–3 / 4–10 |
 | `preensao` | Mobilidade/sarcopenia | testada | feminino 16; masculino 27 kgF |
