@@ -93,8 +93,7 @@ test("Katz com dependência moderada orienta ajuda e supervisão em ABVD", () =>
 
   assert.equal(context.level, "adl-support");
   const guidance = contextualFamilyGuidance("funcionalidade", ["Orientação genérica"], context).join(" ");
-  assert.match(guidance, /atividades básicas/i);
-  assert.match(guidance, /precisa de ajuda/i);
+  assert.match(guidance, /em quais atividades a pessoa precisa de ajuda/i);
 });
 
 test("Barthel grave pode elevar necessidade de ajuda mesmo sem FAST avançado", () => {
