@@ -394,6 +394,108 @@ function collectedValues(scale: AgaScaleReportSection): Map<string, string> {
   return new Map(scale.collectedData.map((item) => [item.field, item.value]));
 }
 
+const CONTEXT_ONLY_SCALE_CODES = new Set(["walking_aid_context"]);
+
+function walkingAidType(scales: readonly AgaScaleReportSection[]): string | undefined {
+  const device = scales.find((scale) => scale.assessedInTargetConsultation && scale.code === "walking_aid_context");
+  if (!device) return undefined;
+  const values = collectedValues(device);
+  if (values.get("usesWalkingAid") !== "1") return undefined;
+  return values.get("walkingAidType") || device.result.scoreText || undefined;
+}
+
+function reducedGripDetected(scales: readonly AgaScaleReportSection[]): boolean {
+  const grip = scales.find((scale) => scale.assessedInTargetConsultation && scale.code === "preensao");
+  if (!grip) return false;
+  if (grip.clinicalColor === "vermelho" || grip.clinicalColor === "amarelo") return true;
+  return /reduzid|baixa|alterad/i.test(grip.result.classification ?? "");
+}
+
+function mobilityTargetedGuidance(scales: readonly AgaScaleReportSection[]): DomainGuidance | undefined {
+  const reducedGrip = reducedGripDetected(scales);
+  const device = walkingAidType(scales);
+  if (!reducedGrip && !device) return undefined;
+
+  const actions: string[] = [];
+  if (reducedGrip) {
+    actions.push(
+      "A força de preensão está reduzida. Esse achado é um marcador de menor força muscular e se associa a maior risco de quedas: revise quedas e quase quedas, marcha, equilíbrio, transferências e a capacidade de levantar-se da cadeira.",
+      "Fisioterapia: avaliar força de membros inferiores, equilíbrio, marcha, transferências e segurança no ambiente; estruturar exercício multicomponente com fortalecimento/resistência e treino de equilíbrio, com progressão individual e supervisão conforme o risco.",
+      "Mantenha corredores e o caminho até o banheiro livres, bem iluminados e sem tapetes soltos; comunique nova queda, quase queda ou piora para caminhar.",
+    );
+  }
+  if (device) {
+    actions.push(
+      `Como há uso de ${device.toLocaleLowerCase("pt-BR")}, peça ao fisioterapeuta para conferir altura e ajuste, técnica, lado de uso quando aplicável, estabilidade e segurança nos trajetos habituais; deixe o dispositivo ao alcance antes de levantar.`,
+    );
+  }
+
+  return {
+    actions,
+    evidenceReferences: [
+      {
+        label: "Força de preensão e risco de quedas graves em idosos",
+        pmid: "37155689",
+        url: "https://pubmed.ncbi.nlm.nih.gov/37155689/",
+        relevance: "Coorte prospectiva com 16.445 idosos: menor força de preensão associou-se a maior risco de quedas graves, apoiando seu uso como marcador de vulnerabilidade e a avaliação complementar de marcha e equilíbrio.",
+      },
+      {
+        label: "Exercício para prevenção de quedas em idosos na comunidade",
+        pmid: "30703272",
+        url: "https://pubmed.ncbi.nlm.nih.gov/30703272/",
+        relevance: "Revisão sistemática: exercícios de equilíbrio e funcionais reduzem quedas; programas devem ser individualizados e seguros.",
+      },
+    ],
+  };
+}
+
+function eat10TargetedGuidance(scales: readonly AgaScaleReportSection[]): DomainGuidance | undefined {
+  const eat10 = scales.find((scale) => scale.assessedInTargetConsultation && scale.code === "eat10");
+  const score = eat10 ? scoreNumber(eat10) : undefined;
+  if (!eat10 || typeof score !== "number" || score < 3) return undefined;
+
+  return {
+    actions: [
+      "O EAT-10 foi positivo para risco de disfagia. Organize avaliação clínica aprofundada da deglutição, geralmente com fonoaudiólogo; o rastreio isolado não diagnostica disfagia nem aspiração.",
+      "Até a avaliação, ofereça alimentos e líquidos somente quando a pessoa estiver desperta e bem posicionada, de preferência sentada e ereta; use ambiente tranquilo, pequenas quantidades, ritmo lento e pausas, respeitando a consistência já orientada pela equipe.",
+      "Não espesse líquidos nem mude a textura da dieta por conta própria. Consistência, volume, manobras posturais e outras estratégias devem ser individualizados após avaliação da deglutição.",
+      "Avise a equipe se houver tosse ou engasgos nas refeições, voz molhada após engolir, sensação de alimento parado, refeições muito demoradas, redução persistente da ingestão ou perda de peso. Engasgo com dificuldade para respirar exige atendimento imediato.",
+    ],
+    evidenceReferences: [
+      {
+        label: "Validade e confiabilidade do EAT-10",
+        pmid: "19140539",
+        url: "https://pubmed.ncbi.nlm.nih.gov/19140539/",
+        relevance: "Estudo de validação original: escore EAT-10 ≥3 é anormal e o instrumento pode ser usado para rastreio e acompanhamento de sintomas de deglutição.",
+      },
+      {
+        label: "Adaptação transcultural brasileira do EAT-10",
+        pmid: "24626972",
+        url: "https://pubmed.ncbi.nlm.nih.gov/24626972/",
+        relevance: "A versão brasileira manteve os dez itens e o corte de 3 pontos ou mais para risco de disfagia.",
+      },
+      {
+        label: "Recomendações clínicas para disfagia orofaríngea",
+        pmid: "40543044",
+        url: "https://pubmed.ncbi.nlm.nih.gov/40543044/",
+        relevance: "Consenso multidisciplinar: avaliação fonoaudiológica e, quando indicada, FEES/VFSS ajudam a definir consistências e estratégias individualizadas para minimizar aspiração e melhorar eficiência da deglutição.",
+      },
+    ],
+  };
+}
+
+function uniqueEvidence(
+  groups: readonly (readonly IntrinsicCapacityEvidenceReference[] | undefined)[],
+): IntrinsicCapacityEvidenceReference[] {
+  const byPmid = new Map<string, IntrinsicCapacityEvidenceReference>();
+  for (const group of groups) {
+    for (const item of group ?? []) {
+      if (!byPmid.has(item.pmid)) byPmid.set(item.pmid, item);
+    }
+  }
+  return [...byPmid.values()];
+}
+
 function cognitiveObservationInstrument(scale: AgaScaleReportSection): "moca" | "meem" | "clinical_observation" | undefined {
   if (scale.code !== "cognitive_domain_observation") return undefined;
   const instrument = collectedValues(scale).get("instrument");
@@ -601,7 +703,7 @@ function functionalDependenceDetected(scales: readonly AgaScaleReportSection[]):
 }
 
 function stateFor(scales: readonly AgaScaleReportSection[], dimension: string): ReportDomainState {
-  const current = scales.filter((scale) => scale.assessedInTargetConsultation);
+  const current = scales.filter((scale) => scale.assessedInTargetConsultation && !CONTEXT_ONLY_SCALE_CODES.has(scale.code));
   if (current.length === 0) return "not-assessed";
   // ABVD ou AIVD comprometida é alteração funcional, independentemente de uma cor
   // técnica ausente/inconsistente em registros legados.
@@ -704,8 +806,22 @@ export function buildReportDomainSummaries(
       : dimension === "cognicao" && (state === "preserved" || state === "attention" || state === "altered")
         ? cognitiveGuidanceFor(dimensionScales, state)
         : undefined;
+    const targetedGuidance = dimension === "mobilidade"
+      ? mobilityTargetedGuidance(dimensionScales)
+      : dimension === "nutricao"
+        ? eat10TargetedGuidance(dimensionScales)
+        : undefined;
+    const fallbackGuidance = stateAwareGuidance?.actions
+      ?? alteredIntrinsicGuidance?.actions
+      ?? intrinsicGuidance?.actions
+      ?? domainGuidance?.actions
+      ?? [];
+    const mobilitySafeFallback = dimension === "mobilidade"
+      ? fallbackGuidance.filter((action) => !/bengala|andador|corrimão|dispositivo de auxílio/i.test(action))
+      : fallbackGuidance;
     const genericGuidance = unique([
-      ...(stateAwareGuidance?.actions ?? alteredIntrinsicGuidance?.actions ?? intrinsicGuidance?.actions ?? domainGuidance?.actions ?? []),
+      ...(targetedGuidance?.actions ?? []),
+      ...mobilitySafeFallback,
     ]);
     // Dependência funcional pode ter causas motoras, sensoriais ou clínicas e não deve
     // transformar uma cognição preservada em orientação de supervisão cognitiva.
@@ -733,20 +849,23 @@ export function buildReportDomainSummaries(
               functionallyContextualized,
               immobilityContext,
             );
-    const cognitionGuidanceLimit = dimension === "cognicao"
+    const guidanceLimit = dimension === "cognicao"
       ? state === "preserved"
         ? 3
         : (npiPositiveDomains(dimensionScales).length > 0 ? 5 : targetedCognitiveGuidance(dimensionScales).length > 0 ? 4 : 2)
-      : 2;
-    const guidance = unique(contextGuidance).slice(0, isAlteredGds ? 3 : cognitionGuidanceLimit);
+      : targetedGuidance
+        ? 4
+        : 2;
+    const guidance = unique(contextGuidance).slice(0, isAlteredGds ? 3 : guidanceLimit);
     const requiresMedicalGuidance = (state === "altered" || state === "attention") && guidance.length === 0;
+    const fallbackEvidence = stateAwareGuidance?.evidenceReferences
+      ?? alteredIntrinsicGuidance?.evidenceReferences
+      ?? intrinsicGuidance?.evidenceReferences
+      ?? domainGuidance?.evidenceReferences
+      ?? [];
     const evidenceReferences = isAlteredGds
       ? LATE_LIFE_DEPRESSION_EVIDENCE
-      : stateAwareGuidance?.evidenceReferences
-        ?? alteredIntrinsicGuidance?.evidenceReferences
-        ?? intrinsicGuidance?.evidenceReferences
-        ?? domainGuidance?.evidenceReferences
-        ?? [];
+      : uniqueEvidence([targetedGuidance?.evidenceReferences, fallbackEvidence]);
 
     return [{
       code: dimension,
