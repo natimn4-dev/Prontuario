@@ -10,6 +10,7 @@ const noteServiceUrl = new URL("../../src/server/clinical/consultation-note.ts",
 const scalesWorkspaceUrl = new URL("../../src/components/scales/clinical-scales-workspace.tsx", import.meta.url);
 const scalesWorkspaceRouteUrl = new URL("../../src/app/api/consultations/[id]/scales/workspace/route.ts", import.meta.url);
 const dietaryUrl = new URL("../../src/components/dietary/dietary-assessment-workspace.tsx", import.meta.url);
+const dietaryRouteUrl = new URL("../../src/app/api/consultations/[id]/dietary-assessment/route.ts", import.meta.url);
 const patientPageUrl = new URL("../../src/app/patients/[id]/page.tsx", import.meta.url);
 const problemServiceUrl = new URL("../../src/server/clinical/problem-workspace.ts", import.meta.url);
 const medicationServiceUrl = new URL("../../src/server/clinical/medication-workspace.ts", import.meta.url);
@@ -89,6 +90,15 @@ test("Alimentação atualiza o estado recalculado do PUT sem GET completo obriga
 
   assert.match(saveSource, /setData\(/);
   assert.doesNotMatch(saveSource, /await load\(\)/);
+});
+
+test("Rota alimentar preserva a fronteira HTTP de autenticação e isolamento", async () => {
+  const source = await text(dietaryRouteUrl);
+
+  assert.match(source, /AuthenticationRequiredError/);
+  assert.match(source, /AccessForbiddenError/);
+  assert.match(source, /status: 401/);
+  assert.match(source, /status: 403/);
 });
 
 test("Página do paciente usa janela longitudinal inicial e mantém acesso ao histórico completo", async () => {
