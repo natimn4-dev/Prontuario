@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import { buildAgaReportModel } from "../../src/domain/aga-report.ts";
+import type { LongitudinalAssessment } from "../../src/domain/clinical-change-summary.ts";
 import { scoreEat10 } from "../../src/domain/eat10.ts";
 import { buildReportDomainSummaries } from "../../src/domain/report-domain-summary.ts";
 import { scoreWalkingAidContext } from "../../src/domain/walking-aid-context.ts";
@@ -53,7 +54,7 @@ function mobilityDomain(input: {
   usesWalkingAid?: 0 | 1;
   walkingAidType?: string;
 }) {
-  const assessments = [
+  const assessments: LongitudinalAssessment[] = [
     {
       patientId: "patient-mobility",
       consultationId: "consultation-current",
