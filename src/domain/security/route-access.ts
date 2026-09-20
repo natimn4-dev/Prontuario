@@ -17,6 +17,9 @@ function normalizedPath(pathname: string): string {
 export function isPublicRoute(pathname: string): boolean {
   const path = normalizedPath(pathname);
   return path === "/login"
+    // Rota sintética exclusiva da branch de inspeção visual; não usa sessão,
+    // banco ou dados clínicos reais.
+    || path === "/visual-dietary"
     || path === "/auth/google"
     || path === "/api/health"
     || path === "/api/health/assets"
