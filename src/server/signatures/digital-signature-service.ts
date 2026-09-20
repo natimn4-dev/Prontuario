@@ -123,7 +123,6 @@ async function beginVidaasSignature(input: {
   });
   if (!consultation) throw new Error("CONSULTATION_NOT_FOUND");
 
-  const config = await getVidaasConfigForUser(input.user);
   const verificationToken = randomBytes(32).toString("base64url");
   const verificationUrl = `${appUrl()}/verificar/${verificationToken}`;
   const id = randomUUID();
@@ -139,6 +138,7 @@ async function beginVidaasSignature(input: {
     consultationStatus: consultation.status,
     report,
   });
+  const config = await getVidaasConfigForUser(input.user);
   const pdf = input.documentKind === "advance-directives"
     ? buildAdvanceDirectivesPdf({
         section: requireAdvanceDirectives(report),
