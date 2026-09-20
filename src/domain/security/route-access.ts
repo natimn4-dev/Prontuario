@@ -21,6 +21,7 @@ export function isPublicRoute(pathname: string): boolean {
     // banco ou dados clínicos reais.
     || path === "/visual-dietary"
     || path === "/auth/google"
+    || path === "/auth/error"
     || path === "/api/health"
     || path === "/api/health/assets"
     || path === "/api/health/auth"

@@ -98,6 +98,9 @@ export const auth = betterAuth({
   database: prismaAdapter(prisma, { provider: "mysql" }),
   trustedOrigins: [appUrl],
   telemetry: { enabled: false },
+  onAPIError: {
+    errorURL: "/auth/error",
+  },
   advanced: {
     useSecureCookies: process.env.NODE_ENV === "production",
     cookiePrefix: "prontuario",

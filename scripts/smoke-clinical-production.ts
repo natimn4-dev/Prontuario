@@ -92,7 +92,7 @@ async function startGoogleOAuth(base: URL) {
       "content-type": "application/json",
       "user-agent": "prontuario-clinical-release-smoke/2.1",
     },
-    body: JSON.stringify({ provider: "google", callbackURL: "/", errorCallbackURL: "/login?error=google" }),
+    body: JSON.stringify({ provider: "google", callbackURL: "/", errorCallbackURL: "/auth/error" }),
   });
 
   const body = await response.json().catch(() => null) as { redirect?: boolean; url?: string } | null;
@@ -102,16 +102,32 @@ async function startGoogleOAuth(base: URL) {
 
 async function startGoogleOAuthViaPublicEntrypoint(base: URL) {
   const response = await request(base, "/auth/google", "manual");
-  if (response.status !== 200) blocked(`/auth/google respondeu HTTP ${response.status}; o ponto de entrada público do OAuth está indisponível.`);
+  if (response.status !== 303) blocked(`/auth/google respondeu HTTP ${response.status}; o fluxo padrão não iniciou redirecionamento direto para o Google.`);
   const cacheControl = response.headers.get("cache-control")?.toLowerCase() ?? "";
   if (!cacheControl.includes("no-store")) blocked("/auth/google não confirmou Cache-Control: no-store.");
   if (responseCookies(response).length === 0) blocked("/auth/google não encaminhou Set-Cookie do state/PKCE.");
-  const html = await response.text();
-  if (!html.includes('data-google-oauth-continuation="true"')) blocked("/auth/google não apresentou continuação navegável para o Google.");
-  if (!html.includes('data-google-oauth-user-gesture="true"') || !html.includes('target="_top"')) blocked("/auth/google não exige continuação por gesto explícito do usuário no contexto superior.");
-  if (html.toLowerCase().includes('http-equiv="refresh"') || /window\.location|location\.replace|location\.assign/i.test(html)) blocked("/auth/google voltou a conter redirecionamento automático, incompatível com navegadores internos.");
-  if (!html.includes('data-google-oauth-browser-restart="true"') || !html.includes('/auth/google?fresh=1')) blocked("/auth/google não oferece fallback para novo contexto de navegador.");
-  if (!html.includes("https://accounts.google.com/") || !html.includes("state=")) blocked("/auth/google não contém destino Google HTTPS com state.");
+  const location = response.headers.get("location") ?? "";
+  let googleTarget: URL;
+  try {
+    googleTarget = new URL(location);
+  } catch {
+    blocked("/auth/google não retornou Location OAuth válida.");
+  }
+  if (googleTarget.protocol !== "https:" || googleTarget.hostname !== "accounts.google.com" || !googleTarget.searchParams.get("state")) {
+    blocked("/auth/google não redirecionou diretamente para Google HTTPS com state.");
+  }
+
+  const manual = await request(base, "/auth/google?manual=1", "manual");
+  if (manual.status !== 200) blocked(`/auth/google?manual=1 respondeu HTTP ${manual.status}; o modo compatível está indisponível.`);
+  const manualCacheControl = manual.headers.get("cache-control")?.toLowerCase() ?? "";
+  if (!manualCacheControl.includes("no-store")) blocked("/auth/google?manual=1 não confirmou Cache-Control: no-store.");
+  if (responseCookies(manual).length === 0) blocked("/auth/google?manual=1 não encaminhou Set-Cookie do state/PKCE.");
+  const html = await manual.text();
+  if (!html.includes('data-google-oauth-continuation="true"')) blocked("Modo compatível não apresentou continuação navegável para o Google.");
+  if (!html.includes('data-google-oauth-user-gesture="true"') || !html.includes('target="_top"')) blocked("Modo compatível não preservou gesto explícito do usuário.");
+  if (!html.includes('data-google-oauth-browser-restart="true"') || !html.includes('target="_blank"')) blocked("Modo compatível não oferece abertura do Google em nova janela.");
+  if (html.toLowerCase().includes('http-equiv="refresh"') || /window\.location|location\.replace|location\.assign/i.test(html)) blocked("Modo compatível contém redirecionamento automático inesperado.");
+  if (!html.includes("https://accounts.google.com/") || !html.includes("state=")) blocked("Modo compatível não contém destino Google HTTPS com state.");
 }
 
 const base = productionBaseUrl();
@@ -161,12 +177,12 @@ try {
   const login = await request(base, "/login", "follow");
   if (login.status !== 200) blocked(`/login respondeu HTTP ${login.status}.`);
   const loginHtml = await login.text();
-  if (!loginHtml.includes("Entrar com Google")) blocked("/login não contém a ação de autenticação Google.");
+  if (!loginHtml.includes("Continuar com Google")) blocked("/login não contém a ação de autenticação Google.");
   if (!loginHtml.includes('href="/auth/google"')) {
     await logLoginDeliveryMismatch(base, login, loginHtml);
     blocked("/login não contém o link navegável vigente para autenticação Google.");
   }
-  if (!loginHtml.includes("Se o prontuário estiver aberto dentro de outro aplicativo")) blocked("/login não corresponde à interface de acesso vigente.");
+  if (!loginHtml.includes("Usar modo compatível") || !loginHtml.includes('href="/auth/google?manual=1"')) blocked("/login não oferece fallback explícito para navegadores internos.");
 
   await startGoogleOAuth(base);
   await startGoogleOAuthViaPublicEntrypoint(base);
@@ -193,6 +209,6 @@ console.log("- /api/health/auth confirmou prontidão estática do OAuth");
 console.log("- CSS e JavaScript do Next.js presentes e entregues com HTTP 200");
 console.log("- /login contém o link navegável e a interface de acesso vigentes");
 console.log("- endpoint canônico do Better Auth iniciou Google OAuth com state e Set-Cookie");
-console.log("- /auth/google exige gesto explícito, sem auto-redirecionamento, e preserva state/PKCE");
-console.log("- /auth/google oferece fallback de novo contexto para navegadores internos");
+console.log("- /auth/google redireciona diretamente para o Google e preserva state/PKCE");
+console.log("- /auth/google?manual=1 mantém fallback por gesto explícito para navegadores internos");
 console.log("- rotas clínicas, incluindo /programa-55 e /oncogeriatria, não estão abertas anonimamente");

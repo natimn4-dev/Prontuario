@@ -4,6 +4,7 @@ import { readFileSync } from "node:fs";
 
 const loginSource = readFileSync("src/app/login/page.tsx", "utf8");
 const routeSource = readFileSync("src/app/auth/google/route.ts", "utf8");
+const errorPageSource = readFileSync("src/app/auth/error/page.tsx", "utf8");
 
 test("login Google usa link navegável sem depender de hidratação do React", () => {
   assert.match(loginSource, /href="\/auth\/google"/);
@@ -16,18 +17,27 @@ test("login Google é sempre renderizado dinamicamente e não pode voltar ao cac
   assert.match(loginSource, /export const revalidate = 0/);
 });
 
-test("rota de bootstrap OAuth preserva state cookies e entrega continuação segura para Google", () => {
+test("rota de bootstrap OAuth preserva state cookies e redireciona diretamente ao Google", () => {
   assert.match(routeSource, /auth\.api\.signInSocial/);
   assert.match(routeSource, /provider:\s*"google"/);
+  assert.match(routeSource, /errorCallbackURL:\s*"\/auth\/error"/);
   assert.match(routeSource, /returnHeaders:\s*true/);
   assert.match(routeSource, /validateGoogleOAuthTarget\(result\.url\)/);
-  assert.match(routeSource, /appendSetCookies\(authHeaders, headers\)/);
-  assert.match(routeSource, /renderGoogleOAuthContinuationPage\(googleTarget\)/);
-  assert.match(routeSource, /status:\s*200/);
-  assert.doesNotMatch(routeSource, /NextResponse\.redirect\(result\.url, 303\)/);
+  assert.match(routeSource, /NextResponse\.redirect\(googleTarget, 303\)/);
+  assert.match(routeSource, /appendSetCookies\(authHeaders, response\.headers\)/);
+  assert.match(routeSource, /cache-control/);
+  assert.match(routeSource, /no-store/);
 });
 
-test("falha no bootstrap retorna para login com erro visível", () => {
-  assert.match(routeSource, /\/login\?error=oauth_start/);
-  assert.match(loginSource, /Não foi possível iniciar a autenticação com o Google/);
+test("modo compatível permanece disponível sem ser o caminho padrão", () => {
+  assert.match(loginSource, /href="\/auth\/google\?manual=1"/);
+  assert.match(loginSource, /data-google-auth-compatible-entrypoint="true"/);
+  assert.match(routeSource, /manualMode/);
+  assert.match(routeSource, /renderGoogleOAuthContinuationPage\(googleTarget\)/);
+});
+
+test("falhas de bootstrap seguem para diagnóstico seguro e acionável", () => {
+  assert.match(routeSource, /\/auth\/error\?error=oauth_start/);
+  assert.match(errorPageSource, /Código para suporte/);
+  assert.match(errorPageSource, /Tentar novamente com Google/);
 });
