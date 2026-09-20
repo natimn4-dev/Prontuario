@@ -17,6 +17,8 @@ import {
 const allowed = parseEmailSet("medica@example.com; admin@example.com");
 const authServer = readFileSync("src/server/auth/auth.ts", "utf8");
 const requireUserServer = readFileSync("src/server/auth/require-user.ts", "utf8");
+const proxySource = readFileSync("src/proxy.ts", "utf8");
+const routeAccessSource = readFileSync("src/domain/security/route-access.ts", "utf8");
 const loginPage = readFileSync("src/app/login/page.tsx", "utf8");
 const approvedProductionPrincipalFingerprints = [
   "f3edb3d5dbf548434e230325bc7835275146d04fcc65dcf55d83385956691210",
@@ -109,11 +111,18 @@ test("regressão: as quatro identidades aprovadas continuam independentes da all
   assert.match(productionContractFunction, /process\.env\.NODE_ENV === "production"[\s\S]*\|\|[\s\S]*canonicalProductionAppUrl/);
 });
 
-test("novos logins dependem de pré-autorização persistida e rotas protegidas reconhecem acesso gerenciado", () => {
+test("login, proxy, sessão e endpoints usam o mesmo contrato de acesso gerenciado ou identidade aprovada", () => {
   assert.match(authServer, /prisma\.userAccessGrant\.findFirst/);
   assert.match(authServer, /accessManaged: Boolean\(grant\)/);
-  assert.match(authServer, /!user\.accessManaged && !isAuthorizedEmail\(user\.email\)/);
-  assert.match(requireUserServer, /assertAccessProfilePermission/);
-  assert.match(requireUserServer, /!user\.accessManaged && !isAuthorizedEmail\(user\.email\)/);
-  assert.doesNotMatch(requireUserServer, /AUTH_ALLOWED_EMAILS/);
+  assert.match(authServer, /function isWorkspaceAccessAuthorized/);
+  assert.match(authServer, /isWorkspaceSessionAuthorized\(user, emailAuthorized\)/);
+  assert.match(authServer, /if \(!isWorkspaceAccessAuthorized\(user\)\)/);
+
+  assert.match(requireUserServer, /isWorkspaceAccessAuthorized/);
+  assert.doesNotMatch(requireUserServer, /AUTH_ALLOWED_EMAILS|isAuthorizedEmail/);
+
+  assert.match(proxySource, /isWorkspaceAccessAuthorized\(session\?\.user\)/);
+  assert.doesNotMatch(proxySource, /AUTH_ALLOWED_EMAILS|parseEmailSet|isEmailAllowed/);
+
+  assert.match(routeAccessSource, /user\.accessManaged === true \|\| emailAuthorized/);
 });
