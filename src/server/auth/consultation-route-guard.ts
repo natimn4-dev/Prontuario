@@ -1,4 +1,4 @@
-import { AccessForbiddenError, AuthenticationRequiredError } from "./access-errors";
+import { isAccessForbiddenError, isAuthenticationRequiredError } from "./access-errors";
 import { requireConsultationAccess } from "./patient-access";
 
 const NO_STORE_HEADERS = { "Cache-Control": "private, no-store, max-age=0" };
@@ -15,10 +15,10 @@ export async function withConsultationPatientAccess(
     await requireConsultationAccess(consultationId, "patient.read");
     return await operation();
   } catch (error) {
-    if (error instanceof AuthenticationRequiredError) {
+    if (isAuthenticationRequiredError(error)) {
       return json({ code: "AUTHENTICATION_REQUIRED", message: "Autenticação obrigatória." }, 401);
     }
-    if (error instanceof AccessForbiddenError) {
+    if (isAccessForbiddenError(error)) {
       return json({ code: "ACCESS_FORBIDDEN", message: "Acesso não autorizado." }, 403);
     }
     throw error;
