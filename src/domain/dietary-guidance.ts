@@ -25,16 +25,39 @@ export type DietaryGuidance = {
 
 type GuidanceInput = {
   context: DietaryClinicalContext;
-  items: Array<{ label: string; qualityFlags?: string[] }>;
+  items: Array<{
+    label: string;
+    qualityFlags?: string[];
+    nutrients?: Pick<DietaryNutrients, "proteinG" | "calciumMg"> | null;
+  }>;
   summary: Pick<DietaryNutrients, "proteinG" | "calciumMg" | "sodiumMg">;
 };
 
 const hasAny = (labels: string[], patterns: RegExp[]) => labels.some((label) => patterns.some((pattern) => pattern.test(label)));
 
+const formatAmount = (value: number, digits: number) =>
+  new Intl.NumberFormat("pt-BR", { maximumFractionDigits: digits }).format(value);
+
+function contributors(
+  items: GuidanceInput["items"],
+  nutrient: "proteinG" | "calciumMg",
+  unit: "g" | "mg",
+) {
+  return items
+    .map((item) => ({ label: item.label, amount: item.nutrients?.[nutrient] ?? 0 }))
+    .filter((item) => Number.isFinite(item.amount) && item.amount > 0)
+    .sort((a, b) => b.amount - a.amount)
+    .slice(0, 3)
+    .map((item) => `${item.label} (${formatAmount(item.amount, unit === "g" ? 1 : 0)} ${unit})`)
+    .join(", ");
+}
+
 export function buildConditionalDietaryGuidance(input: GuidanceInput): DietaryGuidance[] {
   const labels = input.items.map((item) => item.label.normalize("NFD").replace(/\p{Diacritic}/gu, "").toLowerCase());
   const flags = input.items.flatMap((item) => item.qualityFlags ?? []);
   const guidance: DietaryGuidance[] = [];
+  const proteinSources = contributors(input.items, "proteinG", "g");
+  const calciumSources = contributors(input.items, "calciumMg", "mg");
 
   if (input.context.ckd && input.context.renalDialysis) {
     guidance.push({
@@ -66,11 +89,37 @@ export function buildConditionalDietaryGuidance(input: GuidanceInput): DietaryGu
     });
   }
 
-  if (!hasAny(labels, [/leite/, /iogurte/, /queijo/, /laticinio/])) {
+  if (proteinSources && !(input.context.ckd && input.context.renalDialysis)) {
+    guidance.push({
+      code: "protein",
+      title: "Proteína registrada no relato",
+      text: `Total estimado: ${formatAmount(input.summary.proteinG, 1)} g/dia. Principais contribuições: ${proteinSources}. Compare com peso, meta individual e contexto clínico antes de orientar aumento ou redução.`,
+      severity: "info",
+      evidenceRefs: ["ESPEN-GERIATRICS-2022", "KDOQI-2020"],
+    });
+  }
+
+  if (calciumSources) {
     guidance.push({
       code: "calcium",
-      title: "Fontes de cálcio não identificadas",
-      text: "Considere revisar cálcio, vitamina D, fósforo, PTH, risco ósseo e tolerância antes de orientar fontes alimentares ou suplementação. Nenhum suplemento é prescrito automaticamente.",
+      title: "Cálcio registrado no relato",
+      text: `Total estimado: ${formatAmount(input.summary.calciumMg, 0)} mg/dia. Principais contribuições: ${calciumSources}. Confirme se o relato representa o consumo habitual e não acrescente suplementação automaticamente.`,
+      severity: "info",
+      evidenceRefs: ["ESPEN-GERIATRICS-2022", "KDOQI-2020"],
+    });
+  } else if (input.summary.calciumMg > 0) {
+    guidance.push({
+      code: "calcium",
+      title: "Cálcio calculado; fontes a confirmar",
+      text: `O total estimado foi ${formatAmount(input.summary.calciumMg, 0)} mg/dia, mas o detalhamento por alimento não está disponível neste snapshot. Revise os itens antes de orientar mudanças ou suplementação.`,
+      severity: "review",
+      evidenceRefs: ["ESPEN-GERIATRICS-2022", "KDOQI-2020"],
+    });
+  } else {
+    guidance.push({
+      code: "calcium",
+      title: "Cálcio não calculado no relato",
+      text: "Nenhum item calculável contribuiu com cálcio. Confirme alimentos e quantidades antes de orientar fontes alimentares ou suplementação; nenhum suplemento é prescrito automaticamente.",
       severity: "review",
       evidenceRefs: ["ESPEN-GERIATRICS-2022", "KDOQI-2020"],
     });
