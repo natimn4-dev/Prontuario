@@ -5,17 +5,21 @@ import { usePathname } from "next/navigation";
 import { useEffect, useRef } from "react";
 import styles from "./oncogeriatric-nav.module.css";
 
-const steps = [
-  { id: "basal", label: "Antes do tratamento", path: "/basal", description: "Avaliação geriátrica inicial" },
-  { id: "tratamento", label: "Tratamento oncológico", path: "/tratamento", description: "Trajetória antineoplásica" },
-  { id: "check", label: "Durante o tratamento", path: "/check", description: "Reavaliações e eventos" },
-  { id: "escalas", label: "Escalas clínicas", path: "/escalas", description: "Instrumentos escolhidos pelo geriatra" },
-  { id: "longitudinal", label: "Evolução longitudinal", path: "/longitudinal", description: "Trajetória por domínio" },
-  { id: "pos-tratamento", label: "Planejamento", path: "/pos-tratamento", description: "Próximas consultas e recuperação" },
-  { id: "relatorio", label: "Relatório", path: "/relatorio", description: "Revisão clínica e documento" },
+const workflowSteps = [
+  { id: "basal", label: "Avaliação inicial", path: "/basal", description: "CARG, G8 e avaliação geriátrica antes do tratamento" },
+  { id: "check", label: "Durante o tratamento", path: "/check", description: "Reavaliações, toxicidades e eventos" },
+  { id: "longitudinal", label: "Evolução longitudinal", path: "/longitudinal", description: "Trajetória por domínio ao longo do episódio" },
+  { id: "relatorio", label: "Relatório", path: "/relatorio", description: "Revisão clínica e documento final" },
 ] as const;
 
-export type OncogeriatricStepId = "overview" | (typeof steps)[number]["id"];
+const supportSteps = [
+  { id: "tratamento", label: "Tratamento oncológico", path: "/tratamento", description: "Esquema, intenção e ciclos" },
+  { id: "escalas", label: "Escalas clínicas", path: "/escalas", description: "Instrumentos escolhidos pelo geriatra" },
+  { id: "pos-tratamento", label: "Planejamento", path: "/pos-tratamento", description: "Próximas consultas e recuperação" },
+] as const;
+
+const allSteps = [...workflowSteps, ...supportSteps] as const;
+export type OncogeriatricStepId = "overview" | (typeof allSteps)[number]["id"];
 
 function episodeSuffix(episodeId?: string | null): string {
   return episodeId ? `?episode=${encodeURIComponent(episodeId)}` : "";
@@ -23,6 +27,11 @@ function episodeSuffix(episodeId?: string | null): string {
 
 function stepHref(patientId: string, path: string, episodeId?: string | null): string {
   return `/patients/${patientId}/oncogeriatria${path}${episodeSuffix(episodeId)}`;
+}
+
+function stepLabel(currentStep: OncogeriatricStepId): string {
+  if (currentStep === "overview") return "Visão geral";
+  return allSteps.find((step) => step.id === currentStep)?.label ?? "Oncogeriatria";
 }
 
 export function OncogeriatricWorkspaceHeader({
@@ -40,7 +49,12 @@ export function OncogeriatricWorkspaceHeader({
   title: string;
   description: string;
 }) {
-  const stepIndex = currentStep === "overview" ? -1 : steps.findIndex((step) => step.id === currentStep);
+  const workflowIndex = workflowSteps.findIndex((step) => step.id === currentStep);
+  const badge = currentStep === "overview"
+    ? "Visão geral"
+    : workflowIndex >= 0
+      ? `Etapa ${workflowIndex + 1} de ${workflowSteps.length}`
+      : "Ferramenta de apoio";
 
   return (
     <header className={styles.clinicalHeader}>
@@ -55,9 +69,7 @@ export function OncogeriatricWorkspaceHeader({
         <p className={styles.episodeLabel}>{episodeLabel}</p>
       </div>
       <div className={styles.taskBlock}>
-        <span className={styles.stepBadge}>
-          {stepIndex >= 0 ? `Etapa ${stepIndex + 1} de ${steps.length}` : "Visão geral"}
-        </span>
+        <span className={styles.stepBadge}>{badge}</span>
         <p className={styles.taskLabel}>Tarefa atual</p>
         <h2>{title}</h2>
         <p>{description}</p>
@@ -70,63 +82,73 @@ export function OncogeriatricNav({ patientId, episodeId }: { patientId: string; 
   const pathname = usePathname();
   const activeLinkRef = useRef<HTMLAnchorElement>(null);
   const overviewPath = `/patients/${patientId}/oncogeriatria`;
-  const activeIndex = steps.findIndex((step) => pathname === `${overviewPath}${step.path}`);
-  const activeStep = activeIndex >= 0 ? steps[activeIndex] : null;
   const overviewActive = pathname === overviewPath;
+  const activeWorkflow = workflowSteps.find((step) => pathname === `${overviewPath}${step.path}`);
+  const activeSupport = supportSteps.find((step) => pathname === `${overviewPath}${step.path}`);
 
   useEffect(() => {
     activeLinkRef.current?.scrollIntoView({ block: "nearest", inline: "center" });
   }, [pathname]);
 
   return (
-    <nav className={styles.workspaceNav} aria-label="Etapas do acompanhamento oncogeriátrico">
+    <nav className={styles.workspaceNav} aria-label="Navegação do acompanhamento oncogeriátrico">
       <div className={styles.railHeader}>
         <div>
-          <p className="eyebrow">Jornada de cuidado</p>
-          <strong>{activeStep ? `${activeStep.label} · etapa ${activeIndex + 1} de ${steps.length}` : "Visão geral do acompanhamento"}</strong>
+          <p className="eyebrow">Jornada clínica</p>
+          <strong>{activeWorkflow?.label ?? activeSupport?.label ?? "Visão geral do acompanhamento"}</strong>
         </div>
-        <span>Abra somente a etapa necessária nesta consulta.</span>
+        <span>Fluxo principal curto; ferramentas específicas ficam separadas para reduzir distração.</span>
       </div>
 
-      <progress
-        className={styles.progress}
-        max={steps.length}
-        value={activeIndex + 1}
-        aria-label={activeStep ? `Etapa ${activeIndex + 1} de ${steps.length}` : "Visão geral do acompanhamento"}
-      />
-
-      <div className={styles.stepScroller}>
+      <div className={styles.primaryJourney}>
         <Link
           href={`${overviewPath}${episodeSuffix(episodeId)}`}
           prefetch={false}
           ref={overviewActive ? activeLinkRef : undefined}
-          className={`${styles.overviewLink} ${overviewActive ? styles.active : ""}`}
+          className={overviewActive ? styles.active : undefined}
           aria-current={overviewActive ? "page" : undefined}
         >
-          <svg aria-hidden="true" viewBox="0 0 24 24" fill="none">
-            <path d="M3 11.5 12 4l9 7.5M5.5 10v9h13v-9M9.5 19v-5h5v5" />
-          </svg>
-          <strong>Visão geral</strong>
+          <span className={styles.stepNumber}>0</span>
+          <span><strong>Visão geral</strong><small>Estado atual e próximos passos</small></span>
         </Link>
-        <ol className={styles.stepList}>
-          {steps.map((step, index) => {
-            const active = activeIndex === index;
+
+        {workflowSteps.map((step, index) => {
+          const active = pathname === `${overviewPath}${step.path}`;
+          return (
+            <Link
+              key={step.id}
+              href={stepHref(patientId, step.path, episodeId)}
+              prefetch={false}
+              ref={active ? activeLinkRef : undefined}
+              className={active ? styles.active : undefined}
+              aria-current={active ? "step" : undefined}
+            >
+              <span className={styles.stepNumber}>{index + 1}</span>
+              <span><strong>{step.label}</strong><small>{step.description}</small></span>
+            </Link>
+          );
+        })}
+      </div>
+
+      <div className={styles.supportRail}>
+        <span>Ferramentas de apoio</span>
+        <div>
+          {supportSteps.map((step) => {
+            const active = pathname === `${overviewPath}${step.path}`;
             return (
-              <li key={step.id}>
-                <Link
-                  href={stepHref(patientId, step.path, episodeId)}
-                  prefetch={false}
-                  ref={active ? activeLinkRef : undefined}
-                  className={active ? styles.active : undefined}
-                  aria-current={active ? "step" : undefined}
-                >
-                  <span className={styles.stepNumber}>{index + 1}</span>
-                  <strong>{step.label}</strong>
-                </Link>
-              </li>
+              <Link
+                key={step.id}
+                href={stepHref(patientId, step.path, episodeId)}
+                prefetch={false}
+                ref={active ? activeLinkRef : undefined}
+                className={active ? styles.activeSupport : undefined}
+              >
+                <strong>{step.label}</strong>
+                <small>{step.description}</small>
+              </Link>
             );
           })}
-        </ol>
+        </div>
       </div>
     </nav>
   );
@@ -140,10 +162,10 @@ export function OncogeriatricQuickActions({
   episodeId?: string | null;
 }) {
   const actions = [
-    { step: "Etapa 1", label: "Avaliação antes do tratamento", path: "/basal" },
-    { step: "Etapa 3", label: "Reavaliar durante o tratamento", path: "/check" },
-    { step: "Etapa 4", label: "Aplicar ou revisar escalas", path: "/escalas" },
-    { step: "Etapa 7", label: "Revisar relatório", path: "/relatorio" },
+    { step: "Essencial", label: "CARG e avaliação inicial", path: "/basal" },
+    { step: "Seguimento", label: "Reavaliar durante o tratamento", path: "/check" },
+    { step: "Instrumentos", label: "Aplicar ou revisar escalas", path: "/escalas" },
+    { step: "Documento", label: "Revisar relatório", path: "/relatorio" },
   ] as const;
 
   return (
@@ -170,28 +192,37 @@ export function OncogeriatricStepActions({
   episodeId?: string | null;
   currentStep: OncogeriatricStepId;
 }) {
-  const currentIndex = currentStep === "overview" ? -1 : steps.findIndex((step) => step.id === currentStep);
-  const previous = currentIndex > 0 ? steps[currentIndex - 1] : null;
-  const next = currentIndex < steps.length - 1 ? steps[currentIndex + 1] : null;
-  const previousHref = previous
-    ? stepHref(patientId, previous.path, episodeId)
-    : `/patients/${patientId}/oncogeriatria${episodeSuffix(episodeId)}`;
+  const overviewHref = `/patients/${patientId}/oncogeriatria${episodeSuffix(episodeId)}`;
+  const workflowIndex = workflowSteps.findIndex((step) => step.id === currentStep);
+  const isSupport = supportSteps.some((step) => step.id === currentStep);
+  const previous = workflowIndex > 0 ? workflowSteps[workflowIndex - 1] : null;
+  const next = currentStep === "overview"
+    ? workflowSteps[0]
+    : workflowIndex >= 0 && workflowIndex < workflowSteps.length - 1
+      ? workflowSteps[workflowIndex + 1]
+      : null;
+  const previousHref = previous ? stepHref(patientId, previous.path, episodeId) : overviewHref;
 
   return (
     <nav className={styles.actionBar} aria-label="Ações da etapa">
       <div className={styles.secondaryActions}>
         <Link href="/" prefetch={false} className={styles.homeAction}>Página inicial</Link>
         {currentStep !== "overview" ? (
-          <Link href={previousHref} prefetch={false} className={styles.previousAction}>
-            <span>Página anterior</span>
-            <strong>{previous?.label ?? "Visão geral"}</strong>
+          <Link href={isSupport ? overviewHref : previousHref} prefetch={false} className={styles.previousAction}>
+            <span>{isSupport ? "Retornar" : "Etapa anterior"}</span>
+            <strong>{isSupport ? "Visão geral" : previous?.label ?? "Visão geral"}</strong>
           </Link>
         ) : null}
       </div>
 
       <div className={styles.primaryActionGroup}>
-        <small>Salve os formulários desta página antes de continuar.</small>
-        {next ? (
+        <small>{isSupport ? "Ferramenta de apoio: volte à visão geral quando concluir." : "Salve os formulários desta página antes de continuar."}</small>
+        {isSupport ? (
+          <Link href={overviewHref} prefetch={false} className={styles.primaryAction}>
+            <span>Concluir ferramenta</span>
+            <strong>Voltar à visão geral →</strong>
+          </Link>
+        ) : next ? (
           <Link href={stepHref(patientId, next.path, episodeId)} prefetch={false} className={styles.primaryAction}>
             <span>{currentStep === "overview" ? "Iniciar acompanhamento" : "Próxima etapa"}</span>
             <strong>{next.label} →</strong>
@@ -205,4 +236,12 @@ export function OncogeriatricStepActions({
       </div>
     </nav>
   );
+}
+
+export const ONCOGERIATRIC_STEP_LABELS = Object.fromEntries(
+  allSteps.map((step) => [step.id, step.label]),
+) as Record<string, string>;
+
+export function oncogeriatricStepLabel(step: OncogeriatricStepId): string {
+  return stepLabel(step);
 }
