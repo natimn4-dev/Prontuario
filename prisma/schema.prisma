@@ -846,6 +846,13 @@ model OncogeriatricCheckpoint {
   structuredData    Json?
   g8AssessmentId    String?
   cargAssessmentId  String?
+  revision          Int      @default(1)
+  cargDraft         Json?
+  cargCompletionCount Int    @default(0)
+  cargPendingFields Json?
+  cargLabProvenance Json?
+  cargSavedById     String?
+  cargSavedAt       DateTime?
   createdById       String
   createdAt         DateTime @default(now())
   updatedAt         DateTime @updatedAt
@@ -853,9 +860,11 @@ model OncogeriatricCheckpoint {
   @@unique([id, episodeId, patientId])
   @@index([patientId, occurredAt])
   @@index([episodeId, type, occurredAt])
+  @@index([episodeId, revision])
   @@index([treatmentCourseId, occurredAt])
   @@index([status, scheduledAt])
   @@index([consultationId, patientId])
+  @@index([cargSavedById, cargSavedAt])
 }
 
 model OncogeriatricIntervention {
@@ -863,6 +872,8 @@ model OncogeriatricIntervention {
   patientId               String
   episodeId               String
   checkpointId            String?
+  consultationId          String?
+  startedAt               DateTime?
   domain                  String
   description             String   @db.Text
   intervention            String?  @db.Text
@@ -875,8 +886,10 @@ model OncogeriatricIntervention {
   updatedAt               DateTime @updatedAt
 
   @@index([episodeId, status])
+  @@index([episodeId, startedAt])
   @@index([patientId, domain])
   @@index([checkpointId])
+  @@index([consultationId, patientId])
 }
 
 model OncogeriatricToxicityEvent {
@@ -885,6 +898,7 @@ model OncogeriatricToxicityEvent {
   episodeId                     String
   treatmentCourseId             String?
   checkpointId                  String?
+  consultationId                String?
   occurredAt                    DateTime
   toxicityType                  String
   grade                         String?
@@ -899,6 +913,7 @@ model OncogeriatricToxicityEvent {
   @@index([episodeId, occurredAt])
   @@index([patientId, occurredAt])
   @@index([treatmentCourseId, occurredAt])
+  @@index([consultationId, patientId])
 }
 
 model OncogeriatricRecoveryAssessment {
@@ -906,6 +921,7 @@ model OncogeriatricRecoveryAssessment {
   patientId    String
   episodeId    String
   checkpointId String?
+  consultationId String?
   domain       String
   status       String
   notes        String?  @db.Text
@@ -916,6 +932,7 @@ model OncogeriatricRecoveryAssessment {
 
   @@index([episodeId, domain, assessedAt])
   @@index([patientId, assessedAt])
+  @@index([consultationId, patientId])
 }
 
 model OncogeriatricReportSnapshot {
@@ -925,10 +942,33 @@ model OncogeriatricReportSnapshot {
   consultationId String?
   version        Int
   content        Json
+  contentHash    String?
+  g8AssessmentId String?
+  cargAssessmentId String?
   generatedById  String
+  clinicalReviewConfirmedById String?
+  clinicalReviewConfirmedAt DateTime?
   createdAt      DateTime @default(now())
 
   @@unique([episodeId, version])
   @@index([patientId, createdAt])
   @@index([consultationId, patientId])
+  @@index([cargAssessmentId, episodeId])
+  @@index([g8AssessmentId, episodeId])
+  @@index([episodeId, clinicalReviewConfirmedAt])
+}
+
+model OncogeriatricOperationReceipt {
+  id          String   @id @default(cuid())
+  patientId   String
+  episodeId   String?
+  operationId String
+  action      String
+  entityType  String
+  entityId    String
+  createdAt   DateTime @default(now())
+
+  @@unique([patientId, operationId])
+  @@index([episodeId, createdAt])
+  @@index([entityType, entityId])
 }

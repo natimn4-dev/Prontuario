@@ -11,6 +11,7 @@ import {
   createOncogeriatricTreatmentCourse,
   OncogeriatricError,
   saveCarg,
+  saveCargDraft,
   saveG8,
   saveOncogeriatricCheckpointData,
 } from "@/server/oncogeriatria/service";
@@ -27,6 +28,7 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
     if (action === "CHECKPOINT_CREATE") return NextResponse.json(await createOncogeriatricCheckpoint(patientId, body), { status: 201 });
     if (action === "CHECKPOINT_UPDATE") return NextResponse.json(await saveOncogeriatricCheckpointData(patientId, body), { status: 200 });
     if (action === "G8_SAVE") return NextResponse.json(await saveG8(patientId, body), { status: 200 });
+    if (action === "CARG_DRAFT_SAVE") return NextResponse.json(await saveCargDraft(patientId, body), { status: 200 });
     if (action === "CARG_SAVE") return NextResponse.json(await saveCarg(patientId, body), { status: 200 });
     if (action === "INTERVENTION_CREATE") return NextResponse.json(await createOncogeriatricIntervention(patientId, body), { status: 201 });
     if (action === "TOXICITY_CREATE") return NextResponse.json(await createOncogeriatricToxicityEvent(patientId, body), { status: 201 });
@@ -42,7 +44,7 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
       return NextResponse.json({ code: "ACCESS_FORBIDDEN", message: "Acesso não autorizado." }, { status: 403 });
     }
     if (error instanceof OncogeriatricError) {
-      return NextResponse.json({ code: error.code, message: error.message }, { status: error.httpStatus });
+      return NextResponse.json({ code: error.code, message: error.message, details: error.details }, { status: error.httpStatus });
     }
     console.error("ONCOGERIATRIA_API_ERROR", error instanceof Error ? error.name : "unknown");
     return NextResponse.json(
