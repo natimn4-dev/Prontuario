@@ -172,7 +172,7 @@ export function CargChecklistForm({ patientId, episodeId, checkpointId, initialA
       } else setFeedback({ kind: "error", text: error instanceof Error ? error.message : "Não foi possível salvar o CARG." });
     } finally { setSaving(false); }
   }
-  async function submit(event: FormEvent<HTMLFormElement>) { event.preventDefault(); await saveFinal(false); }
+  async function submit(event: FormEvent<HTMLFormElement>) { event.preventDefault(); if (!canFinalize) { setFeedback({ kind: "error", text: finalizationMessage ?? "Vincule esta avaliação a uma consulta antes de registrar o CARG definitivamente." }); return; } await saveFinal(false); }
   const categoryLabel = preview?.category === "LOW" ? "Baixo risco" : preview?.category === "INTERMEDIATE" ? "Risco intermediário" : "Alto risco";
   const savedLabel = savedMeta.at ? new Intl.DateTimeFormat("pt-BR", { dateStyle: "short", timeStyle: "short" }).format(new Date(savedMeta.at)) : null;
 
