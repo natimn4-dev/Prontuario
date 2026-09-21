@@ -1,258 +1,106 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useState, type FormEvent } from "react";
+import { useRef, useState, type FormEvent } from "react";
 import { ECOG_OPTIONS } from "@/domain/oncogeriatric-scales";
-import {
-  ONCOGERIATRIC_COURSE_STATUS_OPTIONS,
-  ONCOGERIATRIC_INTENT_OPTIONS,
-  ONCOGERIATRIC_MODALITY_OPTIONS,
-  ONCOGERIATRIC_RECOVERY_DOMAIN_OPTIONS,
-  ONCOGERIATRIC_RECOVERY_STATUS_OPTIONS,
-} from "@/domain/oncogeriatria/presentation-labels";
+import { ONCOGERIATRIC_COURSE_STATUS_OPTIONS, ONCOGERIATRIC_INTENT_OPTIONS, ONCOGERIATRIC_MODALITY_OPTIONS, ONCOGERIATRIC_RECOVERY_DOMAIN_OPTIONS, ONCOGERIATRIC_RECOVERY_STATUS_OPTIONS } from "@/domain/oncogeriatria/presentation-labels";
 import { KPS_OPTIONS } from "@/domain/performance-status-options";
 import styles from "./oncogeriatric-forms.module.css";
 
+type ActionResponse = { message?: string; saveStatus?: "created" | "already_saved" };
 async function postAction(patientId: string, payload: Record<string, unknown>) {
-  const response = await fetch(`/api/oncogeriatria/patients/${patientId}`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(payload),
-  });
-  const data = await response.json() as { message?: string };
+  const response = await fetch(`/api/oncogeriatria/patients/${patientId}`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(payload) });
+  const data = await response.json() as ActionResponse;
   if (!response.ok) throw new Error(data.message ?? "Não foi possível salvar.");
   return data;
 }
-
+function newOperationId() { return typeof crypto !== "undefined" && "randomUUID" in crypto ? crypto.randomUUID() : `onco-${Date.now()}-${Math.random().toString(36).slice(2)}`; }
 function useSubmission() {
-  const router = useRouter();
-  const [pending, setPending] = useState(false);
-  const [message, setMessage] = useState<string | null>(null);
-  async function run(fn: () => Promise<unknown>) {
-    setPending(true);
-    setMessage(null);
-    try {
-      await fn();
-      setMessage("Salvo com sucesso.");
-      router.refresh();
-    } catch (error) {
-      setMessage(error instanceof Error ? error.message : "Não foi possível salvar.");
-    } finally {
-      setPending(false);
-    }
-  }
-  return { pending, message, run };
+  const router=useRouter(); const [pending,setPending]=useState(false); const [message,setMessage]=useState<string|null>(null); const operationIdRef=useRef<string|null>(null);
+  async function run(fn:()=>Promise<ActionResponse>) { setPending(true); setMessage(null); try { const result=await fn(); setMessage(result.message ?? "Salvo com sucesso."); router.refresh(); return result; } catch(error){ setMessage(error instanceof Error?error.message:"Não foi possível salvar."); return null; } finally { setPending(false); } }
+  async function runCreate(fn:(operationId:string)=>Promise<ActionResponse>) { if (!operationIdRef.current) operationIdRef.current=newOperationId(); const result=await run(()=>fn(operationIdRef.current as string)); if(result) operationIdRef.current=null; return result; }
+  return {pending,message,run,runCreate};
+}
+function text(form:FormData,key:string):string|null { const value=String(form.get(key)??"").trim(); return value||null; }
+function numberOrNull(form:FormData,key:string):number|null { const value=text(form,key); if(!value)return null; const parsed=Number(value.replace(",",".")); return Number.isFinite(parsed)?parsed:null; }
+function Feedback({message}:{message:string|null}){return message?<p role="status" className="muted">{message}</p>:null;}
+
+export function StartEpisodeForm({patientId}:{patientId:string}) {
+  const state=useSubmission(); async function submit(event:FormEvent<HTMLFormElement>){event.preventDefault(); const form=new FormData(event.currentTarget); await state.runCreate((operationId)=>postAction(patientId,{action:"EPISODE_CREATE",operationId,diagnosis:text(form,"diagnosis"),primarySite:text(form,"primarySite"),histology:text(form,"histology"),stage:text(form,"stage"),diagnosedAt:text(form,"diagnosedAt"),diseaseStatus:text(form,"diseaseStatus"),notes:text(form,"notes")}));}
+  return <form className={styles.form} onSubmit={submit}><label>Diagnóstico oncológico<input name="diagnosis" required /></label><label>Sítio primário<input name="primarySite" /></label><label>Histologia<input name="histology" /></label><label>Estágio<input name="stage" /></label><label>Data do diagnóstico<input name="diagnosedAt" type="date" /></label><label>Situação da doença<input name="diseaseStatus" /></label><label>Observações<textarea name="notes" rows={3}/></label><button type="submit" disabled={state.pending}>{state.pending?"Salvando…":"Iniciar acompanhamento oncogeriátrico"}</button><Feedback message={state.message}/></form>;
 }
 
-function text(form: FormData, key: string): string | null {
-  const value = String(form.get(key) ?? "").trim();
-  return value || null;
+export function TreatmentCourseForm({patientId,episodeId}:{patientId:string;episodeId:string}) {
+  const state=useSubmission(); async function submit(event:FormEvent<HTMLFormElement>){event.preventDefault(); const form=new FormData(event.currentTarget); const riskFlags=["neuro","cardio","nephro","oto","hema","gi","nutrition"].filter((key)=>form.get(key)==="on"); await state.runCreate((operationId)=>postAction(patientId,{action:"TREATMENT_COURSE_CREATE",operationId,episodeId,modality:text(form,"modality"),intent:text(form,"intent"),therapyLine:text(form,"therapyLine"),regimenName:text(form,"regimenName"),plannedCycles:numberOrNull(form,"plannedCycles"),plannedStartAt:text(form,"plannedStartAt"),actualStartAt:text(form,"actualStartAt"),status:text(form,"status"),riskFlags:{selected:riskFlags,clinicianGuidance:text(form,"clinicianGuidance")},notes:text(form,"notes")}));}
+  return <form className={styles.form} onSubmit={submit}><label>Modalidade<select name="modality" defaultValue="SYSTEMIC">{ONCOGERIATRIC_MODALITY_OPTIONS.map((item)=><option key={item.value} value={item.value}>{item.label}</option>)}</select></label><label>Intenção do tratamento<select name="intent" defaultValue="CURATIVE">{ONCOGERIATRIC_INTENT_OPTIONS.map((item)=><option key={item.value} value={item.value}>{item.label}</option>)}</select></label><label>Linha terapêutica<input name="therapyLine" /></label><label>Esquema<input name="regimenName" required /></label><label>Ciclos previstos<input name="plannedCycles" type="number" min="0" /></label><label>Início previsto<input name="plannedStartAt" type="date" /></label><label>Início realizado<input name="actualStartAt" type="date" /></label><label>Situação do tratamento<select name="status" defaultValue="PLANNED">{ONCOGERIATRIC_COURSE_STATUS_OPTIONS.map((item)=><option key={item.value} value={item.value}>{item.label}</option>)}</select></label><fieldset><legend>Riscos relevantes selecionados pelo médico</legend><label><input type="checkbox" name="neuro"/> Neurotoxicidade</label><label><input type="checkbox" name="cardio"/> Cardiotoxicidade</label><label><input type="checkbox" name="nephro"/> Nefrotoxicidade</label><label><input type="checkbox" name="oto"/> Ototoxicidade</label><label><input type="checkbox" name="hema"/> Toxicidade hematológica</label><label><input type="checkbox" name="gi"/> Toxicidade gastrointestinal</label><label><input type="checkbox" name="nutrition"/> Risco nutricional</label></fieldset><label>Orientações específicas do esquema confirmadas pela equipe oncológica<textarea name="clinicianGuidance" rows={4} placeholder="Registre apenas monitorização, cuidados ou condutas já confirmados para este esquema."/></label><p className="muted">O sistema não infere recomendações pelo nome do antineoplásico. Dose, intervalo, adiamento, suspensão ou troca permanecem decisões clínicas humanas.</p><label>Outras observações sobre o tratamento<textarea name="notes" rows={3}/></label><button disabled={state.pending} type="submit">{state.pending?"Salvando…":"Registrar tratamento"}</button><Feedback message={state.message}/></form>;
 }
 
-function numberOrNull(form: FormData, key: string): number | null {
-  const value = text(form, key);
-  if (!value) return null;
-  const parsed = Number(value.replace(",", "."));
-  return Number.isFinite(parsed) ? parsed : null;
+export interface SelectOption {id:string;label:string}
+export function BaselineCheckpointForm({patientId,episodeId,consultations,courses}:{patientId:string;episodeId:string;consultations:SelectOption[];courses:SelectOption[]}) {
+  const state=useSubmission(); async function submit(event:FormEvent<HTMLFormElement>){event.preventDefault();const form=new FormData(event.currentTarget);await state.runCreate((operationId)=>postAction(patientId,{action:"CHECKPOINT_CREATE",operationId,episodeId,type:"PRE_TREATMENT",consultationId:text(form,"consultationId"),treatmentCourseId:text(form,"treatmentCourseId"),occurredAt:text(form,"occurredAt"),structuredData:{ecogKps:text(form,"ecogKps"),whatMatters:text(form,"whatMatters")}}));}
+  return <form className={styles.form} onSubmit={submit}><label>Data da avaliação inicial<input type="date" name="occurredAt" required /></label><label>Consulta existente para aplicar e recuperar escalas<select name="consultationId" defaultValue=""><option value="">Sem vínculo por enquanto</option>{consultations.map((item)=><option key={item.id} value={item.id}>{item.label}</option>)}</select></label><p className="muted">Vincule uma consulta para usar as mesmas escalas do prontuário geral e manter um único resultado por instrumento.</p><label>Tratamento relacionado<select name="treatmentCourseId" defaultValue=""><option value="">Ainda não definido</option>{courses.map((item)=><option key={item.id} value={item.id}>{item.label}</option>)}</select></label><label>ECOG ou KPS informado pelo médico<select name="ecogKps" defaultValue=""><option value="">Selecione a escala e o grau</option><optgroup label="ECOG — graus de 0 a 5">{ECOG_OPTIONS.map((option)=><option key={`ecog-${option.value}`} value={`ECOG ${option.value}`}>ECOG {option.value} — {option.label}</option>)}</optgroup><optgroup label="KPS — níveis de 10% a 100%">{KPS_OPTIONS.map((option)=><option key={`kps-${option.value}`} value={`KPS ${option.value}%`}>{option.label}</option>)}</optgroup></select></label><p className="muted">Selecione o grau já avaliado pelo médico. O sistema apenas registra a escolha e não infere conduta.</p><details className={styles.descriptions}><summary>Consultar descrições completas de ECOG e KPS</summary><h3>ECOG — graus de 0 a 5</h3><ul>{ECOG_OPTIONS.map((option)=><li key={option.value}><strong>ECOG {option.value}</strong> — {option.label}</li>)}</ul><h3>KPS — níveis de 10% a 100%</h3><ul>{KPS_OPTIONS.map((option)=><li key={option.value}>{option.label}</li>)}</ul></details><label>O que importa para o paciente<textarea name="whatMatters" rows={3}/></label><button disabled={state.pending} type="submit">{state.pending?"Salvando…":"Criar avaliação inicial"}</button><Feedback message={state.message}/></form>;
 }
 
-function Feedback({ message }: { message: string | null }) {
-  return message ? <p role="status" className="muted">{message}</p> : null;
+export function QuickCheckForm({patientId,episodeId,courses}:{patientId:string;episodeId:string;courses:SelectOption[]}) {
+  const state=useSubmission(); async function submit(event:FormEvent<HTMLFormElement>){event.preventDefault();const form=new FormData(event.currentTarget);const bool=(name:string)=>form.get(name)==="on";await state.runCreate((operationId)=>postAction(patientId,{action:"CHECKPOINT_CREATE",operationId,episodeId,type:"CYCLE",treatmentCourseId:text(form,"treatmentCourseId"),cycleNumber:numberOrNull(form,"cycleNumber"),occurredAt:text(form,"occurredAt"),structuredData:{functional:{newIadlHelp:bool("newIadlHelp"),newAdlHelp:bool("newAdlHelp")},mobility:{fall:bool("fall"),nearFall:bool("nearFall"),newWalkingAid:bool("newWalkingAid"),worsenedMobility:bool("worsenedMobility")},nutrition:{weightKg:numberOrNull(form,"weightKg"),reducedIntake:bool("reducedIntake"),anorexia:bool("anorexia"),nausea:bool("nausea"),dysphagia:bool("dysphagia"),mucositis:bool("mucositis")},cognition:{confusion:bool("confusion"),delirium:bool("delirium"),perceivedDecline:bool("perceivedDecline"),medicationDifficulty:bool("medicationDifficulty")},careEvents:{emergency:bool("emergency"),hospitalization:bool("hospitalization"),stroke:bool("stroke"),infection:bool("infection"),treatmentInterruption:bool("treatmentInterruption"),cycleDelay:bool("cycleDelay"),doseReductionRecorded:bool("doseReductionRecorded")},notes:text(form,"notes")}}));}
+  return <form className={styles.form} onSubmit={submit}><label>Data<input name="occurredAt" type="date" required /></label><label>Tratamento relacionado<select name="treatmentCourseId" defaultValue=""><option value="">Sem tratamento vinculado</option>{courses.map((item)=><option key={item.id} value={item.id}>{item.label}</option>)}</select></label><label>Ciclo<input name="cycleNumber" type="number" min="0" /></label><fieldset><legend>Funcionalidade</legend><label><input name="newIadlHelp" type="checkbox"/> Nova ajuda em AIVD</label><label><input name="newAdlHelp" type="checkbox"/> Nova ajuda em ABVD</label></fieldset><fieldset><legend>Mobilidade</legend><label><input name="fall" type="checkbox"/> Queda</label><label><input name="nearFall" type="checkbox"/> Quase queda</label><label><input name="newWalkingAid" type="checkbox"/> Novo dispositivo de marcha</label><label><input name="worsenedMobility" type="checkbox"/> Piora de mobilidade</label></fieldset><fieldset><legend>Nutrição</legend><label>Peso (kg)<input name="weightKg" inputMode="decimal"/></label><label><input name="reducedIntake" type="checkbox"/> Redução da ingestão</label><label><input name="anorexia" type="checkbox"/> Anorexia</label><label><input name="nausea" type="checkbox"/> Náusea</label><label><input name="dysphagia" type="checkbox"/> Disfagia</label><label><input name="mucositis" type="checkbox"/> Mucosite</label></fieldset><fieldset><legend>Cognição</legend><label><input name="confusion" type="checkbox"/> Confusão</label><label><input name="delirium" type="checkbox"/> Delirium</label><label><input name="perceivedDecline" type="checkbox"/> Piora percebida</label><label><input name="medicationDifficulty" type="checkbox"/> Nova dificuldade com medicamentos</label></fieldset><fieldset><legend>Eventos assistenciais</legend><label><input name="emergency" type="checkbox"/> Emergência</label><label><input name="hospitalization" type="checkbox"/> Hospitalização</label><label><input name="stroke" type="checkbox"/> AVC</label><label><input name="infection" type="checkbox"/> Infecção</label><label><input name="treatmentInterruption" type="checkbox"/> Interrupção registrada</label><label><input name="cycleDelay" type="checkbox"/> Atraso de ciclo registrado</label><label><input name="doseReductionRecorded" type="checkbox"/> Redução de dose registrada pelo oncologista</label></fieldset><label>Observações<textarea name="notes" rows={3}/></label><button disabled={state.pending} type="submit">{state.pending?"Salvando…":"Registrar reavaliação durante o tratamento"}</button><Feedback message={state.message}/></form>;
 }
 
-export function StartEpisodeForm({ patientId }: { patientId: string }) {
-  const state = useSubmission();
-  async function submit(event: FormEvent<HTMLFormElement>) {
+export function G8Form({patientId,episodeId,checkpointId}:{patientId:string;episodeId:string;checkpointId:string}) { const state=useSubmission(); async function submit(event:FormEvent<HTMLFormElement>){event.preventDefault();const form=new FormData(event.currentTarget);await state.run(()=>postAction(patientId,{action:"G8_SAVE",episodeId,checkpointId,answers:{foodIntake:text(form,"foodIntake"),weightLoss:text(form,"weightLoss"),mobility:text(form,"mobility"),neuropsychological:text(form,"neuropsychological"),bmi:numberOrNull(form,"bmi"),takesMoreThanThreePrescriptionDrugs:form.get("polypharmacy")==="YES",healthStatusComparedWithPeers:text(form,"health"),ageYears:numberOrNull(form,"ageYears")}}));} return <form className={styles.form} onSubmit={submit}><h3>G8 — triagem geriátrica</h3><label>Ingestão nos últimos 3 meses<select name="foodIntake"><option value="SEVERE_DECREASE">Redução importante</option><option value="MODERATE_DECREASE">Redução moderada</option><option value="NO_DECREASE">Sem redução</option></select></label><label>Perda de peso<select name="weightLoss"><option value="GT_3_KG">Mais de 3 kg</option><option value="UNKNOWN">Não sabe</option><option value="BETWEEN_1_AND_3_KG">1 a 3 kg</option><option value="NONE">Sem perda</option></select></label><label>Mobilidade<select name="mobility"><option value="BED_OR_CHAIR">Restrito ao leito/cadeira</option><option value="GETS_UP_DOES_NOT_GO_OUT">Levanta, mas não sai</option><option value="GOES_OUT">Sai de casa</option></select></label><label>Problemas neuropsicológicos<select name="neuropsychological"><option value="SEVERE">Graves</option><option value="MILD">Leves</option><option value="NONE">Ausentes</option></select></label><label>IMC<input name="bmi" required inputMode="decimal"/></label><label>Mais de 3 medicamentos prescritos/dia?<select name="polypharmacy"><option value="YES">Sim</option><option value="NO">Não</option></select></label><label>Saúde comparada a pessoas da mesma idade<select name="health"><option value="WORSE">Pior</option><option value="UNKNOWN">Não sabe</option><option value="SAME">Igual</option><option value="BETTER">Melhor</option></select></label><label>Idade<input name="ageYears" type="number" min="0" required/></label><button disabled={state.pending} type="submit">{state.pending?"Salvando…":"Calcular e registrar G8"}</button><Feedback message={state.message}/></form>; }
+
+export function ToxicityForm({patientId,episodeId,courses,consultations=[],checkpoints=[]}:{patientId:string;episodeId:string;courses:SelectOption[];consultations?:SelectOption[];checkpoints?:SelectOption[]}) {
+  const state=useSubmission();
+  async function submit(event:FormEvent<HTMLFormElement>){
     event.preventDefault();
-    const form = new FormData(event.currentTarget);
-    await state.run(() => postAction(patientId, {
-      action: "EPISODE_CREATE",
-      diagnosis: text(form, "diagnosis"),
-      primarySite: text(form, "primarySite"),
-      histology: text(form, "histology"),
-      stage: text(form, "stage"),
-      diagnosedAt: text(form, "diagnosedAt"),
-      diseaseStatus: text(form, "diseaseStatus"),
-      notes: text(form, "notes"),
-    }));
+    const form=new FormData(event.currentTarget);
+    await state.runCreate((operationId)=>postAction(patientId,{action:"TOXICITY_CREATE",operationId,episodeId,treatmentCourseId:text(form,"treatmentCourseId"),checkpointId:text(form,"checkpointId"),consultationId:text(form,"consultationId"),occurredAt:text(form,"occurredAt"),toxicityType:text(form,"toxicityType"),grade:text(form,"grade"),consequences:text(form,"consequences"),hospitalizationAssociated:form.get("hospitalizationAssociated")==="on",cycleDelayAssociated:form.get("cycleDelayAssociated")==="on",treatmentModificationRecorded:text(form,"treatmentModificationRecorded")}));
   }
-  return (
-    <form className={styles.form} onSubmit={submit}>
-      <label>Diagnóstico oncológico<input name="diagnosis" required /></label>
-      <label>Sítio primário<input name="primarySite" /></label>
-      <label>Histologia<input name="histology" /></label>
-      <label>Estágio<input name="stage" /></label>
-      <label>Data do diagnóstico<input name="diagnosedAt" type="date" /></label>
-      <label>Situação da doença<input name="diseaseStatus" /></label>
-      <label>Observações<textarea name="notes" rows={3} /></label>
-      <button type="submit" disabled={state.pending}>{state.pending ? "Salvando…" : "Iniciar acompanhamento oncogeriátrico"}</button>
-      <Feedback message={state.message} />
-    </form>
-  );
+  return <form className={styles.form} onSubmit={submit}>
+    <label>Data<input type="date" name="occurredAt" required/></label>
+    <label>Checkpoint relacionado<select name="checkpointId" defaultValue=""><option value="">Sem checkpoint vinculado</option>{checkpoints.map((item)=><option key={item.id} value={item.id}>{item.label}</option>)}</select></label>
+    <label>Consulta relacionada<select name="consultationId" defaultValue=""><option value="">Sem consulta vinculada</option>{consultations.map((item)=><option key={item.id} value={item.id}>{item.label}</option>)}</select></label>
+    <p className="muted">O vínculo é factual. Sem consulta selecionada, o evento continua preservado como marco temporal do episódio.</p>
+    <label>Tratamento relacionado<select name="treatmentCourseId" defaultValue=""><option value="">Sem tratamento vinculado</option>{courses.map((item)=><option key={item.id} value={item.id}>{item.label}</option>)}</select></label>
+    <label>Tipo de toxicidade<input name="toxicityType" required/></label><label>Grau informado pelo médico<input name="grade"/></label><label>Consequências<textarea name="consequences"/></label>
+    <label><input type="checkbox" name="hospitalizationAssociated"/> Hospitalização associada</label><label><input type="checkbox" name="cycleDelayAssociated"/> Atraso de ciclo associado</label>
+    <label>Modificação do tratamento já registrada pelo oncologista<textarea name="treatmentModificationRecorded"/></label>
+    <button disabled={state.pending}>{state.pending?"Salvando…":"Registrar toxicidade"}</button><Feedback message={state.message}/>
+  </form>;
 }
 
-export function TreatmentCourseForm({ patientId, episodeId }: { patientId: string; episodeId: string }) {
-  const state = useSubmission();
-  async function submit(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault();
-    const form = new FormData(event.currentTarget);
-    const riskFlags = ["neuro", "cardio", "nephro", "oto", "hema", "gi", "nutrition"].filter((key) => form.get(key) === "on");
-    await state.run(() => postAction(patientId, {
-      action: "TREATMENT_COURSE_CREATE", episodeId,
-      modality: text(form, "modality"), intent: text(form, "intent"), therapyLine: text(form, "therapyLine"),
-      regimenName: text(form, "regimenName"), plannedCycles: numberOrNull(form, "plannedCycles"),
-      plannedStartAt: text(form, "plannedStartAt"), actualStartAt: text(form, "actualStartAt"), status: text(form, "status"),
-      riskFlags: { selected: riskFlags, clinicianGuidance: text(form, "clinicianGuidance") }, notes: text(form, "notes"),
-    }));
+export function InterventionForm({patientId,episodeId,consultations=[],checkpoints=[]}:{patientId:string;episodeId:string;consultations?:SelectOption[];checkpoints?:SelectOption[]}) {
+  const state=useSubmission();
+  async function submit(event:FormEvent<HTMLFormElement>){
+    event.preventDefault(); const form=new FormData(event.currentTarget);
+    await state.runCreate((operationId)=>postAction(patientId,{action:"INTERVENTION_CREATE",operationId,episodeId,checkpointId:text(form,"checkpointId"),consultationId:text(form,"consultationId"),startedAt:text(form,"startedAt"),domain:text(form,"domain"),description:text(form,"description"),intervention:text(form,"intervention"),responsibleProfessional:text(form,"responsibleProfessional"),dueAt:text(form,"dueAt"),status:text(form,"status")}));
   }
-  return (
-    <form className={styles.form} onSubmit={submit}>
-      <label>Modalidade<select name="modality" defaultValue="SYSTEMIC">{ONCOGERIATRIC_MODALITY_OPTIONS.map((item) => <option key={item.value} value={item.value}>{item.label}</option>)}</select></label>
-      <label>Intenção do tratamento<select name="intent" defaultValue="CURATIVE">{ONCOGERIATRIC_INTENT_OPTIONS.map((item) => <option key={item.value} value={item.value}>{item.label}</option>)}</select></label>
-      <label>Linha terapêutica<input name="therapyLine" /></label>
-      <label>Esquema<input name="regimenName" required /></label>
-      <label>Ciclos previstos<input name="plannedCycles" type="number" min="0" /></label>
-      <label>Início previsto<input name="plannedStartAt" type="date" /></label>
-      <label>Início realizado<input name="actualStartAt" type="date" /></label>
-      <label>Situação do tratamento<select name="status" defaultValue="PLANNED">{ONCOGERIATRIC_COURSE_STATUS_OPTIONS.map((item) => <option key={item.value} value={item.value}>{item.label}</option>)}</select></label>
-      <fieldset><legend>Riscos relevantes selecionados pelo médico</legend>
-        <label><input type="checkbox" name="neuro" /> Neurotoxicidade</label>
-        <label><input type="checkbox" name="cardio" /> Cardiotoxicidade</label>
-        <label><input type="checkbox" name="nephro" /> Nefrotoxicidade</label>
-        <label><input type="checkbox" name="oto" /> Ototoxicidade</label>
-        <label><input type="checkbox" name="hema" /> Toxicidade hematológica</label>
-        <label><input type="checkbox" name="gi" /> Toxicidade gastrointestinal</label>
-        <label><input type="checkbox" name="nutrition" /> Risco nutricional</label>
-      </fieldset>
-      <label>Orientações específicas do esquema confirmadas pela equipe oncológica<textarea name="clinicianGuidance" rows={4} placeholder="Registre apenas monitorização, cuidados ou condutas já confirmados para este esquema." /></label>
-      <p className="muted">O sistema não infere recomendações pelo nome do antineoplásico. Dose, intervalo, adiamento, suspensão ou troca permanecem decisões clínicas humanas.</p>
-      <label>Outras observações sobre o tratamento<textarea name="notes" rows={3} /></label>
-      <button disabled={state.pending} type="submit">{state.pending ? "Salvando…" : "Registrar tratamento"}</button>
-      <Feedback message={state.message} />
-    </form>
-  );
+  return <form className={styles.form} onSubmit={submit}>
+    <label>Data de início ou registro do marco<input type="date" name="startedAt" required/></label>
+    <label>Domínio<select name="domain">{ONCOGERIATRIC_RECOVERY_DOMAIN_OPTIONS.map((item)=><option key={item.value} value={item.value}>{item.label}</option>)}</select></label>
+    <label>Checkpoint relacionado<select name="checkpointId" defaultValue=""><option value="">Sem checkpoint vinculado</option>{checkpoints.map((item)=><option key={item.id} value={item.id}>{item.label}</option>)}</select></label>
+    <label>Consulta relacionada<select name="consultationId" defaultValue=""><option value="">Sem consulta vinculada</option>{consultations.map((item)=><option key={item.id} value={item.id}>{item.label}</option>)}</select></label>
+    <label>Motivo/vulnerabilidade registrada<textarea name="description" required rows={2}/></label>
+    <label>Intervenção registrada<textarea name="intervention" rows={2} placeholder="Ex.: início de fisioterapia, acompanhamento nutricional, revisão de suporte"/></label>
+    <label>Profissional responsável<input name="responsibleProfessional"/></label>
+    <label>Prazo planejado<input type="date" name="dueAt"/></label>
+    <label>Situação<select name="status" defaultValue="PLANNED"><option value="PLANNED">Planejada</option><option value="IN_PROGRESS">Em andamento</option><option value="COMPLETED">Concluída</option></select></label>
+    <p className="muted">O registro contextualiza a linha do tempo. O sistema não atribui à intervenção a causa de uma mudança clínica.</p>
+    <button disabled={state.pending}>{state.pending?"Salvando…":"Registrar intervenção"}</button><Feedback message={state.message}/>
+  </form>;
 }
 
-export interface SelectOption { id: string; label: string }
-
-export function BaselineCheckpointForm({ patientId, episodeId, consultations, courses }: { patientId: string; episodeId: string; consultations: SelectOption[]; courses: SelectOption[] }) {
-  const state = useSubmission();
-  async function submit(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault();
-    const form = new FormData(event.currentTarget);
-    await state.run(() => postAction(patientId, {
-      action: "CHECKPOINT_CREATE", episodeId, type: "PRE_TREATMENT", consultationId: text(form, "consultationId"), treatmentCourseId: text(form, "treatmentCourseId"),
-      occurredAt: text(form, "occurredAt"), structuredData: { ecogKps: text(form, "ecogKps"), whatMatters: text(form, "whatMatters") },
-    }));
-  }
-  return (
-    <form className={styles.form} onSubmit={submit}>
-      <label>Data da avaliação inicial<input type="date" name="occurredAt" required /></label>
-      <label>Consulta existente para aplicar e recuperar escalas<select name="consultationId" defaultValue=""><option value="">Sem vínculo por enquanto</option>{consultations.map((item) => <option key={item.id} value={item.id}>{item.label}</option>)}</select></label>
-      <p className="muted">Vincule uma consulta para usar as mesmas escalas do prontuário geral e manter um único resultado por instrumento.</p>
-      <label>Tratamento relacionado<select name="treatmentCourseId" defaultValue=""><option value="">Ainda não definido</option>{courses.map((item) => <option key={item.id} value={item.id}>{item.label}</option>)}</select></label>
-      <label>
-        ECOG ou KPS informado pelo médico
-        <select name="ecogKps" defaultValue="">
-          <option value="">Selecione a escala e o grau</option>
-          <optgroup label="ECOG — graus de 0 a 5">
-            {ECOG_OPTIONS.map((option) => <option key={`ecog-${option.value}`} value={`ECOG ${option.value}`}>ECOG {option.value} — {option.label}</option>)}
-          </optgroup>
-          <optgroup label="KPS — níveis de 10% a 100%">
-            {KPS_OPTIONS.map((option) => <option key={`kps-${option.value}`} value={`KPS ${option.value}%`}>{option.label}</option>)}
-          </optgroup>
-        </select>
-      </label>
-      <p className="muted">Selecione o grau já avaliado pelo médico. O sistema apenas registra a escolha e não infere conduta.</p>
-      <details className={styles.descriptions}>
-        <summary>Consultar descrições completas de ECOG e KPS</summary>
-        <h3>ECOG — graus de 0 a 5</h3>
-        <ul>{ECOG_OPTIONS.map((option) => <li key={option.value}><strong>ECOG {option.value}</strong> — {option.label}</li>)}</ul>
-        <h3>KPS — níveis de 10% a 100%</h3>
-        <ul>{KPS_OPTIONS.map((option) => <li key={option.value}>{option.label}</li>)}</ul>
-      </details>
-      <label>O que importa para o paciente<textarea name="whatMatters" rows={3} /></label>
-      <button disabled={state.pending} type="submit">Criar avaliação inicial</button>
-      <Feedback message={state.message} />
-    </form>
-  );
+export function RecoveryForm({patientId,episodeId,consultations=[],checkpoints=[]}:{patientId:string;episodeId:string;consultations?:SelectOption[];checkpoints?:SelectOption[]}) {
+  const state=useSubmission();
+  async function submit(event:FormEvent<HTMLFormElement>){event.preventDefault();const form=new FormData(event.currentTarget);await state.runCreate((operationId)=>postAction(patientId,{action:"RECOVERY_CREATE",operationId,episodeId,checkpointId:text(form,"checkpointId"),consultationId:text(form,"consultationId"),domain:text(form,"domain"),status:text(form,"status"),assessedAt:text(form,"assessedAt"),notes:text(form,"notes")}));}
+  return <form className={styles.form} onSubmit={submit}>
+    <label>Domínio<select name="domain">{ONCOGERIATRIC_RECOVERY_DOMAIN_OPTIONS.map((item)=><option key={item.value} value={item.value}>{item.label}</option>)}</select></label>
+    <label>Situação<select name="status">{ONCOGERIATRIC_RECOVERY_STATUS_OPTIONS.map((item)=><option key={item.value} value={item.value}>{item.label}</option>)}</select></label>
+    <label>Data<input type="date" name="assessedAt" required/></label>
+    <label>Checkpoint relacionado<select name="checkpointId" defaultValue=""><option value="">Sem checkpoint vinculado</option>{checkpoints.map((item)=><option key={item.id} value={item.id}>{item.label}</option>)}</select></label>
+    <label>Consulta relacionada<select name="consultationId" defaultValue=""><option value="">Sem consulta vinculada</option>{consultations.map((item)=><option key={item.id} value={item.id}>{item.label}</option>)}</select></label>
+    <label>Observações<textarea name="notes"/></label><p className="muted">Sem consulta vinculada, a recuperação permanece como marco temporal do episódio, sem associação artificial a uma consulta.</p>
+    <button disabled={state.pending}>{state.pending?"Salvando…":"Registrar recuperação"}</button><Feedback message={state.message}/>
+  </form>;
 }
 
-export function QuickCheckForm({ patientId, episodeId, courses }: { patientId: string; episodeId: string; courses: SelectOption[] }) {
-  const state = useSubmission();
-  async function submit(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault();
-    const form = new FormData(event.currentTarget);
-    const bool = (name: string) => form.get(name) === "on";
-    await state.run(() => postAction(patientId, {
-      action: "CHECKPOINT_CREATE", episodeId, type: "CYCLE", treatmentCourseId: text(form, "treatmentCourseId"), cycleNumber: numberOrNull(form, "cycleNumber"), occurredAt: text(form, "occurredAt"),
-      structuredData: {
-        functional: { newIadlHelp: bool("newIadlHelp"), newAdlHelp: bool("newAdlHelp") },
-        mobility: { fall: bool("fall"), nearFall: bool("nearFall"), newWalkingAid: bool("newWalkingAid"), worsenedMobility: bool("worsenedMobility") },
-        nutrition: { weightKg: numberOrNull(form, "weightKg"), reducedIntake: bool("reducedIntake"), anorexia: bool("anorexia"), nausea: bool("nausea"), dysphagia: bool("dysphagia"), mucositis: bool("mucositis") },
-        cognition: { confusion: bool("confusion"), delirium: bool("delirium"), perceivedDecline: bool("perceivedDecline"), medicationDifficulty: bool("medicationDifficulty") },
-        careEvents: { emergency: bool("emergency"), hospitalization: bool("hospitalization"), infection: bool("infection"), treatmentInterruption: bool("treatmentInterruption"), cycleDelay: bool("cycleDelay"), doseReductionRecorded: bool("doseReductionRecorded") },
-        notes: text(form, "notes"),
-      },
-    }));
-  }
-  return (
-    <form className={styles.form} onSubmit={submit}>
-      <label>Data<input name="occurredAt" type="date" required /></label>
-      <label>Tratamento relacionado<select name="treatmentCourseId" defaultValue=""><option value="">Sem tratamento vinculado</option>{courses.map((item) => <option key={item.id} value={item.id}>{item.label}</option>)}</select></label>
-      <label>Ciclo<input name="cycleNumber" type="number" min="0" /></label>
-      <fieldset><legend>Funcionalidade</legend><label><input name="newIadlHelp" type="checkbox" /> Nova ajuda em AIVD</label><label><input name="newAdlHelp" type="checkbox" /> Nova ajuda em ABVD</label></fieldset>
-      <fieldset><legend>Mobilidade</legend><label><input name="fall" type="checkbox" /> Queda</label><label><input name="nearFall" type="checkbox" /> Quase queda</label><label><input name="newWalkingAid" type="checkbox" /> Novo dispositivo de marcha</label><label><input name="worsenedMobility" type="checkbox" /> Piora de mobilidade</label></fieldset>
-      <fieldset><legend>Nutrição</legend><label>Peso (kg)<input name="weightKg" inputMode="decimal" /></label><label><input name="reducedIntake" type="checkbox" /> Redução da ingestão</label><label><input name="anorexia" type="checkbox" /> Anorexia</label><label><input name="nausea" type="checkbox" /> Náusea</label><label><input name="dysphagia" type="checkbox" /> Disfagia</label><label><input name="mucositis" type="checkbox" /> Mucosite</label></fieldset>
-      <fieldset><legend>Cognição</legend><label><input name="confusion" type="checkbox" /> Confusão</label><label><input name="delirium" type="checkbox" /> Delirium</label><label><input name="perceivedDecline" type="checkbox" /> Piora percebida</label><label><input name="medicationDifficulty" type="checkbox" /> Nova dificuldade com medicamentos</label></fieldset>
-      <fieldset><legend>Eventos assistenciais</legend><label><input name="emergency" type="checkbox" /> Emergência</label><label><input name="hospitalization" type="checkbox" /> Hospitalização</label><label><input name="infection" type="checkbox" /> Infecção</label><label><input name="treatmentInterruption" type="checkbox" /> Interrupção registrada</label><label><input name="cycleDelay" type="checkbox" /> Atraso de ciclo registrado</label><label><input name="doseReductionRecorded" type="checkbox" /> Redução de dose registrada pelo oncologista</label></fieldset>
-      <label>Observações<textarea name="notes" rows={3} /></label>
-      <button disabled={state.pending} type="submit">Registrar reavaliação durante o tratamento</button>
-      <Feedback message={state.message} />
-    </form>
-  );
-}
-
-export function G8Form({ patientId, episodeId, checkpointId }: { patientId: string; episodeId: string; checkpointId: string }) {
-  const state = useSubmission();
-  async function submit(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault(); const form = new FormData(event.currentTarget);
-    await state.run(() => postAction(patientId, { action: "G8_SAVE", episodeId, checkpointId, answers: {
-      foodIntake: text(form, "foodIntake"), weightLoss: text(form, "weightLoss"), mobility: text(form, "mobility"), neuropsychological: text(form, "neuropsychological"),
-      bmi: numberOrNull(form, "bmi"), takesMoreThanThreePrescriptionDrugs: form.get("polypharmacy") === "YES", healthStatusComparedWithPeers: text(form, "health"), ageYears: numberOrNull(form, "ageYears"),
-    }}));
-  }
-  return (
-    <form className={styles.form} onSubmit={submit}>
-      <h3>G8 — triagem geriátrica</h3>
-      <label>Ingestão nos últimos 3 meses<select name="foodIntake"><option value="SEVERE_DECREASE">Redução importante</option><option value="MODERATE_DECREASE">Redução moderada</option><option value="NO_DECREASE">Sem redução</option></select></label>
-      <label>Perda de peso<select name="weightLoss"><option value="GT_3_KG">Mais de 3 kg</option><option value="UNKNOWN">Não sabe</option><option value="BETWEEN_1_AND_3_KG">1 a 3 kg</option><option value="NONE">Sem perda</option></select></label>
-      <label>Mobilidade<select name="mobility"><option value="BED_OR_CHAIR">Restrito ao leito/cadeira</option><option value="GETS_UP_DOES_NOT_GO_OUT">Levanta, mas não sai</option><option value="GOES_OUT">Sai de casa</option></select></label>
-      <label>Problemas neuropsicológicos<select name="neuropsychological"><option value="SEVERE">Graves</option><option value="MILD">Leves</option><option value="NONE">Ausentes</option></select></label>
-      <label>IMC<input name="bmi" required inputMode="decimal" /></label>
-      <label>Mais de 3 medicamentos prescritos/dia?<select name="polypharmacy"><option value="YES">Sim</option><option value="NO">Não</option></select></label>
-      <label>Saúde comparada a pessoas da mesma idade<select name="health"><option value="WORSE">Pior</option><option value="UNKNOWN">Não sabe</option><option value="SAME">Igual</option><option value="BETTER">Melhor</option></select></label>
-      <label>Idade<input name="ageYears" type="number" min="0" required /></label>
-      <button disabled={state.pending} type="submit">Calcular e registrar G8</button><Feedback message={state.message} />
-    </form>
-  );
-}
-
-export function ToxicityForm({ patientId, episodeId, courses }: { patientId: string; episodeId: string; courses: SelectOption[] }) {
-  const state = useSubmission();
-  async function submit(event: FormEvent<HTMLFormElement>) { event.preventDefault(); const form = new FormData(event.currentTarget); await state.run(() => postAction(patientId, {
-    action: "TOXICITY_CREATE", episodeId, treatmentCourseId: text(form, "treatmentCourseId"), occurredAt: text(form, "occurredAt"), toxicityType: text(form, "toxicityType"), grade: text(form, "grade"), consequences: text(form, "consequences"), hospitalizationAssociated: form.get("hospitalizationAssociated") === "on", cycleDelayAssociated: form.get("cycleDelayAssociated") === "on", treatmentModificationRecorded: text(form, "treatmentModificationRecorded"),
-  })); }
-  return <form className={styles.form} onSubmit={submit}><label>Data<input type="date" name="occurredAt" required /></label><label>Tratamento relacionado<select name="treatmentCourseId"><option value="">Sem tratamento vinculado</option>{courses.map((item) => <option key={item.id} value={item.id}>{item.label}</option>)}</select></label><label>Tipo de toxicidade<input name="toxicityType" required /></label><label>Grau informado pelo médico<input name="grade" /></label><label>Consequências<textarea name="consequences" /></label><label><input type="checkbox" name="hospitalizationAssociated" /> Hospitalização associada</label><label><input type="checkbox" name="cycleDelayAssociated" /> Atraso de ciclo associado</label><label>Modificação do tratamento já registrada pelo oncologista<textarea name="treatmentModificationRecorded" /></label><button disabled={state.pending}>Registrar toxicidade</button><Feedback message={state.message} /></form>;
-}
-
-export function RecoveryForm({ patientId, episodeId }: { patientId: string; episodeId: string }) {
-  const state = useSubmission();
-  async function submit(event: FormEvent<HTMLFormElement>) { event.preventDefault(); const form = new FormData(event.currentTarget); await state.run(() => postAction(patientId, { action: "RECOVERY_CREATE", episodeId, domain: text(form, "domain"), status: text(form, "status"), assessedAt: text(form, "assessedAt"), notes: text(form, "notes") })); }
-  return <form className={styles.form} onSubmit={submit}><label>Domínio<select name="domain">{ONCOGERIATRIC_RECOVERY_DOMAIN_OPTIONS.map((item) => <option key={item.value} value={item.value}>{item.label}</option>)}</select></label><label>Situação<select name="status">{ONCOGERIATRIC_RECOVERY_STATUS_OPTIONS.map((item) => <option key={item.value} value={item.value}>{item.label}</option>)}</select></label><label>Data<input type="date" name="assessedAt" required /></label><label>Observações<textarea name="notes" /></label><button disabled={state.pending}>Registrar recuperação</button><Feedback message={state.message} /></form>;
-}
-
-export function ReportSnapshotButton({ patientId, episodeId, content }: { patientId: string; episodeId: string; content: Record<string, unknown> }) {
-  const state = useSubmission();
-  return <div><button disabled={state.pending} onClick={() => state.run(() => postAction(patientId, { action: "REPORT_SNAPSHOT", episodeId, content }))}>{state.pending ? "Gerando…" : "Arquivar versão do relatório"}</button><Feedback message={state.message} /></div>;
-}
+export function ReportSnapshotButton({patientId,episodeId,content,clinicalReviewConfirmed}:{patientId:string;episodeId:string;content:Record<string,unknown>;clinicalReviewConfirmed:boolean}) { const state=useSubmission(); return <div><button disabled={state.pending||!clinicalReviewConfirmed} onClick={()=>state.runCreate((operationId)=>postAction(patientId,{action:"REPORT_SNAPSHOT",operationId,episodeId,content,clinicalReviewConfirmed}))}>{state.pending?"Gerando…":"Arquivar versão do relatório"}</button><Feedback message={state.message}/></div>; }

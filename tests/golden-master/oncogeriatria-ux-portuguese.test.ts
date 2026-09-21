@@ -33,7 +33,7 @@ test("oncogeriatria segue fluxo clínico em etapas e oferece acesso explícito �
     assert.ok(nav.includes(label), `etapa ausente na navegação: ${label}`);
   }
   assert.match(scalesPage, /buildOncogeriatricConsultationHref/);
-  assert.match(scalesPage, /section: "escalas", episodeId: episode\.id, returnStage: "escalas"/);
+  assert.match(scalesPage, /section:\s*"escalas".*episodeId:\s*episode\.id.*returnStage:\s*"escalas"/);
   assert.match(scalesPage, /O geriatra continua decidindo quais instrumentos aplicar/);
   assert.match(scalesPage, /Nenhuma escala é selecionada, preenchida ou interpretada automaticamente/);
 });
@@ -46,9 +46,9 @@ test("rótulos técnicos permanecem como valores internos, mas são apresentados
   assert.equal(oncogeriatricDomainLabel("COGNITION"), "Cognição");
   assert.equal(oncogeriatricRecoveryStatusLabel("RECOVERING"), "Em recuperação");
   assert.match(forms, /value=\{item\.value\}/);
-  assert.match(forms, /action: "G8_SAVE"/);
+  assert.match(readFileSync("src/components/oncogeriatria/checklist-scales.tsx", "utf8"), /action:\s*"G8_SAVE"/);
   assert.match(readFileSync("src/components/oncogeriatria/checklist-scales.tsx", "utf8"), /action: "CARG_SAVE"/);
-  assert.match(checkForm, /type: "CYCLE"/);
+  assert.match(checkForm, /type:\s*"CYCLE"/);
 });
 
 test("avaliação inicial oferece cada grau ECOG e KPS com descrição clínica", () => {

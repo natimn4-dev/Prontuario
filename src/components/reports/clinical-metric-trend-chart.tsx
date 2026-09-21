@@ -1,103 +1,13 @@
 import { proportionalAxisPosition } from "@/domain/chart-geometry";
 import styles from "./clinical-metric-trend-chart.module.css";
 
-export interface ClinicalMetricTrendPoint {
-  id: string;
-  at: Date | string;
-  value: number;
-  context?: string | null;
-}
-
-const WIDTH = 560;
-const HEIGHT = 190;
-const LEFT = 54;
-const RIGHT = 22;
-const TOP = 28;
-const BOTTOM = 42;
-
-function time(value: Date | string): number {
-  return new Date(value).getTime();
-}
-
-function date(value: Date | string): string {
-  return new Intl.DateTimeFormat("pt-BR", { timeZone: "UTC" }).format(new Date(value));
-}
-
-function number(value: number): string {
-  return new Intl.NumberFormat("pt-BR", { maximumFractionDigits: 2 }).format(value);
-}
-
-export function ClinicalMetricTrendChart({
-  title,
-  unit,
-  points,
-  directionLabel,
-}: {
-  title: string;
-  unit?: string;
-  points: ClinicalMetricTrendPoint[];
-  directionLabel?: string;
-}) {
-  const ordered = [...points]
-    .filter((point) => Number.isFinite(point.value) && Number.isFinite(time(point.at)))
-    .sort((left, right) => time(left.at) - time(right.at) || left.id.localeCompare(right.id));
-  if (!ordered.length) return <article className={styles.card}><h3>{title}</h3><p>Sem dados registrados.</p></article>;
-
-  const times = ordered.map((point) => time(point.at));
-  const values = ordered.map((point) => point.value);
-  const minTime = Math.min(...times);
-  const maxTime = Math.max(...times);
-  const observedMin = Math.min(...values);
-  const observedMax = Math.max(...values);
-  const observedSpan = observedMax - observedMin;
-  const padding = observedSpan > 0 ? observedSpan * 0.08 : Math.max(Math.abs(observedMin) * 0.05, 0.5);
-  const plotMin = observedMin - padding;
-  const plotMax = observedMax + padding;
-  const x = (at: Date | string) => proportionalAxisPosition({ value: time(at), min: minTime, max: maxTime, start: LEFT, end: WIDTH - RIGHT });
-  const y = (value: number) => proportionalAxisPosition({ value, min: plotMin, max: plotMax, start: HEIGHT - BOTTOM, end: TOP });
-  const polyline = ordered.map((point) => `${x(point.at)},${y(point.value)}`).join(" ");
-  const unitSuffix = unit ? ` ${unit}` : "";
-
-  return (
-    <article className={styles.card}>
-      <header>
-        <div><h3>{title}</h3><p>{directionLabel ?? "Valores brutos registrados; sem interpretação automática de direção."}</p></div>
-        <span>{ordered.length} registro(s)</span>
-      </header>
-      {ordered.length >= 2 ? (
-        <div className={styles.chartWrap} tabIndex={0} aria-label={`Gráfico longitudinal de ${title}, rolável quando necessário`}>
-          <svg
-            className={styles.chart}
-            data-time-scale="proportional"
-            viewBox={`0 0 ${WIDTH} ${HEIGHT}`}
-            role="img"
-            aria-label={`Trajetória de ${title}: ${ordered.map((point) => `${number(point.value)}${unitSuffix} em ${date(point.at)}`).join("; ")}. Distâncias horizontais proporcionais ao tempo real.`}
-          >
-            <line className={styles.axis} x1={LEFT} x2={WIDTH - RIGHT} y1={HEIGHT - BOTTOM} y2={HEIGHT - BOTTOM} />
-            <line className={styles.guide} x1={LEFT} x2={WIDTH - RIGHT} y1={TOP} y2={TOP} />
-            <line className={styles.guide} x1={LEFT} x2={WIDTH - RIGHT} y1={HEIGHT - BOTTOM} y2={HEIGHT - BOTTOM} />
-            <text className={styles.axisValue} x={LEFT - 8} y={TOP + 4} textAnchor="end">{number(observedMax)}</text>
-            <text className={styles.axisValue} x={LEFT - 8} y={HEIGHT - BOTTOM + 4} textAnchor="end">{number(observedMin)}</text>
-            <polyline className={styles.line} points={polyline} />
-            {ordered.map((point) => (
-              <g key={point.id}>
-                <line className={styles.dateGuide} x1={x(point.at)} x2={x(point.at)} y1={TOP} y2={HEIGHT - BOTTOM} />
-                <circle className={styles.point} cx={x(point.at)} cy={y(point.value)} r={5}>
-                  <title>{`${date(point.at)} · ${number(point.value)}${unitSuffix}${point.context ? ` · contexto registrado: ${point.context}` : ""}`}</title>
-                </circle>
-                <text className={styles.pointValue} x={x(point.at)} y={y(point.value) - 10} textAnchor="middle">{number(point.value)}</text>
-                <text className={styles.dateLabel} x={x(point.at)} y={HEIGHT - 17} textAnchor="middle">{date(point.at)}</text>
-              </g>
-            ))}
-          </svg>
-        </div>
-      ) : <p className={styles.empty}>Um registro preservado; são necessários dois para desenhar a trajetória.</p>}
-      <p className={styles.scaleNote}>Eixo vertical: intervalo observado, com valores brutos identificados. Eixo horizontal: datas reais.</p>
-      <table>
-        <caption>Dados do gráfico de {title}</caption>
-        <thead><tr><th scope="col">Data</th><th scope="col">Valor</th><th scope="col">Contexto documentado</th></tr></thead>
-        <tbody>{ordered.map((point) => <tr key={`row-${point.id}`}><td>{date(point.at)}</td><td>{number(point.value)}{unitSuffix}</td><td>{point.context || "Sem evento associado"}</td></tr>)}</tbody>
-      </table>
-    </article>
-  );
+export interface ClinicalMetricTrendPoint { id: string; at: Date | string; value: number; context?: string | null; }
+const WIDTH=560,HEIGHT=190,LEFT=54,RIGHT=22,TOP=28,BOTTOM=42;
+function time(value:Date|string):number{return new Date(value).getTime();}
+function date(value:Date|string):string{return new Intl.DateTimeFormat("pt-BR",{timeZone:"UTC"}).format(new Date(value));}
+function number(value:number):string{return new Intl.NumberFormat("pt-BR",{maximumFractionDigits:2}).format(value);}
+export function ClinicalMetricTrendChart({title,unit,points,directionLabel}:{title:string;unit?:string;points:ClinicalMetricTrendPoint[];directionLabel?:string}){
+ const ordered=[...points].filter((point)=>Number.isFinite(point.value)&&Number.isFinite(time(point.at))).sort((left,right)=>time(left.at)-time(right.at)||left.id.localeCompare(right.id));if(!ordered.length)return<article className={styles.card}><h3>{title}</h3><p>Sem dados registrados.</p></article>;
+ const times=ordered.map((point)=>time(point.at));const values=ordered.map((point)=>point.value);const minTime=Math.min(...times),maxTime=Math.max(...times),observedMin=Math.min(...values),observedMax=Math.max(...values),observedSpan=observedMax-observedMin,padding=observedSpan>0?observedSpan*0.08:Math.max(Math.abs(observedMin)*0.05,0.5),plotMin=observedMin-padding,plotMax=observedMax+padding;const x=(at:Date|string)=>proportionalAxisPosition({value:time(at),min:minTime,max:maxTime,start:LEFT,end:WIDTH-RIGHT});const y=(value:number)=>proportionalAxisPosition({value,min:plotMin,max:plotMax,start:HEIGHT-BOTTOM,end:TOP});const polyline=ordered.map((point)=>`${x(point.at)},${y(point.value)}`).join(" ");const unitSuffix=unit?` ${unit}`:"";
+ return <article className={styles.card}><header><div><h3>{title}</h3><p>{directionLabel??"Valores brutos registrados; sem interpretação automática de direção."}</p></div><span>{ordered.length} registro(s)</span></header>{ordered.length>=2?<div className={styles.chartWrap} tabIndex={0} aria-label={`Gráfico longitudinal de ${title}, rolável quando necessário`}><svg className={styles.chart} data-time-scale="proportional" viewBox={`0 0 ${WIDTH} ${HEIGHT}`} role="img" aria-label={`Trajetória de ${title}: ${ordered.map((point)=>`${number(point.value)}${unitSuffix} em ${date(point.at)}`).join("; ")}. Distâncias horizontais proporcionais ao tempo real.`}><line className={styles.axis} x1={LEFT} x2={WIDTH-RIGHT} y1={HEIGHT-BOTTOM} y2={HEIGHT-BOTTOM}/><line className={styles.guide} x1={LEFT} x2={WIDTH-RIGHT} y1={TOP} y2={TOP}/><line className={styles.guide} x1={LEFT} x2={WIDTH-RIGHT} y1={HEIGHT-BOTTOM} y2={HEIGHT-BOTTOM}/><text className={styles.axisValue} x={LEFT-8} y={TOP+4} textAnchor="end">{number(observedMax)}</text><text className={styles.axisValue} x={LEFT-8} y={HEIGHT-BOTTOM+4} textAnchor="end">{number(observedMin)}</text><polyline className={styles.line} points={polyline}/>{ordered.map((point)=><g key={point.id}><line className={styles.dateGuide} x1={x(point.at)} x2={x(point.at)} y1={TOP} y2={HEIGHT-BOTTOM}/><circle className={styles.point} cx={x(point.at)} cy={y(point.value)} r={5}><title>{`${date(point.at)} · ${number(point.value)}${unitSuffix}${point.context?` · ${point.context}`:" · Sem motivo associado registrado nesta consulta"}`}</title></circle><text className={styles.pointValue} x={x(point.at)} y={y(point.value)-10} textAnchor="middle">{number(point.value)}</text><text className={styles.dateLabel} x={x(point.at)} y={HEIGHT-17} textAnchor="middle">{date(point.at)}</text></g>)}</svg></div>:<p className={styles.empty}>Um registro preservado; são necessários dois para desenhar a trajetória.</p>}<p className={styles.scaleNote}>Eixo vertical: intervalo observado, com valores brutos identificados. Eixo horizontal: datas reais.</p><table><caption>Dados do gráfico de {title}</caption><thead><tr><th scope="col">Data</th><th scope="col">Valor</th><th scope="col">Contexto documentado</th></tr></thead><tbody>{ordered.map((point)=><tr key={`row-${point.id}`}><td>{date(point.at)}</td><td>{number(point.value)}{unitSuffix}</td><td>{point.context||"Sem motivo associado registrado nesta consulta"}</td></tr>)}</tbody></table><p className={styles.scaleNote}>Registros temporais associados contextualizam o ponto; o gráfico não atribui causalidade.</p></article>;
 }
