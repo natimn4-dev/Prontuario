@@ -341,7 +341,12 @@ export function DietaryAssessmentWorkspace({
       ? numberOrNull(quantity)
       : numberOrNull(grams);
   const selectedNutrients = portionNutrients(selectedFood, previewAmount);
-  const mark = () => setDirty(true);
+  const mark = () => {
+    setDirty(true);
+    setOrientationReviewed(false);
+    setIncludeInSoap(false);
+    setIncludeInReport(false);
+  };
 
   useEffect(() => { onDirtyChange?.(dirty); }, [dirty, onDirtyChange]);
 
@@ -717,6 +722,11 @@ export function DietaryAssessmentWorkspace({
         );
       setDirty(false);
       if (body.assessment && body.updatedAt && body.consultationId) {
+        setOrientationDraft((current) =>
+          current === payload.orientationDraft
+            ? body.assessment!.orientationDraft
+            : current,
+        );
         setData((current) => current ? {
           ...current,
           consultationId: body.consultationId!,
