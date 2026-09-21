@@ -15,6 +15,7 @@ import {
   type DietaryAssessmentInput,
   type DietaryAssessmentSnapshot,
   type DietaryClinicalContext,
+  type DietaryConfirmedMeal,
   type DietaryFoodDraft,
   type DietaryFoodComposition,
   type DietaryFoodItem,
@@ -22,7 +23,10 @@ import {
   type DietaryTargets,
   type HouseholdMeasure,
 } from "@/domain/dietary-assessment";
-import { DIETARY_PORTION_DEFINITIONS } from "@/domain/dietary-guidance";
+import {
+  DIETARY_PORTION_DEFINITIONS,
+  buildConditionalDietaryGuidance,
+} from "@/domain/dietary-guidance";
 import { crossCheckDietaryEnergy } from "@/domain/dietary-assessment-quality";
 import { CLINICAL_RELEASE_ID } from "@/domain/clinical-release";
 import styles from "./dietary-assessment-workspace.module.css";
@@ -122,11 +126,19 @@ const portionNutrients = (
 function PortionNutrientLine({
   composition,
   grams,
+  measure,
+  quantity,
 }: {
   composition?: DietaryFoodComposition | null;
   grams?: number | null;
+  measure: HouseholdMeasure;
+  quantity: number;
 }) {
-  const nutrients = portionNutrients(composition, grams);
+  const amount =
+    composition?.nutrientBasis === "100ml" && measure === "ml"
+      ? quantity
+      : grams;
+  const nutrients = portionNutrients(composition, amount);
   return nutrients ? (
     <small className={styles.itemNutrients}>
       {format(nutrients.energyKcal, 0)} kcal · P {format(nutrients.proteinG, 1)}{" "}
@@ -264,26 +276,28 @@ export function DietaryAssessmentWorkspace({
   const totalItems = meals.reduce((sum, meal) => sum + meal.items.length, 0);
   const comparison = assessment?.proteinComparison;
   const isFinalized = data?.status === "FINALIZED";
-  const draftCalculation = useMemo(
+  const draftConfirmedMeals = useMemo(
     () =>
-      summarizeDietaryAssessment(
-        meals.map((meal) => ({
-          ...meal,
-          items: meal.items.map((item) => ({
-            ...item,
-            composition: item.composition ?? null,
-            nutrients:
-              item.composition && item.grams != null
-                ? nutrientsForGrams(
-                    item.composition.nutrientsPer100g,
-                    item.grams,
-                  )
-                : item.nutrients ?? null,
-          })),
-        })),
-        renalContext.weightKg,
-      ),
-    [meals, renalContext.weightKg],
+      meals.map((meal) => ({
+        ...meal,
+        items: meal.items.map((item) =>
+          confirmDietaryDraftItem(item, item.composition ?? null),
+        ),
+      })) as DietaryConfirmedMeal[],
+    [meals],
+  );
+  const draftCalculation = useMemo(
+    () => summarizeDietaryAssessment(draftConfirmedMeals, renalContext.weightKg),
+    [draftConfirmedMeals, renalContext.weightKg],
+  );
+  const draftConditionalGuidance = useMemo(
+    () =>
+      buildConditionalDietaryGuidance({
+        context: renalContext,
+        items: draftConfirmedMeals.flatMap((meal) => meal.items),
+        summary: draftCalculation.summary,
+      }),
+    [draftConfirmedMeals, draftCalculation.summary, renalContext],
   );
   const displayedSummary = assessment
     ? dirty
@@ -292,6 +306,9 @@ export function DietaryAssessmentWorkspace({
     : dirty && totalItems
       ? draftCalculation.summary
       : null;
+  const displayedGuidance = dirty
+    ? draftConditionalGuidance
+    : (assessment?.conditionalGuidance ?? []);
   const displayedItems: Array<
     Pick<
       DietaryFoodDraft,
@@ -317,9 +334,13 @@ export function DietaryAssessmentWorkspace({
   const energyCheck = displayedSummary
     ? crossCheckDietaryEnergy(displayedSummary)
     : null;
-  const previewGrams =
-    measure === "g" ? numberOrNull(quantity) : numberOrNull(grams);
-  const selectedNutrients = portionNutrients(selectedFood, previewGrams);
+  const selectedUsesVolume = selectedFood?.nutrientBasis === "100ml" && measure === "ml";
+  const previewAmount = selectedUsesVolume
+    ? numberOrNull(quantity)
+    : measure === "g"
+      ? numberOrNull(quantity)
+      : numberOrNull(grams);
+  const selectedNutrients = portionNutrients(selectedFood, previewAmount);
   const mark = () => setDirty(true);
 
   useEffect(() => { onDirtyChange?.(dirty); }, [dirty, onDirtyChange]);
@@ -930,7 +951,7 @@ export function DietaryAssessmentWorkspace({
                       setFoodSearchAttempted(false);
                       setSelectedFood(null);
                     }}
-                    placeholder="Ex.: ovo, arroz cozido, frango…"
+                    placeholder="Ex.: ovo, frango, Nutren, Nutridrink…"
                   />
                   <button
                     type="button"
@@ -955,7 +976,13 @@ export function DietaryAssessmentWorkspace({
                           ? styles.selected
                           : undefined
                       }
-                      onClick={() => setSelectedFood(food)}
+                      onClick={() => {
+                        setSelectedFood(food);
+                        if (food.nutrientBasis === "100ml") {
+                          setMeasure("ml");
+                          setGrams("");
+                        }
+                      }}
                     >
                       <strong>{food.description}</strong>
                       <span>
@@ -963,11 +990,13 @@ export function DietaryAssessmentWorkspace({
                           ? "TACO — NEPA/UNICAMP"
                           : food.provider === "USDA_FDC"
                             ? "USDA FoodData Central"
-                            : "TBCA"}{" "}
+                            : food.provider === "MANUFACTURER_LABEL"
+                              ? "Rótulo oficial do fabricante"
+                              : "TBCA"}{" "}
                         · {food.dataType ?? "tipo não informado"}
                       </span>
                       <span className={styles.nutrientLine}>
-                        Por 100 g: {format(food.nutrientsPer100g.energyKcal, 0)}{" "}
+                        Por 100 {food.nutrientBasis === "100ml" ? "mL" : "g"}: {format(food.nutrientsPer100g.energyKcal, 0)}{" "}
                         kcal · P {format(food.nutrientsPer100g.proteinG, 1)} g ·
                         C {format(food.nutrientsPer100g.carbohydratesG, 1)} g ·
                         G {format(food.nutrientsPer100g.fatG, 1)} g
@@ -1014,7 +1043,7 @@ export function DietaryAssessmentWorkspace({
                         ))}
                       </select>
                     </label>
-                    {measure !== "g" ? (
+                    {measure !== "g" && !selectedUsesVolume ? (
                       <label>
                         Gramas <small>necessários para calcular</small>
                         <input
@@ -1073,8 +1102,9 @@ export function DietaryAssessmentWorkspace({
                         </div>
                       ) : (
                         <p>
-                          Composição disponível por 100 g. Informe a quantidade
-                          em gramas para calcular esta porção.
+                          {selectedFood.nutrientBasis === "100ml"
+                            ? "Informe o volume em mL para calcular esta porção."
+                            : "Composição disponível por 100 g. Informe a quantidade em gramas para calcular esta porção."}
                         </p>
                       )}
                     </div>
@@ -1233,6 +1263,8 @@ export function DietaryAssessmentWorkspace({
                             <PortionNutrientLine
                               composition={item.composition}
                               grams={item.grams}
+                              measure={item.measure}
+                              quantity={item.quantity}
                             />
                             {item.estimated || item.grams == null ? (
                               <small className={styles.attentionText}>
@@ -1728,12 +1760,12 @@ export function DietaryAssessmentWorkspace({
                         : "Peso não disponível"}
                     </small>
                   </div>
-                  {assessment?.conditionalGuidance?.length ? (
+                  {displayedGuidance.length ? (
                     <div
                       className={styles.priorityList}
                       aria-label="Orientações condicionais para revisão clínica"
                     >
-                      {assessment.conditionalGuidance.map((item) => (
+                      {displayedGuidance.map((item) => (
                         <article key={item.code} data-severity={item.severity}>
                           <strong>{item.title}</strong>
                           <p>{item.text}</p>
@@ -1768,8 +1800,9 @@ export function DietaryAssessmentWorkspace({
                       {energyCheck?.note}
                     </p>
                     <p className={styles.sourceNote}>
-                      Fonte principal: TACO — NEPA/UNICAMP, 4ª edição. A USDA
-                      FoodData Central é usada somente quando a TACO não contém
+                      Fonte principal: TACO — NEPA/UNICAMP, 4ª edição. Suplementos
+                      comerciais específicos usam o rótulo oficial identificado; a USDA
+                      FoodData Central é usada quando os catálogos locais não contêm
                       correspondência. Medidas caseiras e estimativas visuais
                       permanecem marcadas para revisão.
                     </p>
