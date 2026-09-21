@@ -86,7 +86,7 @@ function initialProvenanceString(value: Record<string, unknown> | null | undefin
 
 async function postJson(url: string, body: Record<string, unknown>) {
   const response = await fetch(url, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(body) });
-  const data = await response.json().catch(() => null) as { message?: string; code?: string; details?: Record<string, unknown>; savedAt?: string; savedBy?: string } | null;
+  const data = await response.json().catch(() => null) as { message?: string; code?: string; details?: Record<string, unknown>; savedAt?: string; savedBy?: string; persisted?: boolean } | null;
   if (!response.ok) throw new ApiError(data?.message ?? "Não foi possível salvar a avaliação.", data?.code, data?.details);
   return data;
 }
@@ -155,7 +155,7 @@ export function CargChecklistForm({ patientId, episodeId, checkpointId, initialA
 
   async function saveDraft() {
     setSaving(true); setFeedback(null); setArchivedDifferences(null);
-    try { const result = await postJson(`/api/oncogeriatria/patients/${patientId}`, { action: "CARG_DRAFT_SAVE", episodeId, checkpointId, answers: partialAnswers, labProvenance: provenance }); setSavedMeta({ at: result?.savedAt ?? new Date().toISOString(), by: result?.savedBy ?? null }); setFeedback({ kind: "success", text: `Rascunho do CARG salvo (${completion.completedCount}/11 fatores completos). Você pode sair e retomar depois.` }); router.refresh(); }
+    try { const result = await postJson(`/api/oncogeriatria/patients/${patientId}`, { action: "CARG_DRAFT_SAVE", episodeId, checkpointId, answers: partialAnswers, labProvenance: provenance }); if (result?.persisted !== true) throw new ApiError("O servidor não confirmou a gravação do CARG."); setSavedMeta({ at: result.savedAt ?? new Date().toISOString(), by: result.savedBy ?? null }); setFeedback({ kind: "success", text: `Rascunho do CARG salvo (${completion.completedCount}/11 fatores completos). Você pode sair e retomar depois.` }); router.refresh(); }
     catch (error) { setFeedback({ kind: "error", text: error instanceof Error ? error.message : "Não foi possível salvar o rascunho." }); }
     finally { setSaving(false); }
   }
@@ -165,7 +165,8 @@ export function CargChecklistForm({ patientId, episodeId, checkpointId, initialA
     setSaving(true); setFeedback(null);
     try {
       const result = await postJson(`/api/oncogeriatria/patients/${patientId}`, { action: "CARG_SAVE", episodeId, checkpointId, answers: partialAnswers, labProvenance: provenance, confirmArchivedDifference });
-      setSavedMeta({ at: result?.savedAt ?? new Date().toISOString(), by: result?.savedBy ?? null }); setArchivedDifferences(null);
+      if (result?.persisted !== true) throw new ApiError("O servidor não confirmou a gravação final do CARG.");
+      setSavedMeta({ at: result.savedAt ?? new Date().toISOString(), by: result.savedBy ?? null }); setArchivedDifferences(null);
       setFeedback({ kind: "success", text: `CARG registrado: ${preview.score}/23 · ${preview.category === "LOW" ? "baixo risco" : preview.category === "INTERMEDIATE" ? "risco intermediário" : "alto risco"}. O resultado foi salvo e permanecerá disponível ao reabrir a avaliação.` });
       router.refresh();
     } catch (error) {
