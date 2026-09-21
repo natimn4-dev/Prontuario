@@ -1,4 +1,4 @@
-import type { CapacityDimensionHistory } from "@/domain/capacity-dimension-history";
+import type { CapacityDimensionHistory, CapacityDimensionStatus } from "@/domain/capacity-dimension-history";
 import { buildOncogeriatricDomainReviewPriorities } from "@/domain/oncogeriatria/domain-review";
 import { buildOncogeriatricConsultationHref, type OncogeriatricReturnStage } from "@/domain/oncogeriatria/return-navigation";
 import type { ReactNode } from "react";
@@ -135,56 +135,67 @@ export function OncogeriatricDomainReview({
   );
 }
 
+const TRAJECTORY_STATUS_LABEL: Record<CapacityDimensionStatus, string> = {
+  "not-assessed": "Não avaliada nesta consulta",
+  recorded: "Registrada sem estado comparável",
+  indeterminate: "Resultados discordantes",
+  preserved: "Sem redução detectada",
+  attention: "Sinal de atenção",
+  altered: "Redução identificada",
+};
+
 function cellSummary(
   cell: CapacityDimensionHistory["dimensions"][number]["cells"][number] | undefined,
   dateByConsultation: ReadonlyMap<string, string>,
 ): ReactNode {
-  if (!cell) return <span className={styles.missing}>Sem dados registrados</span>;
+  if (!cell) return <span className={styles.missing}>Sem registro para esta consulta</span>;
+  const instruments = cell.assessments.map((assessment) => {
+    const score = assessment.scoreText
+      ?? (assessment.scoreNumeric === null || assessment.scoreNumeric === undefined ? "resultado registrado" : String(assessment.scoreNumeric));
+    return `${assessment.scaleName}: ${score}${assessment.classification ? ` · ${assessment.classification}` : ""} · versão ${assessment.scaleVersion}`;
+  });
+
   return (
     <div className={styles.trajectoryCell}>
       <strong>{clinicalDate(dateByConsultation.get(cell.consultationId) ?? "")}</strong>
-      <span>{cell.assessments.map((assessment) => {
-        const score = assessment.scoreText
-          ?? (assessment.scoreNumeric === null || assessment.scoreNumeric === undefined ? "resultado registrado" : String(assessment.scoreNumeric));
-        return `${assessment.scaleName}: ${score}${assessment.classification ? ` · ${assessment.classification}` : ""}`;
-      }).join("; ")}</span>
+      <span className={styles.trajectoryState} data-status={cell.status}>{TRAJECTORY_STATUS_LABEL[cell.status]}</span>
+      <span>{cell.statusReason}</span>
+      <span>{instruments.length ? instruments.join("; ") : "Nenhum instrumento reaplicado nesta consulta."}</span>
+      <small>{cell.comparabilityKey ? `Série comparável: ${cell.comparabilityKey}` : "Sem série comparável para este ponto."}</small>
     </div>
   );
 }
 
 export function OncogeriatricTrajectoryTable({ history }: { history: CapacityDimensionHistory }) {
-  const dateByConsultation = new Map(history.consultations.map((item) => [item.id, item.occurredAt]));
-  const rows = history.dimensions.flatMap((dimension) => {
-    const recorded = dimension.cells.filter((cell) => cell.assessments.length > 0);
-    if (!recorded.length) return [];
-    return [{
-      dimension,
-      initial: recorded[0],
-      previous: recorded.length > 2 ? recorded.at(-2) : undefined,
-      current: recorded.at(-1),
-    }];
-  });
+  if (!history.consultations.length) return <p className={styles.empty}>Sem consultas vinculadas a este acompanhamento.</p>;
 
-  if (!rows.length) return <p className={styles.empty}>Sem avaliações por domínio vinculadas a este acompanhamento.</p>;
+  const dateByConsultation = new Map(history.consultations.map((item) => [item.id, item.occurredAt]));
+  const tableWidth = Math.max(760, 180 + history.consultations.length * 220);
 
   return (
-    <div className={styles.tableWrap}>
-      <table className={styles.trajectoryTable} aria-label="Trajetória geriátrica por domínio">
+    <div className={styles.tableWrap} tabIndex={0} aria-label="Tabela cronológica completa da trajetória geriátrica">
+      <table className={styles.trajectoryTable} style={{ width: `${tableWidth}px` }}>
+        <caption>Histórico cronológico completo por domínio e consulta vinculada ao episódio oncológico</caption>
         <thead>
           <tr>
             <th scope="col">Domínio</th>
-            <th scope="col">Avaliação inicial</th>
-            <th scope="col">Avaliação anterior</th>
-            <th scope="col">Mais recente</th>
+            {history.consultations.map((consultation) => (
+              <th scope="col" key={consultation.id}>
+                {clinicalDate(consultation.occurredAt)}
+                {consultation.isTarget ? <small className={styles.currentConsultationLabel}>Mais recente</small> : null}
+              </th>
+            ))}
           </tr>
         </thead>
         <tbody>
-          {rows.map(({ dimension, initial, previous, current }) => (
+          {history.dimensions.map((dimension) => (
             <tr key={dimension.code}>
               <th scope="row">{dimension.label}</th>
-              <td>{cellSummary(initial, dateByConsultation)}</td>
-              <td>{cellSummary(previous, dateByConsultation)}</td>
-              <td>{cellSummary(current, dateByConsultation)}</td>
+              {history.consultations.map((consultation) => (
+                <td key={`${dimension.code}-${consultation.id}`}>
+                  {cellSummary(dimension.cells.find((cell) => cell.consultationId === consultation.id), dateByConsultation)}
+                </td>
+              ))}
             </tr>
           ))}
         </tbody>
@@ -192,3 +203,4 @@ export function OncogeriatricTrajectoryTable({ history }: { history: CapacityDim
     </div>
   );
 }
+
