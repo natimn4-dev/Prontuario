@@ -1009,7 +1009,8 @@ export function DietaryAssessmentWorkspace({
                         Por 100 {food.nutrientBasis === "100ml" ? "mL" : "g"}: {format(food.nutrientsPer100g.energyKcal, 0)}{" "}
                         kcal · P {format(food.nutrientsPer100g.proteinG, 1)} g ·
                         C {format(food.nutrientsPer100g.carbohydratesG, 1)} g ·
-                        G {format(food.nutrientsPer100g.fatG, 1)} g
+                        G {format(food.nutrientsPer100g.fatG, 1)} g · Ca{" "}
+                        {format(food.nutrientsPer100g.calciumMg, 0)} mg
                       </span>
                     </button>
                   ))}
