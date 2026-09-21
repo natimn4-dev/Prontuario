@@ -203,4 +203,3 @@ export function OncogeriatricTrajectoryTable({ history }: { history: CapacityDim
     </div>
   );
 }
-
