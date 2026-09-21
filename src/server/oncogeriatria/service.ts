@@ -491,11 +491,19 @@ export async function saveCargDraft(patientId: string, input: Record<string, unk
   const completion = summarizeCargCompleteness(answers);
   const provenance = sanitizeCargLaboratoryProvenance(safeObject(input.labProvenance) as unknown as CargLaboratoryProvenance | undefined);
   const savedAt = new Date();
-  await prisma.$transaction(async (tx) => {
-    await tx.oncogeriatricCheckpoint.update({ where: { id: checkpointId }, data: { cargDraft: answers as never, cargCompletionCount: completion.completedCount, cargPendingFields: completion.pendingLabels as never, cargLabProvenance: provenance as never, cargSavedAt: savedAt, cargSavedById: user.id } });
+  const persisted = await prisma.$transaction(async (tx) => {
+    const saved = await tx.oncogeriatricCheckpoint.update({
+      where: { id: checkpointId },
+      data: { cargDraft: answers as never, cargCompletionCount: completion.completedCount, cargPendingFields: completion.pendingLabels as never, cargLabProvenance: provenance as never, cargSavedAt: savedAt, cargSavedById: user.id },
+      select: { id: true, cargCompletionCount: true, cargSavedAt: true, cargSavedById: true },
+    });
     await tx.auditEvent.create({ data: { userId: user.id, entityType: "OncogeriatricCheckpoint", entityId: checkpointId, action: "oncogeriatria.carg.draft", outcome: "success", reasonCode: `${completion.completedCount}/11` } });
+    return saved;
   });
-  return { checkpointId, completion, savedAt, savedBy: user.name };
+  if (persisted.cargCompletionCount !== completion.completedCount || !persisted.cargSavedAt) {
+    throw new OncogeriatricError("CARG_PERSISTENCE_CONFIRMATION_FAILED", "O servidor não conseguiu confirmar a gravação do CARG. Tente salvar novamente.", 500);
+  }
+  return { checkpointId, completion, savedAt: persisted.cargSavedAt, savedBy: user.name, persisted: true };
 }
 
 export async function saveCarg(patientId: string, input: Record<string, unknown>) {
@@ -526,11 +534,18 @@ export async function saveCarg(patientId: string, input: Record<string, unknown>
     const shouldCreateNewAssessment = Boolean(archived && differences.length);
     const saved = previous && !shouldCreateNewAssessment ? await tx.scaleAssessment.update({ where: { id: previous.id }, data, select: { id: true } }) : await tx.scaleAssessment.create({ data, select: { id: true } });
     const savedAt = new Date();
-    await tx.oncogeriatricCheckpoint.update({ where: { id: checkpoint.id }, data: { cargAssessmentId: saved.id, cargDraft: answers as never, cargCompletionCount: 11, cargPendingFields: [] as never, cargLabProvenance: provenance as never, cargSavedAt: savedAt, cargSavedById: user.id } });
+    const checkpointSaved = await tx.oncogeriatricCheckpoint.update({
+      where: { id: checkpoint.id },
+      data: { cargAssessmentId: saved.id, cargDraft: answers as never, cargCompletionCount: 11, cargPendingFields: [] as never, cargLabProvenance: provenance as never, cargSavedAt: savedAt, cargSavedById: user.id },
+      select: { cargAssessmentId: true, cargCompletionCount: true, cargSavedAt: true },
+    });
     await tx.auditEvent.create({ data: { userId: user.id, entityType: "ScaleAssessment", entityId: saved.id, action: "oncogeriatria.carg.upsert", outcome: "success", reasonCode: CARG_SCALE_VERSION } });
-    return { id: saved.id, savedAt };
+    return { id: saved.id, savedAt: checkpointSaved.cargSavedAt, cargAssessmentId: checkpointSaved.cargAssessmentId, cargCompletionCount: checkpointSaved.cargCompletionCount };
   });
-  return { assessmentId: assessment.id, savedAt: assessment.savedAt, savedBy: user.name, completion, provenance, ...result };
+  if (assessment.cargAssessmentId !== assessment.id || assessment.cargCompletionCount !== 11 || !assessment.savedAt) {
+    throw new OncogeriatricError("CARG_PERSISTENCE_CONFIRMATION_FAILED", "O servidor não conseguiu confirmar a gravação final do CARG. Tente salvar novamente.", 500);
+  }
+  return { assessmentId: assessment.id, savedAt: assessment.savedAt, savedBy: user.name, completion, provenance, persisted: true, ...result };
 }
 
 export async function createOncogeriatricIntervention(patientId: string, input: Record<string, unknown>) {
