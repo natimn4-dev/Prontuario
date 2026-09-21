@@ -99,10 +99,26 @@ test("duas solicitações simultâneas de snapshot recebem versões sequenciais 
   } finally { await cleanup(c, ids); await c.$disconnect(); }
 });
 
-test("rascunho do CARG preserva respostas, completude e proveniência após reabertura", { skip: databaseUrl ? false : "TEST_DATABASE_URL não configurada" }, async () => {
+test("rascunho do CARG persiste por atualização e reaparece após reabertura", { skip: databaseUrl ? false : "TEST_DATABASE_URL não configurada" }, async () => {
   const c = client(); const suffix = randomUUID(); const ids = await seed(c, suffix); const checkpointId = `onco-safe-cp-carg-${suffix}`;
   try {
-    await c.oncogeriatricCheckpoint.create({ data: { id: checkpointId, patientId: ids.patientId, episodeId: ids.episodeId, type: "PRE_TREATMENT", occurredAt: new Date(), createdById: ids.userId, cargDraft: { ageYears: 74, cancerType: "OTHER" }, cargCompletionCount: 2, cargPendingFields: ["Dose planejada", "Número de quimioterápicos"], cargLabProvenance: { laboratoryDate: "2026-09-01", laboratorySource: "Laboratório sintético", creatinineClearanceMethod: "Método registrado pelo médico" }, cargSavedById: ids.userId, cargSavedAt: new Date() } });
+    await c.oncogeriatricCheckpoint.create({ data: { id: checkpointId, patientId: ids.patientId, episodeId: ids.episodeId, type: "PRE_TREATMENT", occurredAt: new Date(), createdById: ids.userId } });
+    const savedAt = new Date();
+    const saved = await c.oncogeriatricCheckpoint.update({
+      where: { id: checkpointId },
+      data: {
+        cargDraft: { ageYears: 74, cancerType: "OTHER" },
+        cargCompletionCount: 2,
+        cargPendingFields: ["Dose planejada", "Número de quimioterápicos"],
+        cargLabProvenance: { laboratoryDate: "2026-09-01", laboratorySource: "Laboratório sintético", creatinineClearanceMethod: "Método registrado pelo médico" },
+        cargSavedById: ids.userId,
+        cargSavedAt: savedAt,
+      },
+      select: { cargCompletionCount: true, cargSavedAt: true },
+    });
+    assert.equal(saved.cargCompletionCount, 2);
+    assert.ok(saved.cargSavedAt);
+
     const reopened = await c.oncogeriatricCheckpoint.findUniqueOrThrow({ where: { id: checkpointId }, select: { cargDraft: true, cargCompletionCount: true, cargPendingFields: true, cargLabProvenance: true, cargSavedById: true, cargSavedAt: true } });
     assert.deepEqual(reopened.cargDraft, { ageYears: 74, cancerType: "OTHER" });
     assert.equal(reopened.cargCompletionCount, 2);

@@ -85,6 +85,12 @@ export default async function PatientPage({ params }: { params: Promise<{ id: st
   });
   if (!patient) notFound();
 
+  const oncogeriatricEpisode = await prisma.oncogeriatricEpisode.findFirst({
+    where: { patientId: patient.id },
+    orderBy: [{ status: "asc" }, { updatedAt: "desc" }],
+    select: { id: true },
+  });
+
   const program55Eligible = isProgram55Eligible(patient.birthDate);
   const visibleProblems = patient.problems.filter((problem) =>
     !problem.events.some((event) => isProblemLogicalDeletionNote(event.note)),
@@ -128,6 +134,18 @@ export default async function PatientPage({ params }: { params: Promise<{ id: st
         <p>Data de nascimento: {patient.birthDate?.toISOString().slice(0, 10) ?? "não registrada"}</p>
         {patient.needsIdentityReview ? <strong className="draft-watermark">Identidade/homônimo pendente de revisão</strong> : null}
       </header>
+      <section className="panel" aria-label="Acesso à avaliação oncogeriátrica CARG">
+        <div className="section-heading">
+          <div>
+            <p className="eyebrow">Oncogeriatria</p>
+            <h2>CARG · risco de toxicidade da quimioterapia</h2>
+          </div>
+          <a href={oncogeriatricEpisode ? `/patients/${patient.id}/oncogeriatria/basal?episode=${oncogeriatricEpisode.id}#carg` : `/patients/${patient.id}/oncogeriatria`}>
+            {oncogeriatricEpisode ? "Abrir ou continuar CARG →" : "Iniciar acompanhamento e acessar CARG →"}
+          </a>
+        </div>
+        <p className="muted">Use este acesso para retomar o CARG já iniciado ou revisar um resultado registrado, sem precisar localizar a escala em outras etapas do prontuário.</p>
+      </section>
       <ProblemColumns problems={visibleProblems as ClinicalProblem[]} />
 
       <section className="panel" aria-label="Evolução da capacidade intrínseca e da independência funcional">
@@ -139,6 +157,7 @@ export default async function PatientPage({ params }: { params: Promise<{ id: st
           <h2>Consultas</h2>
           <div className="no-print" style={{ display: "flex", alignItems: "center", justifyContent: "flex-end", gap: 14, flexWrap: "wrap" }}>
             {program55Enabled && program55Eligible ? <a href={`/patients/${patient.id}/programa-55`}>Programa 55+ · 55–70 anos</a> : null}
+            {oncogeriatricEpisode ? <a href={`/patients/${patient.id}/oncogeriatria/basal?episode=${oncogeriatricEpisode.id}#carg`}>Oncogeriatria · abrir CARG</a> : <a href={`/patients/${patient.id}/oncogeriatria`}>Oncogeriatria · iniciar e acessar CARG</a>}
             {canWriteConsultation ? (
               <CreateConsultationButton
                 patientId={patient.id}

@@ -1,6 +1,7 @@
 "use client";
 
 import { useMemo, useState, type FormEvent, type ReactNode } from "react";
+import { useRouter } from "next/navigation";
 import {
   calculateCarg,
   calculateG8,
@@ -85,7 +86,7 @@ function initialProvenanceString(value: Record<string, unknown> | null | undefin
 
 async function postJson(url: string, body: Record<string, unknown>) {
   const response = await fetch(url, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(body) });
-  const data = await response.json().catch(() => null) as { message?: string; code?: string; details?: Record<string, unknown>; savedAt?: string; savedBy?: string } | null;
+  const data = await response.json().catch(() => null) as { message?: string; code?: string; details?: Record<string, unknown>; savedAt?: string; savedBy?: string; persisted?: boolean } | null;
   if (!response.ok) throw new ApiError(data?.message ?? "Não foi possível salvar a avaliação.", data?.code, data?.details);
   return data;
 }
@@ -111,6 +112,7 @@ export function G8ChecklistForm({ patientId, episodeId, checkpointId, initialAge
 }
 
 export function CargChecklistForm({ patientId, episodeId, checkpointId, initialAgeYears, initialBiologicalSex, initialAnswers, initialProvenance, initialSavedAt, initialSavedBy, canFinalize = true, finalizationMessage }: { patientId: string; episodeId: string; checkpointId: string; initialAgeYears?: number; initialBiologicalSex?: CargBiologicalSex; initialAnswers?: InitialAnswers; initialProvenance?: Record<string, unknown> | null; initialSavedAt?: string | null; initialSavedBy?: string | null; canFinalize?: boolean; finalizationMessage?: string }) {
+  const router = useRouter();
   const [ageYears, setAgeYears] = useState(() => initialNumber(initialAnswers, "ageYears", initialAgeYears));
   const [cancerType, setCancerType] = useState(() => initialString(initialAnswers, "cancerType"));
   const [standardDose, setStandardDose] = useState(() => initialBooleanChoice(initialAnswers, "standardDose"));
@@ -153,7 +155,7 @@ export function CargChecklistForm({ patientId, episodeId, checkpointId, initialA
 
   async function saveDraft() {
     setSaving(true); setFeedback(null); setArchivedDifferences(null);
-    try { const result = await postJson(`/api/oncogeriatria/patients/${patientId}`, { action: "CARG_DRAFT_SAVE", episodeId, checkpointId, answers: partialAnswers, labProvenance: provenance }); setSavedMeta({ at: result?.savedAt ?? new Date().toISOString(), by: result?.savedBy ?? null }); setFeedback({ kind: "success", text: `Rascunho do CARG salvo (${completion.completedCount}/11 fatores completos).` }); }
+    try { const result = await postJson(`/api/oncogeriatria/patients/${patientId}`, { action: "CARG_DRAFT_SAVE", episodeId, checkpointId, answers: partialAnswers, labProvenance: provenance }); if (result?.persisted !== true) throw new ApiError("O servidor não confirmou a gravação do CARG."); setSavedMeta({ at: result.savedAt ?? new Date().toISOString(), by: result.savedBy ?? null }); setFeedback({ kind: "success", text: `Rascunho do CARG salvo (${completion.completedCount}/11 fatores completos). Você pode sair e retomar depois.` }); router.refresh(); }
     catch (error) { setFeedback({ kind: "error", text: error instanceof Error ? error.message : "Não foi possível salvar o rascunho." }); }
     finally { setSaving(false); }
   }
@@ -163,8 +165,10 @@ export function CargChecklistForm({ patientId, episodeId, checkpointId, initialA
     setSaving(true); setFeedback(null);
     try {
       const result = await postJson(`/api/oncogeriatria/patients/${patientId}`, { action: "CARG_SAVE", episodeId, checkpointId, answers: partialAnswers, labProvenance: provenance, confirmArchivedDifference });
-      setSavedMeta({ at: result?.savedAt ?? new Date().toISOString(), by: result?.savedBy ?? null }); setArchivedDifferences(null);
-      setFeedback({ kind: "success", text: `CARG registrado: ${preview.score}/23 · ${preview.category === "LOW" ? "baixo risco" : preview.category === "INTERMEDIATE" ? "risco intermediário" : "alto risco"}.` });
+      if (result?.persisted !== true) throw new ApiError("O servidor não confirmou a gravação final do CARG.");
+      setSavedMeta({ at: result.savedAt ?? new Date().toISOString(), by: result.savedBy ?? null }); setArchivedDifferences(null);
+      setFeedback({ kind: "success", text: `CARG registrado: ${preview.score}/23 · ${preview.category === "LOW" ? "baixo risco" : preview.category === "INTERMEDIATE" ? "risco intermediário" : "alto risco"}. O resultado foi salvo e permanecerá disponível ao reabrir a avaliação.` });
+      router.refresh();
     } catch (error) {
       if (error instanceof ApiError && error.code === "CARG_ARCHIVED_DIFFERENCE_REVIEW_REQUIRED") {
         const differences = Array.isArray(error.details?.differences) ? error.details?.differences as CargDifference[] : [];
