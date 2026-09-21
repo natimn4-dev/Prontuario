@@ -163,7 +163,12 @@ jobs:
               "  clinicalReviewConfirmedAt DateTime?",
           )
           once(
-              "  @@index([consultationId, patientId])\n}\n",
+              "  @@unique([episodeId, version])\n"
+              "  @@index([patientId, createdAt])\n"
+              "  @@index([consultationId, patientId])\n"
+              "}\n",
+              "  @@unique([episodeId, version])\n"
+              "  @@index([patientId, createdAt])\n"
               "  @@index([consultationId, patientId])\n"
               "  @@index([cargAssessmentId, episodeId])\n"
               "  @@index([g8AssessmentId, episodeId])\n"
