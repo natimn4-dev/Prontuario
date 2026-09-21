@@ -46,7 +46,8 @@ test("navegação oferece jornada clínica curta, retorno e ferramentas de apoio
   assert.match(navigation, /Prontuário do paciente/);
   assert.match(navigation, /Etapa anterior/);
   assert.match(navigation, /Próxima etapa/);
-  assert.match(navigation, /Finalizar e voltar à página inicial/);
+  assert.match(navigation, /Concluir etapa e voltar à visão geral/);
+  assert.match(navigation, /Página inicial geral/);
   assert.match(navigation, /Salve os formulários desta página antes de continuar/);
   assert.doesNotMatch(navigation, /fetch\(|POST|PATCH|DELETE/);
 });
