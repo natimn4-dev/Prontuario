@@ -195,6 +195,33 @@ jobs:
           Path("prisma/schema.prisma").write_text(s)
           PY
 
+          # Update golden assertions that referenced formatting/component locations
+          # changed by this refactor. Coverage is preserved; no test is skipped.
+          python - <<'PY'
+          from pathlib import Path
+
+          safe = Path("tests/golden-master/oncogeriatria-safe-persistence.test.ts")
+          text = safe.read_text()
+          old = r'assert.match(schema, /revision Int @default\(1\)/);'
+          new = r'assert.match(schema, /revision\s+Int\s+@default\(1\)/);'
+          if old not in text:
+              raise SystemExit("safe-persistence revision assertion anchor not found")
+          safe.write_text(text.replace(old, new, 1))
+
+          ux = Path("tests/golden-master/oncogeriatria-ux-portuguese.test.ts")
+          text = ux.read_text()
+          old = r'assert.match(scalesPage, /section: "escalas", episodeId: episode\.id, returnStage: "escalas"/);'
+          new = r'assert.match(scalesPage, /section:\s*"escalas".*episodeId:\s*episode\.id.*returnStage:\s*"escalas"/);'
+          if old not in text:
+              raise SystemExit("UX navigation assertion anchor not found")
+          text = text.replace(old, new, 1)
+          old = r'assert.match(forms, /action: "G8_SAVE"/);'
+          new = r'assert.match(readFileSync("src/components/oncogeriatria/checklist-scales.tsx", "utf8"), /action:\s*"G8_SAVE"/);'
+          if old not in text:
+              raise SystemExit("UX G8 assertion anchor not found")
+          ux.write_text(text.replace(old, new, 1))
+          PY
+
           rm -rf .patch
           rm -f .github/workflows/apply-oncogeriatria-patch.yml
       - uses: actions/setup-node@v4
