@@ -19,19 +19,19 @@ const patientPage = readFileSync("src/app/patients/[id]/oncogeriatria/page.tsx",
 const reportPage = readFileSync("src/app/patients/[id]/oncogeriatria/relatorio/page.tsx", "utf8");
 const reportActions = readFileSync("src/components/oncogeriatria/report-actions.tsx", "utf8");
 const homePage = readFileSync("src/app/oncogeriatria/page.tsx", "utf8");
+const baselinePage = readFileSync("src/app/patients/[id]/oncogeriatria/basal/page.tsx", "utf8");
+const consultationLinker = readFileSync("src/components/oncogeriatria/checkpoint-consultation-linker.tsx", "utf8");
 
-test("oncogeriatria segue fluxo clínico em etapas e oferece acesso explícito às escalas", () => {
-  for (const label of [
-    "Antes do tratamento",
-    "Tratamento oncológico",
-    "Durante o tratamento",
-    "Escalas clínicas",
-    "Evolução longitudinal",
-    "Planejamento",
-    "Relatório",
-  ]) {
-    assert.ok(nav.includes(label), `etapa ausente na navegação: ${label}`);
+test("oncogeriatria usa fluxo clínico principal curto e separa ferramentas de apoio", () => {
+  for (const label of ["Avaliação inicial", "Durante o tratamento", "Evolução longitudinal", "Relatório"]) {
+    assert.ok(nav.includes(label), `etapa principal ausente na navegação: ${label}`);
   }
+  for (const label of ["Tratamento oncológico", "Escalas clínicas", "Planejamento"]) {
+    assert.ok(nav.includes(label), `ferramenta de apoio ausente na navegação: ${label}`);
+  }
+  assert.match(nav, /workflowSteps/);
+  assert.match(nav, /supportSteps/);
+  assert.match(nav, /Ferramentas de apoio/);
   assert.match(scalesPage, /buildOncogeriatricConsultationHref/);
   assert.match(scalesPage, /section:\s*"escalas".*episodeId:\s*episode\.id.*returnStage:\s*"escalas"/);
   assert.match(scalesPage, /O geriatra continua decidindo quais instrumentos aplicar/);
@@ -102,6 +102,18 @@ test("relatório oncogeriátrico reúne tabela, gráfico, orientação por domí
   assert.match(reportPage, /buildOncogeriatricReportGuidance/);
   assert.match(reportPage, /Orientações específicas do esquema e dos eventos registrados/);
   assert.match(reportPage, /O sistema não infere conduta pelo nome do antineoplásico/);
+});
+
+test("CARG fica acessível na avaliação inicial antes do vínculo da consulta, sem perder segurança do registro final", () => {
+  const checklist = readFileSync("src/components/oncogeriatria/checklist-scales.tsx", "utf8");
+  const route = readFileSync("src/app/api/oncogeriatria/patients/[id]/route.ts", "utf8");
+  assert.match(baselinePage, /id="carg"/);
+  assert.match(baselinePage, /canFinalize=\{hasConsultation\}/);
+  assert.match(baselinePage, /O CARG pode ser preenchido e salvo como rascunho antes desse vínculo/);
+  assert.match(checklist, /CARG disponível para preenchimento/);
+  assert.match(checklist, /Vincule uma consulta para registrar/);
+  assert.match(consultationLinker, /CHECKPOINT_LINK_CONSULTATION/);
+  assert.match(route, /CHECKPOINT_LINK_CONSULTATION/);
 });
 
 test("CARG liberado permanece transparente, local e sem conduta automática", () => {
