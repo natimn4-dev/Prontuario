@@ -1276,7 +1276,12 @@ export function DietaryAssessmentWorkspace({
                               measure={item.measure}
                               quantity={item.quantity}
                             />
-                            {item.estimated || item.grams == null ? (
+                            {item.estimated ||
+                            (item.grams == null &&
+                              !(
+                                item.composition?.nutrientBasis === "100ml" &&
+                                item.measure === "ml"
+                              )) ? (
                               <small className={styles.attentionText}>
                                 Revisar quantidade antes do cálculo.
                               </small>
@@ -1793,9 +1798,11 @@ export function DietaryAssessmentWorkspace({
                           <strong>{item.label}</strong>
                           <span>
                             {item.quantity} × {MEASURE_LABELS[item.measure]} ·{" "}
-                            {item.grams == null
-                              ? "gramas não confirmados"
-                              : `${format(item.grams, 0)} g`}{" "}
+                            {item.measure === "ml"
+                              ? `${format(item.quantity, 0)} mL`
+                              : item.grams == null
+                                ? "gramas não confirmados"
+                                : `${format(item.grams, 0)} g`}{" "}
                             · {uncertaintyLabel(item.uncertainty)}
                           </span>
                         </div>
