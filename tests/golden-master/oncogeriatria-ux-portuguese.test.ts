@@ -21,6 +21,8 @@ const reportPage = readFileSync("src/app/patients/[id]/oncogeriatria/relatorio/p
 const reportActions = readFileSync("src/components/oncogeriatria/report-actions.tsx", "utf8");
 const homePage = readFileSync("src/app/oncogeriatria/page.tsx", "utf8");
 const baselinePage = readFileSync("src/app/patients/[id]/oncogeriatria/basal/page.tsx", "utf8");
+const cargPage = readFileSync("src/app/patients/[id]/oncogeriatria/carg/page.tsx", "utf8");
+const cargEntry = readFileSync("src/components/oncogeriatria/carg-entry.tsx", "utf8");
 const consultationLinker = readFileSync("src/components/oncogeriatria/checkpoint-consultation-linker.tsx", "utf8");
 
 test("oncogeriatria usa fluxo clínico principal curto e separa ferramentas de apoio", () => {
@@ -36,7 +38,8 @@ test("oncogeriatria usa fluxo clínico principal curto e separa ferramentas de a
   assert.match(scalesPage, /buildOncogeriatricConsultationHref/);
   assert.match(scalesPage, /section:\s*"escalas".*episodeId:\s*episode\.id.*returnStage:\s*"escalas"/);
   assert.match(scalesPage, /O geriatra continua decidindo quais instrumentos aplicar/);
-  assert.match(scalesPage, /Nenhuma escala é selecionada, preenchida ou interpretada automaticamente/);
+  assert.match(scalesPage, /O geriatra continua decidindo quais instrumentos aplicar/);
+  assert.match(scalesPage, /não são preenchidas ou interpretadas automaticamente/);
 });
 
 test("rótulos técnicos permanecem como valores internos, mas são apresentados em português", () => {
@@ -105,11 +108,17 @@ test("relatório oncogeriátrico reúne tabela, gráfico, orientação por domí
   assert.match(reportPage, /O sistema não infere conduta pelo nome do antineoplásico/);
 });
 
-test("CARG fica acessível na avaliação inicial antes do vínculo da consulta, sem perder segurança do registro final", () => {
+test("CARG tem rota própria, contexto explícito e permanece disponível antes do vínculo da consulta", () => {
   const checklist = readFileSync("src/components/oncogeriatria/checklist-scales.tsx", "utf8");
   const route = readFileSync("src/app/api/oncogeriatria/patients/[id]/route.ts", "utf8");
-  assert.match(baselinePage, /id="carg"/);
-  assert.match(baselinePage, /canFinalize=\{hasConsultation\}/);
+  assert.match(cargPage, /currentStep="carg"/);
+  assert.match(cargPage, /loadOncogeriatricCargWorkspace/);
+  assert.match(cargPage, /query\.checkpoint/);
+  assert.match(cargPage, /CARG · primeira escala desta consulta/);
+  assert.match(cargPage, /canFinalize=\{hasConsultation\}/);
+  assert.match(cargEntry, /CHECKPOINT_CREATE/);
+  assert.match(cargEntry, /router\.replace/);
+  assert.match(baselinePage, /buildOncogeriatricCargHref/);
   assert.match(baselinePage, /O CARG pode ser preenchido e salvo como rascunho antes desse vínculo/);
   assert.match(checklist, /CARG disponível para preenchimento/);
   assert.match(checklist, /Vincule uma consulta para registrar/);
@@ -120,13 +129,15 @@ test("CARG fica acessível na avaliação inicial antes do vínculo da consulta,
 test("CARG fica fácil de reencontrar após o cadastro e após o preenchimento", () => {
   assert.match(generalPatientPage, /CARG · risco de toxicidade da quimioterapia/);
   assert.match(generalPatientPage, /Abrir ou continuar CARG/);
-  assert.match(generalPatientPage, /#carg/);
+  assert.match(generalPatientPage, /buildOncogeriatricCargHref/);
   assert.match(patientPage, /Reabrir CARG|Preencher CARG/);
-  assert.match(patientPage, /oncogeriatria\/basal\?episode=\$\{episode\.id\}#carg/);
+  assert.match(patientPage, /buildOncogeriatricCargHref/);
   assert.match(nav, /Abrir ou continuar CARG/);
-  assert.match(nav, /#carg/);
+  assert.match(nav, /\/carg/);
   assert.match(homePage, /Abrir ou continuar CARG/);
-  assert.match(homePage, /oncogeriatria\/basal\?episode=/);
+  assert.match(homePage, /buildOncogeriatricCargHref/);
+  assert.doesNotMatch(generalPatientPage, /\/basal\?episode=.*#carg/);
+  assert.doesNotMatch(patientPage, /\/basal\?episode=.*#carg/);
 });
 
 test("CARG liberado permanece transparente, local e sem conduta automática", () => {
