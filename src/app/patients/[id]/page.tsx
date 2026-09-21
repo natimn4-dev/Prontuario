@@ -85,6 +85,12 @@ export default async function PatientPage({ params }: { params: Promise<{ id: st
   });
   if (!patient) notFound();
 
+  const oncogeriatricEpisode = await prisma.oncogeriatricEpisode.findFirst({
+    where: { patientId: patient.id },
+    orderBy: [{ status: "asc" }, { updatedAt: "desc" }],
+    select: { id: true },
+  });
+
   const program55Eligible = isProgram55Eligible(patient.birthDate);
   const visibleProblems = patient.problems.filter((problem) =>
     !problem.events.some((event) => isProblemLogicalDeletionNote(event.note)),
@@ -139,6 +145,7 @@ export default async function PatientPage({ params }: { params: Promise<{ id: st
           <h2>Consultas</h2>
           <div className="no-print" style={{ display: "flex", alignItems: "center", justifyContent: "flex-end", gap: 14, flexWrap: "wrap" }}>
             {program55Enabled && program55Eligible ? <a href={`/patients/${patient.id}/programa-55`}>Programa 55+ · 55–70 anos</a> : null}
+            {oncogeriatricEpisode ? <a href={`/patients/${patient.id}/oncogeriatria/basal?episode=${oncogeriatricEpisode.id}#carg`}>Oncogeriatria · abrir CARG</a> : <a href={`/patients/${patient.id}/oncogeriatria`}>Oncogeriatria · iniciar e acessar CARG</a>}
             {canWriteConsultation ? (
               <CreateConsultationButton
                 patientId={patient.id}
