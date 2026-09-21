@@ -134,6 +134,18 @@ export default async function PatientPage({ params }: { params: Promise<{ id: st
         <p>Data de nascimento: {patient.birthDate?.toISOString().slice(0, 10) ?? "não registrada"}</p>
         {patient.needsIdentityReview ? <strong className="draft-watermark">Identidade/homônimo pendente de revisão</strong> : null}
       </header>
+      <section className="panel" aria-label="Acesso à avaliação oncogeriátrica CARG">
+        <div className="section-heading">
+          <div>
+            <p className="eyebrow">Oncogeriatria</p>
+            <h2>CARG · risco de toxicidade da quimioterapia</h2>
+          </div>
+          <a href={oncogeriatricEpisode ? `/patients/${patient.id}/oncogeriatria/basal?episode=${oncogeriatricEpisode.id}#carg` : `/patients/${patient.id}/oncogeriatria`}>
+            {oncogeriatricEpisode ? "Abrir ou continuar CARG →" : "Iniciar acompanhamento e acessar CARG →"}
+          </a>
+        </div>
+        <p className="muted">Use este acesso para retomar o CARG já iniciado ou revisar um resultado registrado, sem precisar localizar a escala em outras etapas do prontuário.</p>
+      </section>
       <ProblemColumns problems={visibleProblems as ClinicalProblem[]} />
 
       <section className="panel" aria-label="Evolução da capacidade intrínseca e da independência funcional">
