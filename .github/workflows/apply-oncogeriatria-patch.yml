@@ -219,6 +219,11 @@ jobs:
           new = r'assert.match(readFileSync("src/components/oncogeriatria/checklist-scales.tsx", "utf8"), /action:\s*"G8_SAVE"/);'
           if old not in text:
               raise SystemExit("UX G8 assertion anchor not found")
+          text = text.replace(old, new, 1)
+          old = r'assert.match(checkForm, /type: "CYCLE"/);'
+          new = r'assert.match(checkForm, /type:\s*"CYCLE"/);'
+          if old not in text:
+              raise SystemExit("UX cycle assertion anchor not found")
           ux.write_text(text.replace(old, new, 1))
           PY
 
