@@ -119,6 +119,108 @@
   font-size: 11px;
 }
 
+
+.primaryJourney {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 8px;
+  margin-top: 14px;
+}
+
+.primaryJourney a {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: start;
+  gap: 10px;
+  min-height: 76px;
+  padding: 12px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: var(--surface-subtle);
+  color: var(--ink);
+  text-decoration: none;
+}
+
+.primaryJourney a > span:last-child {
+  display: grid;
+  gap: 4px;
+}
+
+.primaryJourney a strong {
+  color: var(--ink);
+  font-size: 12px;
+  line-height: 1.25;
+}
+
+.primaryJourney a small {
+  color: var(--muted);
+  font-size: 10px;
+  line-height: 1.35;
+}
+
+.primaryJourney a:hover {
+  border-color: #d8c4e8;
+  background: #faf7fd;
+}
+
+.primaryJourney a.active {
+  border-color: #d8c4e8;
+  background: var(--primary-soft);
+}
+
+.primaryJourney a.active strong {
+  color: var(--primary-strong);
+}
+
+.supportRail {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: center;
+  gap: 12px;
+  margin-top: 10px;
+  padding-top: 10px;
+  border-top: 1px solid var(--line);
+}
+
+.supportRail > span {
+  color: var(--muted);
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: .06em;
+  text-transform: uppercase;
+}
+
+.supportRail > div {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 7px;
+}
+
+.supportRail a {
+  display: inline-grid;
+  gap: 2px;
+  padding: 7px 10px;
+  border: 1px solid transparent;
+  border-radius: 9px;
+  color: var(--primary-strong);
+  text-decoration: none;
+}
+
+.supportRail a strong {
+  font-size: 11px;
+}
+
+.supportRail a small {
+  color: var(--muted);
+  font-size: 9px;
+}
+
+.supportRail a:hover,
+.supportRail a.activeSupport {
+  border-color: #d8c4e8;
+  background: var(--primary-soft);
+}
+
 .progress {
   display: block;
   width: 100%;
@@ -357,6 +459,17 @@
   color: #fff;
 }
 
+
+@media (max-width: 1040px) {
+  .primaryJourney {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .primaryJourney a:first-child {
+    grid-column: 1 / -1;
+  }
+}
+
 @media (max-width: 760px) {
   .clinicalHeader {
     grid-template-columns: 1fr;
@@ -388,6 +501,24 @@
   .workspaceNav {
     margin-top: 10px;
     padding: 14px 12px 10px;
+  }
+
+  .primaryJourney {
+    grid-template-columns: 1fr;
+  }
+
+  .primaryJourney a:first-child {
+    grid-column: auto;
+  }
+
+  .supportRail {
+    grid-template-columns: 1fr;
+    align-items: stretch;
+  }
+
+  .supportRail > div {
+    display: grid;
+    grid-template-columns: 1fr;
   }
 
   .railHeader,
