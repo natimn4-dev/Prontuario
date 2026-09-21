@@ -88,10 +88,21 @@ test("CARG mantém cálculo no servidor, rascunho/proveniência e revisão de di
 test("pontos de inflexão usam associação temporal sem atribuir causalidade", async () => {
   const chart = await source("src/components/reports/capacity-dimension-history-chart.tsx");
   assert.match(chart, /Registro temporal associado/);
+  assert.match(chart, /data-inflection="true"/);
+  assert.match(chart, /↳ \{inflection\.shortLabel\}/);
   assert.match(chart, /Sem motivo associado registrado nesta consulta/);
   assert.match(chart, /não atribui causalidade/);
   assert.match(chart, /não reaplicada na mais recente/);
   assert.match(chart, /mesmo instrumento e versão/);
+});
+
+test("relatório mostra tabela cronológica completa sem reduzir trajetória a três momentos", async () => {
+  const continuity = await source("src/components/oncogeriatria/clinical-continuity.tsx");
+  assert.match(continuity, /Histórico cronológico completo por domínio e consulta vinculada ao episódio oncológico/);
+  assert.match(continuity, /history\.consultations\.map/);
+  assert.match(continuity, /Não avaliada nesta consulta/);
+  assert.match(continuity, /Sem série comparável para este ponto/);
+  assert.doesNotMatch(continuity, /<th scope="col">Avaliação anterior<\/th>/);
 });
 
 test("longitudinal não limita séries arbitrariamente e mantém CARG em cartão próprio por versão", async () => {

@@ -310,6 +310,19 @@
   stroke-width: 1.6;
 }
 
+.inflectionLabel {
+  fill: #765619;
+  stroke: #fff9ed;
+  stroke-width: 2.4px;
+  stroke-linejoin: round;
+  paint-order: stroke fill;
+  font-family: "Segoe UI", Arial, sans-serif;
+  font-size: 8px;
+  font-weight: 750;
+  letter-spacing: .01em;
+  pointer-events: none;
+}
+
 .indeterminatePoint {
   fill: var(--primary-soft);
   stroke-width: 1.6;
@@ -541,6 +554,11 @@
   .methodDetails,
   .inflectionSection li {
     font-size: 7pt;
+  }
+
+  .inflectionLabel {
+    font-size: 6pt;
+    stroke-width: 1.5px;
   }
 
   .dimensionSummary strong {

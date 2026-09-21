@@ -223,6 +223,19 @@
   font-size: 11px;
 }
 
+.trajectoryTable caption {
+  padding: 0 0 9px;
+  color: var(--muted);
+  font-size: 10px;
+  font-weight: 650;
+  text-align: left;
+}
+
+.trajectoryTable thead th:not(:first-child),
+.trajectoryTable td {
+  min-width: 205px;
+}
+
 .trajectoryTable th,
 .trajectoryTable td {
   padding: 10px;
@@ -257,6 +270,37 @@
   line-height: 1.4;
 }
 
+.trajectoryCell small {
+  color: #7b7480;
+  font-size: 9px;
+  line-height: 1.35;
+}
+
+.trajectoryState {
+  justify-self: start;
+  padding: 3px 7px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: #f7f5f7;
+  font-size: 9px;
+  font-weight: 700;
+}
+
+.trajectoryState[data-status="preserved"] { background: #edf7f1; border-color: #b7d8c3; color: #2f6245; }
+.trajectoryState[data-status="attention"] { background: #fff7e8; border-color: #ead29d; color: #775917; }
+.trajectoryState[data-status="altered"] { background: #faecee; border-color: #e4bcc3; color: #7c3440; }
+.trajectoryState[data-status="indeterminate"] { background: var(--primary-soft); border-style: dashed; color: var(--primary); }
+.trajectoryState[data-status="not-assessed"] { border-style: dashed; color: #837b87; }
+
+.currentConsultationLabel {
+  display: block;
+  margin-top: 2px;
+  color: var(--primary);
+  font-size: 8px;
+  letter-spacing: 0;
+  text-transform: none;
+}
+
 @media (max-width: 900px) {
   .actionGrid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .priorityItem { grid-template-columns: 1fr; }
@@ -276,6 +320,12 @@
   .reviewSection { break-inside: avoid; box-shadow: none; }
   .workspace { display: none; }
   .tableWrap { overflow: visible; }
-  .trajectoryTable { min-width: 0; font-size: 8pt; }
+  .trajectoryTable { width: 100% !important; min-width: 0; table-layout: fixed; font-size: 7pt; }
+  .trajectoryTable thead th:not(:first-child),
+  .trajectoryTable td { min-width: 0; }
+  .trajectoryTable th,
+  .trajectoryTable td { padding: 2mm 1.5mm; overflow-wrap: anywhere; }
+  .trajectoryCell small,
+  .trajectoryState { font-size: 6pt; }
   .priorityActions { display: none; }
 }
