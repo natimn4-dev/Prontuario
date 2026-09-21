@@ -11,7 +11,7 @@ export type DietaryNutrients = {
 };
 
 export type DietaryFoodReference = {
-  provider: "TACO" | "USDA_FDC" | "TBCA";
+  provider: "TACO" | "USDA_FDC" | "TBCA" | "MANUFACTURER_LABEL";
   sourceId: string;
   description: string;
   dataType?: string;
@@ -19,6 +19,8 @@ export type DietaryFoodReference = {
 
 export type DietaryFoodComposition = DietaryFoodReference & {
   sourceVersion?: string;
+  /** Base declarada no rótulo. O padrão histórico permanece 100 g. */
+  nutrientBasis?: "100g" | "100ml";
   nutrientsPer100g: DietaryNutrients;
 };
 
@@ -91,6 +93,10 @@ export function confirmDietaryDraftItem(
   composition: DietaryFoodComposition | null | undefined,
 ): DietaryFoodItem {
   const grams = draft.measure === "g" ? draft.quantity : draft.grams;
+  const labelAmount =
+    composition?.nutrientBasis === "100ml" && draft.measure === "ml"
+      ? draft.quantity
+      : grams;
   const metadata = portionMetadata(draft.measure, grams ?? null);
   return {
     ...draft,
@@ -98,8 +104,8 @@ export function confirmDietaryDraftItem(
     ...metadata,
     composition: composition ?? null,
     nutrients:
-      composition && grams != null && grams > 0
-        ? nutrientsForGrams(composition.nutrientsPer100g, grams)
+      composition && labelAmount != null && labelAmount > 0
+        ? nutrientsForGrams(composition.nutrientsPer100g, labelAmount)
         : null,
   };
 }
@@ -801,8 +807,39 @@ export function buildDietaryOrientation(x: {
   const confirmedItems = x.meals.flatMap((meal) => meal.items).filter((item) => item.nutrients);
   const estimatedItems = x.meals.flatMap((meal) => meal.items).filter((item) => item.estimated);
 
+  const topContributors = (
+    nutrient: "proteinG" | "calciumMg",
+    unit: "g" | "mg",
+  ) =>
+    confirmedItems
+      .map((item) => ({
+        label: item.label,
+        amount: item.nutrients?.[nutrient] ?? 0,
+      }))
+      .filter((item) => item.amount > 0)
+      .sort((a, b) => b.amount - a.amount)
+      .slice(0, 3)
+      .map(
+        (item) =>
+          `${item.label} (${roundForDisplay(item.amount, unit === "g" ? 1 : 0)} ${unit})`,
+      )
+      .join(", ");
+
+  const proteinSources = topContributors("proteinG", "g");
+  const calciumSources = topContributors("calciumMg", "mg");
+
   if (confirmedItems.length) {
-    keep.push("Manter os alimentos e porções que já foram confirmados no relato, respeitando preferências, tolerância e plano clínico.");
+    keep.push("Manter os alimentos e porções já confirmados no relato, respeitando preferências, tolerância e plano clínico.");
+    if (proteinSources) {
+      keep.push(
+        `Proteína estimada em ${roundForDisplay(x.summary?.proteinG ?? 0, 1)} g/dia; principais contribuições registradas: ${proteinSources}. Compare com a meta individual antes de orientar aumento ou redução.`,
+      );
+    }
+    if (calciumSources) {
+      keep.push(
+        `Cálcio estimado em ${roundForDisplay(x.summary?.calciumMg ?? 0, 0)} mg/dia; principais contribuições registradas: ${calciumSources}. Considere a consistência do relato e não acrescente suplementação automaticamente.`,
+      );
+    }
   } else {
     keep.push("Nenhum item possui quantidade suficiente para uma orientação automática de manutenção.");
   }
