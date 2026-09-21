@@ -47,9 +47,20 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
+          while read -r expected file; do
+            actual="$(git hash-object "$file")"
+            test "$actual" = "$expected" || { echo "Blob divergente: $file ($actual != $expected)" >&2; exit 1; }
+          done <<'EOF'
+          1834c924d6385a1d969b2c77d08f7e9d842ab4c3 .patch/oncogeriatria-safe-refactor.b64.part00
+          46793a8542cf24d36d9615edd864b790eb6c131e .patch/oncogeriatria-safe-refactor.b64.part01
+          8098d79d06587de881aa24fe4ac359281f73857e .patch/oncogeriatria-safe-refactor.b64.part02
+          55547f390ac680959aecc81cad8c466430e4fd7c .patch/oncogeriatria-safe-refactor.b64.part03
+          8109a15fc78f3844c3af99f16719170e510b364c .patch/oncogeriatria-safe-refactor.b64.part04
+          6341e1340981d1e2540f12ff70c048f16531c819 .patch/oncogeriatria-safe-refactor.b64.part05
+          EOF
           cat .patch/oncogeriatria-safe-refactor.b64.part* | base64 -d > .patch/oncogeriatria-safe-refactor.tar.xz
-          echo "fe74b90605c958515806683706944350171023d3738714e25fb7c14a29ab1f88  .patch/oncogeriatria-safe-refactor.tar.xz" | sha256sum -c -
           xz -t .patch/oncogeriatria-safe-refactor.tar.xz
+          sha256sum .patch/oncogeriatria-safe-refactor.tar.xz
           tar -xJf .patch/oncogeriatria-safe-refactor.tar.xz --strip-components=1
           rm -rf .patch
           rm -f .github/workflows/apply-oncogeriatria-patch.yml
