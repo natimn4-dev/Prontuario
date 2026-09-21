@@ -16,6 +16,7 @@ const forms = readFileSync("src/components/oncogeriatria/oncogeriatric-forms.tsx
 const checkForm = readFileSync("src/components/oncogeriatria/domain-linked-check-form.tsx", "utf8");
 const checkPage = readFileSync("src/app/patients/[id]/oncogeriatria/check/page.tsx", "utf8");
 const patientPage = readFileSync("src/app/patients/[id]/oncogeriatria/page.tsx", "utf8");
+const generalPatientPage = readFileSync("src/app/patients/[id]/page.tsx", "utf8");
 const reportPage = readFileSync("src/app/patients/[id]/oncogeriatria/relatorio/page.tsx", "utf8");
 const reportActions = readFileSync("src/components/oncogeriatria/report-actions.tsx", "utf8");
 const homePage = readFileSync("src/app/oncogeriatria/page.tsx", "utf8");
@@ -114,6 +115,16 @@ test("CARG fica acessível na avaliação inicial antes do vínculo da consulta,
   assert.match(checklist, /Vincule uma consulta para registrar/);
   assert.match(consultationLinker, /CHECKPOINT_LINK_CONSULTATION/);
   assert.match(route, /CHECKPOINT_LINK_CONSULTATION/);
+});
+
+test("CARG fica fácil de reencontrar após o cadastro e após o preenchimento", () => {
+  assert.match(generalPatientPage, /CARG · risco de toxicidade da quimioterapia/);
+  assert.match(generalPatientPage, /Abrir ou continuar CARG/);
+  assert.match(generalPatientPage, /#carg/);
+  assert.match(patientPage, /Reabrir CARG|Preencher CARG/);
+  assert.match(patientPage, /oncogeriatria\/basal\?episode=\$\{episode\.id\}#carg/);
+  assert.match(nav, /Abrir ou continuar CARG/);
+  assert.match(nav, /#carg/);
 });
 
 test("CARG liberado permanece transparente, local e sem conduta automática", () => {
