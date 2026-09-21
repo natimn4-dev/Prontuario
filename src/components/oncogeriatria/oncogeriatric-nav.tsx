@@ -162,16 +162,16 @@ export function OncogeriatricQuickActions({
   episodeId?: string | null;
 }) {
   const actions = [
-    { step: "Essencial", label: "CARG e avaliação inicial", path: "/basal" },
-    { step: "Seguimento", label: "Reavaliar durante o tratamento", path: "/check" },
-    { step: "Instrumentos", label: "Aplicar ou revisar escalas", path: "/escalas" },
-    { step: "Documento", label: "Revisar relatório", path: "/relatorio" },
+    { step: "Essencial", label: "Abrir ou continuar CARG", href: `${stepHref(patientId, "/basal", episodeId)}#carg` },
+    { step: "Seguimento", label: "Reavaliar durante o tratamento", href: stepHref(patientId, "/check", episodeId) },
+    { step: "Instrumentos", label: "Aplicar ou revisar escalas", href: stepHref(patientId, "/escalas", episodeId) },
+    { step: "Documento", label: "Revisar relatório", href: stepHref(patientId, "/relatorio", episodeId) },
   ] as const;
 
   return (
     <nav className={styles.quickActions} aria-label="Ações clínicas frequentes">
       {actions.map((action) => (
-        <Link key={action.path} href={stepHref(patientId, action.path, episodeId)} prefetch={false}>
+        <Link key={action.href} href={action.href} prefetch={false}>
           <span className={styles.quickActionCopy}>
             <small>{action.step}</small>
             <strong>{action.label}</strong>
