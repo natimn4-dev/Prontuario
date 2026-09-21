@@ -9,7 +9,7 @@ const foods: CommercialFood[] = [
     description: "Nutren Senior Sem Sabor — pó",
     dataType: "Suplemento comercial em pó — confirmar apresentação no rótulo",
     sourceVersion:
-      "Rótulo oficial Nestlé Nutre consultado em 2026-09-21: porção de 55 g",
+      "Rótulo oficial Nestlé Nutre consultado em 2026-09-21: porção de 55 g — https://www.nestlenutre.com.br/nutren-senior-po-lata-740g",
     nutrientBasis: "100g",
     nutrientsPer100g: {
       energyKcal: 410.909,
@@ -28,7 +28,7 @@ const foods: CommercialFood[] = [
     description: "Nutridrink Protein Chocolate — pronto para beber",
     dataType: "Suplemento comercial líquido 200 mL — confirmar sabor e apresentação",
     sourceVersion:
-      "Rótulo oficial Mundo Danone consultado em 2026-09-21: composição por 100 mL",
+      "Rótulo oficial Mundo Danone consultado em 2026-09-21: composição por 100 mL — https://www.mundodanone.com.br/nutridrink-protein-chocolate-200ml/p",
     nutrientBasis: "100ml",
     nutrientsPer100g: {
       energyKcal: 150,
