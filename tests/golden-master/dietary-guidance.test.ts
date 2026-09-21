@@ -63,3 +63,51 @@ test("qualidade alimentar gera orientação sobre sódio e fosfatos adicionados"
   assert.match(text, /sódio e fosfatos adicionados/i);
   assert.match(text, /substituições graduais/i);
 });
+
+
+test("cálcio calculado prevalece sobre palavras no nome do alimento", () => {
+  const guidance = buildConditionalDietaryGuidance({
+    context: {},
+    items: [
+      {
+        label: "Sardinha com espinha",
+        nutrients: { proteinG: 22, calciumMg: 420 },
+      },
+      {
+        label: "Nutren Senior Sem Sabor — pó",
+        nutrients: { proteinG: 20, calciumMg: 506 },
+      },
+    ],
+    summary: { proteinG: 42, calciumMg: 926, sodiumMg: 300 },
+  });
+  const calcium = guidance.find((item) => item.code === "calcium");
+  assert.equal(calcium?.title, "Cálcio registrado no relato");
+  assert.match(calcium?.text ?? "", /926 mg\/dia/i);
+  assert.match(calcium?.text ?? "", /Nutren Senior.*506 mg/i);
+  assert.doesNotMatch(calcium?.title ?? "", /não identificad/i);
+});
+
+test("total de cálcio positivo nunca é rotulado como fonte não identificada", () => {
+  const guidance = buildConditionalDietaryGuidance({
+    context: {},
+    items: [{ label: "Snapshot legado sem detalhamento" }],
+    summary: { proteinG: 40, calciumMg: 1908, sodiumMg: 500 },
+  });
+  const calcium = guidance.find((item) => item.code === "calcium");
+  assert.equal(calcium?.title, "Cálcio calculado; fontes a confirmar");
+  assert.match(calcium?.text ?? "", /1\.908 mg\/dia/i);
+});
+
+test("orientação proteica nomeia as principais contribuições do relato", () => {
+  const guidance = buildConditionalDietaryGuidance({
+    context: {},
+    items: [
+      { label: "Frango grelhado", nutrients: { proteinG: 32, calciumMg: 12 } },
+      { label: "Ovo cozido", nutrients: { proteinG: 12, calciumMg: 50 } },
+    ],
+    summary: { proteinG: 44, calciumMg: 62, sodiumMg: 200 },
+  });
+  const protein = guidance.find((item) => item.code === "protein");
+  assert.match(protein?.text ?? "", /Frango grelhado.*32 g/i);
+  assert.match(protein?.text ?? "", /Ovo cozido.*12 g/i);
+});

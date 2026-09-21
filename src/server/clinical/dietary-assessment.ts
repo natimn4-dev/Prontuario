@@ -21,6 +21,7 @@ import {
 } from "../../domain/dietary-assessment";
 import { buildConditionalDietaryGuidance, guidanceAsText } from "../../domain/dietary-guidance";
 import { getTacoFood, searchTacoFoods } from "./taco-food-catalog";
+import { getCommercialFood, searchCommercialFoods } from "./commercial-food-catalog";
 import { requireConsultationAccess } from "../auth/patient-access";
 import { prisma } from "../db";
 import { measureClinicalTransaction } from "../observability/clinical-performance";
@@ -116,8 +117,8 @@ function throwFdcAvailabilityError(response: Response, action: "buscar" | "valid
 export async function searchDietaryFoods(query: string) {
   const q = query.trim().slice(0, 120);
   if (q.length < 2) return [];
-  const tacoFoods = searchTacoFoods(q);
-  if (tacoFoods.length) return tacoFoods;
+  const localFoods = [...searchCommercialFoods(q), ...searchTacoFoods(q)].slice(0, 8);
+  if (localFoods.length) return localFoods;
   const key = process.env.USDA_FDC_API_KEY?.trim();
   if (!key) return [];
   const providerQuery = dietaryFoodSearchQuery(q);
@@ -201,7 +202,12 @@ async function hydrate(input: DietaryAssessmentInput): Promise<DietaryConfirmedM
     if (reference.provider === "USDA_FDC") {
       return [`USDA_FDC:${reference.sourceId}`, await getFood(reference.sourceId)] as const;
     }
-    throw new DietaryAssessmentError("SOURCE_NOT_AVAILABLE", "TBCA requer autorização antes do uso automático; selecione um alimento TACO ou USDA.");
+    if (reference.provider === "MANUFACTURER_LABEL") {
+      const food = getCommercialFood(reference.sourceId);
+      if (!food) throw new DietaryAssessmentError("FOOD_SOURCE", "Suplemento não encontrado na versão validada do catálogo.");
+      return [`MANUFACTURER_LABEL:${reference.sourceId}`, food] as const;
+    }
+    throw new DietaryAssessmentError("SOURCE_NOT_AVAILABLE", "TBCA requer autorização antes do uso automático; selecione um alimento TACO, USDA ou rótulo validado.");
   }));
   const compositionMap = new Map<string, DietaryFoodComposition>(entries);
   return input.meals.map((meal) => ({
@@ -210,8 +216,11 @@ async function hydrate(input: DietaryAssessmentInput): Promise<DietaryConfirmedM
     items: meal.items.map((item) => {
       const composition = item.food ? compositionMap.get(`${item.food.provider}:${item.food.sourceId}`) ?? null : null;
       const grams = item.measure === "g" ? item.quantity : item.grams;
+      const labelAmount = composition?.nutrientBasis === "100ml" && item.measure === "ml"
+        ? item.quantity
+        : grams;
       const metadata = portionMetadata(item.measure, grams ?? null);
-      const calculable = Boolean(composition && grams != null && grams > 0);
+      const calculable = Boolean(composition && labelAmount != null && labelAmount > 0);
       return {
         ...item,
         label: item.label.trim() || composition?.description || "Alimento",
@@ -221,7 +230,7 @@ async function hydrate(input: DietaryAssessmentInput): Promise<DietaryConfirmedM
         quantitySource: metadata.quantitySource,
         uncertainty: metadata.uncertainty,
         composition,
-        nutrients: calculable ? nutrientsForGrams(composition!.nutrientsPer100g, grams!) : null,
+        nutrients: calculable ? nutrientsForGrams(composition!.nutrientsPer100g, labelAmount!) : null,
       };
     }),
   }));
@@ -272,7 +281,7 @@ export async function saveDietaryAssessment(args: { consultationId: string; expe
     const evidenceBundle = DIETARY_CLINICAL_REFERENCES.map((source) => `${source.id} ${source.version}: ${source.url}`).join(" | ");
 
     const ruleTrace = [
-      { rule: "nutrient_calculation_v3", reference: "TACO/NEPA-UNICAMP 4ª edição; USDA FoodData Central como fallback + quantidade confirmada", version: "3", condition: "alimento validado e gramas disponíveis", result: "quantidade × composição por 100 g; item sem gramas não entra no total" },
+      { rule: "nutrient_calculation_v4", reference: "TACO/NEPA-UNICAMP 4ª edição; rótulos oficiais específicos; USDA FoodData Central como fallback", version: "4", condition: "alimento validado e quantidade compatível com a base do rótulo", result: "quantidade × composição por 100 g ou 100 mL; item incompatível ou incompleto não entra no total" },
       { rule: "portion_uncertainty_v2", reference: "PMID 8429287 + PMID 33650974 + PMID 32153884", version: "2026-09", condition: "recordatório alimentar autorreferido", result: "medidas caseiras e estimativas visuais mantêm origem e incerteza; nenhum peso universal é presumido" },
       { rule: "calcium_reference_v1", reference: "NIH ODS / NASEM DRI", version: "2026-06", condition: "idade e sexo disponíveis", result: String(calciumReferenceMg(context.ageYears, context.sex) ?? "sem referência automática") },
       { rule: "fiber_reference_v1", reference: "NASEM DRI", version: "DRI", condition: "idade >= 51 e sexo disponível", result: String(fiberReferenceG(context.ageYears, context.sex) ?? "sem referência automática") },
@@ -281,6 +290,19 @@ export async function saveDietaryAssessment(args: { consultationId: string; expe
       ...(context.renalVeryLowProteinDiet ? [{ rule: "renal_very_low_protein_explicit_confirmation_v1", reference: "KDOQI 2020 + KDIGO 2024 + BRASPEN/SBN/ASBRAN 2021", version: "2026-09", condition: "DRC, TFG <30, sem diálise", result: context.renalVeryLowProteinDietConfirmed ? "decisão confirmada explicitamente; exige supervisão nefrológica e nutricional" : "não confirmado" }] : []),
       { rule: "dietary_evidence_bundle_v1", reference: evidenceBundle, version: "2026-09", condition: "rastreabilidade documental", result: "síntese clínica e versões das fontes registradas; sem reprodução extensa de conteúdo" },
     ];
+
+    const generatedWithGuidance = [generatedOrientation, guidanceAsText(conditionalGuidance)].filter(Boolean).join("\n\n");
+    const previousDietary = snapshot(consultation.assessment);
+    const incomingOrientation = args.assessment.orientationDraft?.trim() ?? "";
+    const previousWasGenerated = Boolean(
+      previousDietary &&
+      previousDietary.orientationDraft.trim() === previousDietary.generatedOrientation.trim()
+    );
+    const orientationDraft =
+      !incomingOrientation ||
+      Boolean(previousDietary && previousWasGenerated && incomingOrientation === previousDietary.orientationDraft.trim())
+        ? generatedWithGuidance
+        : incomingOrientation;
 
     const record: DietaryAssessmentSnapshot = {
       schemaVersion: "dietary-assessment-v1",
@@ -291,8 +313,8 @@ export async function saveDietaryAssessment(args: { consultationId: string; expe
       proteinByMeal,
       proteinComparison,
       priorities,
-      generatedOrientation: [generatedOrientation, guidanceAsText(conditionalGuidance)].filter(Boolean).join("\n\n"),
-      orientationDraft: args.assessment.orientationDraft?.trim() || [generatedOrientation, guidanceAsText(conditionalGuidance)].filter(Boolean).join("\n\n"),
+      generatedOrientation: generatedWithGuidance,
+      orientationDraft,
       orientationReviewed: Boolean(args.assessment.orientationReviewed),
       includeInReport: Boolean(args.assessment.includeInReport && args.assessment.orientationReviewed),
       includeInSoap: Boolean(args.assessment.includeInSoap && args.assessment.orientationReviewed),

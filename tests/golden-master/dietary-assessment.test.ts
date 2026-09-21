@@ -161,3 +161,71 @@ test("snapshot alimentar antigo exige revisão explícita sem ser apagado", () =
   assert.equal(dietarySnapshotNeedsRuleReview({ assessmentStatus: "DRAFT", conditionalGuidance: [] } as never), false);
   assert.equal(dietarySnapshotNeedsRuleReview(null), false);
 });
+
+
+test("suplemento líquido usa volume do rótulo sem presumir densidade em gramas", () => {
+  const composition = {
+    provider: "MANUFACTURER_LABEL" as const,
+    sourceId: "nutridrink-protein-chocolate-200ml-2026",
+    description: "Nutridrink Protein Chocolate — pronto para beber",
+    nutrientBasis: "100ml" as const,
+    nutrientsPer100g: {
+      energyKcal: 150,
+      proteinG: 9.2,
+      carbohydratesG: 17,
+      fatG: 5.2,
+      fiberG: 0,
+      calciumMg: 216,
+      sodiumMg: 60,
+    },
+  };
+  const item = confirmDietaryDraftItem(
+    {
+      id: "supplement",
+      label: composition.description,
+      quantity: 200,
+      measure: "ml",
+      grams: null,
+      gramsSource: null,
+      estimated: false,
+      food: composition,
+    },
+    composition,
+  );
+  assert.equal(item.grams, null);
+  assert.equal(item.nutrients?.proteinG, 18.4);
+  assert.equal(item.nutrients?.calciumMg, 432);
+});
+
+test("orientação gerada descreve contribuições de proteína e cálcio", () => {
+  const namedMeal: DietaryConfirmedMeal = {
+    id: "breakfast",
+    label: "Café da manhã",
+    items: [
+      {
+        id: "supplement",
+        label: "Nutren Senior Sem Sabor — pó",
+        quantity: 55,
+        measure: "g",
+        grams: 55,
+        gramsSource: "direct-grams",
+        estimated: false,
+        quantitySource: "peso informado",
+        uncertainty: "baixa",
+        food: null,
+        composition: null,
+        nutrients: { ...zero, energyKcal: 226, proteinG: 20, calciumMg: 506 },
+      },
+    ],
+  };
+  const { summary } = summarizeDietaryAssessment([namedMeal], null);
+  const orientation = buildDietaryOrientation({
+    priorities: [],
+    context: {},
+    meals: [namedMeal],
+    summary,
+  });
+  assert.match(orientation, /Proteína estimada em 20 g\/dia/i);
+  assert.match(orientation, /Nutren Senior.*20 g/i);
+  assert.match(orientation, /Cálcio estimado em 506 mg\/dia/i);
+});
