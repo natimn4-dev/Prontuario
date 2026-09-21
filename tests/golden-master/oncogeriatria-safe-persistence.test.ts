@@ -101,6 +101,19 @@ test("CARG mantém cálculo no servidor, rascunho/proveniência e revisão de di
   assert.match(audit, /CARG_TREATMENT_COURSE_COMPLETION_POLICY = "PRESERVE_CURRENT"/);
 });
 
+test("CARG confirma persistência no servidor e revalida a página após salvar", async () => {
+  const [service, form] = await Promise.all([
+    source("src/server/oncogeriatria/service.ts"),
+    source("src/components/oncogeriatria/checklist-scales.tsx"),
+  ]);
+  assert.match(service, /CARG_PERSISTENCE_CONFIRMATION_FAILED/);
+  assert.match(service, /persisted: true/);
+  assert.match(form, /result\?\.persisted !== true/);
+  assert.match(form, /router\.refresh\(\)/);
+  assert.match(form, /Você pode sair e retomar depois/);
+  assert.match(form, /permanecerá disponível ao reabrir a avaliação/);
+});
+
 test("pontos de inflexão usam associação temporal sem atribuir causalidade", async () => {
   const chart = await source("src/components/reports/capacity-dimension-history-chart.tsx");
   assert.match(chart, /Registro temporal associado/);
