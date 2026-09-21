@@ -5,6 +5,7 @@ import {
   createOncogeriatricCheckpoint,
   createOncogeriatricEpisode,
   createOncogeriatricIntervention,
+  linkOncogeriatricCheckpointConsultation,
   createOncogeriatricRecoveryAssessment,
   createOncogeriatricReportSnapshot,
   createOncogeriatricToxicityEvent,
@@ -27,6 +28,7 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
     if (action === "TREATMENT_COURSE_CREATE") return NextResponse.json(await createOncogeriatricTreatmentCourse(patientId, body), { status: 201 });
     if (action === "CHECKPOINT_CREATE") return NextResponse.json(await createOncogeriatricCheckpoint(patientId, body), { status: 201 });
     if (action === "CHECKPOINT_UPDATE") return NextResponse.json(await saveOncogeriatricCheckpointData(patientId, body), { status: 200 });
+    if (action === "CHECKPOINT_LINK_CONSULTATION") return NextResponse.json(await linkOncogeriatricCheckpointConsultation(patientId, body), { status: 200 });
     if (action === "G8_SAVE") return NextResponse.json(await saveG8(patientId, body), { status: 200 });
     if (action === "CARG_DRAFT_SAVE") return NextResponse.json(await saveCargDraft(patientId, body), { status: 200 });
     if (action === "CARG_SAVE") return NextResponse.json(await saveCarg(patientId, body), { status: 200 });

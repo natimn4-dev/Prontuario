@@ -1,0 +1,178 @@
+.stageIntro {
+  display: grid;
+  grid-template-columns: minmax(0, 1.25fr) minmax(260px, .75fr);
+  gap: 16px;
+  margin-bottom: 18px;
+}
+
+.stageCopy,
+.stageStatus,
+.instrumentHub,
+.linkPanel,
+.primaryScale {
+  border: 1px solid var(--line);
+  border-radius: var(--radius-md);
+  background: var(--surface);
+  box-shadow: var(--shadow-sm);
+}
+
+.stageCopy,
+.stageStatus,
+.instrumentHub,
+.linkPanel {
+  padding: 20px;
+}
+
+.stageCopy h2,
+.instrumentHub h2,
+.linkPanel h2 {
+  margin: 4px 0 8px;
+  color: var(--ink);
+}
+
+.stageCopy p,
+.linkPanel > p {
+  margin: 0;
+  color: var(--muted);
+  line-height: 1.55;
+}
+
+.stageStatus {
+  display: grid;
+  align-content: center;
+  gap: 10px;
+  padding: 18px 20px;
+}
+
+.statusItem {
+  display: flex;
+  justify-content: space-between;
+  gap: 14px;
+  padding-bottom: 10px;
+  border-bottom: 1px solid var(--line);
+  font-size: 12px;
+}
+
+.statusItem:last-child {
+  padding-bottom: 0;
+  border-bottom: 0;
+}
+
+.statusItem span {
+  color: var(--muted);
+}
+
+.statusItem strong {
+  color: var(--primary-strong);
+  text-align: right;
+}
+
+.startPanel {
+  max-width: 840px;
+  margin-inline: auto;
+}
+
+.startPanelHeader {
+  margin-bottom: 18px;
+}
+
+.startPanelHeader h2 {
+  margin: 4px 0 6px;
+}
+
+.startPanelHeader p {
+  margin: 0;
+  color: var(--muted);
+}
+
+.instrumentHub {
+  margin-bottom: 18px;
+}
+
+.instrumentLinks {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+  margin-top: 16px;
+}
+
+.instrumentLinks a {
+  display: grid;
+  gap: 5px;
+  min-height: 82px;
+  padding: 14px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: var(--surface-subtle);
+  color: var(--ink);
+  text-decoration: none;
+}
+
+.instrumentLinks a:first-child {
+  border-color: #d8c4e8;
+  background: var(--primary-soft);
+}
+
+.instrumentLinks strong {
+  color: var(--primary-strong);
+  font-size: 14px;
+}
+
+.instrumentLinks span,
+.instrumentLinks small {
+  color: var(--muted);
+  font-size: 11px;
+  line-height: 1.4;
+}
+
+.linkPanel {
+  margin-bottom: 18px;
+  border-color: #d8c4e8;
+  background: #faf7fd;
+}
+
+.primaryScale {
+  margin-bottom: 18px;
+  padding: 22px;
+  scroll-margin-top: 18px;
+  border-color: #d8c4e8;
+}
+
+.secondaryScale {
+  margin-bottom: 18px;
+  scroll-margin-top: 18px;
+}
+
+.lockedScale {
+  display: grid;
+  gap: 8px;
+  padding: 18px;
+  border: 1px dashed #d8c4e8;
+  border-radius: 12px;
+  background: var(--surface-subtle);
+}
+
+.lockedScale h3,
+.lockedScale p {
+  margin: 0;
+}
+
+.lockedScale p {
+  color: var(--muted);
+  line-height: 1.5;
+}
+
+.historyPanel {
+  margin-top: 18px;
+}
+
+@media (max-width: 820px) {
+  .stageIntro,
+  .instrumentLinks {
+    grid-template-columns: 1fr;
+  }
+
+  .stageStatus {
+    align-content: start;
+  }
+}
