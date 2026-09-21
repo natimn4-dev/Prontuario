@@ -143,7 +143,7 @@ try {
     database?: string;
     releaseId?: string;
     program55?: { enabled?: boolean; minAge?: number; maxAge?: number; schemaReady?: boolean };
-    oncogeriatria?: { enabled?: boolean; schemaReady?: boolean; version?: string };
+    oncogeriatria?: { enabled?: boolean; schemaReady?: boolean; safePersistenceReady?: boolean; version?: string };
   } | null;
   if (healthBody?.status !== "ok" || healthBody.database !== "ok") blocked("/api/health não confirmou aplicação e banco em estado ok.");
   if (healthBody.releaseId !== CLINICAL_RELEASE_ID) blocked(`/api/health está saudável, mas executa release diferente da esperada (${healthBody.releaseId ?? "sem releaseId"}).`);
@@ -158,9 +158,10 @@ try {
   if (
     healthBody.oncogeriatria?.enabled !== true ||
     healthBody.oncogeriatria.schemaReady !== true ||
+    healthBody.oncogeriatria.safePersistenceReady !== true ||
     healthBody.oncogeriatria.version !== ONCOGERIATRIA_VERSION
   ) {
-    blocked("/api/health não confirmou Oncogeriatria ativa, schema pronto e versão esperada.");
+    blocked("/api/health não confirmou Oncogeriatria ativa, schema seguro de persistência pronto e versão esperada.");
   }
 
   const assets = await request(base, "/api/health/assets", "follow");
@@ -208,7 +209,7 @@ console.log(`- HTTPS acessível: ${base.origin}`);
 console.log(`- release confirmada: ${CLINICAL_RELEASE_ID}`);
 console.log("- /api/health confirmou banco ok e resposta não cacheável");
 console.log(`- Programa 55+ confirmado ativo para ${PROGRAM55_MIN_AGE}–${PROGRAM55_MAX_AGE} anos e schema longitudinal pronto`);
-console.log(`- Oncogeriatria confirmada ativa, schema pronto e versão ${ONCOGERIATRIA_VERSION}`);
+console.log(`- Oncogeriatria confirmada ativa, schema seguro de persistência pronto e versão ${ONCOGERIATRIA_VERSION}`);
 console.log(`- /api/health/auth confirmou OAuth e contrato de acesso ${WORKSPACE_ACCESS_CONTRACT_VERSION}`);
 console.log("- CSS e JavaScript do Next.js presentes e entregues com HTTP 200");
 console.log("- /login contém o link navegável e a interface de acesso vigentes");
