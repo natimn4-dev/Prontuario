@@ -125,6 +125,8 @@ test("CARG fica fácil de reencontrar após o cadastro e após o preenchimento",
   assert.match(patientPage, /oncogeriatria\/basal\?episode=\$\{episode\.id\}#carg/);
   assert.match(nav, /Abrir ou continuar CARG/);
   assert.match(nav, /#carg/);
+  assert.match(homePage, /Abrir ou continuar CARG/);
+  assert.match(homePage, /oncogeriatria\/basal\?episode=/);
 });
 
 test("CARG liberado permanece transparente, local e sem conduta automática", () => {
