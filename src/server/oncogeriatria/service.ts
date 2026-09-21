@@ -404,6 +404,62 @@ export async function saveOncogeriatricCheckpointData(patientId: string, input: 
   });
 }
 
+export async function linkOncogeriatricCheckpointConsultation(patientId: string, input: Record<string, unknown>) {
+  const user = await writeActor();
+  const episodeId = requiredText(input.episodeId, "Episódio", 191);
+  const checkpointId = requiredText(input.checkpointId, "Checkpoint", 191);
+  const consultationId = requiredText(input.consultationId, "Consulta", 191);
+  const revision = expectedRevision(input.expectedRevision);
+  const checkpoint = await checkpointContext(patientId, episodeId, checkpointId);
+  await consultationContext(patientId, consultationId);
+
+  if (checkpoint.consultationId === consultationId) {
+    return { checkpointId, consultationId, revision: checkpoint.revision, saveStatus: "already_linked" as const };
+  }
+  if (checkpoint.consultationId) {
+    throw new OncogeriatricError(
+      "CHECKPOINT_CONSULTATION_ALREADY_LINKED",
+      "Esta avaliação já está vinculada a outra consulta. Revise o vínculo existente antes de qualquer alteração.",
+      409,
+    );
+  }
+
+  return prisma.$transaction(async (tx) => {
+    const updated = await tx.oncogeriatricCheckpoint.updateMany({
+      where: { id: checkpointId, patientId, episodeId, revision, consultationId: null },
+      data: { consultationId, revision: { increment: 1 } },
+    });
+    if (updated.count !== 1) {
+      const current = await tx.oncogeriatricCheckpoint.findFirst({
+        where: { id: checkpointId, patientId, episodeId },
+        select: { revision: true, consultationId: true },
+      });
+      throw new OncogeriatricError(
+        "CHECKPOINT_REVISION_CONFLICT",
+        "Existe uma versão mais recente desta avaliação. Recarregue a página antes de vincular a consulta.",
+        409,
+        { expectedRevision: revision, currentRevision: current?.revision ?? null, consultationId: current?.consultationId ?? null },
+      );
+    }
+    const saved = await tx.oncogeriatricCheckpoint.findUnique({
+      where: { id: checkpointId },
+      select: { id: true, consultationId: true, revision: true },
+    });
+    if (!saved) throw new OncogeriatricError("CHECKPOINT_NOT_FOUND", "Avaliação oncogeriátrica não encontrada.", 404);
+    await tx.auditEvent.create({
+      data: {
+        userId: user.id,
+        entityType: "OncogeriatricCheckpoint",
+        entityId: checkpointId,
+        action: "oncogeriatria.checkpoint.link-consultation",
+        outcome: "success",
+        reasonCode: `revision:${saved.revision}`,
+      },
+    });
+    return { checkpointId: saved.id, consultationId: saved.consultationId, revision: saved.revision, saveStatus: "linked" as const };
+  });
+}
+
 export async function saveG8(patientId: string, input: Record<string, unknown>) {
   const user = await writeActor();
   const episodeId = requiredText(input.episodeId, "Episódio", 191);

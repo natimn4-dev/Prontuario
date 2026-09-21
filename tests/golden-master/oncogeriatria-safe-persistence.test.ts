@@ -66,6 +66,22 @@ test("snapshot exige revisão clínica no servidor, registra autor/data e serial
   assert.match(actions, /data-onco-clinical-review/);
 });
 
+test("vínculo tardio da consulta usa revisão otimista e não religa avaliação já vinculada", async () => {
+  const [service, route, linker] = await Promise.all([
+    source("src/server/oncogeriatria/service.ts"),
+    source("src/app/api/oncogeriatria/patients/[id]/route.ts"),
+    source("src/components/oncogeriatria/checkpoint-consultation-linker.tsx"),
+  ]);
+  assert.match(service, /linkOncogeriatricCheckpointConsultation/);
+  assert.match(service, /CHECKPOINT_CONSULTATION_ALREADY_LINKED/);
+  assert.match(service, /where: \{ id: checkpointId, patientId, episodeId, revision, consultationId: null \}/);
+  assert.match(service, /revision: \{ increment: 1 \}/);
+  assert.match(service, /oncogeriatria\.checkpoint\.link-consultation/);
+  assert.match(route, /CHECKPOINT_LINK_CONSULTATION/);
+  assert.match(linker, /expectedRevision/);
+  assert.match(linker, /router\.refresh\(\)/);
+});
+
 test("CARG mantém cálculo no servidor, rascunho/proveniência e revisão de diferenças antes de substituir avaliação arquivada", async () => {
   const [service, form, audit] = await Promise.all([
     source("src/server/oncogeriatria/service.ts"),

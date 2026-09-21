@@ -9,7 +9,7 @@ const overview = readFileSync("src/app/patients/[id]/oncogeriatria/page.tsx", "u
 const overviewStyles = readFileSync("src/app/patients/[id]/oncogeriatria/oncogeriatric-overview.module.css", "utf8");
 
 const stages = [
-  ["basal", "Antes do tratamento"],
+  ["basal", "Avaliação inicial"],
   ["tratamento", "Tratamento oncológico"],
   ["check", "Durante o tratamento"],
   ["escalas", "Escalas clínicas"],
@@ -37,12 +37,14 @@ test("plano geriátrico foi suprimido sem apagar a rota histórica", () => {
   assert.doesNotMatch(legacyPage, /InterventionForm|OncogeriatricDomainReview|OncogeriatricWorkspaceHeader/);
 });
 
-test("navegação oferece orientação, retorno e finalização sem alterar regras clínicas", () => {
-  assert.match(navigation, /Etapa \$\{activeIndex \+ 1\} de \$\{steps\.length\}/);
-  assert.match(navigation, /<progress/);
+test("navegação oferece jornada clínica curta, retorno e ferramentas de apoio sem alterar regras clínicas", () => {
+  assert.match(navigation, /Etapa \$\{workflowIndex \+ 1\} de \$\{workflowSteps\.length\}/);
+  assert.match(navigation, /Ferramenta de apoio/);
+  assert.match(navigation, /Ferramentas de apoio/);
+  assert.doesNotMatch(navigation, /<progress/);
   assert.match(navigation, /Página inicial/);
   assert.match(navigation, /Prontuário do paciente/);
-  assert.match(navigation, /Página anterior/);
+  assert.match(navigation, /Etapa anterior/);
   assert.match(navigation, /Próxima etapa/);
   assert.match(navigation, /Finalizar e voltar à página inicial/);
   assert.match(navigation, /Salve os formulários desta página antes de continuar/);
@@ -55,8 +57,9 @@ test("menu não pré-carrega todas as áreas e preserva acessibilidade responsiv
   assert.match(navigation, /aria-label="Ações da etapa"/);
   assert.match(navigation, /scrollIntoView\(\{ block: "nearest", inline: "center" \}\)/);
   assert.match(navigation, /aria-label="Retorno e contexto do paciente"/);
-  assert.match(navigationStyles, /overflow-x: auto/);
-  assert.match(navigationStyles, /scroll-snap-type: x proximity/);
+  assert.match(navigationStyles, /\.primaryJourney \{/);
+  assert.match(navigationStyles, /\.supportRail \{/);
+  assert.match(navigationStyles, /@media \(max-width: 1040px\)/);
   assert.match(navigationStyles, /@media \(max-width: 760px\)/);
   assert.match(navigationStyles, /@media print/);
 });
