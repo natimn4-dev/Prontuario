@@ -62,6 +62,134 @@ jobs:
           xz -t .patch/oncogeriatria-safe-refactor.tar.xz
           sha256sum .patch/oncogeriatria-safe-refactor.tar.xz
           tar -xJf .patch/oncogeriatria-safe-refactor.tar.xz --strip-components=1
+
+          # Preserve the authoritative Prisma schema from main and apply only the additive
+          # oncogeriatric fields needed by this patch. The sparse authoring workspace carried
+          # a reconstructed schema that is intentionally not trusted for deployment.
+          git show origin/main:prisma/schema.prisma > /tmp/schema.prisma.base
+          python - <<'PY'
+          from pathlib import Path
+
+          path = Path("/tmp/schema.prisma.base")
+          s = path.read_text()
+
+          def once(old: str, new: str) -> None:
+              global s
+              if old not in s:
+                  raise SystemExit(f"Schema anchor not found: {old!r}")
+              if s.count(old) != 1:
+                  raise SystemExit(f"Schema anchor is not unique: {old!r}")
+              s = s.replace(old, new, 1)
+
+          once(
+              "  cargAssessmentId  String?\n  createdById       String",
+              "  cargAssessmentId  String?\n"
+              "  revision          Int      @default(1)\n"
+              "  cargDraft         Json?\n"
+              "  cargCompletionCount Int    @default(0)\n"
+              "  cargPendingFields Json?\n"
+              "  cargLabProvenance Json?\n"
+              "  cargSavedById     String?\n"
+              "  cargSavedAt       DateTime?\n"
+              "  createdById       String",
+          )
+          once(
+              "  @@index([episodeId, type, occurredAt])\n  @@index([treatmentCourseId, occurredAt])",
+              "  @@index([episodeId, type, occurredAt])\n"
+              "  @@index([episodeId, revision])\n"
+              "  @@index([treatmentCourseId, occurredAt])",
+          )
+          once(
+              "  @@index([consultationId, patientId])\n}\n\nmodel OncogeriatricIntervention",
+              "  @@index([consultationId, patientId])\n"
+              "  @@index([cargSavedById, cargSavedAt])\n"
+              "}\n\nmodel OncogeriatricIntervention",
+          )
+
+          once(
+              "  checkpointId            String?\n  domain",
+              "  checkpointId            String?\n"
+              "  consultationId          String?\n"
+              "  startedAt               DateTime?\n"
+              "  domain",
+          )
+          once(
+              "  @@index([episodeId, status])\n  @@index([patientId, domain])",
+              "  @@index([episodeId, status])\n"
+              "  @@index([episodeId, startedAt])\n"
+              "  @@index([patientId, domain])",
+          )
+          once(
+              "  @@index([checkpointId])\n}\n\nmodel OncogeriatricToxicityEvent",
+              "  @@index([checkpointId])\n"
+              "  @@index([consultationId, patientId])\n"
+              "}\n\nmodel OncogeriatricToxicityEvent",
+          )
+
+          once(
+              "  checkpointId                  String?\n  occurredAt",
+              "  checkpointId                  String?\n"
+              "  consultationId                String?\n"
+              "  occurredAt",
+          )
+          once(
+              "  @@index([treatmentCourseId, occurredAt])\n}\n\nmodel OncogeriatricRecoveryAssessment",
+              "  @@index([treatmentCourseId, occurredAt])\n"
+              "  @@index([consultationId, patientId])\n"
+              "}\n\nmodel OncogeriatricRecoveryAssessment",
+          )
+
+          once(
+              "  checkpointId String?\n  domain",
+              "  checkpointId String?\n"
+              "  consultationId String?\n"
+              "  domain",
+          )
+          once(
+              "  @@index([patientId, assessedAt])\n}\n\nmodel OncogeriatricReportSnapshot",
+              "  @@index([patientId, assessedAt])\n"
+              "  @@index([consultationId, patientId])\n"
+              "}\n\nmodel OncogeriatricReportSnapshot",
+          )
+
+          once(
+              "  content        Json\n  generatedById  String",
+              "  content        Json\n"
+              "  contentHash    String?\n"
+              "  g8AssessmentId String?\n"
+              "  cargAssessmentId String?\n"
+              "  generatedById  String\n"
+              "  clinicalReviewConfirmedById String?\n"
+              "  clinicalReviewConfirmedAt DateTime?",
+          )
+          once(
+              "  @@index([consultationId, patientId])\n}\n",
+              "  @@index([consultationId, patientId])\n"
+              "  @@index([cargAssessmentId, episodeId])\n"
+              "  @@index([g8AssessmentId, episodeId])\n"
+              "  @@index([episodeId, clinicalReviewConfirmedAt])\n"
+              "}\n",
+          )
+
+          s += """\nmodel OncogeriatricOperationReceipt {
+            id          String   @id @default(cuid())
+            patientId   String
+            episodeId   String?
+            operationId String
+            action      String
+            entityType  String
+            entityId    String
+            createdAt   DateTime @default(now())
+
+            @@unique([patientId, operationId])
+            @@index([episodeId, createdAt])
+            @@index([entityType, entityId])
+          }
+          """
+
+          Path("prisma/schema.prisma").write_text(s)
+          PY
+
           rm -rf .patch
           rm -f .github/workflows/apply-oncogeriatria-patch.yml
       - uses: actions/setup-node@v4
