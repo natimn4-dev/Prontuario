@@ -397,6 +397,17 @@
   gap: 10px;
 }
 
+.globalHomeLink {
+  flex-basis: 100%;
+  color: var(--muted);
+  font-size: 12px;
+  text-align: right;
+}
+
+.globalHomeLink a {
+  color: inherit;
+}
+
 .homeAction,
 .previousAction,
 .primaryAction {
@@ -549,6 +560,10 @@
 
   .primaryActionGroup > small {
     max-width: none;
+    text-align: left;
+  }
+
+  .globalHomeLink {
     text-align: left;
   }
 }
