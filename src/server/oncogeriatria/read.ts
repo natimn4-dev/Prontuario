@@ -50,6 +50,10 @@ export const ONCOGERIATRIC_WORKSPACE_QUERY_BUDGET: Record<OncogeriatricWorkspace
   report: 8,
 };
 
+// The dedicated CARG entry reads one checkpoint, context options and one assessment;
+// the route adds one bounded author-name lookup when provenance is present.
+export const ONCOGERIATRIC_CARG_QUERY_BUDGET = 6;
+
 export async function requireOncogeriatricReadAccess() {
   const auth = await requireAuthenticatedUser("patient.read");
   if (!isOncogeriatriaEnabled(process.env.ONCOGERIATRIA_EMERGENCY_DISABLED)) notFound();
@@ -198,6 +202,87 @@ export async function loadOncogeriatricAuthorNames(userIds: readonly string[]) {
   if (!uniqueIds.length) return new Map<string, string>();
   const users = await prisma.user.findMany({ where: { id: { in: uniqueIds } }, select: { id: true, name: true } });
   return new Map(users.map((user) => [user.id, user.name]));
+}
+
+export async function loadOncogeriatricCargWorkspace(
+  patientId: string,
+  episodeId: string,
+  requestedCheckpointId?: string | null,
+  requestedConsultationId?: string | null,
+) {
+  const checkpoint = requestedCheckpointId
+    ? await prisma.oncogeriatricCheckpoint.findFirst({
+      where: { id: requestedCheckpointId, patientId, episodeId },
+      orderBy: [{ occurredAt: "desc" }, { createdAt: "desc" }],
+      select: {
+        id: true, patientId: true, episodeId: true, treatmentCourseId: true, consultationId: true,
+        type: true, cycleNumber: true, occurredAt: true, scheduledAt: true, status: true,
+        structuredData: true, g8AssessmentId: true, cargAssessmentId: true, revision: true,
+        cargDraft: true, cargCompletionCount: true, cargPendingFields: true, cargLabProvenance: true,
+        cargSavedById: true, cargSavedAt: true, createdAt: true, updatedAt: true,
+      },
+    })
+    : requestedConsultationId
+      ? await prisma.oncogeriatricCheckpoint.findFirst({
+        where: { patientId, episodeId, consultationId: requestedConsultationId },
+        orderBy: [{ occurredAt: "desc" }, { createdAt: "desc" }],
+        select: {
+          id: true, patientId: true, episodeId: true, treatmentCourseId: true, consultationId: true,
+          type: true, cycleNumber: true, occurredAt: true, scheduledAt: true, status: true,
+          structuredData: true, g8AssessmentId: true, cargAssessmentId: true, revision: true,
+          cargDraft: true, cargCompletionCount: true, cargPendingFields: true, cargLabProvenance: true,
+          cargSavedById: true, cargSavedAt: true, createdAt: true, updatedAt: true,
+        },
+      })
+      : await prisma.oncogeriatricCheckpoint.findFirst({
+        where: { patientId, episodeId },
+        orderBy: [{ occurredAt: "desc" }, { createdAt: "desc" }],
+        select: {
+          id: true, patientId: true, episodeId: true, treatmentCourseId: true, consultationId: true,
+          type: true, cycleNumber: true, occurredAt: true, scheduledAt: true, status: true,
+          structuredData: true, g8AssessmentId: true, cargAssessmentId: true, revision: true,
+          cargDraft: true, cargCompletionCount: true, cargPendingFields: true, cargLabProvenance: true,
+          cargSavedById: true, cargSavedAt: true, createdAt: true, updatedAt: true,
+        },
+      });
+
+  if (requestedCheckpointId && !checkpoint) notFound();
+
+  const [requestedConsultation, courses, consultations] = await Promise.all([
+    requestedConsultationId
+      ? prisma.consultation.findFirst({ where: { id: requestedConsultationId, patientId }, select: { id: true, patientId: true, occurredAt: true, createdAt: true, status: true } })
+      : Promise.resolve(null),
+    prisma.oncogeriatricTreatmentCourse.findMany({
+      where: { patientId, episodeId },
+      orderBy: [{ actualStartAt: "desc" }, { createdAt: "desc" }],
+      select: { id: true, regimenName: true, status: true },
+    }),
+    prisma.consultation.findMany({
+      where: { patientId },
+      orderBy: [{ occurredAt: "desc" }, { createdAt: "desc" }, { id: "desc" }],
+      select: { id: true, patientId: true, occurredAt: true, createdAt: true, status: true },
+    }),
+  ]);
+
+  if (requestedConsultationId && !requestedConsultation) notFound();
+  if (checkpoint && requestedConsultationId && checkpoint.consultationId !== requestedConsultationId) notFound();
+
+  const cargAssessment = checkpoint?.cargAssessmentId
+    ? await prisma.scaleAssessment.findFirst({
+      where: {
+        id: checkpoint.cargAssessmentId,
+        patientId,
+        ...(checkpoint.consultationId ? { consultationId: checkpoint.consultationId } : {}),
+      },
+      select: {
+        id: true, patientId: true, consultationId: true, scaleCode: true, scaleVersion: true,
+        scoreNumeric: true, scoreText: true, classification: true, interpretation: true, answers: true,
+        clinicalColor: true, appliedAt: true,
+      },
+    })
+    : null;
+
+  return { checkpoint, requestedConsultation, courses, consultations, cargAssessment };
 }
 
 export type OncogeriatricEpisodeWorkspace = Awaited<ReturnType<typeof loadEpisodeWorkspace>>;
