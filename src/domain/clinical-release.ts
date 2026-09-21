@@ -1,1 +1,1 @@
-export const CLINICAL_RELEASE_ID = "2026-09-21-oncogeriatria-carg-discovery-persistence-v2" as const;
+export const CLINICAL_RELEASE_ID = "2026-09-21-oncogeriatria-consultation-centric-carg-v1" as const;

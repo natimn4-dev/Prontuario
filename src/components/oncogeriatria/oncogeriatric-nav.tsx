@@ -13,6 +13,7 @@ const workflowSteps = [
 ] as const;
 
 const supportSteps = [
+  { id: "carg", label: "CARG · primeira escala", path: "/carg", description: "Instrumento prioritário de cada consulta" },
   { id: "tratamento", label: "Tratamento oncológico", path: "/tratamento", description: "Esquema, intenção e ciclos" },
   { id: "escalas", label: "Escalas clínicas", path: "/escalas", description: "Instrumentos escolhidos pelo geriatra" },
   { id: "pos-tratamento", label: "Planejamento", path: "/pos-tratamento", description: "Próximas consultas e recuperação" },
@@ -162,7 +163,7 @@ export function OncogeriatricQuickActions({
   episodeId?: string | null;
 }) {
   const actions = [
-    { step: "Essencial", label: "Abrir ou continuar CARG", href: `${stepHref(patientId, "/basal", episodeId)}#carg` },
+    { step: "Essencial", label: "Abrir ou continuar CARG", href: stepHref(patientId, "/carg", episodeId) },
     { step: "Seguimento", label: "Reavaliar durante o tratamento", href: stepHref(patientId, "/check", episodeId) },
     { step: "Instrumentos", label: "Aplicar ou revisar escalas", href: stepHref(patientId, "/escalas", episodeId) },
     { step: "Documento", label: "Revisar relatório", href: stepHref(patientId, "/relatorio", episodeId) },
@@ -206,7 +207,7 @@ export function OncogeriatricStepActions({
   return (
     <nav className={styles.actionBar} aria-label="Ações da etapa">
       <div className={styles.secondaryActions}>
-        <Link href="/" prefetch={false} className={styles.homeAction}>Página inicial</Link>
+        <Link href={overviewHref} prefetch={false} className={styles.homeAction}>Visão geral do acompanhamento</Link>
         {currentStep !== "overview" ? (
           <Link href={isSupport ? overviewHref : previousHref} prefetch={false} className={styles.previousAction}>
             <span>{isSupport ? "Retornar" : "Etapa anterior"}</span>
@@ -228,12 +229,13 @@ export function OncogeriatricStepActions({
             <strong>{next.label} →</strong>
           </Link>
         ) : (
-          <Link href="/" prefetch={false} className={styles.primaryAction}>
+          <Link href={overviewHref} prefetch={false} className={styles.primaryAction}>
             <span>Não encerra o episódio clínico</span>
-            <strong>Finalizar e voltar à página inicial</strong>
+            <strong>Concluir etapa e voltar à visão geral →</strong>
           </Link>
         )}
       </div>
+      <small className={styles.globalHomeLink}><Link href="/" prefetch={false}>Página inicial geral</Link></small>
     </nav>
   );
 }

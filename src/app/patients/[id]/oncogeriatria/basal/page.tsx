@@ -6,7 +6,7 @@ import { BaselineCheckpointForm } from "@/components/oncogeriatria/oncogeriatric
 import { OncogeriatricNav, OncogeriatricStepActions, OncogeriatricWorkspaceHeader } from "@/components/oncogeriatria/oncogeriatric-nav";
 import { CONSULTATION_STATUS_LABELS, type ConsultationContextStatus } from "@/domain/consultation-context";
 import { oncogeriatricCheckpointStatusLabel, oncogeriatricCourseStatusLabel } from "@/domain/oncogeriatria/presentation-labels";
-import { buildOncogeriatricConsultationHref } from "@/domain/oncogeriatria/return-navigation";
+import { buildOncogeriatricCargHref, buildOncogeriatricConsultationHref } from "@/domain/oncogeriatria/return-navigation";
 import { capacityHistoryForOncogeriatricEpisode, formatClinicalDate, loadEpisodeWorkspace, loadOncogeriatricAuthorNames, loadOncogeriatricPatient, readStructuredRecord, requireOncogeriatricReadAccess, resolveOncogeriatricEpisode, selectOncogeriatricWorkingConsultation } from "@/server/oncogeriatria/read";
 import styles from "./oncogeriatric-baseline.module.css";
 
@@ -78,7 +78,7 @@ export default async function OncogeriatricBaselinePage({
         episodeLabel={episode.diagnosis}
         currentStep="basal"
         title="Avaliação inicial oncogeriátrica"
-        description="Concentre nesta etapa os instrumentos essenciais antes do tratamento. O CARG fica acessível aqui, sem depender de navegar por outras páginas."
+        description="Defina o contexto mínimo antes do tratamento. O CARG é a primeira escala e tem uma entrada própria para esta consulta."
       />
       <OncogeriatricNav patientId={patientId} episodeId={episode.id} />
 
@@ -111,7 +111,7 @@ export default async function OncogeriatricBaselinePage({
             <p className="eyebrow">Instrumentos principais</p>
             <h2 id="essential-tools-title">Acesso direto</h2>
             <nav className={styles.instrumentLinks} aria-label="Instrumentos da avaliação inicial">
-              <a href="#carg"><strong>CARG</strong><span>Risco de toxicidade da quimioterapia</span><small>{cargAssessment ? "Resultado registrado" : current.cargSavedAt ? "Continuar rascunho" : "Abrir agora"}</small></a>
+              <a href={buildOncogeriatricCargHref({ patientId, episodeId: episode.id, checkpointId: current.id })}><strong>CARG</strong><span>Primeira escala desta consulta · risco de toxicidade da quimioterapia</span><small>{cargAssessment ? "Resultado registrado" : current.cargSavedAt ? "Continuar rascunho" : "Abrir agora"}</small></a>
               <a href="#g8"><strong>G8</strong><span>Triagem oncogeriátrica</span><small>{g8Assessment ? "Resultado registrado" : hasConsultation ? "Abrir agora" : "Disponível após vínculo da consulta"}</small></a>
               <a href={hasConsultation && current.consultationId ? buildOncogeriatricConsultationHref({ consultationId: current.consultationId, section: "escalas", episodeId: episode.id, returnStage: "basal" }) : "#consultation-link"}>
                 <strong>Demais escalas</strong><span>Funcionalidade, mobilidade, cognição, humor e outros domínios</span><small>{hasConsultation ? "Abrir escalas da consulta" : "Vincule uma consulta primeiro"}</small>

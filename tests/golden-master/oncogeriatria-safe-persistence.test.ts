@@ -142,6 +142,8 @@ test("longitudinal não limita séries arbitrariamente e mantém CARG em cartão
   assert.doesNotMatch(page, /\.slice\(0\s*,\s*8\)/);
   assert.match(page, /CARG longitudinal/);
   assert.match(page, /cargRowsByVersion/);
+  assert.match(page, /cargTimelineRows/);
+  assert.match(page, /Não avaliado nesta consulta/);
   assert.match(page, /Exibir escalas adicionais/);
   assert.match(priority, /CARG: 0/);
   assert.match(priority, /G8: 10/);

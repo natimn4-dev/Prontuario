@@ -49,6 +49,23 @@ export function buildOncogeriatricConsultationHref({
   return `/consultations/${encodeURIComponent(consultationId)}?${query.toString()}#${section}`;
 }
 
+export function buildOncogeriatricCargHref({
+  patientId,
+  episodeId,
+  checkpointId,
+  consultationId,
+}: {
+  patientId: string;
+  episodeId: string;
+  checkpointId?: string | null;
+  consultationId?: string | null;
+}): string {
+  const query = new URLSearchParams({ episode: episodeId });
+  if (checkpointId) query.set("checkpoint", checkpointId);
+  if (consultationId) query.set("consultation", consultationId);
+  return `/patients/${encodeURIComponent(patientId)}/oncogeriatria/carg?${query.toString()}`;
+}
+
 export function oncogeriatricReturnLabel(stage: OncogeriatricReturnStage): string {
   return ONCOGERIATRIC_RETURN_STAGES[stage].label;
 }

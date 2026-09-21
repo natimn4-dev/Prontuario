@@ -6,7 +6,7 @@ import { InterventionForm, ToxicityForm } from "@/components/oncogeriatria/oncog
 import { OncogeriatricNav, OncogeriatricStepActions, OncogeriatricWorkspaceHeader } from "@/components/oncogeriatria/oncogeriatric-nav";
 import { CONSULTATION_STATUS_LABELS, type ConsultationContextStatus } from "@/domain/consultation-context";
 import { oncogeriatricCheckpointTypeLabel, oncogeriatricCourseStatusLabel } from "@/domain/oncogeriatria/presentation-labels";
-import { buildOncogeriatricConsultationHref } from "@/domain/oncogeriatria/return-navigation";
+import { buildOncogeriatricCargHref, buildOncogeriatricConsultationHref } from "@/domain/oncogeriatria/return-navigation";
 import {
   capacityHistoryForOncogeriatricEpisode,
   formatClinicalDate,
@@ -69,6 +69,10 @@ export default async function OncogeriatricCheckPage({
       />
       <OncogeriatricNav patientId={patientId} episodeId={episode.id} />
       <OncogeriatricClinicalContinuity patientId={patientId} consultation={workingConsultation} episodeId={episode.id} returnStage="check" />
+      <section className="panel" aria-labelledby="check-carg-title">
+        <div className="section-heading"><div><p className="eyebrow">Primeira escala do momento clínico</p><h2 id="check-carg-title">CARG</h2></div><span className="muted">Disponível, não obrigatório</span></div>
+        {checks[0] ? <><p>{oncogeriatricCheckpointTypeLabel(checks[0].type)} · {formatClinicalDate(checks[0].occurredAt)} · {checks[0].cargAssessmentId ? "resultado registrado" : checks[0].cargSavedAt ? `rascunho salvo · ${checks[0].cargCompletionCount}/11` : "não avaliado nesta consulta"}</p><a href={buildOncogeriatricCargHref({ patientId, episodeId: episode.id, checkpointId: checks[0].id })}>{checks[0].cargAssessmentId ? "Reabrir CARG desta consulta →" : checks[0].cargSavedAt ? "Continuar CARG desta consulta →" : "Abrir CARG desta consulta →"}</a></> : <p className="muted">Ao registrar uma nova reavaliação, o sistema abrirá o CARG imediatamente antes dos demais domínios.</p>}
+      </section>
       <OncogeriatricDomainReview history={capacityHistory} workingConsultation={workingConsultation} episodeId={episode.id} returnStage="check" />
 
       <section className="two-columns">
@@ -103,6 +107,7 @@ export default async function OncogeriatricCheckPage({
                 <li key={checkpoint.id}>
                   <strong>{formatClinicalDate(checkpoint.occurredAt)} · {oncogeriatricCheckpointTypeLabel(checkpoint.type)}{checkpoint.cycleNumber ? ` · ciclo ${checkpoint.cycleNumber}` : ""}</strong>
                   <span>{hasRelevantCheckpointAlert(checkpoint.structuredData) ? "Mudança relevante registrada — reavaliação médica indicada." : "Sem sinal estruturado de mudança registrado."}{checkpoint.consultationId ? " · avaliação por domínio vinculada à consulta" : " · sem consulta vinculada para os domínios"}{notes ? ` · ${notes}` : ""}</span>
+                  <a href={buildOncogeriatricCargHref({ patientId, episodeId: episode.id, checkpointId: checkpoint.id })}>{checkpoint.cargAssessmentId ? "Reabrir CARG desta consulta →" : checkpoint.cargSavedAt ? "Continuar CARG desta consulta →" : "Abrir CARG desta consulta →"}</a>
                   {checkpoint.consultationId ? <a href={buildOncogeriatricConsultationHref({ consultationId: checkpoint.consultationId, section: "escalas", episodeId: episode.id, returnStage: "check" })}>Abrir escalas desta consulta →</a> : null}
                   <CheckpointRevisionEditor
                     patientId={patientId}

@@ -1,6 +1,7 @@
 import { searchOncogeriatricPatientCandidates } from "@/server/oncogeriatria/patient-search";
 import { requireOncogeriatricReadAccess, formatClinicalDate, hasRelevantCheckpointAlert } from "@/server/oncogeriatria/read";
 import { prisma } from "@/server/db";
+import { buildOncogeriatricCargHref } from "@/domain/oncogeriatria/return-navigation";
 
 function phaseFor(checkpoints: { type: string; status: string; occurredAt: Date }[], courseStatus?: string | null): string {
   const latest = [...checkpoints].sort((a, b) => b.occurredAt.getTime() - a.occurredAt.getTime())[0];
@@ -104,7 +105,7 @@ export default async function OncogeriatriaHome({ searchParams }: { searchParams
               <h3><a href={`/patients/${row.episode.patientId}/oncogeriatria?episode=${row.episode.id}`}>{row.patient?.fullName ?? "Paciente"}</a></h3>
               <p className="dimension">{row.episode.primarySite ?? row.episode.diagnosis}</p>
               <p className="trend">{phaseLabels[row.phase] ?? "Fase não informada"}{row.alert ? " · mudança relevante registrada" : ""}</p>
-              <p><a href={`/patients/${row.episode.patientId}/oncogeriatria/basal?episode=${row.episode.id}#carg`}>Abrir ou continuar CARG →</a></p>
+              <p><a href={buildOncogeriatricCargHref({ patientId: row.episode.patientId, episodeId: row.episode.id, checkpointId: row.latest?.id })}>Abrir ou continuar CARG →</a></p>
             </div>
             <div className="score-block"><span>Tratamento</span><strong>{row.currentCourse?.regimenName ?? "—"}</strong></div>
             <div className="score-arrow" aria-hidden="true">→</div>
