@@ -12,6 +12,7 @@ import type { ClinicalProblem } from "@/domain/problems";
 import { isProgram55Eligible } from "@/domain/program55/eligibility";
 import { isProgram55Enabled } from "@/domain/program55/feature";
 import { hasAccessProfilePermission } from "@/domain/security/auth-policy";
+import { buildOncogeriatricCargHref } from "@/domain/oncogeriatria/return-navigation";
 import { requirePatientAccess } from "@/server/auth/patient-access";
 import { prisma } from "@/server/db";
 
@@ -140,7 +141,7 @@ export default async function PatientPage({ params }: { params: Promise<{ id: st
             <p className="eyebrow">Oncogeriatria</p>
             <h2>CARG · risco de toxicidade da quimioterapia</h2>
           </div>
-          <a href={oncogeriatricEpisode ? `/patients/${patient.id}/oncogeriatria/basal?episode=${oncogeriatricEpisode.id}#carg` : `/patients/${patient.id}/oncogeriatria`}>
+          <a href={oncogeriatricEpisode ? buildOncogeriatricCargHref({ patientId: patient.id, episodeId: oncogeriatricEpisode.id }) : `/patients/${patient.id}/oncogeriatria`}>
             {oncogeriatricEpisode ? "Abrir ou continuar CARG →" : "Iniciar acompanhamento e acessar CARG →"}
           </a>
         </div>
@@ -157,7 +158,7 @@ export default async function PatientPage({ params }: { params: Promise<{ id: st
           <h2>Consultas</h2>
           <div className="no-print" style={{ display: "flex", alignItems: "center", justifyContent: "flex-end", gap: 14, flexWrap: "wrap" }}>
             {program55Enabled && program55Eligible ? <a href={`/patients/${patient.id}/programa-55`}>Programa 55+ · 55–70 anos</a> : null}
-            {oncogeriatricEpisode ? <a href={`/patients/${patient.id}/oncogeriatria/basal?episode=${oncogeriatricEpisode.id}#carg`}>Oncogeriatria · abrir CARG</a> : <a href={`/patients/${patient.id}/oncogeriatria`}>Oncogeriatria · iniciar e acessar CARG</a>}
+            {oncogeriatricEpisode ? <a href={buildOncogeriatricCargHref({ patientId: patient.id, episodeId: oncogeriatricEpisode.id })}>Oncogeriatria · abrir CARG</a> : <a href={`/patients/${patient.id}/oncogeriatria`}>Oncogeriatria · iniciar e acessar CARG</a>}
             {canWriteConsultation ? (
               <CreateConsultationButton
                 patientId={patient.id}
