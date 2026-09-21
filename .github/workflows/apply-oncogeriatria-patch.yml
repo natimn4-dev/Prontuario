@@ -225,6 +225,14 @@ jobs:
           if old not in text:
               raise SystemExit("UX cycle assertion anchor not found")
           ux.write_text(text.replace(old, new, 1))
+
+          longitudinal = Path("src/app/patients/[id]/oncogeriatria/longitudinal/page.tsx")
+          text = longitudinal.read_text()
+          old = 'context:temporalMarkerContext(markersByConsultation.get(item.consultationId)??[])'
+          new = 'context:temporalMarkerContext(item.consultationId?markersByConsultation.get(item.consultationId)??[]:[])'
+          if old not in text:
+              raise SystemExit("longitudinal consultation marker anchor not found")
+          longitudinal.write_text(text.replace(old, new, 1))
           PY
 
           rm -rf .patch
