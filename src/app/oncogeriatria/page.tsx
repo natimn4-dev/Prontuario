@@ -104,6 +104,7 @@ export default async function OncogeriatriaHome({ searchParams }: { searchParams
               <h3><a href={`/patients/${row.episode.patientId}/oncogeriatria?episode=${row.episode.id}`}>{row.patient?.fullName ?? "Paciente"}</a></h3>
               <p className="dimension">{row.episode.primarySite ?? row.episode.diagnosis}</p>
               <p className="trend">{phaseLabels[row.phase] ?? "Fase não informada"}{row.alert ? " · mudança relevante registrada" : ""}</p>
+              <p><a href={`/patients/${row.episode.patientId}/oncogeriatria/basal?episode=${row.episode.id}#carg`}>Abrir ou continuar CARG →</a></p>
             </div>
             <div className="score-block"><span>Tratamento</span><strong>{row.currentCourse?.regimenName ?? "—"}</strong></div>
             <div className="score-arrow" aria-hidden="true">→</div>
