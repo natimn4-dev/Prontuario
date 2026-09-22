@@ -5,7 +5,7 @@ import { RecoveryForm } from "@/components/oncogeriatria/oncogeriatric-forms";
 import { OncogeriatricNav, OncogeriatricStepActions, OncogeriatricWorkspaceHeader } from "@/components/oncogeriatria/oncogeriatric-nav";
 import { CONSULTATION_STATUS_LABELS, type ConsultationContextStatus } from "@/domain/consultation-context";
 import { oncogeriatricCheckpointStatusLabel, oncogeriatricCheckpointTypeLabel, oncogeriatricDomainLabel, oncogeriatricRecoveryStatusLabel } from "@/domain/oncogeriatria/presentation-labels";
-import { buildOncogeriatricConsultationHref } from "@/domain/oncogeriatria/return-navigation";
+import { buildOncogeriatricCargHref } from "@/domain/oncogeriatria/return-navigation";
 import { capacityHistoryForOncogeriatricEpisode, formatClinicalDate, loadEpisodeWorkspace, loadOncogeriatricPatient, requireOncogeriatricReadAccess, resolveOncogeriatricEpisode, selectOncogeriatricWorkingConsultation } from "@/server/oncogeriatria/read";
 
 function consultationStatusLabel(value: string): string {
@@ -43,7 +43,7 @@ export default async function OncogeriatricPostTreatmentPage({ params, searchPar
       <section className="two-columns">
         <article className="panel">
           <h2>Próximas avaliações planejadas</h2>
-          {followUps.length ? <ul className="clean-list">{followUps.map((item) => <li key={item.id}><strong>{oncogeriatricCheckpointTypeLabel(item.type)}</strong><span>referência: {formatClinicalDate(item.occurredAt)} · próxima prevista: {formatClinicalDate(item.scheduledAt)} · {oncogeriatricCheckpointStatusLabel(item.status)}{item.consultationId ? " · avaliação por domínio vinculada" : " · sem consulta vinculada para os domínios"}</span>{item.consultationId ? <a href={buildOncogeriatricConsultationHref({ consultationId: item.consultationId, section: "escalas", episodeId: episode.id, returnStage: "pos-tratamento" })}>Abrir campos clínicos desta consulta →</a> : null}</li>)}</ul> : <p className="muted">Ainda não há avaliações de final de tratamento, 3, 6 ou 12 meses planejadas.</p>}
+          {followUps.length ? <ul className="clean-list">{followUps.map((item) => <li key={item.id}><strong>{oncogeriatricCheckpointTypeLabel(item.type)}</strong><span>referência: {formatClinicalDate(item.occurredAt)} · próxima prevista: {formatClinicalDate(item.scheduledAt)} · {oncogeriatricCheckpointStatusLabel(item.status)}{item.consultationId ? " · avaliação por domínio vinculada" : " · sem consulta vinculada para os domínios"}</span>{item.consultationId ? <a href={buildOncogeriatricCargHref({ patientId, episodeId: episode.id, checkpointId: item.id })}>Abrir campos clínicos desta consulta →</a> : null}</li>)}</ul> : <p className="muted">Ainda não há avaliações de final de tratamento, 3, 6 ou 12 meses planejadas.</p>}
         </article>
         <article className="panel">
           <h2>Recuperação registrada pelo médico</h2>

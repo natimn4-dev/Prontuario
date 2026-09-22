@@ -2,11 +2,19 @@ import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import test from "node:test";
 import {
+  buildOncogeriatricCargHref,
   buildOncogeriatricConsultationHref,
   buildOncogeriatricReturnPath,
   oncogeriatricReturnLabel,
   parseOncogeriatricReturnStage,
 } from "../../src/domain/oncogeriatria/return-navigation.ts";
+
+test("momento clínico mantém IDs explícitos no endereço canônico", () => {
+  assert.equal(buildOncogeriatricCargHref({ patientId: "A/1", episodeId: "E?2", checkpointId: "C#3", consultationId: "Q 4" }),
+    "/patients/A%2F1/oncogeriatria/avaliacao?episode=E%3F2&checkpoint=C%233&consultation=Q+4");
+  assert.equal(buildOncogeriatricCargHref({ patientId: "A/1", episodeId: "E?2" }),
+    "/patients/A%2F1/oncogeriatria/avaliacao?episode=E%3F2");
+});
 
 test("atalho para consulta preserva seção, episódio e etapa de origem", () => {
   assert.equal(
@@ -48,20 +56,12 @@ test("consulta valida vínculo do episódio ao paciente e oferece retorno no in�
   assert.match(styles, /@media print[\s\S]*\.returnBar,[\s\S]*\.returnFooter/);
 });
 
-test("toda saída da Oncogeriatria para uma consulta carrega o retorno contextual", () => {
+test("escalas na jornada usam a avaliação canônica e SOAP mantém retorno contextual", () => {
   const continuity = readFileSync("src/components/oncogeriatria/clinical-continuity.tsx", "utf8");
+  assert.match(continuity, /buildOncogeriatricCargHref/);
   assert.match(continuity, /buildOncogeriatricConsultationHref/);
-  assert.match(continuity, /episodeId: string/);
+  assert.match(continuity, /action.hash === "escalas"/);
   assert.match(continuity, /returnStage: OncogeriatricReturnStage/);
-
-  const stages = ["basal", "tratamento", "check", "escalas", "pos-tratamento"] as const;
-  for (const stage of stages) {
-    const page = readFileSync(`src/app/patients/[id]/oncogeriatria/${stage}/page.tsx`, "utf8");
-    assert.ok(page.includes(`returnStage="${stage}"`), `contexto de retorno ausente em ${stage}`);
-    assert.doesNotMatch(page, /href=\{`\/consultations\/\$\{/);
-  }
-
-  const overview = readFileSync("src/app/patients/[id]/oncogeriatria/page.tsx", "utf8");
-  assert.match(overview, /returnStage: "overview"/);
-  assert.doesNotMatch(overview, /href=\{`\/consultations\/\$\{/);
+  const assessment = readFileSync("src/app/patients/[id]/oncogeriatria/avaliacao/page.tsx", "utf8");
+  assert.match(assessment, /stage: "longitudinal"/);
 });

@@ -50,9 +50,9 @@ export const ONCOGERIATRIC_WORKSPACE_QUERY_BUDGET: Record<OncogeriatricWorkspace
   report: 8,
 };
 
-// The dedicated CARG entry reads one checkpoint, context options and one assessment;
-// the route adds one bounded author-name lookup when provenance is present.
-export const ONCOGERIATRIC_CARG_QUERY_BUDGET = 6;
+// The canonical moment adds a bounded checkpoint selector and G8 assessment
+// to the CARG context and author lookup.
+export const ONCOGERIATRIC_CARG_QUERY_BUDGET = 8;
 
 export async function requireOncogeriatricReadAccess() {
   const auth = await requireAuthenticatedUser("patient.read");
@@ -63,7 +63,7 @@ export async function requireOncogeriatricReadAccess() {
 export async function loadOncogeriatricPatient(patientId: string) {
   const patient = await prisma.patient.findUnique({
     where: { id: patientId },
-    select: { id: true, fullName: true, birthDate: true, sex: true },
+    select: { id: true, fullName: true, birthDate: true, sex: true, baselineConsultationId: true },
   });
   if (!patient) notFound();
   return patient;
@@ -202,6 +202,14 @@ export async function loadOncogeriatricAuthorNames(userIds: readonly string[]) {
   if (!uniqueIds.length) return new Map<string, string>();
   const users = await prisma.user.findMany({ where: { id: { in: uniqueIds } }, select: { id: true, name: true } });
   return new Map(users.map((user) => [user.id, user.name]));
+}
+
+export async function loadOncogeriatricMomentOptions(patientId: string, episodeId: string) {
+  return prisma.oncogeriatricCheckpoint.findMany({
+    where: { patientId, episodeId },
+    orderBy: [{ occurredAt: "desc" }, { createdAt: "desc" }],
+    select: { id: true, type: true, occurredAt: true, consultationId: true },
+  });
 }
 
 export async function loadOncogeriatricCargWorkspace(

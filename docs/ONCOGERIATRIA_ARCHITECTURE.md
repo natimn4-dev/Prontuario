@@ -12,6 +12,8 @@ O módulo não cria cadastro paralelo e não depende da participação no Progra
 
 ## Rotas
 
+A avaliação clínica do momento tem endereço canônico em `/patients/[id]/oncogeriatria/avaliacao?episode=...&checkpoint=...`. O mesmo workspace de escalas da consulta geral recebe o `consultationId` validado. Sem consulta vinculada, o CARG aceita rascunho e a tela oferece seleção ou criação explícita de consulta; a criação não ocorre ao abrir a página. Consultas finalizadas permanecem em somente leitura. As rotas `/carg` e `/escalas` redirecionam preservando o contexto informado.
+
 - `/oncogeriatria` — pacientes efetivamente em acompanhamento e busca do cadastro existente;
 - `/patients/[id]/oncogeriatria` — resumo individual e episódios;
 - `/patients/[id]/oncogeriatria/basal` — avaliação pré-tratamento;

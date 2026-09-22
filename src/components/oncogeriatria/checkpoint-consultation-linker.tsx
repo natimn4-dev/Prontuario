@@ -2,6 +2,7 @@
 
 import { useRouter } from "next/navigation";
 import { useState, type FormEvent } from "react";
+import { buildOncogeriatricCargHref } from "@/domain/oncogeriatria/return-navigation";
 
 export interface ConsultationLinkOption {
   id: string;
@@ -14,16 +15,53 @@ export function CheckpointConsultationLinker({
   checkpointId,
   expectedRevision,
   consultations,
+  baselineConsultationId,
 }: {
   patientId: string;
   episodeId: string;
   checkpointId: string;
   expectedRevision: number;
   consultations: ConsultationLinkOption[];
+  baselineConsultationId?: string | null;
 }) {
   const router = useRouter();
   const [pending, setPending] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
+  const [creating, setCreating] = useState(false);
+  const requestId = useState(() => crypto.randomUUID())[0];
+
+  async function link(consultationId: string) {
+    const response = await fetch(`/api/oncogeriatria/patients/${patientId}`, {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ action: "CHECKPOINT_LINK_CONSULTATION", episodeId, checkpointId, consultationId, expectedRevision }),
+    });
+    const result = await response.json().catch(() => null) as { message?: string } | null;
+    if (!response.ok) throw new Error(result?.message ?? "Não foi possível vincular a consulta.");
+    router.replace(buildOncogeriatricCargHref({ patientId, episodeId, checkpointId, consultationId }));
+    router.refresh();
+  }
+
+  async function createAndLink() {
+    if (pending) return;
+    setPending(true);
+    setMessage(null);
+    try {
+      const response = await fetch("/api/consultations", {
+        method: "POST",
+        headers: { "content-type": "application/json", "x-request-id": requestId },
+        body: JSON.stringify({ patientId, expectedBaselineConsultationId: baselineConsultationId ?? null }),
+      });
+      const result = await response.json() as { consultationId?: string; message?: string };
+      if (!response.ok || !result.consultationId) throw new Error(result.message ?? "Não foi possível criar a consulta.");
+      setCreating(true);
+      await link(result.consultationId);
+    } catch (error) {
+      setMessage(error instanceof Error ? error.message : "Não foi possível criar ou vincular a consulta.");
+    } finally {
+      setPending(false);
+    }
+  }
 
   async function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -38,21 +76,7 @@ export function CheckpointConsultationLinker({
     setPending(true);
     setMessage(null);
     try {
-      const response = await fetch(`/api/oncogeriatria/patients/${patientId}`, {
-        method: "POST",
-        headers: { "content-type": "application/json" },
-        body: JSON.stringify({
-          action: "CHECKPOINT_LINK_CONSULTATION",
-          episodeId,
-          checkpointId,
-          consultationId,
-          expectedRevision,
-        }),
-      });
-      const result = await response.json().catch(() => null) as { message?: string } | null;
-      if (!response.ok) throw new Error(result?.message ?? "Não foi possível vincular a consulta.");
-      setMessage("Consulta vinculada. O CARG e o G8 já podem ser registrados definitivamente.");
-      router.refresh();
+      await link(consultationId);
     } catch (error) {
       setMessage(error instanceof Error ? error.message : "Não foi possível vincular a consulta.");
     } finally {
@@ -60,18 +84,9 @@ export function CheckpointConsultationLinker({
     }
   }
 
-  if (!consultations.length) {
-    return (
-      <div className="clinical-caution">
-        <strong>O CARG já pode ser preenchido e salvo como rascunho.</strong>
-        <p>Para registrar o resultado final no prontuário, crie primeiro uma consulta clínica para este atendimento.</p>
-        <a href={`/patients/${patientId}`}>Ir ao prontuário do paciente para abrir uma consulta →</a>
-      </div>
-    );
-  }
-
   return (
-    <form className="patient-form" onSubmit={submit}>
+    <div className="patient-form">
+    {consultations.length ? <form onSubmit={submit}>
       <label>
         Consulta correspondente a esta avaliação
         <select name="consultationId" defaultValue="" disabled={pending} required>
@@ -81,7 +96,9 @@ export function CheckpointConsultationLinker({
       </label>
       <p className="muted">O vínculo mantém CARG, G8 e demais escalas no mesmo histórico clínico, sem duplicar resultados.</p>
       <button type="submit" disabled={pending}>{pending ? "Vinculando…" : "Vincular consulta e liberar registro final"}</button>
-      {message ? <p role="status">{message}</p> : null}
-    </form>
+    </form> : <p className="muted">Nenhuma consulta ativa disponível para vincular.</p>}
+    <button type="button" disabled={pending || creating} onClick={() => void createAndLink()}>{pending ? "Criando e vinculando…" : "Criar nova consulta e vincular a este momento"}</button>
+    {message ? <p role="alert">{message}{creating ? " A consulta foi criada; recarregue para vinculá-la se necessário." : ""}</p> : null}
+    </div>
   );
 }

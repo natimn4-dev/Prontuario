@@ -4,6 +4,7 @@ export const ONCOGERIATRIC_RETURN_STAGES = {
   tratamento: { path: "/tratamento", label: "Tratamento oncológico" },
   check: { path: "/check", label: "Durante o tratamento" },
   escalas: { path: "/escalas", label: "Escalas clínicas" },
+  avaliacao: { path: "/avaliacao", label: "Avaliação do momento" },
   longitudinal: { path: "/longitudinal", label: "Evolução longitudinal" },
   "pos-tratamento": { path: "/pos-tratamento", label: "Planejamento" },
   relatorio: { path: "/relatorio", label: "Relatório" },
@@ -63,7 +64,7 @@ export function buildOncogeriatricCargHref({
   const query = new URLSearchParams({ episode: episodeId });
   if (checkpointId) query.set("checkpoint", checkpointId);
   if (consultationId) query.set("consultation", consultationId);
-  return `/patients/${encodeURIComponent(patientId)}/oncogeriatria/carg?${query.toString()}`;
+  return `/patients/${encodeURIComponent(patientId)}/oncogeriatria/avaliacao?${query.toString()}`;
 }
 
 export function oncogeriatricReturnLabel(stage: OncogeriatricReturnStage): string {

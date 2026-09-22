@@ -6,17 +6,18 @@ import { useEffect, useRef } from "react";
 import styles from "./oncogeriatric-nav.module.css";
 
 const workflowSteps = [
-  { id: "basal", label: "Avaliação inicial", path: "/basal", description: "CARG, G8 e avaliação geriátrica antes do tratamento" },
-  { id: "check", label: "Durante o tratamento", path: "/check", description: "Reavaliações, toxicidades e eventos" },
-  { id: "longitudinal", label: "Evolução longitudinal", path: "/longitudinal", description: "Trajetória por domínio ao longo do episódio" },
-  { id: "relatorio", label: "Relatório", path: "/relatorio", description: "Revisão clínica e documento final" },
+  { id: "avaliacao", label: "Avaliação do momento", path: "/avaliacao", description: "CARG e escalas clínicas" },
+  { id: "longitudinal", label: "Trajetória", path: "/longitudinal", description: "Evolução do episódio" },
+  { id: "relatorio", label: "Relatório", path: "/relatorio", description: "Revisão e documento" },
 ] as const;
 
 const supportSteps = [
-  { id: "carg", label: "CARG · primeira escala", path: "/carg", description: "Instrumento prioritário de cada consulta" },
-  { id: "tratamento", label: "Tratamento oncológico", path: "/tratamento", description: "Esquema, intenção e ciclos" },
-  { id: "escalas", label: "Escalas clínicas", path: "/escalas", description: "Instrumentos escolhidos pelo geriatra" },
-  { id: "pos-tratamento", label: "Planejamento", path: "/pos-tratamento", description: "Próximas consultas e recuperação" },
+  { id: "basal", label: "Avaliação inicial", path: "/basal", description: "Contexto pré tratamento" },
+  { id: "check", label: "Durante o tratamento", path: "/check", description: "Eventos e toxicidade" },
+  { id: "tratamento", label: "Tratamento oncológico", path: "/tratamento", description: "Esquema e ciclos" },
+  { id: "pos-tratamento", label: "Planejamento", path: "/pos-tratamento", description: "Recuperação" },
+  { id: "carg", label: "CARG", path: "/carg", description: "Rota legada" },
+  { id: "escalas", label: "Escalas", path: "/escalas", description: "Rota legada" },
 ] as const;
 
 const allSteps = [...workflowSteps, ...supportSteps] as const;
@@ -85,7 +86,6 @@ export function OncogeriatricNav({ patientId, episodeId }: { patientId: string; 
   const overviewPath = `/patients/${patientId}/oncogeriatria`;
   const overviewActive = pathname === overviewPath;
   const activeWorkflow = workflowSteps.find((step) => pathname === `${overviewPath}${step.path}`);
-  const activeSupport = supportSteps.find((step) => pathname === `${overviewPath}${step.path}`);
 
   useEffect(() => {
     activeLinkRef.current?.scrollIntoView({ block: "nearest", inline: "center" });
@@ -93,13 +93,7 @@ export function OncogeriatricNav({ patientId, episodeId }: { patientId: string; 
 
   return (
     <nav className={styles.workspaceNav} aria-label="Navegação do acompanhamento oncogeriátrico">
-      <div className={styles.railHeader}>
-        <div>
-          <p className="eyebrow">Jornada clínica</p>
-          <strong>{activeWorkflow?.label ?? activeSupport?.label ?? "Visão geral do acompanhamento"}</strong>
-        </div>
-        <span>Fluxo principal curto; ferramentas específicas ficam separadas para reduzir distração.</span>
-      </div>
+      <div className={styles.railHeader}><div><p className="eyebrow">Oncogeriatria</p><strong>{activeWorkflow?.label ?? (overviewActive ? "Visão geral" : "Contexto do episódio")}</strong></div></div>
 
       <div className={styles.primaryJourney}>
         <Link
@@ -131,55 +125,6 @@ export function OncogeriatricNav({ patientId, episodeId }: { patientId: string; 
         })}
       </div>
 
-      <div className={styles.supportRail}>
-        <span>Ferramentas de apoio</span>
-        <div>
-          {supportSteps.map((step) => {
-            const active = pathname === `${overviewPath}${step.path}`;
-            return (
-              <Link
-                key={step.id}
-                href={stepHref(patientId, step.path, episodeId)}
-                prefetch={false}
-                ref={active ? activeLinkRef : undefined}
-                className={active ? styles.activeSupport : undefined}
-              >
-                <strong>{step.label}</strong>
-                <small>{step.description}</small>
-              </Link>
-            );
-          })}
-        </div>
-      </div>
-    </nav>
-  );
-}
-
-export function OncogeriatricQuickActions({
-  patientId,
-  episodeId,
-}: {
-  patientId: string;
-  episodeId?: string | null;
-}) {
-  const actions = [
-    { step: "Essencial", label: "Abrir ou continuar CARG", href: stepHref(patientId, "/carg", episodeId) },
-    { step: "Seguimento", label: "Reavaliar durante o tratamento", href: stepHref(patientId, "/check", episodeId) },
-    { step: "Instrumentos", label: "Aplicar ou revisar escalas", href: stepHref(patientId, "/escalas", episodeId) },
-    { step: "Documento", label: "Revisar relatório", href: stepHref(patientId, "/relatorio", episodeId) },
-  ] as const;
-
-  return (
-    <nav className={styles.quickActions} aria-label="Ações clínicas frequentes">
-      {actions.map((action) => (
-        <Link key={action.href} href={action.href} prefetch={false}>
-          <span className={styles.quickActionCopy}>
-            <small>{action.step}</small>
-            <strong>{action.label}</strong>
-          </span>
-          <span aria-hidden="true">→</span>
-        </Link>
-      ))}
     </nav>
   );
 }
@@ -194,50 +139,10 @@ export function OncogeriatricStepActions({
   currentStep: OncogeriatricStepId;
 }) {
   const overviewHref = `/patients/${patientId}/oncogeriatria${episodeSuffix(episodeId)}`;
-  const workflowIndex = workflowSteps.findIndex((step) => step.id === currentStep);
-  const isSupport = supportSteps.some((step) => step.id === currentStep);
-  const previous = workflowIndex > 0 ? workflowSteps[workflowIndex - 1] : null;
-  const next = currentStep === "overview"
-    ? workflowSteps[0]
-    : workflowIndex >= 0 && workflowIndex < workflowSteps.length - 1
-      ? workflowSteps[workflowIndex + 1]
-      : null;
-  const previousHref = previous ? stepHref(patientId, previous.path, episodeId) : overviewHref;
+  return <nav className={styles.actionBar} aria-label="Retorno ao acompanhamento">
+    <Link href={overviewHref} prefetch={false} className={styles.homeAction}>Voltar à visão geral</Link>
+  </nav>;
 
-  return (
-    <nav className={styles.actionBar} aria-label="Ações da etapa">
-      <div className={styles.secondaryActions}>
-        <Link href={overviewHref} prefetch={false} className={styles.homeAction}>Visão geral do acompanhamento</Link>
-        {currentStep !== "overview" ? (
-          <Link href={isSupport ? overviewHref : previousHref} prefetch={false} className={styles.previousAction}>
-            <span>{isSupport ? "Retornar" : "Etapa anterior"}</span>
-            <strong>{isSupport ? "Visão geral" : previous?.label ?? "Visão geral"}</strong>
-          </Link>
-        ) : null}
-      </div>
-
-      <div className={styles.primaryActionGroup}>
-        <small>{isSupport ? "Ferramenta de apoio: volte à visão geral quando concluir." : "Salve os formulários desta página antes de continuar."}</small>
-        {isSupport ? (
-          <Link href={overviewHref} prefetch={false} className={styles.primaryAction}>
-            <span>Concluir ferramenta</span>
-            <strong>Voltar à visão geral →</strong>
-          </Link>
-        ) : next ? (
-          <Link href={stepHref(patientId, next.path, episodeId)} prefetch={false} className={styles.primaryAction}>
-            <span>{currentStep === "overview" ? "Iniciar acompanhamento" : "Próxima etapa"}</span>
-            <strong>{next.label} →</strong>
-          </Link>
-        ) : (
-          <Link href={overviewHref} prefetch={false} className={styles.primaryAction}>
-            <span>Não encerra o episódio clínico</span>
-            <strong>Concluir etapa e voltar à visão geral →</strong>
-          </Link>
-        )}
-      </div>
-      <small className={styles.globalHomeLink}><Link href="/" prefetch={false}>Página inicial geral</Link></small>
-    </nav>
-  );
 }
 
 export const ONCOGERIATRIC_STEP_LABELS = Object.fromEntries(

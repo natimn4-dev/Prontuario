@@ -171,9 +171,16 @@ async function courseContext(patientId: string, episodeId: string, courseId: str
 }
 
 async function consultationContext(patientId: string, consultationId: string) {
-  const consultation = await prisma.consultation.findFirst({ where: { id: consultationId, patientId }, select: { id: true } });
+  const consultation = await prisma.consultation.findFirst({ where: { id: consultationId, patientId }, select: { id: true, status: true } });
   if (!consultation) throw new OncogeriatricError("CONSULTATION_NOT_FOUND", "Consulta selecionada não pertence a este paciente.", 404);
   return consultation;
+}
+
+async function requireOpenScaleConsultation(patientId: string, consultationId: string) {
+  const consultation = await consultationContext(patientId, consultationId);
+  if (consultation.status === "FINALIZED") {
+    throw new OncogeriatricError("CONSULTATION_FINALIZED", "Consulta finalizada: inicie uma nova consulta para reavaliação.", 409);
+  }
 }
 
 async function checkpointContext(patientId: string, episodeId: string, checkpointId: string) {
@@ -466,6 +473,7 @@ export async function saveG8(patientId: string, input: Record<string, unknown>) 
   const checkpointId = requiredText(input.checkpointId, "Checkpoint", 191);
   const checkpoint = await checkpointContext(patientId, episodeId, checkpointId);
   if (!checkpoint.consultationId) throw new OncogeriatricError("CONSULTATION_REQUIRED_FOR_SCALE", "Vincule o checkpoint a uma consulta existente para persistir o G8 no motor único de escalas.", 409);
+  await requireOpenScaleConsultation(patientId, checkpoint.consultationId);
   const answers = safeObject(input.answers) as unknown as G8Input | undefined;
   if (!answers) throw new OncogeriatricError("G8_ANSWERS_REQUIRED", "Respostas do G8 são obrigatórias.");
   const result = calculateG8(answers);
@@ -486,7 +494,8 @@ export async function saveCargDraft(patientId: string, input: Record<string, unk
   const user = await writeActor();
   const episodeId = requiredText(input.episodeId, "Episódio", 191);
   const checkpointId = requiredText(input.checkpointId, "Checkpoint", 191);
-  await checkpointContext(patientId, episodeId, checkpointId);
+  const checkpoint = await checkpointContext(patientId, episodeId, checkpointId);
+  if (checkpoint.consultationId) await requireOpenScaleConsultation(patientId, checkpoint.consultationId);
   const answers = (safeObject(input.answers) ?? {}) as unknown as PartialCargInput;
   const completion = summarizeCargCompleteness(answers);
   const provenance = sanitizeCargLaboratoryProvenance(safeObject(input.labProvenance) as unknown as CargLaboratoryProvenance | undefined);
@@ -512,6 +521,7 @@ export async function saveCarg(patientId: string, input: Record<string, unknown>
   const checkpointId = requiredText(input.checkpointId, "Checkpoint", 191);
   const checkpoint = await checkpointContext(patientId, episodeId, checkpointId);
   if (!checkpoint.consultationId) throw new OncogeriatricError("CONSULTATION_REQUIRED_FOR_SCALE", "Vincule o checkpoint a uma consulta existente para persistir o CARG no motor único de escalas.", 409);
+  await requireOpenScaleConsultation(patientId, checkpoint.consultationId);
   const answers = safeObject(input.answers) as unknown as CargInput | undefined;
   if (!answers) throw new OncogeriatricError("CARG_ANSWERS_REQUIRED", "Dados do CARG são obrigatórios.");
   const completion = summarizeCargCompleteness(answers);
