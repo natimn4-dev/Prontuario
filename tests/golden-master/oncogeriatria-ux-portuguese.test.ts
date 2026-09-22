@@ -104,6 +104,11 @@ test("relatório oncogeriátrico reúne tabela, gráfico, orientação por domí
   assert.match(reportPage, /OncogeriatricTrajectoryTable/);
   assert.match(reportPage, /CapacityDimensionHistoryChart/);
   assert.match(reportPage, /buildOncogeriatricReportGuidance/);
+  assert.match(reportPage, /buildCargReportModel/);
+  assert.match(reportPage, /cargDraft/);
+  assert.match(reportPage, /Orientação ao oncologista/);
+  assert.match(reportPage, /Domínios avaliados que requerem maior atenção/);
+  assert.match(reportPage, /className="onco-report"/);
   assert.match(reportPage, /Orientações específicas do esquema e dos eventos registrados/);
   assert.match(reportPage, /O sistema não infere conduta pelo nome do antineoplásico/);
 });
