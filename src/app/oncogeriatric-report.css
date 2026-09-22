@@ -1,0 +1,195 @@
+/* Oncogeriatria report — the approved Minimal Clinical Premium memo system,
+ * adapted for oncology context without moving clinical rules into CSS. */
+.onco-report {
+  --onco-primary: #5f2a91;
+  --onco-primary-strong: #48206f;
+  --onco-primary-soft: #f4eefb;
+  --onco-ink: #272331;
+  --onco-muted: #6f6879;
+  --onco-line: #e7e1ec;
+  --onco-surface: #fff;
+  --onco-warning: #c56a12;
+  --onco-warning-soft: #fff9f2;
+  width: min(100%, 210mm);
+  margin: 20px auto 0;
+  padding: 10mm 10mm 12mm;
+  border: 1px solid var(--onco-line);
+  border-radius: 18px;
+  background: var(--onco-surface);
+  box-shadow: 0 12px 30px rgb(39 35 49 / 7%);
+  color: var(--onco-ink);
+  font-size: 13px;
+  line-height: 1.45;
+}
+
+.onco-report h1,
+.onco-report h2,
+.onco-report h3,
+.onco-report p { margin-top: 0; }
+
+.onco-report h1,
+.onco-report h2,
+.onco-report h3 { color: var(--onco-primary-strong); }
+
+.onco-report-header {
+  display: grid;
+  grid-template-columns: minmax(0, 1.35fr) minmax(220px, .85fr);
+  gap: 24px;
+  padding-bottom: 20px;
+  border-bottom: 1px solid var(--onco-line);
+}
+
+.onco-report-header h1 {
+  margin-bottom: 6px;
+  font-size: clamp(29px, 3.5vw, 40px);
+  line-height: 1.08;
+  letter-spacing: -.02em;
+}
+
+.onco-report-eyebrow,
+.onco-report-card-label {
+  color: var(--onco-primary);
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+}
+
+.onco-report-purpose {
+  max-width: 630px;
+  margin-bottom: 0;
+  color: var(--onco-muted);
+  font-size: 15px;
+}
+
+.onco-report-identity {
+  display: grid;
+  gap: 8px;
+  margin: 0;
+}
+
+.onco-report-identity div {
+  padding: 8px 10px;
+  border: 1px solid var(--onco-line);
+  border-radius: 9px;
+  background: #fbfafd;
+}
+
+.onco-report-identity dt {
+  color: var(--onco-muted);
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: .05em;
+  text-transform: uppercase;
+}
+
+.onco-report-identity dd { margin: 2px 0 0; font-weight: 700; }
+
+.onco-report-intro {
+  margin: 14px 0 0;
+  padding: 10px 12px;
+  border: 1px solid #eadcf8;
+  border-radius: 10px;
+  background: #fcfaff;
+  color: var(--onco-ink);
+}
+
+.onco-report-section { padding: 18px 0; border-top: 1px solid var(--onco-line); }
+.onco-report-section:first-of-type { border-top: 0; }
+
+.onco-report-section-heading {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  margin-bottom: 10px;
+}
+
+.onco-report-section-heading > span {
+  display: inline-grid;
+  min-width: 23px;
+  height: 23px;
+  place-items: center;
+  padding: 0 5px;
+  border-radius: 6px;
+  background: var(--onco-primary-soft);
+  color: var(--onco-primary-strong);
+  font-size: 10px;
+  font-weight: 900;
+}
+
+.onco-report-section-heading h2 { margin: 1px 0 0; font-size: 20px; line-height: 1.2; }
+.onco-report-section > h3 { margin: 14px 0 8px; font-size: 16px; }
+.onco-report-muted { color: var(--onco-muted); font-size: 12px; }
+
+.onco-report-executive { padding-top: 20px; }
+.onco-report-executive-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 9px; }
+.onco-report-executive-grid article {
+  min-height: 92px;
+  padding: 13px;
+  border: 1px solid var(--onco-line);
+  border-radius: 11px;
+  background: #fff;
+  break-inside: avoid;
+}
+
+.onco-report-executive-grid article[data-tone="attention"],
+.onco-report-carg-card[data-source="draft"],
+.onco-report-carg-card[data-source="registered"] {
+  border-color: #f1dfc7;
+  background: var(--onco-warning-soft);
+}
+
+.onco-report-executive-grid article h3 { margin: 0 0 3px; font-size: 21px; }
+.onco-report-executive-grid article p:last-child { margin-bottom: 0; color: var(--onco-muted); font-size: 12px; }
+.onco-report-card-label { margin-bottom: 5px; font-size: 10px; }
+
+.onco-report-two-columns { display: grid; grid-template-columns: minmax(0, .8fr) minmax(0, 1.2fr); gap: 10px; }
+.onco-report-two-columns > article { padding: 13px; border: 1px solid var(--onco-line); border-radius: 11px; break-inside: avoid; }
+.onco-report-two-columns > article .onco-report-section-heading { margin-bottom: 8px; }
+
+.onco-report-carg-result { display: flex; align-items: baseline; gap: 9px; margin: 5px 0 8px; }
+.onco-report-carg-result strong { color: var(--onco-primary-strong); font-size: 26px; }
+.onco-report-carg-result span { color: var(--onco-warning); font-weight: 800; }
+.onco-report-carg-status { margin-bottom: 6px; color: var(--onco-muted); font-size: 11px; font-weight: 700; }
+.onco-report-factor-list { margin: 12px 0; padding: 9px 11px; border-left: 3px solid var(--onco-warning); background: #fffdf9; }
+.onco-report-factor-list ul { margin: 6px 0 0; padding-left: 18px; }
+.onco-report-factor-list li + li { margin-top: 3px; }
+.onco-report-clinician-note { margin: 12px 0 0; padding: 10px 11px; border: 1px solid #eadcf8; border-radius: 9px; background: var(--onco-primary-soft); }
+
+.onco-report-guidance-grid { display: grid; gap: 10px; }
+.onco-report-guidance-card { padding: 13px; border: 1px solid var(--onco-line); border-radius: 11px; background: #fff; break-inside: avoid; }
+.onco-report-guidance-card h3 { margin-bottom: 6px; font-size: 17px; }
+.onco-report-guidance-card ul { margin: 7px 0 10px; padding-left: 19px; }
+.onco-report-guidance-card li + li { margin-top: 4px; }
+
+.onco-report a { color: var(--onco-primary-strong); }
+.onco-report table { max-width: 100%; }
+.onco-report-footer { margin-top: 12px; padding-top: 12px; border-top: 1px solid var(--onco-line); color: var(--onco-muted); font-size: 11px; }
+
+@media (max-width: 760px) {
+  .onco-report { width: min(100% - 24px, 210mm); padding: 22px 18px 28px; }
+  .onco-report-header,
+  .onco-report-two-columns,
+  .onco-report-executive-grid { grid-template-columns: 1fr; }
+}
+
+@media print {
+  @page { size: A4 portrait; margin: 12mm; }
+  body { background: #fff; }
+  .onco-report { width: 100%; margin: 0; padding: 0; border: 0; border-radius: 0; box-shadow: none; font-size: 10.5pt; }
+  .onco-report-header { gap: 14mm; padding-bottom: 5mm; }
+  .onco-report-header h1 { font-size: 24pt; }
+  .onco-report-purpose { font-size: 11pt; }
+  .onco-report-identity div { padding: 3mm; }
+  .onco-report-intro { margin: 4mm 0 0; padding: 3mm; }
+  .onco-report-section { padding: 5mm 0; }
+  .onco-report-section-heading h2 { font-size: 15pt; }
+  .onco-report-executive-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  .onco-report-two-columns { grid-template-columns: minmax(0, .8fr) minmax(0, 1.2fr); }
+  .onco-report-executive-grid article,
+  .onco-report-two-columns > article,
+  .onco-report-guidance-card,
+  .onco-report-carg-card { box-shadow: none; }
+  .onco-report-carg-card,
+  .onco-report-guidance-card { break-inside: avoid; }
+}
