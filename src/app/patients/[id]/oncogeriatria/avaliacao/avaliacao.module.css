@@ -1,0 +1,18 @@
+.context {
+  position: sticky;
+  top: 0;
+  z-index: 2;
+  background: var(--surface);
+}
+
+.identity {
+  overflow-wrap: anywhere;
+}
+
+@media (max-width: 760px) {
+  .context { position: static; }
+}
+
+@media print {
+  .context { position: static; break-inside: avoid; }
+}

@@ -18,15 +18,11 @@ const stages = [
   ["relatorio", "Relatório"],
 ] as const;
 
-test("acompanhamento oncogeriátrico mantém uma rota independente por etapa", () => {
-  for (const [stage, label] of stages) {
-    const pagePath = `src/app/patients/[id]/oncogeriatria/${stage}/page.tsx`;
-    assert.equal(existsSync(pagePath), true, `página ausente para ${label}`);
-    const page = readFileSync(pagePath, "utf8");
-    assert.match(page, /OncogeriatricStepActions/);
-    assert.match(page, /OncogeriatricWorkspaceHeader/);
-    assert.ok(page.includes(`currentStep="${stage}"`), `rodapé de fluxo ausente em ${label}`);
-  }
+test("rotas clínicas permanecem acessíveis e avaliação é canônica", () => {
+  for (const [stage] of stages) assert.equal(existsSync(`src/app/patients/[id]/oncogeriatria/${stage}/page.tsx`), true);
+  const assessment = readFileSync("src/app/patients/[id]/oncogeriatria/avaliacao/page.tsx", "utf8");
+  assert.match(assessment, /ClinicalScalesWorkspace/);
+  assert.match(assessment, /CargChecklistForm/);
 });
 
 test("plano geriátrico foi suprimido sem apagar a rota histórica", () => {
@@ -37,42 +33,16 @@ test("plano geriátrico foi suprimido sem apagar a rota histórica", () => {
   assert.doesNotMatch(legacyPage, /InterventionForm|OncogeriatricDomainReview|OncogeriatricWorkspaceHeader/);
 });
 
-test("navegação oferece jornada clínica curta, retorno e ferramentas de apoio sem alterar regras clínicas", () => {
-  assert.match(navigation, /Etapa \$\{workflowIndex \+ 1\} de \$\{workflowSteps\.length\}/);
-  assert.match(navigation, /Ferramenta de apoio/);
-  assert.match(navigation, /Ferramentas de apoio/);
-  assert.doesNotMatch(navigation, /<progress/);
-  assert.match(navigation, /Página inicial/);
-  assert.match(navigation, /Prontuário do paciente/);
-  assert.match(navigation, /Etapa anterior/);
-  assert.match(navigation, /Próxima etapa/);
-  assert.match(navigation, /Concluir etapa e voltar à visão geral/);
-  assert.match(navigation, /Página inicial geral/);
-  assert.match(navigation, /Salve os formulários desta página antes de continuar/);
-  assert.doesNotMatch(navigation, /fetch\(|POST|PATCH|DELETE/);
-});
-
-test("menu não pré-carrega todas as áreas e preserva acessibilidade responsiva", () => {
+test("navegação apresenta quatro destinos sem hierarquias concorrentes", () => {
+  const steps = navigation.match(/\{ id: "(avaliacao|longitudinal|relatorio)", label:/g) ?? [];
+  assert.equal(steps.length, 3);
+  assert.match(navigation, /<strong>Visão geral<\/strong>/);
+  assert.doesNotMatch(navigation, /Ferramentas de apoio|Ações clínicas frequentes|Próxima etapa/);
   assert.match(navigation, /prefetch=\{false\}/);
   assert.match(navigation, /aria-current=\{active \? "step"/);
-  assert.match(navigation, /aria-label="Ações da etapa"/);
-  assert.match(navigation, /scrollIntoView\(\{ block: "nearest", inline: "center" \}\)/);
-  assert.match(navigation, /aria-label="Retorno e contexto do paciente"/);
-  assert.match(navigationStyles, /\.primaryJourney \{/);
-  assert.match(navigationStyles, /\.supportRail \{/);
-  assert.match(navigationStyles, /@media \(max-width: 1040px\)/);
   assert.match(navigationStyles, /@media \(max-width: 760px\)/);
   assert.match(navigationStyles, /@media print/);
-});
-
-test("atalhos frequentes permanecem separados, legíveis e sem pré-carregamento", () => {
-  assert.match(overview, /<OncogeriatricQuickActions patientId=\{patientId\} episodeId=\{episode\.id\} \/>/);
-  assert.doesNotMatch(overview, /program55-nav/);
-  assert.match(navigation, /aria-label="Ações clínicas frequentes"/);
-  assert.match(navigation, /Aplicar ou revisar escalas/);
-  assert.match(navigationStyles, /\.quickActions \{/);
-  assert.match(navigationStyles, /grid-template-columns: repeat\(4, minmax\(0, 1fr\)\)/);
-  assert.match(navigationStyles, /gap: 10px/);
+  assert.doesNotMatch(overview, /OncogeriatricQuickActions/);
 });
 
 test("cabeçalho clínico prioriza identidade, tarefa e retorno sem hero repetitivo", () => {
@@ -105,7 +75,7 @@ test("planejamento substitui o rótulo pós-tratamento sem apagar recuperação 
 test("visão geral usa resumo semântico compacto e apresenta alertas antes das ações", () => {
   assert.match(overview, /<dl className=\{styles\.summaryGrid\}>/);
   assert.doesNotMatch(overview, /<div className="metrics">/);
-  assert.ok(overview.indexOf("activeAlerts.length") < overview.indexOf("<OncogeriatricQuickActions"));
+  assert.ok(overview.indexOf("activeAlerts.length") < overview.indexOf("<OncogeriatricDomainStatusSummary"));
   assert.match(overviewStyles, /\.summaryGrid dt/);
   assert.match(overviewStyles, /font-size: 17px/);
   assert.match(overviewStyles, /@media \(max-width: 560px\)/);

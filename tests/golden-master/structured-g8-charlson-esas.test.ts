@@ -105,7 +105,7 @@ test("endpoint complementar usa as versões estruturadas antes do fallback legad
   ]) assert.match(route, new RegExp(token));
 });
 
-test("oncogeriatria usa o G8 em formulário visível no pré-tratamento", () => {
-  const page = readFileSync("src/app/patients/[id]/oncogeriatria/basal/page.tsx", "utf8");
+test("oncogeriatria usa o G8 na avaliação canônica do momento", () => {
+  const page = readFileSync("src/app/patients/[id]/oncogeriatria/avaliacao/page.tsx", "utf8");
   assert.match(page, /G8ChecklistForm/);
 });

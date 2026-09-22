@@ -4,24 +4,26 @@ import test from "node:test";
 
 async function source(path: string) { return readFile(path, "utf8"); }
 
-test("CARG consulta-cêntrico possui rota estável, contexto explícito e orçamento de leitura", async () => {
-  const [route, entry, read, navigation, links] = await Promise.all([
+test("avaliação canônica preserva contexto e rotas legadas redirecionam", async () => {
+  const [route, legacy, scales, read, navigation, links] = await Promise.all([
+    source("src/app/patients/[id]/oncogeriatria/avaliacao/page.tsx"),
     source("src/app/patients/[id]/oncogeriatria/carg/page.tsx"),
-    source("src/components/oncogeriatria/carg-entry.tsx"),
+    source("src/app/patients/[id]/oncogeriatria/escalas/page.tsx"),
     source("src/server/oncogeriatria/read.ts"),
     source("src/components/oncogeriatria/oncogeriatric-nav.tsx"),
     source("src/domain/oncogeriatria/return-navigation.ts"),
   ]);
-  assert.match(route, /searchParams: Promise<\{ episode\?: string; checkpoint\?: string; consultation\?: string \}>/);
   assert.match(route, /loadOncogeriatricCargWorkspace/);
+  assert.match(route, /ClinicalScalesWorkspace[^>]*consultationId=\{consultation.id\}/);
+  assert.match(route, /key=\{`\$\{checkpoint.id\}:\$\{consultation.id\}`\}/);
+  assert.match(route, /CargChecklistForm\s+key=\{checkpoint.id\}/);
   assert.match(route, /CargCheckpointStartForm/);
-  assert.match(entry, /router\.replace/);
   assert.match(read, /where: \{ id: requestedCheckpointId, patientId, episodeId \}/);
   assert.match(read, /where: \{ patientId, episodeId, consultationId: requestedConsultationId \}/);
-  assert.match(read, /ONCOGERIATRIC_CARG_QUERY_BUDGET = 6/);
-  assert.match(navigation, /path: "\/carg"/);
-  assert.match(links, /\/oncogeriatria\/carg/);
-  assert.doesNotMatch(route, /redirect\([^)]*basal/);
+  assert.match(legacy, /redirect\(buildOncogeriatricCargHref/);
+  assert.match(scales, /redirect\(buildOncogeriatricCargHref/);
+  assert.match(navigation, /path: "\/avaliacao"/);
+  assert.match(links, /\/oncogeriatria\/avaliacao/);
 });
 
 test("a entrada durante o tratamento abre CARG no checkpoint recém-criado", async () => {
@@ -32,8 +34,9 @@ test("a entrada durante o tratamento abre CARG no checkpoint recém-criado", asy
   ]);
   assert.match(checkForm, /action:"CHECKPOINT_CREATE"/);
   assert.match(checkForm, /router\.replace\(buildOncogeriatricCargHref/);
-  assert.match(checkPage, /Primeira escala do momento clínico/);
-  assert.match(checkPage, /não avaliado nesta consulta/);
+  assert.match(checkPage, /Nova reavaliação/);
+  assert.match(checkPage, /buildOncogeriatricCargHref/);
+  assert.doesNotMatch(checkPage, /check-carg-title/);
   assert.match(startForm, /Iniciar momento e abrir CARG/);
 });
 
