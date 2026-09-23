@@ -97,7 +97,7 @@ export function CheckpointConsultationLinker({
       <p className="muted">O vínculo mantém CARG, G8 e demais escalas no mesmo histórico clínico, sem duplicar resultados.</p>
       <button type="submit" disabled={pending}>{pending ? "Vinculando…" : "Vincular consulta e liberar registro final"}</button>
     </form> : <p className="muted">Nenhuma consulta ativa disponível para vincular.</p>}
-    <button type="button" disabled={pending || creating} onClick={() => void createAndLink()}>{pending ? "Criando e vinculando…" : "Criar consulta e abrir demais escalas"}</button>
+    <button type="button" disabled={pending || creating} onClick={() => void createAndLink()}>{pending ? "Criando e vinculando…" : "Criar nova consulta e vincular para abrir demais escalas"}</button>
     {message ? <p role="alert">{message}{creating ? " A consulta foi criada; recarregue para vinculá-la se necessário." : ""}</p> : null}
     </div>
   );
