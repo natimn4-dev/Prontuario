@@ -6,6 +6,7 @@ import {
   HOUSEHOLD_MEASURES,
   confirmDietaryDraftItem,
   dietarySnapshotNeedsRuleReview,
+  dietarySaveMayClearDirtyState,
   nutrientsForGrams,
   parseDietaryNaturalLanguage,
   portionMetadata,
@@ -18,6 +19,7 @@ import {
   type DietaryConfirmedMeal,
   type DietaryFoodDraft,
   type DietaryFoodComposition,
+  type DietaryFoodEntryDraft,
   type DietaryFoodItem,
   type DietaryMeal,
   type DietaryTargets,
@@ -231,6 +233,7 @@ export function DietaryAssessmentWorkspace({
   const [error, setError] = useState<string | null>(null);
   const [step, setStep] = useState<1 | 2 | 3 | 4>(1);
   const foodSearchController = useRef<AbortController | null>(null);
+  const editRevision = useRef(0);
   const parsedPhrases = useMemo(
     () => parseDietaryNaturalLanguage(freeText),
     [freeText],
@@ -342,10 +345,15 @@ export function DietaryAssessmentWorkspace({
       : numberOrNull(grams);
   const selectedNutrients = portionNutrients(selectedFood, previewAmount);
   const mark = () => {
+    editRevision.current += 1;
     setDirty(true);
     setOrientationReviewed(false);
     setIncludeInSoap(false);
     setIncludeInReport(false);
+  };
+  const markEntryDraft = () => {
+    editRevision.current += 1;
+    setDirty(true);
   };
 
   useEffect(() => { onDirtyChange?.(dirty); }, [dirty, onDirtyChange]);
@@ -364,6 +372,7 @@ export function DietaryAssessmentWorkspace({
           body.error ?? "Não foi possível carregar a avaliação alimentar.",
         );
       const saved = body.assessment?.clinicalContext;
+      const savedEntry = body.assessment?.entryDraft;
       const nextMeals = draftMeals(body.assessment);
       setData(body);
       setMeals(nextMeals);
@@ -374,6 +383,7 @@ export function DietaryAssessmentWorkspace({
       );
       setTargets(body.assessment?.targets ?? {});
       setDirty(false);
+      editRevision.current = 0;
       setWeightOverride(
         saved?.weightSource === "clinician" && saved.weightKg
           ? String(saved.weightKg)
@@ -426,6 +436,17 @@ export function DietaryAssessmentWorkspace({
       setOrientationReviewed(Boolean(body.assessment?.orientationReviewed));
       setIncludeInSoap(Boolean(body.assessment?.includeInSoap));
       setIncludeInReport(Boolean(body.assessment?.includeInReport));
+      setFreeText(savedEntry?.freeText ?? "");
+      setMealId(savedEntry?.mealId && nextMeals.some((meal) => meal.id === savedEntry.mealId)
+        ? savedEntry.mealId
+        : (nextMeals[0]?.id ?? "lunch"));
+      setFoodQuery(savedEntry?.foodQuery ?? "");
+      setSelectedFood(savedEntry?.selectedFood ?? null);
+      setQuantity(savedEntry?.quantity ?? "");
+      setMeasure(savedEntry?.measure ?? "g");
+      setGrams(savedEntry?.grams ?? "");
+      setObservation(savedEntry?.observation ?? "");
+      setQualityFlags(savedEntry?.qualityFlags ?? []);
     } catch (cause) {
       setError(
         cause instanceof Error
@@ -440,6 +461,11 @@ export function DietaryAssessmentWorkspace({
     void load();
   }, [consultationId]);
   useEffect(() => {
+    if (selectedFood) {
+      foodSearchController.current?.abort();
+      setSearching(false);
+      return;
+    }
     const trimmed = foodQuery.trim();
     if (trimmed.length < 2) {
       foodSearchController.current?.abort();
@@ -451,7 +477,7 @@ export function DietaryAssessmentWorkspace({
     }
     const timer = window.setTimeout(() => void searchFoods(trimmed), 450);
     return () => window.clearTimeout(timer);
-  }, [foodQuery, consultationId]);
+  }, [foodQuery, consultationId, selectedFood]);
   useEffect(() => () => foodSearchController.current?.abort(), []);
   useEffect(() => {
     if (!dirty || !data || loading || saving || isFinalized) return;
@@ -488,6 +514,15 @@ export function DietaryAssessmentWorkspace({
     orientationReviewed,
     includeInSoap,
     includeInReport,
+    freeText,
+    mealId,
+    foodQuery,
+    selectedFood,
+    quantity,
+    measure,
+    grams,
+    observation,
+    qualityFlags,
   ]);
   function patchTarget(key: TargetKey, value: string) {
     mark();
@@ -595,6 +630,7 @@ export function DietaryAssessmentWorkspace({
   async function useParsedPhrase(index: number) {
     const parsed = parsedPhrases[index];
     if (!parsed) return;
+    markEntryDraft();
     setQuantity(parsed.quantity == null ? "" : String(parsed.quantity));
     setMeasure(parsed.measure ?? "g");
     setGrams("");
@@ -633,7 +669,7 @@ export function DietaryAssessmentWorkspace({
         description: selectedFood.description,
         dataType: selectedFood.dataType,
       },
-      qualityFlags,
+      qualityFlags: qualityFlags ?? [],
     };
     const item: UiDietaryItem = {
       ...confirmDietaryDraftItem(draft, selectedFood),
@@ -659,6 +695,7 @@ export function DietaryAssessmentWorkspace({
   }
   async function save(options: { silent?: boolean } = {}) {
     if (!data) return;
+    const submittedRevision = editRevision.current;
     setSaving(true);
     setError(null);
     setMessage(null);
@@ -688,11 +725,23 @@ export function DietaryAssessmentWorkspace({
       reducedUrineOutput,
       hyponatremia,
     };
+    const entryDraft: DietaryFoodEntryDraft = {
+      freeText,
+      mealId,
+      foodQuery,
+      selectedFood,
+      quantity,
+      measure,
+      grams,
+      observation,
+      qualityFlags: qualityFlags ?? [],
+    };
     const payload: DietaryAssessmentInput = {
       schemaVersion: "dietary-assessment-v1",
       meals: meals as DietaryMeal[],
       targets,
       clinicalContext,
+      entryDraft,
       orientationDraft,
       orientationReviewed,
       includeInSoap,
@@ -720,7 +769,9 @@ export function DietaryAssessmentWorkspace({
         throw new Error(
           body.error ?? "Não foi possível salvar a avaliação alimentar.",
         );
-      setDirty(false);
+      if (dietarySaveMayClearDirtyState(submittedRevision, editRevision.current)) {
+        setDirty(false);
+      }
       if (body.assessment && body.updatedAt && body.consultationId) {
         setOrientationDraft((current) =>
           current === payload.orientationDraft
@@ -736,7 +787,7 @@ export function DietaryAssessmentWorkspace({
         } : current);
       }
       if (!options.silent)
-        setMessage("Avaliação salva e recalculada no servidor.");
+        setMessage("Avaliação e rascunho do registro salvos.");
     } catch (cause) {
       setError(
         cause instanceof Error
@@ -924,7 +975,7 @@ export function DietaryAssessmentWorkspace({
               </div>
               <div className={styles.instruction}>
                 <strong>Escolha a refeição e procure o alimento</strong>
-                <p>Depois confirme a quantidade e a medida usada no relato.</p>
+                <p>O relato e o alimento em preenchimento são salvos como rascunho nesta consulta. Só entram no cálculo depois de confirmar a porção e adicionar o alimento.</p>
               </div>
               <div
                 className={styles.mealChoice}
@@ -939,7 +990,10 @@ export function DietaryAssessmentWorkspace({
                       mealId === meal.id ? styles.mealSelected : undefined
                     }
                     aria-pressed={mealId === meal.id}
-                    onClick={() => setMealId(meal.id)}
+                    onClick={() => {
+                      markEntryDraft();
+                      setMealId(meal.id);
+                    }}
                   >
                     <strong>{meal.label}</strong>
                     <span>
@@ -956,7 +1010,9 @@ export function DietaryAssessmentWorkspace({
                 <div className={styles.inline}>
                   <input
                     value={foodQuery}
+                    maxLength={120}
                     onChange={(event) => {
+                      markEntryDraft();
                       setFoodQuery(event.target.value);
                       setFoodSearchAttempted(false);
                       setSelectedFood(null);
@@ -965,7 +1021,10 @@ export function DietaryAssessmentWorkspace({
                   />
                   <button
                     type="button"
-                    onClick={() => void searchFoods()}
+                    onClick={() => {
+                      markEntryDraft();
+                      void searchFoods();
+                    }}
                     disabled={searching}
                   >
                     {searching ? "Buscando…" : "Buscar"}
@@ -987,6 +1046,7 @@ export function DietaryAssessmentWorkspace({
                           : undefined
                       }
                       onClick={() => {
+                        markEntryDraft();
                         setSelectedFood(food);
                         if (food.nutrientBasis === "100ml") {
                           setMeasure("ml");
@@ -1034,7 +1094,11 @@ export function DietaryAssessmentWorkspace({
                       <input
                         inputMode="decimal"
                         value={quantity}
-                        onChange={(event) => setQuantity(event.target.value)}
+                        maxLength={32}
+                        onChange={(event) => {
+                          markEntryDraft();
+                          setQuantity(event.target.value);
+                        }}
                         placeholder="informar"
                       />
                     </label>
@@ -1043,6 +1107,7 @@ export function DietaryAssessmentWorkspace({
                       <select
                         value={measure}
                         onChange={(event) => {
+                          markEntryDraft();
                           setMeasure(event.target.value as HouseholdMeasure);
                           setGrams("");
                         }}
@@ -1060,7 +1125,11 @@ export function DietaryAssessmentWorkspace({
                         <input
                           inputMode="decimal"
                           value={grams}
-                          onChange={(event) => setGrams(event.target.value)}
+                          maxLength={32}
+                          onChange={(event) => {
+                            markEntryDraft();
+                            setGrams(event.target.value);
+                          }}
                           placeholder="confirmar ou estimar"
                         />
                       </label>
@@ -1069,7 +1138,11 @@ export function DietaryAssessmentWorkspace({
                       Observação do preparo <small>opcional</small>
                       <input
                         value={observation}
-                        onChange={(event) => setObservation(event.target.value)}
+                        maxLength={1000}
+                        onChange={(event) => {
+                          markEntryDraft();
+                          setObservation(event.target.value);
+                        }}
                         placeholder="corte, tamanho, preparo…"
                       />
                     </label>
@@ -1148,7 +1221,11 @@ export function DietaryAssessmentWorkspace({
                     <textarea
                       className={styles.textarea}
                       value={freeText}
-                      onChange={(event) => setFreeText(event.target.value)}
+                      maxLength={4000}
+                      onChange={(event) => {
+                        markEntryDraft();
+                        setFreeText(event.target.value);
+                      }}
                       placeholder="Ex.: 2 ovos; 1 filé de peixe; 3 colheres de arroz…"
                       rows={3}
                     />
@@ -1191,7 +1268,7 @@ export function DietaryAssessmentWorkspace({
                           type="checkbox"
                           checked={qualityFlags?.includes(flag) ?? false}
                           onChange={() => {
-                            mark();
+                            markEntryDraft();
                             setQualityFlags((current = []) =>
                               current.includes(flag)
                                 ? current.filter((item) => item !== flag)
@@ -1248,6 +1325,7 @@ export function DietaryAssessmentWorkspace({
                       <button
                         type="button"
                         onClick={() => {
+                          markEntryDraft();
                           setMealId(meal.id);
                           setStep(1);
                         }}

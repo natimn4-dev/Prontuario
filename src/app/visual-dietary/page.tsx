@@ -198,6 +198,7 @@ function previewPayloadFromInput(
     meals,
     targets: input.targets,
     clinicalContext: input.clinicalContext,
+    ...(input.entryDraft ? { entryDraft: input.entryDraft } : {}),
     summary: summarized.summary,
     proteinByMeal: summarized.proteinByMeal,
     proteinComparison: buildProteinComparison(
