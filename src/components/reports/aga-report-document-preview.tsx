@@ -398,7 +398,7 @@ export function AgaReportDocumentPreview({
             </header>
 
             <section className={styles.introNote}>
-              Este relatório reúne os principais achados da Avaliação Geriátrica Ampla para facilitar o cuidado no dia a dia e a continuidade do acompanhamento. Ele não substitui uma avaliação médica individual.
+              Este relatório reúne os principais achados da Avaliação Geriátrica Ampla para facilitar o cuidado no dia a dia e a continuidade do acompanhamento.
             </section>
 
             <section className={styles.executiveGrid} data-count={executiveCardCount} aria-label="Resumo do relatório">
