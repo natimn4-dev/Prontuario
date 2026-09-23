@@ -83,6 +83,9 @@ test("Escalas abrem com uma leitura agregada e o salvamento devolve o estado per
   assert.match(workspace, /setStatusView/);
   assert.match(route, /scaleAssessment\.findMany/);
   assert.match(route, /oncogeriatricPrefills/);
+  assert.match(route, /status:\s*\{\s*consultationStatus: consultation\.status,/);
+  assert.match(workspace, /const finalized = statusView\?\.consultationStatus === "FINALIZED"/);
+  assert.match(workspace, /disabled=\{saving \|\| finalized\} onClick=\{saveActive\}/);
 });
 
 test("Alimentação atualiza o estado recalculado do PUT sem GET completo obrigatório", async () => {

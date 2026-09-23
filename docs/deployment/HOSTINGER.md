@@ -72,7 +72,7 @@ O endpoint público de health check deve responder HTTP 200 e incluir:
 
 - `status: "ok"`
 - `database: "ok"`
-- `releaseId: "2026-09-23-oncogeriatria-momento-escalas-v1"`
+- `releaseId: "2026-09-23-oncogeriatria-finalized-scale-lock-v1"`
 
 Nesta release, as áreas do prontuário geral abertas pela Oncogeriatria oferecem retorno explícito à etapa e ao episódio de origem. A jornada visível também deixa de apresentar o plano geriátrico; a rota antiga redireciona para as escalas clínicas, sem excluir registros históricos. Nenhuma escala ou conduta antineoplásica é selecionada automaticamente.
 
