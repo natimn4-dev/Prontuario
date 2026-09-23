@@ -411,6 +411,21 @@ function reducedGripDetected(scales: readonly AgaScaleReportSection[]): boolean 
   return /reduzid|baixa|alterad/i.test(grip.result.classification ?? "");
 }
 
+function personalizedWalkingAidGuidance(device: string): string {
+  switch (device.trim().toLocaleLowerCase("pt-BR")) {
+    case "andador":
+      return "Converse com o seu fisioterapeuta sobre o ajuste e o uso correto do seu andador, incluindo segurança nos trajetos do dia a dia. Mantenha o andador ao alcance antes de se levantar.";
+    case "bengala":
+      return "Converse com o seu fisioterapeuta sobre o ajuste e o uso correto da sua bengala, incluindo segurança nos trajetos do dia a dia. Mantenha a bengala ao alcance antes de se levantar.";
+    case "muletas":
+      return "Converse com o seu fisioterapeuta sobre o ajuste e o uso correto das suas muletas, incluindo segurança nos trajetos do dia a dia. Mantenha as muletas ao alcance antes de se levantar.";
+    case "cadeira de rodas":
+      return "Converse com o seu fisioterapeuta sobre o ajuste e o uso correto da sua cadeira de rodas, incluindo posicionamento, transferências e segurança nos deslocamentos do dia a dia.";
+    default:
+      return `Converse com o seu fisioterapeuta sobre o ajuste e o uso correto do dispositivo de locomoção registrado (${device}), incluindo segurança nos trajetos do dia a dia.`;
+  }
+}
+
 function mobilityTargetedGuidance(scales: readonly AgaScaleReportSection[]): DomainGuidance | undefined {
   const reducedGrip = reducedGripDetected(scales);
   const device = walkingAidType(scales);
@@ -425,9 +440,7 @@ function mobilityTargetedGuidance(scales: readonly AgaScaleReportSection[]): Dom
     );
   }
   if (device) {
-    actions.push(
-      `Como a pessoa usa ${device.toLocaleLowerCase("pt-BR")}, vale pedir ao fisioterapeuta que confira o ajuste, a forma de uso e a segurança nos trajetos do dia a dia. Deixe o dispositivo sempre ao alcance antes de levantar.`,
-    );
+    actions.push(personalizedWalkingAidGuidance(device));
   }
 
   return {
