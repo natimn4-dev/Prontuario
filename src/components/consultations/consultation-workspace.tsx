@@ -2,6 +2,7 @@
 
 import dynamic from "next/dynamic";
 import { useCallback, useEffect, useMemo, useState } from "react";
+import { PatientContextActions } from "@/components/navigation/patient-context-actions";
 import type { ProfessionalIdentity } from "@/domain/professional-identity";
 import {
   PreviousConsultationNote,
@@ -136,6 +137,7 @@ export function ConsultationWorkspace({
   return (
     <section className={styles.workspace} aria-label="Etapas da consulta geriátrica">
       <aside className={styles.navigation} aria-label="Navegação da consulta">
+        <PatientContextActions variant="inline" hasUnsavedChanges={dirtySections.size > 0} />
         <div className={styles.navigationHeader}>
           <span>Consulta em etapas</span>
           <strong>{activeIndex + 1} de {SECTIONS.length}</strong>
