@@ -18,6 +18,7 @@ import {
   type DietaryClinicalContext,
   type DietaryConfirmedMeal,
   type DietaryFoodComposition,
+  type DietaryFoodReference,
 } from "../../domain/dietary-assessment";
 import { buildConditionalDietaryGuidance, guidanceAsText } from "../../domain/dietary-guidance";
 import { getTacoFood, searchTacoFoods } from "./taco-food-catalog";
@@ -193,22 +194,10 @@ async function hydrate(input: DietaryAssessmentInput): Promise<DietaryConfirmedM
     .map((item) => item.food)
     .filter((food): food is NonNullable<typeof food> => Boolean(food))
     .map((food) => [`${food.provider}:${food.sourceId}`, food])).values()];
-  const entries = await Promise.all(references.map(async (reference) => {
-    if (reference.provider === "TACO") {
-      const food = getTacoFood(reference.sourceId);
-      if (!food) throw new DietaryAssessmentError("FOOD_SOURCE", "Alimento TACO não encontrado na versão validada do catálogo.");
-      return [`TACO:${reference.sourceId}`, food] as const;
-    }
-    if (reference.provider === "USDA_FDC") {
-      return [`USDA_FDC:${reference.sourceId}`, await getFood(reference.sourceId)] as const;
-    }
-    if (reference.provider === "MANUFACTURER_LABEL") {
-      const food = getCommercialFood(reference.sourceId);
-      if (!food) throw new DietaryAssessmentError("FOOD_SOURCE", "Suplemento não encontrado na versão validada do catálogo.");
-      return [`MANUFACTURER_LABEL:${reference.sourceId}`, food] as const;
-    }
-    throw new DietaryAssessmentError("SOURCE_NOT_AVAILABLE", "TBCA requer autorização antes do uso automático; selecione um alimento TACO, USDA ou rótulo validado.");
-  }));
+  const entries = await Promise.all(references.map(async (reference) => [
+    `${reference.provider}:${reference.sourceId}`,
+    await resolveFoodComposition(reference),
+  ] as const));
   const compositionMap = new Map<string, DietaryFoodComposition>(entries);
   return input.meals.map((meal) => ({
     id: meal.id,
@@ -234,6 +223,21 @@ async function hydrate(input: DietaryAssessmentInput): Promise<DietaryConfirmedM
       };
     }),
   }));
+}
+
+async function resolveFoodComposition(reference: DietaryFoodReference): Promise<DietaryFoodComposition> {
+  if (reference.provider === "TACO") {
+    const food = getTacoFood(reference.sourceId);
+    if (!food) throw new DietaryAssessmentError("FOOD_SOURCE", "Alimento TACO não encontrado na versão validada do catálogo.");
+    return food;
+  }
+  if (reference.provider === "USDA_FDC") return getFood(reference.sourceId);
+  if (reference.provider === "MANUFACTURER_LABEL") {
+    const food = getCommercialFood(reference.sourceId);
+    if (!food) throw new DietaryAssessmentError("FOOD_SOURCE", "Suplemento não encontrado na versão validada do catálogo.");
+    return food;
+  }
+  throw new DietaryAssessmentError("SOURCE_NOT_AVAILABLE", "TBCA requer autorização antes do uso automático; selecione um alimento TACO, USDA ou rótulo validado.");
 }
 
 export async function saveDietaryAssessment(args: { consultationId: string; expectedUpdatedAt: string; assessment: DietaryAssessmentInput; requestId?: string }) {
@@ -309,6 +313,7 @@ export async function saveDietaryAssessment(args: { consultationId: string; expe
       meals,
       targets: args.assessment.targets,
       clinicalContext: context,
+      ...(args.assessment.entryDraft ? { entryDraft: args.assessment.entryDraft } : {}),
       summary,
       proteinByMeal,
       proteinComparison,

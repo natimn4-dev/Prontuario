@@ -175,10 +175,29 @@ export type DietaryAssessmentInput = {
   meals: DietaryMeal[];
   targets: DietaryTargets;
   clinicalContext: DietaryClinicalContext;
+  entryDraft?: DietaryFoodEntryDraft;
   orientationDraft?: string;
   orientationReviewed?: boolean;
   includeInReport?: boolean;
   includeInSoap?: boolean;
+};
+
+/**
+ * Temporary food-entry form values are saved with the consultation so that
+ * leaving the workspace or refreshing the page does not discard partial work.
+ * These values are never included in nutrient calculations until the user adds
+ * the food to a meal.
+ */
+export type DietaryFoodEntryDraft = {
+  freeText: string;
+  mealId: string;
+  foodQuery: string;
+  selectedFood: DietaryFoodComposition | null;
+  quantity: string;
+  measure: HouseholdMeasure;
+  grams: string;
+  observation: string;
+  qualityFlags: NonNullable<DietaryFoodDraft["qualityFlags"]>;
 };
 
 export type DietarySummary = DietaryNutrients & {
@@ -222,6 +241,7 @@ export type DietaryAssessmentSnapshot = {
   meals: DietaryConfirmedMeal[];
   targets: DietaryTargets;
   clinicalContext: DietaryClinicalContext;
+  entryDraft?: DietaryFoodEntryDraft;
   summary: DietarySummary;
   proteinByMeal: Array<{ mealId: string; label: string; proteinG: number }>;
   proteinComparison?: DietaryProteinComparison;
@@ -248,6 +268,13 @@ export type DietaryAssessmentSnapshot = {
 export function dietarySnapshotNeedsRuleReview(snapshot: DietaryAssessmentSnapshot | null | undefined): boolean {
   if (!snapshot) return false;
   return snapshot.assessmentStatus == null || !Array.isArray(snapshot.conditionalGuidance);
+}
+
+export function dietarySaveMayClearDirtyState(
+  submittedRevision: number,
+  currentRevision: number,
+): boolean {
+  return submittedRevision === currentRevision;
 }
 
 export const DIETARY_CLINICAL_REFERENCES = [
@@ -449,6 +476,29 @@ export function validateDietaryInput(input: DietaryAssessmentInput): string[] {
   const errors: string[] = [];
 
   if (input.schemaVersion !== "dietary-assessment-v1") errors.push("Versão inválida.");
+  if (input.entryDraft) {
+    const draft = input.entryDraft as Partial<DietaryFoodEntryDraft>;
+    if (
+      typeof draft.freeText !== "string" || draft.freeText.length > 4000 ||
+      typeof draft.foodQuery !== "string" || draft.foodQuery.length > 120 ||
+      typeof draft.observation !== "string" || draft.observation.length > 1000 ||
+      typeof draft.mealId !== "string" || draft.mealId.length > 100 ||
+      typeof draft.quantity !== "string" || draft.quantity.length > 32 ||
+      typeof draft.grams !== "string" || draft.grams.length > 32
+    ) {
+      errors.push("O rascunho do alimento excede o limite permitido.");
+    }
+    if (typeof draft.measure !== "string" || !HOUSEHOLD_MEASURES.includes(draft.measure as HouseholdMeasure)) errors.push("Medida do rascunho inválida.");
+    if (!Array.isArray(draft.qualityFlags) || draft.qualityFlags.some((flag) => !["refined", "ultraprocessed", "free-sugar", "whole-food"].includes(flag))) {
+      errors.push("Marcadores do rascunho inválidos.");
+    }
+    if (draft.selectedFood && (
+      typeof draft.selectedFood.sourceId !== "string" || !draft.selectedFood.sourceId.trim() ||
+      typeof draft.selectedFood.description !== "string" || !draft.selectedFood.description.trim()
+    )) {
+      errors.push("Alimento selecionado no rascunho sem identificação suficiente.");
+    }
+  }
   if (!input.meals?.length) errors.push("Registre ao menos uma refeição.");
   if (input.meals.length > 12) errors.push("Máximo de 12 refeições.");
 

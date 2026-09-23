@@ -86,6 +86,19 @@ test("calculadora oferece fluxo guiado com uma tarefa principal e detalhes progr
     assert.match(styles, new RegExp(className.replace(/[.]/g, "\\.")));
 });
 
+test("rascunho de entrada alimentar é restaurado e salvo junto da consulta", () => {
+  for (const token of [
+    "const entryDraft: DietaryFoodEntryDraft = {",
+    "entryDraft,",
+    "freeText,",
+    "selectedFood,",
+    "setFreeText(savedEntry?.freeText ?? \"\")",
+    "setSelectedFood(savedEntry?.selectedFood ?? null)",
+    "são salvos como rascunho nesta consulta",
+  ])
+    assert.ok(workspace.includes(token), `campo de rascunho ausente: ${token}`);
+});
+
 test("adicionar alimento nunca falha silenciosamente quando o ID da refeição mudou no histórico", () => {
   assert.match(workspace, /const nextMeals = draftMeals\(body\.assessment\)/);
   assert.match(

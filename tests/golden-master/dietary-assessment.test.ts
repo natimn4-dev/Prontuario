@@ -15,6 +15,7 @@ import {
   summarizeDietaryAssessment,
   validateDietaryInput,
   dietarySnapshotNeedsRuleReview,
+  dietarySaveMayClearDirtyState,
   type DietaryAssessmentInput,
   type DietaryConfirmedMeal,
   type DietaryNutrients,
@@ -160,6 +161,11 @@ test("snapshot alimentar antigo exige revisão explícita sem ser apagado", () =
   assert.equal(dietarySnapshotNeedsRuleReview(legacy), true);
   assert.equal(dietarySnapshotNeedsRuleReview({ assessmentStatus: "DRAFT", conditionalGuidance: [] } as never), false);
   assert.equal(dietarySnapshotNeedsRuleReview(null), false);
+});
+
+test("salvamento não limpa alterações feitas depois do início da requisição", () => {
+  assert.equal(dietarySaveMayClearDirtyState(4, 4), true);
+  assert.equal(dietarySaveMayClearDirtyState(4, 5), false);
 });
 
 
