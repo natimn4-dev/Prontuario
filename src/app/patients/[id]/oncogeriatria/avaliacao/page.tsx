@@ -87,10 +87,10 @@ export default async function OncogeriatricCargPage({
         <div className="section-heading"><div><p className="eyebrow">Contexto clínico</p><h2 id="carg-context-title">{oncogeriatricCheckpointTypeLabel(checkpoint.type)}</h2></div><strong>{status}</strong></div>
         <p className={styles.identity}><strong>Paciente:</strong> {patient.fullName} · <strong>Episódio:</strong> {episode.diagnosis} · <strong>Momento:</strong> {checkpoint.id} · <strong>Data:</strong> {formatClinicalDate(checkpoint.occurredAt)} · <strong>Consulta:</strong> {consultation ? `${formatClinicalDate(consultation.occurredAt)} · ${consultation.status === "FINALIZED" ? "finalizada" : consultation.status === "IN_REVIEW" ? "em revisão" : "rascunho"}` : "sem vínculo"}</p>
         {finalized ? <p className="clinical-caution">Esta consulta está finalizada e permanece em somente leitura. <a href={`/patients/${encodeURIComponent(patientId)}/oncogeriatria/avaliacao?episode=${encodeURIComponent(episode.id)}&new=1`}>Iniciar nova consulta para reavaliação →</a></p> : null}
-        {!hasConsultation ? <details open><summary>Vincular ou criar consulta para registrar as escalas</summary><CheckpointConsultationLinker patientId={patientId} episodeId={episode.id} checkpointId={checkpoint.id} expectedRevision={checkpoint.revision} consultations={consultationOptions} baselineConsultationId={patient.baselineConsultationId} /></details> : null}
+        {!hasConsultation ? <details id="vincular-consulta" open><summary>Vincular ou criar consulta para liberar as escalas</summary><CheckpointConsultationLinker patientId={patientId} episodeId={episode.id} checkpointId={checkpoint.id} expectedRevision={checkpoint.revision} consultations={consultationOptions} baselineConsultationId={patient.baselineConsultationId} /></details> : null}
       </section>
 
-      <div className="panel no-print" aria-label="Acesso às escalas gerais"><a href="#escalas">Abrir demais escalas clínicas ↓</a></div>
+      <div className="panel no-print" aria-label="Acesso às escalas gerais"><a href={consultation ? "#escalas" : "#vincular-consulta"}>{consultation ? "Abrir demais escalas clínicas ↓" : "Vincular ou criar consulta para acessar as demais escalas ↓"}</a></div>
 
       <article id="carg" className="panel">
         <CargChecklistForm
@@ -114,8 +114,8 @@ export default async function OncogeriatricCargPage({
         {consultation && !finalized ? <G8ChecklistForm key={checkpoint.id} patientId={patientId} episodeId={episode.id} checkpointId={checkpoint.id} initialAgeYears={ageOnDate(patient.birthDate, checkpoint.occurredAt)} initialAnswers={readStructuredRecord(g8Assessment?.answers)} /> : <p className="muted">{finalized ? "Consulta finalizada: G8 em somente leitura." : "Vincule uma consulta para registrar o G8."}</p>}
       </details>
 
-      <section className="panel" id="escalas"><h2>Demais escalas por domínio</h2>
-        {consultation ? <ClinicalScalesWorkspace key={`${checkpoint.id}:${consultation.id}`} consultationId={consultation.id} /> : <p className="muted">Selecione ou crie uma consulta acima. O rascunho do CARG continua disponível sem vínculo.</p>}
+      <section className="panel" id="escalas" tabIndex={-1}><h2>Demais escalas por domínio</h2>
+        {consultation ? <ClinicalScalesWorkspace key={`${checkpoint.id}:${consultation.id}`} consultationId={consultation.id} /> : <p className="muted">Para carregar as escalas gerais neste momento e registrar os resultados, vincule uma consulta existente ou crie uma consulta acima. O rascunho do CARG continua disponível sem vínculo.</p>}
       </section>
       <nav className="panel no-print" aria-label="Retorno à trajetória"><a href={buildOncogeriatricReturnPath({ patientId, episodeId: episode.id, stage: "longitudinal" })}>Concluir e retornar à trajetória →</a></nav>
     </main>
