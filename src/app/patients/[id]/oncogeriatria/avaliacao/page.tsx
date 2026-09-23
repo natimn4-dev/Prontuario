@@ -90,7 +90,9 @@ export default async function OncogeriatricCargPage({
         {!hasConsultation ? <details open><summary>Vincular ou criar consulta para registrar as escalas</summary><CheckpointConsultationLinker patientId={patientId} episodeId={episode.id} checkpointId={checkpoint.id} expectedRevision={checkpoint.revision} consultations={consultationOptions} baselineConsultationId={patient.baselineConsultationId} /></details> : null}
       </section>
 
-      <div className="panel no-print" aria-label="Acesso às escalas gerais"><a href="#escalas">Abrir demais escalas clínicas ↓</a></div>\n\n      <article id="carg" className="panel">
+      <div className="panel no-print" aria-label="Acesso às escalas gerais"><a href="#escalas">Abrir demais escalas clínicas ↓</a></div>
+
+      <article id="carg" className="panel">
         <CargChecklistForm
           key={checkpoint.id}
           patientId={patientId}
