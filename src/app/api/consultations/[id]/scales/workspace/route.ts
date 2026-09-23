@@ -143,6 +143,7 @@ export async function GET(request: Request, context: { params: Promise<{ id: str
           }),
         },
         status: {
+          consultationStatus: consultation.status,
           latest: [...currentLatest.values()].map(serialized),
           previous: previous.map((assessment) => ({
             assessmentId: assessment.id,
