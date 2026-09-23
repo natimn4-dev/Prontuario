@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import test from "node:test";
+import { CLINICAL_RELEASE_ID } from "../../src/domain/clinical-release.ts";
 
 const workflow = readFileSync(".github/workflows/production-clinical-smoke.yml", "utf8");
 const smoke = readFileSync("scripts/smoke-clinical-production.ts", "utf8");
@@ -48,7 +49,7 @@ test("health release identifier cannot be served from an intermediary cache", ()
 });
 
 test("Hostinger runbook tracks the current clinical release and exact-SHA smoke", () => {
-  assert.match(hostingerDocs, /2026-09-20-scale-cutoff-audit-v1/);
+  assert.ok(hostingerDocs.includes(`releaseId: "${CLINICAL_RELEASE_ID}"`));
   assert.match(smoke, /não bloqueou cache compartilhado/);
   assert.match(hostingerDocs, /SHA exato/);
   assert.match(hostingerDocs, /aproximadamente 15 minutos/);
