@@ -121,10 +121,26 @@ test("orientação de dispositivo só aparece quando o uso está registrado e é
   const mobility = mobilityDomain({ usesWalkingAid: 1, walkingAidType: "Andador" });
   const guidance = mobility?.guidance.join(" ") ?? "";
 
-  assert.match(guidance, /usa andador/i);
-  assert.match(guidance, /ajuste, a forma de uso/i);
-  assert.match(guidance, /fisioterapeuta/i);
+  assert.match(guidance, /Converse com o seu fisioterapeuta sobre o ajuste e o uso correto do seu andador/i);
+  assert.match(guidance, /Mantenha o andador ao alcance/i);
+  assert.doesNotMatch(guidance, /Como a pessoa usa|vale pedir/i);
   assert.doesNotMatch(guidance, /bengala, andador/i);
+});
+
+test("orientação respeita o tipo de dispositivo registrado e a concordância da frase", () => {
+  const cases = [
+    ["Bengala", /uso correto da sua bengala/i],
+    ["Muletas", /uso correto das suas muletas/i],
+    ["Cadeira de rodas", /uso correto da sua cadeira de rodas/i],
+  ] as const;
+
+  for (const [walkingAidType, expected] of cases) {
+    const mobility = mobilityDomain({ usesWalkingAid: 1, walkingAidType });
+    const guidance = mobility?.guidance.join(" ") ?? "";
+
+    assert.match(guidance, expected);
+    assert.doesNotMatch(guidance, /Como a pessoa usa|vale pedir/i);
+  }
 });
 
 test("EAT-10 positivo gera orientação fonoaudiológica e oferta segura sem mudança empírica de consistência", () => {
