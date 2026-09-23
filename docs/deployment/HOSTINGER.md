@@ -72,9 +72,9 @@ O endpoint público de health check deve responder HTTP 200 e incluir:
 
 - `status: "ok"`
 - `database: "ok"`
-- `releaseId: "2026-09-23-oncogeriatria-finalized-scale-lock-v1"`
+- `releaseId: "2026-09-23-global-patient-navigation-v1"`
 
-Nesta release, as áreas do prontuário geral abertas pela Oncogeriatria oferecem retorno explícito à etapa e ao episódio de origem. A jornada visível também deixa de apresentar o plano geriátrico; a rota antiga redireciona para as escalas clínicas, sem excluir registros históricos. Nenhuma escala ou conduta antineoplásica é selecionada automaticamente.
+Nesta release, as rotas de paciente passam a oferecer acesso global a **Início** e **Trocar paciente**, e o workspace de consulta protege rascunhos locais antes de sair. A mudança é exclusivamente de navegação: não altera regras clínicas, persistência, relatórios, escalas ou condutas.
 
 O `releaseId` é deliberadamente servido com `Cache-Control: no-store`; uma CDN ou proxy não deve reutilizar um identificador antigo para declarar a implantação como atual. O smoke também exige esse header antes de aceitar a resposta de health.
 
