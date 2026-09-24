@@ -46,6 +46,7 @@ export function OncogeriatricClinicalContinuity({
     { hash: "medicamentos", label: "Medicamentos", detail: "Reconciliação, via, frequência e horários" },
     { hash: "soap", label: "Evolução, vacinas e condutas", detail: "SOAP, exames, prevenção e plano por problema" },
     { hash: "escalas", label: "Escalas clínicas", detail: "Instrumentos escolhidos pelo geriatra" },
+    { hash: "diretivas", label: "Diretivas antecipadas", detail: "Valores e preferências revisáveis" },
     { hash: "relatorio", label: "Relatório geral", detail: "Documento integrado da consulta" },
   ] as const;
 
@@ -63,7 +64,7 @@ export function OncogeriatricClinicalContinuity({
       </div>
       <nav className={styles.actionGrid} aria-label="Campos clínicos da consulta de trabalho">
         {actions.map((action) => (
-          <a key={action.hash} href={action.hash === "escalas" ? buildOncogeriatricCargHref({ patientId, episodeId, consultationId: consultation.id }) : buildOncogeriatricConsultationHref({ consultationId: consultation.id, section: action.hash, episodeId, returnStage })}>
+          <a key={action.hash} href={action.hash === "escalas" ? `${buildOncogeriatricCargHref({ patientId, episodeId, consultationId: consultation.id })}#escalas` : buildOncogeriatricConsultationHref({ consultationId: consultation.id, section: action.hash, episodeId, returnStage })}>
             <strong>{action.label}</strong>
             <span>{action.detail}</span>
             <small>{readOnly ? "Revisar registro →" : "Abrir e preencher →"}</small>
@@ -119,7 +120,7 @@ export function OncogeriatricDomainReview({
               </div>
               <div className={styles.priorityActions}>
                 {workingConsultation ? (
-                  <a className={styles.primaryLink} href={buildOncogeriatricCargHref({ patientId, consultationId: workingConsultation.id, episodeId })}>
+                  <a className={styles.primaryLink} href={`${buildOncogeriatricCargHref({ patientId, consultationId: workingConsultation.id, episodeId })}#escalas`}>
                     {workingConsultation.status === "FINALIZED" ? "Revisar escalas da consulta" : "Abrir escalas na consulta de trabalho"} →
                   </a>
                 ) : null}

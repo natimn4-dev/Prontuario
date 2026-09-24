@@ -28,7 +28,8 @@ const consultationLinker = readFileSync("src/components/oncogeriatria/checkpoint
 test("oncogeriatria oferece quatro destinos e um workspace de escalas", () => {
   for (const label of ["Avaliação do momento", "Trajetória", "Relatório", "Visão geral"]) assert.ok(nav.includes(label));
   assert.doesNotMatch(nav, /Ferramentas de apoio|Ações clínicas frequentes/);
-  assert.match(scalesPage, /redirect\(buildOncogeriatricCargHref/);
+  assert.match(scalesPage, /buildOncogeriatricCargHref/);
+  assert.match(scalesPage, /#escalas/);
   assert.match(cargPage, /ClinicalScalesWorkspace/);
 });
 
