@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 
 export function OncogeriatricReportActions({ patientId, episodeId, consultationId, g8AssessmentId, cargAssessmentId, content }: { patientId: string; episodeId: string; consultationId?: string | null; g8AssessmentId?: string | null; cargAssessmentId?: string | null; content: Record<string, unknown> }) {
+  const canArchive = Boolean(consultationId);
   const [reviewed, setReviewed] = useState(false);
   const [shareConfirmed, setShareConfirmed] = useState(false);
   const [pending, setPending] = useState(false);
@@ -23,7 +24,7 @@ export function OncogeriatricReportActions({ patientId, episodeId, consultationI
   }
 
   async function confirmAndArchive() {
-    if (!reviewed) return;
+    if (!reviewed || !canArchive) return;
     if (!operationIdRef.current) operationIdRef.current = crypto.randomUUID();
     setPending(true); setMessage(null);
     try {
@@ -42,13 +43,13 @@ export function OncogeriatricReportActions({ patientId, episodeId, consultationI
   return <>
     <style>{`@media print { html:not([data-onco-clinical-review="true"]) #oncogeriatric-report { display: none !important; } html:not([data-onco-clinical-review="true"]) body::before { content: "Impressão bloqueada: confirme e arquive a revisão clínica deste relatório."; display: block; padding: 24px; font: 16px/1.4 sans-serif; } }`}</style>
     <div className="no-print clinical-review-actions">
-      <label className="inline-check"><input type="checkbox" checked={reviewed} disabled={pending || shareConfirmed} onChange={(event) => setReviewed(event.target.checked)} /> Confirmo que revisei clinicamente este relatório e desejo arquivar esta versão antes de compartilhar.</label>
+      <label className="inline-check"><input type="checkbox" checked={reviewed} disabled={!canArchive || pending || shareConfirmed} onChange={(event) => setReviewed(event.target.checked)} /> Confirmo que revisei clinicamente este relatório e desejo arquivar esta versão antes de compartilhar.</label>
       <div className="report-actions">
-        <button type="button" disabled={!reviewed || pending || shareConfirmed} onClick={confirmAndArchive}>{pending ? "Confirmando…" : shareConfirmed ? "Revisão confirmada" : "Confirmar revisão e arquivar"}</button>
+        <button type="button" disabled={!canArchive || !reviewed || pending || shareConfirmed} onClick={confirmAndArchive}>{pending ? "Confirmando…" : shareConfirmed ? "Revisão confirmada" : "Confirmar revisão e arquivar"}</button>
         <button type="button" disabled={!shareConfirmed} onClick={() => shareConfirmed && window.print()}>Imprimir</button>
         <button type="button" disabled={!shareConfirmed} onClick={copy}>Copiar</button>
       </div>
-      {!shareConfirmed ? <span role="status">Impressão e cópia permanecem bloqueadas até a confirmação persistida no servidor.</span> : null}
+      {!canArchive ? <span role="status">Vincule este acompanhamento a uma consulta antes de arquivar, imprimir ou copiar o relatório.</span> : !shareConfirmed ? <span role="status">Impressão e cópia permanecem bloqueadas até a confirmação persistida no servidor.</span> : null}
       {message ? <span role="status">{message}</span> : null}
     </div>
   </>;
