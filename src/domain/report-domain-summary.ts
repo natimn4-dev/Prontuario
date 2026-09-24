@@ -79,7 +79,7 @@ type FrailtyGuidanceProfile = "robust" | "pre-frail" | "frail";
 const FRAILTY_GUIDANCE: Readonly<Record<FrailtyGuidanceProfile, DomainGuidance>> = {
   robust: {
     actions: [
-      "O FRAIL-BR não mostrou sinais de fragilidade nesta consulta. Vale manter o que já ajuda a preservar força, equilíbrio, disposição e independência, com atividade física regular em um ritmo confortável e seguro.",
+      "A avaliação desta consulta não mostrou sinais de fragilidade. Vale manter o que já ajuda a preservar força, equilíbrio, disposição e independência, com atividade física regular em um ritmo confortável e seguro.",
       "Mantenha uma alimentação variada, ofereça líquidos ao longo do dia, cuide do sono e preserve o convívio social e as atividades de que a pessoa gosta. Se aparecerem perda de peso sem intenção, cansaço persistente, redução de força, quedas ou dificuldade nova nas atividades do dia, converse com a equipe.",
     ],
     evidenceReferences: [
@@ -93,7 +93,7 @@ const FRAILTY_GUIDANCE: Readonly<Record<FrailtyGuidanceProfile, DomainGuidance>>
   },
   "pre-frail": {
     actions: [
-      "O FRAIL-BR mostrou sinais de pré-fragilidade. Este é um bom momento para fortalecer a reserva: inclua exercícios de força e equilíbrio de forma gradual e segura e converse com a equipe sobre alimentação, perda de peso, quedas e medicamentos que possam estar contribuindo para a fraqueza.",
+      "A avaliação mostrou sinais iniciais de fragilidade. Este é um bom momento para fortalecer a reserva: inclua exercícios de força e equilíbrio de forma gradual e segura e converse com a equipe sobre alimentação, perda de peso, quedas e medicamentos que possam estar contribuindo para a fraqueza.",
       "Evite passar muitas horas seguidas sentado ou deitado quando for possível se movimentar com segurança. Pequenos períodos de atividade ao longo do dia podem ajudar. Procure a equipe se houver mais cansaço, fraqueza, quedas, redução da alimentação ou dificuldade crescente para caminhar ou levantar-se.",
     ],
     evidenceReferences: [
@@ -113,7 +113,7 @@ const FRAILTY_GUIDANCE: Readonly<Record<FrailtyGuidanceProfile, DomainGuidance>>
   },
   frail: {
     actions: [
-      "O FRAIL-BR mostrou fragilidade, o que significa que a pessoa pode sentir mais os efeitos de doenças, internações ou outros períodos de estresse. O cuidado pode ser organizado em etapas, com atenção à força, alimentação, medicamentos, prevenção de quedas e causas tratáveis de piora.",
+      "A avaliação mostrou fragilidade, o que significa que a pessoa pode sentir mais os efeitos de doenças, internações ou outros períodos de estresse. O cuidado pode ser organizado em etapas, com atenção à força, alimentação, medicamentos, prevenção de quedas e causas tratáveis de piora.",
       "Organize o dia com pausas e ofereça ajuda antes que a pessoa fique exausta, preservando sua participação no que ainda consegue fazer. Avise a equipe se houver perda de peso, redução da alimentação, piora da força, quedas ou dificuldade nova para levantar, caminhar ou realizar as atividades habituais.",
     ],
     evidenceReferences: [
@@ -136,7 +136,7 @@ const FRAILTY_GUIDANCE: Readonly<Record<FrailtyGuidanceProfile, DomainGuidance>>
 const COGNITIVE_SCREEN_GUIDANCE: Readonly<Record<"preserved" | "attention" | "altered", DomainGuidance>> = {
   preserved: {
     actions: [
-      "O rastreio cognitivo desta consulta está preservado. Mantenha a autonomia nas atividades habituais e a participação ativa nas decisões, na organização da rotina e nas escolhas do dia a dia.",
+      "A avaliação da memória e do raciocínio nesta consulta foi tranquilizadora. Mantenha a autonomia nas atividades habituais e a participação ativa nas decisões, na organização da rotina e nas escolhas do dia a dia.",
       "Para fortalecer a reserva cognitiva, incentive atividades que tragam interesse e desafio na medida certa: aprender algo novo, ler e conversar sobre o que leu, praticar música, jogos de estratégia, trabalhos manuais, cursos ou outras atividades de que a pessoa goste. Atividade física e convívio social também fazem parte desse cuidado.",
       "Uma alimentação saudável, sono de boa qualidade, atividade física, convívio social e cuidado com visão e audição ajudam a proteger a saúde do cérebro. Se aparecer uma mudança persistente de memória, raciocínio ou autonomia, vale reavaliar.",
     ],
@@ -169,7 +169,7 @@ const COGNITIVE_SCREEN_GUIDANCE: Readonly<Record<"preserved" | "attention" | "al
   },
   attention: {
     actions: [
-      "O rastreio cognitivo mostrou um sinal de atenção. Isso não significa, sozinho, diagnóstico de demência. Vale aprofundar a avaliação considerando escolaridade, mudanças percebidas no dia a dia, autonomia, humor, sono, visão, audição, medicamentos e outras causas que possam afetar a cognição.",
+      "A avaliação da memória e do raciocínio mostrou um sinal de atenção. Isso não significa, sozinho, diagnóstico de demência. Vale aprofundar a avaliação considerando escolaridade, mudanças percebidas no dia a dia, autonomia, humor, sono, visão, audição, medicamentos e outras causas que possam afetar a cognição.",
       "Mantenha a autonomia no que continua sendo feito com segurança. Nas tarefas em que começaram a aparecer erros ou insegurança, ofereça apoio de forma discreta e proporcional à dificuldade, enquanto a avaliação é aprofundada.",
     ],
     evidenceReferences: [{
@@ -181,7 +181,7 @@ const COGNITIVE_SCREEN_GUIDANCE: Readonly<Record<"preserved" | "attention" | "al
   },
   altered: {
     actions: [
-      "O rastreio cognitivo veio bastante alterado e merece uma avaliação mais detalhada, mas esse resultado, sozinho, não define diagnóstico de demência nem sua causa. A investigação deve considerar a história das mudanças, a autonomia no dia a dia, humor, sono, visão, audição, medicamentos e outras condições que possam interferir na cognição.",
+      "A avaliação da memória e do raciocínio mostrou alterações importantes e merece ser aprofundada, mas esse resultado, sozinho, não define diagnóstico de demência nem sua causa. A investigação deve considerar a história das mudanças, a autonomia no dia a dia, humor, sono, visão, audição, medicamentos e outras condições que possam interferir na cognição.",
       "Se já houver erros em medicamentos, finanças, deslocamentos ou outras tarefas de risco, ofereça ajuda direta nessas situações e preserve a participação no que ainda é seguro. Confusão, sonolência ou piora cognitiva que apareça de repente precisa de avaliação rápida.",
     ],
     evidenceReferences: [{
@@ -415,15 +415,15 @@ function cornellFamilyGuidance(
   const actions: string[] = [];
   if (cornell.clinicalColor === "verde") {
     actions.push(
-      "A escala Cornell, específica para avaliar sinais de depressão em pessoas com demência, não mostrou um conjunto importante de sintomas depressivos nesta consulta. Mesmo assim, o resultado deve ser entendido junto com mudanças de comportamento, sono, apetite, interesse e conforto.",
+      "Na avaliação de hoje, não foram identificados sinais importantes de depressão. Em pessoas com demência, mudanças de humor podem aparecer mais pelo comportamento do que pelas palavras. Observe alterações no sono, apetite, interesse, contato com outras pessoas e conforto.",
     );
   } else if (cornell.clinicalColor === "amarelo" || cornell.clinicalColor === "vermelho") {
     actions.push(
-      "A escala Cornell, específica para avaliar sinais de depressão em pessoas com demência, mostrou sinais que merecem acompanhamento. O resultado deve ser entendido junto com mudanças de comportamento, sono, apetite, interesse e conforto.",
+      "Na avaliação de hoje, apareceram sinais que podem estar relacionados à depressão e merecem acompanhamento. Em pessoas com demência, o sofrimento emocional nem sempre é dito com clareza e pode aparecer como mudança de comportamento, sono, apetite, interesse ou maior desconforto.",
     );
   } else {
     actions.push(
-      "A escala Cornell é específica para avaliar sinais de depressão em pessoas com demência e combina informações do paciente, do cuidador e da observação clínica. O resultado deve ser lido junto com mudanças de comportamento, sono, apetite, interesse e conforto.",
+      "A avaliação do humor foi feita de forma adequada para pessoas com demência, reunindo informações da própria pessoa, da família ou cuidador e da observação clínica. O mais importante é acompanhar mudanças de comportamento, sono, apetite, interesse e conforto.",
     );
   }
 
@@ -438,8 +438,8 @@ function cornellFamilyGuidance(
 
   if (severeDementia) {
     actions.push(
-      "Como o FAST já registra demência grave, a pessoa pode ter mais dificuldade para explicar tristeza, medo ou sofrimento. Observe principalmente mudanças em relação ao jeito habitual: ficar mais retraída ou irritada, perder interesse no contato, recusar alimentação ou cuidados, dormir de forma muito diferente ou parecer desconfortável.",
-      "Mantenha uma rotina previsível e tranquila, fale com calma e ofereça contato e atividades simples que tragam conforto, sem cobrar que a pessoa “se anime”. Compartilhe com a equipe mudanças persistentes para que também sejam avaliadas dor, infecção, alterações do sono, medicamentos e outras causas de mudança de comportamento.",
+      "Por já ter o diagnóstico de demência avançada, a pessoa pode ter mais dificuldade para dizer que está triste, com medo ou sofrendo. Por isso, observe principalmente mudanças em relação ao jeito habitual: ficar mais retraída ou irritada, perder interesse no contato, recusar alimentação ou cuidados, dormir de forma muito diferente ou parecer desconfortável.",
+      "Mantenha uma rotina previsível e tranquila. Fale com calma, respeite o tempo da pessoa e ofereça contato e atividades simples que costumem trazer conforto, sem cobrar que ela “se anime”. Se houver mudanças persistentes, conte à equipe: dor, infecção, alterações do sono e efeitos de medicamentos também podem mudar o comportamento.",
     );
   } else {
     actions.push(
@@ -500,7 +500,7 @@ function mobilityTargetedGuidance(scales: readonly AgaScaleReportSection[]): Dom
   const actions: string[] = [];
   if (reducedGrip) {
     actions.push(
-      "A força de preensão veio reduzida. Isso pode acompanhar uma redução de força muscular e maior chance de quedas. Vale observar se houve quedas ou quase quedas e se caminhar, manter o equilíbrio, levantar da cadeira ou fazer transferências ficou mais difícil.",
+      "A avaliação mostrou redução da força das mãos. Isso pode acompanhar uma perda de força muscular e aumentar a chance de quedas. Observe se houve quedas ou quase quedas e se caminhar, manter o equilíbrio, levantar da cadeira ou fazer transferências ficou mais difícil.",
       "A fisioterapia pode ajudar a avaliar força das pernas, equilíbrio, marcha e transferências e a montar um programa de fortalecimento e equilíbrio que avance no ritmo e na segurança da pessoa.",
       "Deixe os caminhos mais usados, especialmente até o banheiro, livres de obstáculos, bem iluminados e sem tapetes soltos. Conte à equipe se houver nova queda, quase tombo ou piora para caminhar.",
     );
@@ -535,7 +535,7 @@ function eat10TargetedGuidance(scales: readonly AgaScaleReportSection[]): Domain
 
   return {
     actions: [
-      "O EAT-10 mostrou sinais de dificuldade para engolir. Vale fazer uma avaliação mais detalhada da deglutição, geralmente com fonoaudiólogo. Esse rastreio é um sinal de atenção e, sozinho, não confirma disfagia nem aspiração.",
+      "A avaliação mostrou sinais de dificuldade para engolir. Vale fazer uma avaliação mais detalhada da deglutição, geralmente com fonoaudiólogo. Esse resultado é um sinal de atenção e, sozinho, não confirma disfagia nem aspiração.",
       "Enquanto aguarda a avaliação, ofereça alimentos e líquidos quando a pessoa estiver desperta, confortável e bem sentada. Prefira um ambiente tranquilo, pequenas quantidades, ritmo lento e pausas entre as ofertas.",
       "Evite engrossar líquidos ou mudar a textura dos alimentos sem uma avaliação da deglutição. A melhor consistência, o volume de cada oferta e as estratégias de posicionamento dependem de como a pessoa engole.",
       "Procure a equipe se houver tosse ou engasgos durante as refeições, voz molhada depois de engolir, sensação de alimento parado, refeições muito demoradas, redução persistente da alimentação ou perda de peso. Engasgo com dificuldade para respirar exige atendimento imediato.",
