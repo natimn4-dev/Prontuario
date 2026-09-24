@@ -2,6 +2,9 @@
 const nextConfig = {
   poweredByHeader: false,
   reactStrictMode: true,
+  typescript: {
+    tsconfigPath: "tsconfig.next.json",
+  },
 
   async headers() {
     return [

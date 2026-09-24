@@ -105,7 +105,12 @@ jobs:
         run: npm run typecheck:domain
       - name: Full typecheck
         run: npm run typecheck
-      - name: Production build
-        run: npm run build
+      - name: Production build without CI browser dependency
+        shell: bash
+        run: |
+          set -euo pipefail
+          mv node_modules/playwright node_modules/playwright.ci-disabled
+          trap 'mv node_modules/playwright.ci-disabled node_modules/playwright' EXIT
+          npm run build
       - name: Audit production dependencies
         run: npm audit --omit=dev --audit-level=critical
