@@ -8,6 +8,8 @@ export interface ClinicalAlert {
   severity: ClinicalAlertSeverity;
   message: string;
   alwaysEvaluate?: boolean;
+  audience?: "professional" | "shared";
+  familyMessage?: string;
 }
 
 export interface ClinicalAlertContext {
@@ -32,6 +34,7 @@ export function clinicalAlertsFor(
       scaleId,
       severity: "attention",
       alwaysEvaluate: true,
+      audience: "professional",
       message:
         "Pesquisar ativamente ideação suicida independentemente do escore total da GDS-15.",
     });
@@ -43,6 +46,7 @@ export function clinicalAlertsFor(
       scaleId,
       severity: "attention",
       alwaysEvaluate: true,
+      audience: "professional",
       message:
         "Revisar explicitamente o item co16 (ideação suicida), mesmo quando o escore total da Cornell for baixo.",
     });
@@ -52,6 +56,8 @@ export function clinicalAlertsFor(
         code: "cornell-suicidal-ideation-present",
         scaleId,
         severity: "urgent",
+        familyMessage:
+          "Foi registrado um sinal de que a pessoa pode estar pensando que a vida não vale a pena ou em se machucar. Permaneça com ela, mantenha um ambiente seguro e procure atendimento médico imediatamente.",
         message:
           "Ideação suicida marcada na Cornell: realizar avaliação clínica imediata do risco e definir conduta de segurança.",
       });
