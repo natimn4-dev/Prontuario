@@ -76,9 +76,12 @@ test("snapshot exige revisão clínica no servidor, registra autor/data e serial
   const report = await source("src/app/patients/[id]/oncogeriatria/relatorio/page.tsx");
   const form = await source("src/components/oncogeriatria/oncogeriatric-forms.tsx");
   assert.match(form, /commonAdverseEffects:text\(form,"commonAdverseEffects"\)/);
+  assert.match(form, /commonAdverseEffectsSource:text\(form,"commonAdverseEffectsSource"\)/);
   assert.match(report, /commonAdverseEffects: commonAdverseEffects \|\| null/);
-  assert.match(report, /schemaVersion: "oncogeriatria-report-v6"/);
+  assert.match(report, /commonAdverseEffectsSource: commonAdverseEffectsSource \|\| null/);
+  assert.match(report, /schemaVersion: "oncogeriatria-report-v7"/);
   assert.match(report, /Efeitos adversos frequentes esperados, confirmados para este esquema/);
+  assert.match(report, /Fonte clínica registrada:/);
   assert.match(report, /Não registrados para este esquema\. O sistema não os infere/);
 });
 
