@@ -46,7 +46,10 @@ test("oncogeriatria permite múltiplos episódios no mesmo Patient.id e bloqueia
     ] });
     assert.equal(await client.oncogeriatricEpisode.count({ where: { patientId: patientAId } }), 2);
 
-    await client.oncogeriatricTreatmentCourse.create({ data: { id: courseA, episodeId: episodeA1, patientId: patientAId, modality: "SYSTEMIC", intent: "CURATIVE", regimenName: "Esquema teste", createdById: userId } });
+    const expectedRegimenSafety = { selected: ["gi"], commonAdverseEffects: "Náusea sintética", commonAdverseEffectsSource: "Protocolo de teste sintético", clinicianGuidance: "Orientação sintética" };
+    await client.oncogeriatricTreatmentCourse.create({ data: { id: courseA, episodeId: episodeA1, patientId: patientAId, modality: "SYSTEMIC", intent: "CURATIVE", regimenName: "Esquema teste", riskFlags: expectedRegimenSafety, createdById: userId } });
+    const savedCourse = await client.oncogeriatricTreatmentCourse.findUnique({ where: { id: courseA }, select: { riskFlags: true } });
+    assert.deepEqual(savedCourse?.riskFlags, expectedRegimenSafety, "efeitos esperados e fonte clínica devem persistir juntos no curso terapêutico");
     await client.oncogeriatricCheckpoint.create({ data: { id: checkpointA, patientId: patientAId, episodeId: episodeA1, treatmentCourseId: courseA, consultationId: consultationAId, type: "PRE_TREATMENT", occurredAt: new Date(), createdById: userId } });
 
     await assert.rejects(client.oncogeriatricTreatmentCourse.create({ data: { episodeId: episodeA1, patientId: patientBId, modality: "SYSTEMIC", intent: "CURATIVE", regimenName: "Mistura indevida", createdById: userId } }));
