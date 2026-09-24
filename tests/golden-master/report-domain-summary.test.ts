@@ -191,10 +191,10 @@ test("fragilidade usa orientações clinicamente distintas para robusto, pré-fr
   assert.equal(robust?.state, "preserved");
   assert.match(robust?.guidance.join(" ") ?? "", /não mostrou sinais de fragilidade/i);
   assert.match(robust?.guidance.join(" ") ?? "", /preservar força, equilíbrio, disposição e independência/i);
-  assert.doesNotMatch(robust?.guidance.join(" ") ?? "", /maior vulnerabilidade|plano geriátrico individualizado/i);
+  assert.doesNotMatch(robust?.guidance.join(" ") ?? "", /FRAIL-BR|maior vulnerabilidade|plano geriátrico individualizado/i);
 
   assert.equal(preFrail?.state, "attention");
-  assert.match(preFrail?.guidance.join(" ") ?? "", /pré-fragilidade/i);
+  assert.match(preFrail?.guidance.join(" ") ?? "", /sinais iniciais de fragilidade/i);
   assert.match(preFrail?.guidance.join(" ") ?? "", /bom momento para fortalecer a reserva/i);
 
   assert.equal(frail?.state, "altered");
@@ -261,19 +261,19 @@ test("rastreio cognitivo negativo e positivo geram orientações claramente dife
   const markedlyAltered = makeDomain(15, "vermelho");
 
   assert.equal(negative?.state, "preserved");
-  assert.match(negative?.guidance.join(" ") ?? "", /rastreio cognitivo desta consulta está preservado/i);
+  assert.match(negative?.guidance.join(" ") ?? "", /avaliação da memória e do raciocínio nesta consulta foi tranquilizadora/i);
   assert.match(negative?.guidance.join(" ") ?? "", /mantenha a autonomia nas atividades habituais/i);
   assert.match(negative?.guidance.join(" ") ?? "", /alimentação saudável/i);
   assert.match(negative?.guidance.join(" ") ?? "", /reserva cognitiva/i);
-  assert.doesNotMatch(negative?.guidance.join(" ") ?? "", /supervisão nas tarefas complexas|apoio direto do cuidador|rastreio cognitivo foi positivo/i);
+  assert.doesNotMatch(negative?.guidance.join(" ") ?? "", /MoCA|MEEM|supervisão nas tarefas complexas|apoio direto do cuidador|rastreio cognitivo foi positivo/i);
 
   assert.equal(positive?.state, "attention");
-  assert.match(positive?.guidance.join(" ") ?? "", /rastreio cognitivo mostrou um sinal de atenção/i);
+  assert.match(positive?.guidance.join(" ") ?? "", /avaliação da memória e do raciocínio mostrou um sinal de atenção/i);
   assert.match(positive?.guidance.join(" ") ?? "", /não significa, sozinho, diagnóstico de demência/i);
   assert.match(positive?.guidance.join(" ") ?? "", /aprofundar a avaliação/i);
 
   assert.equal(markedlyAltered?.state, "altered");
-  assert.match(markedlyAltered?.guidance.join(" ") ?? "", /veio bastante alterado/i);
+  assert.match(markedlyAltered?.guidance.join(" ") ?? "", /avaliação da memória e do raciocínio mostrou alterações importantes/i);
   assert.match(markedlyAltered?.guidance.join(" ") ?? "", /sozinho, não define diagnóstico de demência/i);
   assert.ok(positive?.evidenceReferences.some((reference) => reference.pmid === "39713942"));
   assert.ok(negative?.evidenceReferences.some((reference) => reference.pmid === "42442374"));
@@ -350,10 +350,10 @@ test("Cornell em pessoa com FAST grave gera orientação familiar específica se
     .find((domain) => domain.code === "humor");
   assert.ok(humor);
   const guidance = humor.guidance.join(" ");
-  assert.match(guidance, /Cornell/i);
-  assert.match(guidance, /demência grave/i);
+  assert.match(guidance, /Por já ter o diagnóstico de demência avançada/i);
   assert.match(guidance, /mudanças.*habitual|jeito habitual/i);
-  assert.doesNotMatch(guidance, /co16/i);
+  assert.match(guidance, /fale com calma|respeite o tempo da pessoa/i);
+  assert.doesNotMatch(guidance, /Cornell|FAST|demência grave|co16/i);
 });
 
 test("Cornell com ideação presente mantém alerta clínico e traduz o alerta compartilhado para a família", () => {
