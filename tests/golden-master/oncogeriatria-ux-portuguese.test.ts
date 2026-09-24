@@ -111,6 +111,9 @@ test("CARG mantém rascunho, finalização e bloqueio de consulta encerrada", ()
   assert.match(service, /requireOpenScaleConsultation/);
   assert.match(service, /CONSULTATION_FINALIZED/);
   assert.match(consultationLinker, /CHECKPOINT_LINK_CONSULTATION/);
+  assert.match(consultationLinker, /window\.location\.assign/);
+  assert.match(consultationLinker, /#escalas/);
+  assert.doesNotMatch(consultationLinker, /router\.(?:replace|refresh)/);
 });
 
 test("CARG liberado permanece transparente, local e sem conduta automática", () => {

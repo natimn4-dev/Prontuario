@@ -1,6 +1,5 @@
 "use client";
 
-import { useRouter } from "next/navigation";
 import { useState, type FormEvent } from "react";
 import { buildOncogeriatricCargHref } from "@/domain/oncogeriatria/return-navigation";
 
@@ -24,7 +23,6 @@ export function CheckpointConsultationLinker({
   consultations: ConsultationLinkOption[];
   baselineConsultationId?: string | null;
 }) {
-  const router = useRouter();
   const [pending, setPending] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
   const [creating, setCreating] = useState(false);
@@ -38,8 +36,7 @@ export function CheckpointConsultationLinker({
     });
     const result = await response.json().catch(() => null) as { message?: string } | null;
     if (!response.ok) throw new Error(result?.message ?? "Não foi possível vincular a consulta.");
-    router.replace(`${buildOncogeriatricCargHref({ patientId, episodeId, checkpointId, consultationId })}#escalas`);
-    router.refresh();
+    window.location.assign(`${buildOncogeriatricCargHref({ patientId, episodeId, checkpointId, consultationId })}#escalas`);
   }
 
   async function createAndLink() {
