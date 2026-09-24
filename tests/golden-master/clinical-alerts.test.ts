@@ -14,10 +14,12 @@ test("Cornell sempre destaca co16 e eleva para urgente quando ideação está pr
   const baseline = clinicalAlertsFor("cornell", { answers: { co16: 0 } });
   assert.equal(baseline.length, 1);
   assert.equal(baseline[0]?.code, "cornell-co16-review");
+  assert.equal(baseline[0]?.audience, "professional");
 
   const positive = clinicalAlertsFor("cornell", { answers: { co16: 1 } });
   assert.equal(positive.length, 2);
   assert.ok(positive.some((alert) => alert.severity === "urgent"));
+  assert.ok(positive.some((alert) => alert.familyMessage?.includes("procure atendimento médico imediatamente")));
 });
 
 test("CAM positivo gera alerta clínico urgente; CAM negativo não gera", () => {
