@@ -64,7 +64,7 @@ export function OncogeriatricClinicalContinuity({
       </div>
       <nav className={styles.actionGrid} aria-label="Campos clínicos da consulta de trabalho">
         {actions.map((action) => (
-          <a key={action.hash} href={action.hash === "escalas" ? `${buildOncogeriatricCargHref({ patientId, episodeId, consultationId: consultation.id })}#escalas` : buildOncogeriatricConsultationHref({ consultationId: consultation.id, section: action.hash, episodeId, returnStage })}>
+          <a key={action.hash} href={buildOncogeriatricConsultationHref({ consultationId: consultation.id, section: action.hash, episodeId, returnStage })}>
             <strong>{action.label}</strong>
             <span>{action.detail}</span>
             <small>{readOnly ? "Revisar registro →" : "Abrir e preencher →"}</small>
@@ -120,7 +120,7 @@ export function OncogeriatricDomainReview({
               </div>
               <div className={styles.priorityActions}>
                 {workingConsultation ? (
-                  <a className={styles.primaryLink} href={`${buildOncogeriatricCargHref({ patientId, consultationId: workingConsultation.id, episodeId })}#escalas`}>
+                  <a className={styles.primaryLink} href={buildOncogeriatricConsultationHref({ consultationId: workingConsultation.id, section: "escalas", episodeId, returnStage })}>
                     {workingConsultation.status === "FINALIZED" ? "Revisar escalas da consulta" : "Abrir escalas na consulta de trabalho"} →
                   </a>
                 ) : null}

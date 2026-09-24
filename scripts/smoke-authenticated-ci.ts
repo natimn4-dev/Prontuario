@@ -200,6 +200,12 @@ async function main() {
   assert.match(scalesHtml, /clinical-scales-title|Carregando escalas clínicas/);
   const scalesWorkspace = await request(`/api/consultations/${assignedConsultationId}/scales/workspace`, true);
   assert.equal(scalesWorkspace.status, 200, "O catálogo de escalas da consulta vinculada deve carregar.");
+  const treatmentPage = await request(`${oncoPath}/tratamento${episodeQuery}`, true);
+  assert.equal(treatmentPage.status, 200);
+  const treatmentHtml = await treatmentPage.text();
+  assert.match(treatmentHtml, new RegExp(`/consultations/${assignedConsultationId}\\?oncogeriatriaReturn=tratamento`));
+  assert.match(treatmentHtml, /#escalas/);
+  assert.match(treatmentHtml, /Revisar riscos, efeitos e orientações deste tratamento/);
 
   const oldCourse = await prisma.oncogeriatricTreatmentCourse.findUniqueOrThrow({ where: { id: oncogeriatricCourseId }, select: { updatedAt: true } });
   const updateBody = { action: "TREATMENT_COURSE_SAFETY_UPDATE", operationId: `ci-e2e-onco-${Date.now()}`, episodeId: oncogeriatricEpisodeId, courseId: oncogeriatricCourseId, expectedUpdatedAt: oldCourse.updatedAt.toISOString(), riskFlags: { selected: ["hema"], commonAdverseEffects: "Efeito sintético confirmado", commonAdverseEffectsSource: "Fonte sintética de teste", clinicianGuidance: "Orientação sintética revisada" } };
