@@ -72,9 +72,9 @@ O endpoint público de health check deve responder HTTP 200 e incluir:
 
 - `status: "ok"`
 - `database: "ok"`
-- `releaseId: "2026-09-24-oncogeriatria-escalas-navegacao-v3"`
+- `releaseId: "2026-09-24-oncogeriatria-relatorio-seguro-v4"`
 
-Nesta release, a avaliação oncogeriátrica direciona a médica para vincular ou criar explicitamente uma consulta quando necessário; após o vínculo, abre diretamente o catálogo geral de escalas no mesmo checkpoint. Não altera regras clínicas, fórmulas, persistência, relatórios ou condutas.
+Nesta release, snapshots do relatório oncogeriátrico exigem vínculo da consulta e checkpoint ao mesmo episódio. O curso terapêutico permite registrar efeitos adversos esperados e sua fonte clínica, sem inferi-los pelo nome do antineoplásico; o relatório sinaliza quando não foram registrados. O cálculo e a interpretação do CARG, demais escalas, funcionalidade e o modelo do gráfico longitudinal aprovado permanecem inalterados. Não há migration de banco nesta release.
 
 O `releaseId` é deliberadamente servido com `Cache-Control: no-store`; uma CDN ou proxy não deve reutilizar um identificador antigo para declarar a implantação como atual. O smoke também exige esse header antes de aceitar a resposta de health.
 
