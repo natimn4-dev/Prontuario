@@ -647,8 +647,15 @@ export async function createOncogeriatricReportSnapshot(patientId: string, input
   }
   const content = safeObject(input.content);
   if (!content) throw new OncogeriatricError("REPORT_CONTENT_REQUIRED", "Conteúdo do resumo oncogeriátrico é obrigatório.");
-  const consultationId = safeText(input.consultationId, 191);
-  if (consultationId) await consultationContext(patientId, consultationId);
+  const consultationId = requiredText(input.consultationId, "Consulta vinculada ao relatório", 191);
+  await consultationContext(patientId, consultationId);
+  const linkedCheckpoint = await prisma.oncogeriatricCheckpoint.findFirst({
+    where: { patientId, episodeId, consultationId },
+    select: { id: true },
+  });
+  if (!linkedCheckpoint) {
+    throw new OncogeriatricError("REPORT_CONSULTATION_MISMATCH", "A consulta selecionada não está vinculada a este episódio oncogeriátrico.", 409);
+  }
   const g8AssessmentId = safeText(input.g8AssessmentId, 191);
   const cargAssessmentId = safeText(input.cargAssessmentId, 191);
   if (g8AssessmentId) {

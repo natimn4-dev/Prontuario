@@ -52,6 +52,8 @@ test("snapshot exige revisão clínica no servidor, registra autor/data e serial
     source("src/server/oncogeriatria/service.ts"),
     source("src/components/oncogeriatria/report-actions.tsx"),
   ]);
+  const snapshotService = service.slice(service.indexOf("export async function createOncogeriatricReportSnapshot"));
+  const checkpointService = service.slice(service.indexOf("export async function createOncogeriatricCheckpoint"), service.indexOf("export async function updateOncogeriatricCheckpoint"));
   assert.match(service, /input\.clinicalReviewConfirmed !== true/);
   assert.match(service, /CLINICAL_REVIEW_REQUIRED/);
   assert.match(schema, /clinicalReviewConfirmedById String\?/);
@@ -64,6 +66,20 @@ test("snapshot exige revisão clínica no servidor, registra autor/data e serial
   assert.match(actions, /shareConfirmed/);
   assert.match(actions, /disabled=\{!shareConfirmed/);
   assert.match(actions, /data-onco-clinical-review/);
+  assert.match(snapshotService, /requiredText\(input\.consultationId, "Consulta vinculada ao relatório"/);
+  assert.match(snapshotService, /REPORT_CONSULTATION_MISMATCH/);
+  assert.match(snapshotService, /where: \{ patientId, episodeId, consultationId \}/);
+  assert.match(checkpointService, /const consultationId = safeText\(input\.consultationId, 191\)/);
+  assert.match(actions, /const canArchive = Boolean\(consultationId\)/);
+  assert.match(actions, /disabled=\{!canArchive \|\| pending \|\| shareConfirmed\}/);
+  assert.match(actions, /Vincule este acompanhamento a uma consulta/);
+  const report = await source("src/app/patients/[id]/oncogeriatria/relatorio/page.tsx");
+  const form = await source("src/components/oncogeriatria/oncogeriatric-forms.tsx");
+  assert.match(form, /commonAdverseEffects:text\(form,"commonAdverseEffects"\)/);
+  assert.match(report, /commonAdverseEffects: commonAdverseEffects \|\| null/);
+  assert.match(report, /schemaVersion: "oncogeriatria-report-v6"/);
+  assert.match(report, /Efeitos adversos frequentes esperados, confirmados para este esquema/);
+  assert.match(report, /Não registrados para este esquema\. O sistema não os infere/);
 });
 
 test("vínculo tardio da consulta usa revisão otimista e não religa avaliação já vinculada", async () => {
