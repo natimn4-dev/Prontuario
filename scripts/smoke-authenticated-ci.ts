@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import { createHash } from "node:crypto";
 import { PrismaMariaDb } from "@prisma/adapter-mariadb";
 import { PrismaClient } from "../src/generated/prisma/client.ts";
+import { chromium } from "playwright";
 import { isCiE2EAuthEnvironment } from "../src/domain/security/ci-e2e-auth-policy.ts";
 
 function databaseConfig() {
@@ -26,6 +27,7 @@ const userId = "ci-e2e-user-dietary";
 const assignedPatientId = "ci-e2e-patient-assigned";
 const unassignedPatientId = "ci-e2e-patient-unassigned";
 const assignedConsultationId = "ci-e2e-consultation-assigned";
+const unlinkedOncoConsultationId = "ci-e2e-consultation-onco-unlinked";
 const unassignedConsultationId = "ci-e2e-consultation-unassigned";
 const oncogeriatricEpisodeId = "ci-e2e-onco-episode";
 const oncogeriatricCourseId = "ci-e2e-onco-course";
@@ -45,7 +47,7 @@ async function cleanup() {
     where: { OR: [{ userId }, { assignedByUserId: userId }] },
   });
   await prisma.consultation.deleteMany({
-    where: { id: { in: [assignedConsultationId, unassignedConsultationId] } },
+    where: { id: { in: [assignedConsultationId, unlinkedOncoConsultationId, unassignedConsultationId] } },
   });
   await prisma.patient.deleteMany({
     where: { id: { in: [assignedPatientId, unassignedPatientId] } },
@@ -99,6 +101,14 @@ async function seed() {
         occurredAt: new Date("2026-01-15T12:00:00.000Z"),
       },
       {
+        id: unlinkedOncoConsultationId,
+        patientId: assignedPatientId,
+        physicianId: userId,
+        type: "FOLLOW_UP",
+        status: "DRAFT",
+        occurredAt: new Date("2026-02-15T12:00:00.000Z"),
+      },
+      {
         id: unassignedConsultationId,
         patientId: unassignedPatientId,
         physicianId: userId,
@@ -137,6 +147,36 @@ async function request(path: string, authenticated: boolean, body?: Record<strin
     redirect: "manual",
     signal: AbortSignal.timeout(15_000),
   });
+}
+
+async function verifyScalesInBrowser() {
+  const browser = await chromium.launch({ headless: true });
+  try {
+    const page = await browser.newPage({ viewport: { width: 1280, height: 850 } });
+    await page.setExtraHTTPHeaders({ "x-prontuario-e2e-user": email, "x-prontuario-e2e-secret": secret });
+    const failures: string[] = [];
+    page.on("pageerror", (error) => failures.push(error.message));
+    const treatmentUrl = `${baseUrl}/patients/${assignedPatientId}/oncogeriatria/tratamento?episode=${oncogeriatricEpisodeId}`;
+    await page.goto(treatmentUrl, { waitUntil: "domcontentloaded" });
+    await page.getByRole("navigation", { name: "Campos clínicos da consulta de trabalho" }).getByRole("link", { name: /Escalas clínicas/ }).click();
+    await page.waitForURL(/\/oncogeriatria\/escalas\?episode=/);
+    await page.getByRole("heading", { name: "Escalas clínicas", exact: true }).waitFor({ state: "visible", timeout: 30_000 });
+    assert.ok(await page.locator("#escalas fieldset").count(), "A tela deve mostrar o catálogo preenchível, não apenas um painel vazio.");
+    assert.match(await page.locator("main").innerText(), /Esta consulta ainda não está vinculada a um momento oncogeriátrico/);
+    await page.screenshot({ path: "/tmp/prontuario-onco-escalas-sinteticas.png", fullPage: true });
+
+    await page.getByRole("link", { name: /Iniciar momento clínico e preencher CARG/ }).click();
+    await page.getByRole("heading", { name: "Iniciar momento clínico" }).waitFor({ state: "visible" });
+    assert.equal(await page.locator('select[name="consultationId"]').inputValue(), unlinkedOncoConsultationId);
+    await page.screenshot({ path: "/tmp/prontuario-onco-carg-inicial-sintetico.png", fullPage: true });
+    await page.goto(`${baseUrl}/patients/${assignedPatientId}/oncogeriatria/avaliacao?episode=${oncogeriatricEpisodeId}&checkpoint=${oncogeriatricCheckpointId}`, { waitUntil: "domcontentloaded" });
+    await page.getByRole("link", { name: /Continuar para as demais escalas desta consulta/ }).click();
+    await page.locator("#escalas fieldset").first().waitFor({ state: "visible", timeout: 30_000 });
+    await page.screenshot({ path: "/tmp/prontuario-onco-carg-para-escalas-sinteticas.png", fullPage: true });
+    assert.deepEqual(failures, [], "O navegador não pode apresentar erro de execução durante a passagem das escalas ao CARG.");
+  } finally {
+    await browser.close();
+  }
 }
 
 async function main() {
@@ -200,11 +240,20 @@ async function main() {
   assert.match(scalesHtml, /clinical-scales-title|Carregando escalas clínicas/);
   const scalesWorkspace = await request(`/api/consultations/${assignedConsultationId}/scales/workspace`, true);
   assert.equal(scalesWorkspace.status, 200, "O catálogo de escalas da consulta vinculada deve carregar.");
+  const scalesPage = await request(`${oncoPath}/escalas${episodeQuery}&consultation=${assignedConsultationId}`, true);
+  assert.equal(scalesPage.status, 200);
+  const scalesPageHtml = await scalesPage.text();
+  assert.match(scalesPageHtml, /Abrir ou revisar CARG deste momento/);
+  assert.match(scalesPageHtml, /Escalas clínicas da consulta/);
+  const unlinkedScales = await request(`${oncoPath}/escalas${episodeQuery}&consultation=${unlinkedOncoConsultationId}`, true);
+  assert.equal(unlinkedScales.status, 200);
+  assert.match(await unlinkedScales.text(), /Iniciar momento clínico e preencher CARG nesta consulta/);
+  const inaccessibleScales = await request(`/patients/${unassignedPatientId}/oncogeriatria/escalas${episodeQuery}&consultation=${unassignedConsultationId}`, true);
+  assert.equal(inaccessibleScales.status, 404, "Página oncogeriátrica de paciente não atribuído não pode expor identidade ou escalas.");
   const treatmentPage = await request(`${oncoPath}/tratamento${episodeQuery}`, true);
   assert.equal(treatmentPage.status, 200);
   const treatmentHtml = await treatmentPage.text();
-  assert.match(treatmentHtml, new RegExp(`/consultations/${assignedConsultationId}\\?oncogeriatriaReturn=tratamento`));
-  assert.match(treatmentHtml, /#escalas/);
+  assert.match(treatmentHtml, new RegExp(`/patients/${assignedPatientId}/oncogeriatria/escalas\\?episode=${oncogeriatricEpisodeId}`));
   assert.match(treatmentHtml, /Revisar riscos, efeitos e orientações deste tratamento/);
 
   const oldCourse = await prisma.oncogeriatricTreatmentCourse.findUniqueOrThrow({ where: { id: oncogeriatricCourseId }, select: { updatedAt: true } });
@@ -223,6 +272,7 @@ async function main() {
   assert.match(reportHtml, /Efeito sintético confirmado/);
   assert.match(reportHtml, /Fonte sintética de teste/);
   assert.match(reportHtml, /Trajetória geriátrica/);
+  await verifyScalesInBrowser();
 
   console.log("AUTHENTICATED_CI_E2E=SMOKE_OK");
   console.log("- usuário sintético autenticado exclusivamente pelo contexto de CI");
@@ -233,6 +283,7 @@ async function main() {
   console.log("- paciente não atribuído retornou 403 e gerou auditoria");
   console.log("- CARG, catálogo de escalas e relatório do episódio sintético responderam");
   console.log("- esquema existente atualizado com efeitos, fonte e orientações; isolado, idempotente e protegido contra versão antiga");
+  console.log("- navegador percorreu escalas → CARG inicial e CARG vinculado → instrumentos preenchíveis sem tela vazia");
 }
 
 try {

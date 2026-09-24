@@ -1,6 +1,6 @@
 import type { CapacityDimensionHistory, CapacityDimensionStatus } from "@/domain/capacity-dimension-history";
 import { buildOncogeriatricDomainReviewPriorities } from "@/domain/oncogeriatria/domain-review";
-import { buildOncogeriatricCargHref, buildOncogeriatricConsultationHref, type OncogeriatricReturnStage } from "@/domain/oncogeriatria/return-navigation";
+import { buildOncogeriatricCargHref, buildOncogeriatricConsultationHref, buildOncogeriatricScalesHref, type OncogeriatricReturnStage } from "@/domain/oncogeriatria/return-navigation";
 import type { ReactNode } from "react";
 import styles from "./clinical-continuity.module.css";
 
@@ -64,7 +64,9 @@ export function OncogeriatricClinicalContinuity({
       </div>
       <nav className={styles.actionGrid} aria-label="Campos clínicos da consulta de trabalho">
         {actions.map((action) => (
-          <a key={action.hash} href={buildOncogeriatricConsultationHref({ consultationId: consultation.id, section: action.hash, episodeId, returnStage })}>
+          <a key={action.hash} href={action.hash === "escalas"
+            ? buildOncogeriatricScalesHref({ patientId, episodeId, consultationId: consultation.id })
+            : buildOncogeriatricConsultationHref({ consultationId: consultation.id, section: action.hash, episodeId, returnStage })}>
             <strong>{action.label}</strong>
             <span>{action.detail}</span>
             <small>{readOnly ? "Revisar registro →" : "Abrir e preencher →"}</small>
@@ -120,7 +122,7 @@ export function OncogeriatricDomainReview({
               </div>
               <div className={styles.priorityActions}>
                 {workingConsultation ? (
-                  <a className={styles.primaryLink} href={buildOncogeriatricConsultationHref({ consultationId: workingConsultation.id, section: "escalas", episodeId, returnStage })}>
+                  <a className={styles.primaryLink} href={buildOncogeriatricScalesHref({ patientId, episodeId, consultationId: workingConsultation.id })}>
                     {workingConsultation.status === "FINALIZED" ? "Revisar escalas da consulta" : "Abrir escalas na consulta de trabalho"} →
                   </a>
                 ) : null}

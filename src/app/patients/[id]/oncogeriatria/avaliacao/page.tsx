@@ -49,7 +49,7 @@ export default async function OncogeriatricCargPage({
   const consultationOptions = workspace.consultations.filter((item) => item.status !== "FINALIZED").map((item) => ({ id: item.id, label: `${formatClinicalDate(item.occurredAt)} · ${item.status === "IN_REVIEW" ? "Em revisão" : "Em rascunho"}` }));
   const courseOptions = workspace.courses.map((item) => ({ id: item.id, label: `${item.regimenName} · ${oncogeriatricCourseStatusLabel(item.status)}` }));
 
-  if (!workspace.checkpoint || (query.new === "1" && !query.checkpoint && !query.consultation)) {
+  if (!workspace.checkpoint || (query.new === "1" && !query.checkpoint)) {
     return (
       <main className="shell">
         <OncogeriatricWorkspaceHeader patientId={patientId} patientName={patient.fullName} episodeLabel={episode.diagnosis} currentStep="avaliacao" title="Avaliação do momento" description="Selecione ou crie um momento clínico para preencher CARG e demais escalas." />
@@ -109,6 +109,8 @@ export default async function OncogeriatricCargPage({
           finalizationMessage="Vincule este checkpoint a uma consulta clínica para registrar o CARG definitivamente. O rascunho permanece salvo."
         />
       </article>
+
+      <nav className="panel no-print" aria-label="Continuação após CARG"><a href={consultation ? "#escalas" : "#vincular-consulta"}>{consultation ? "Continuar para as demais escalas desta consulta →" : "Vincular consulta para continuar às demais escalas →"}</a></nav>
 
       <details className="panel"><summary>G8 · triagem oncogeriátrica {g8Assessment?.scoreText ?? ""}</summary>
         {consultation && !finalized ? <G8ChecklistForm key={checkpoint.id} patientId={patientId} episodeId={episode.id} checkpointId={checkpoint.id} initialAgeYears={ageOnDate(patient.birthDate, checkpoint.occurredAt)} initialAnswers={readStructuredRecord(g8Assessment?.answers)} /> : <p className="muted">{finalized ? "Consulta finalizada: G8 em somente leitura." : "Vincule uma consulta para registrar o G8."}</p>}

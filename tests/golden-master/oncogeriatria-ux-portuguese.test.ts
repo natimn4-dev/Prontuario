@@ -29,7 +29,8 @@ test("oncogeriatria oferece quatro destinos e um workspace de escalas", () => {
   for (const label of ["Avaliação do momento", "Trajetória", "Relatório", "Visão geral"]) assert.ok(nav.includes(label));
   assert.doesNotMatch(nav, /Ferramentas de apoio|Ações clínicas frequentes/);
   assert.match(scalesPage, /buildOncogeriatricCargHref/);
-  assert.match(scalesPage, /#escalas/);
+  assert.match(scalesPage, /ClinicalScalesWorkspace consultationId=\{consultation.id\}/);
+  assert.match(scalesPage, /Não há consulta vinculada/);
   assert.match(cargPage, /ClinicalScalesWorkspace/);
 });
 
@@ -113,7 +114,7 @@ test("CARG mantém rascunho, finalização e bloqueio de consulta encerrada", ()
   assert.match(service, /CONSULTATION_FINALIZED/);
   assert.match(consultationLinker, /CHECKPOINT_LINK_CONSULTATION/);
   assert.match(consultationLinker, /window\.location\.assign/);
-  assert.match(consultationLinker, /#escalas/);
+  assert.match(consultationLinker, /#carg/);
   assert.doesNotMatch(consultationLinker, /router\.(?:replace|refresh)/);
 });
 

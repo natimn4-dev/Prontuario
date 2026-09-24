@@ -99,7 +99,7 @@ test("vínculo tardio da consulta usa revisão otimista e não religa avaliaçã
   assert.match(route, /CHECKPOINT_LINK_CONSULTATION/);
   assert.match(linker, /expectedRevision/);
   assert.match(linker, /window\.location\.assign/);
-  assert.match(linker, /#escalas/);
+  assert.match(linker, /#carg/);
 });
 
 test("CARG mantém cálculo no servidor, rascunho/proveniência e revisão de diferenças antes de substituir avaliação arquivada", async () => {

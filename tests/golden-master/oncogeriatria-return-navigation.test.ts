@@ -5,6 +5,7 @@ import {
   buildOncogeriatricCargHref,
   buildOncogeriatricConsultationHref,
   buildOncogeriatricReturnPath,
+  buildOncogeriatricScalesHref,
   oncogeriatricReturnLabel,
   parseOncogeriatricReturnStage,
 } from "../../src/domain/oncogeriatria/return-navigation.ts";
@@ -56,14 +57,14 @@ test("consulta valida vínculo do episódio ao paciente e oferece retorno no in�
   assert.match(styles, /@media print[\s\S]*\.returnBar,[\s\S]*\.returnFooter/);
 });
 
-test("atalho de escalas abre a consulta mesmo sem checkpoint e CARG mantém avaliação canônica", () => {
+test("atalho abre escalas em página própria, mantém episódio e permite voltar ao CARG", () => {
   const continuity = readFileSync("src/components/oncogeriatria/clinical-continuity.tsx", "utf8");
   assert.match(continuity, /buildOncogeriatricCargHref/);
   assert.match(continuity, /buildOncogeriatricConsultationHref/);
   assert.match(continuity, /section: action.hash/);
-  assert.match(continuity, /section: "escalas"/);
-  assert.equal(buildOncogeriatricConsultationHref({ consultationId: "Q1", section: "escalas", episodeId: "E1", returnStage: "tratamento" }),
-    "/consultations/Q1?oncogeriatriaReturn=tratamento&episode=E1#escalas");
+  assert.match(continuity, /buildOncogeriatricScalesHref/);
+  assert.equal(buildOncogeriatricScalesHref({ patientId: "P1", consultationId: "Q1", episodeId: "E1" }),
+    "/patients/P1/oncogeriatria/escalas?episode=E1&consultation=Q1");
   assert.match(continuity, /returnStage: OncogeriatricReturnStage/);
   const assessment = readFileSync("src/app/patients/[id]/oncogeriatria/avaliacao/page.tsx", "utf8");
   assert.match(assessment, /stage: "longitudinal"/);
