@@ -281,3 +281,104 @@ test("rastreio cognitivo negativo e positivo geram orientações claramente dife
   assert.notDeepEqual(negative?.guidance, positive?.guidance);
   assert.notDeepEqual(positive?.guidance, markedlyAltered?.guidance);
 });
+
+
+test("relatório familiar omite locomoção quando há apenas contexto de dispositivo sem avaliação de mobilidade", () => {
+  const report = buildAgaReportModel({
+    patientId: "patient-context-only-mobility",
+    consultationId: "consultation-current",
+    consultationStatus: "IN_REVIEW",
+    patientName: "Paciente Sintético",
+    longitudinalProblems: [],
+    longitudinalAssessments: [{
+      patientId: "patient-context-only-mobility",
+      consultationId: "consultation-current",
+      scaleCode: "walking_aid_context",
+      scaleVersion: "walking-aid-context-2026-09-v1",
+      score: 1,
+      scoreText: "Andador",
+      classification: "Usa dispositivo de auxílio à locomoção",
+      color: "cinza",
+      answers: { usesWalkingAid: 1, walkingAidType: "andador" },
+      appliedAt: "2026-09-24",
+    }],
+  });
+
+  const domains = buildReportDomainSummaries(report.assessedScales, report.intrinsicCapacity);
+  assert.equal(domains.some((domain) => domain.code === "mobilidade"), false);
+  assert.equal(domains.some((domain) => domain.state === "not-assessed"), false);
+  assert.doesNotMatch(domains.map((domain) => domain.stateLabel).join(" "), /Não avaliado nesta consulta/i);
+});
+
+test("Cornell em pessoa com FAST grave gera orientação familiar específica sem expor co16", () => {
+  const report = buildAgaReportModel({
+    patientId: "patient-cornell-fast-severe",
+    consultationId: "consultation-current",
+    consultationStatus: "IN_REVIEW",
+    patientName: "Paciente Sintético",
+    longitudinalProblems: [],
+    longitudinalAssessments: [
+      {
+        patientId: "patient-cornell-fast-severe",
+        consultationId: "consultation-old",
+        scaleCode: "fast",
+        scaleVersion: "1.0",
+        score: 7.4,
+        scoreText: "7D",
+        classification: "Demência grave",
+        color: "vermelho",
+        appliedAt: "2026-08-24",
+      },
+      {
+        patientId: "patient-cornell-fast-severe",
+        consultationId: "consultation-current",
+        scaleCode: "cornell",
+        scaleVersion: "cornell-19-items-2026-08-v1",
+        score: 4,
+        scoreText: "4/38",
+        classification: "Sem indicação relevante no rastreio",
+        color: "verde",
+        answers: { co16: 0 },
+        appliedAt: "2026-09-24",
+      },
+    ],
+  });
+
+  assert.equal(report.alerts.some((alert) => /co16/i.test(alert.message)), false);
+
+  const humor = buildReportDomainSummaries(report.assessedScales, report.intrinsicCapacity)
+    .find((domain) => domain.code === "humor");
+  assert.ok(humor);
+  const guidance = humor.guidance.join(" ");
+  assert.match(guidance, /Cornell/i);
+  assert.match(guidance, /demência grave/i);
+  assert.match(guidance, /mudanças.*habitual|jeito habitual/i);
+  assert.doesNotMatch(guidance, /co16/i);
+});
+
+test("Cornell com ideação presente mantém alerta clínico e traduz o alerta compartilhado para a família", () => {
+  const report = buildAgaReportModel({
+    patientId: "patient-cornell-family-alert",
+    consultationId: "consultation-current",
+    consultationStatus: "IN_REVIEW",
+    patientName: "Paciente Sintético",
+    longitudinalProblems: [],
+    longitudinalAssessments: [{
+      patientId: "patient-cornell-family-alert",
+      consultationId: "consultation-current",
+      scaleCode: "cornell",
+      scaleVersion: "cornell-19-items-2026-08-v1",
+      score: 9,
+      scoreText: "9/38",
+      classification: "Sintomas depressivos prováveis",
+      color: "amarelo",
+      answers: { co16: 1 },
+      appliedAt: "2026-09-24",
+    }],
+  });
+
+  assert.equal(report.alerts.length, 1);
+  assert.match(report.alerts[0]!.message, /permaneça com ela|permaneça com a pessoa/i);
+  assert.match(report.alerts[0]!.message, /procure atendimento médico imediatamente/i);
+  assert.doesNotMatch(report.alerts[0]!.message, /co16|escore total|realizar avaliação clínica/i);
+});
