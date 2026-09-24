@@ -164,6 +164,10 @@ async function verifyScalesInBrowser() {
     assert.ok(await page.locator("#escalas fieldset").count(), "A tela deve mostrar o catálogo preenchível, não apenas um painel vazio.");
     assert.match(await page.locator("main").innerText(), /Esta consulta ainda não está vinculada a um momento oncogeriátrico/);
     await page.screenshot({ path: "/tmp/prontuario-onco-escalas-sinteticas.png", fullPage: true });
+    await page.locator('#escalas fieldset input[type="checkbox"]:not([disabled])').first().check();
+    await page.locator("#escalas article").waitFor({ state: "visible" });
+    assert.ok(await page.getByRole("button", { name: "Salvar avaliação" }).isVisible(), "Selecionar uma escala deve abrir o seu formulário preenchível.");
+    await page.screenshot({ path: "/tmp/prontuario-onco-escala-preenchivel-sintetica.png", fullPage: true });
 
     await page.getByRole("link", { name: /Iniciar momento clínico e preencher CARG/ }).click();
     await page.getByRole("heading", { name: "Iniciar momento clínico" }).waitFor({ state: "visible" });
