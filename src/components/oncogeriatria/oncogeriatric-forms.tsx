@@ -36,6 +36,33 @@ export function TreatmentCourseForm({patientId,episodeId}:{patientId:string;epis
   return <form className={styles.form} onSubmit={submit}><label>Modalidade<select name="modality" defaultValue="SYSTEMIC">{ONCOGERIATRIC_MODALITY_OPTIONS.map((item)=><option key={item.value} value={item.value}>{item.label}</option>)}</select></label><label>Intenção do tratamento<select name="intent" defaultValue="CURATIVE">{ONCOGERIATRIC_INTENT_OPTIONS.map((item)=><option key={item.value} value={item.value}>{item.label}</option>)}</select></label><label>Linha terapêutica<input name="therapyLine" /></label><label>Esquema<input name="regimenName" required /></label><label>Ciclos previstos<input name="plannedCycles" type="number" min="0" /></label><label>Início previsto<input name="plannedStartAt" type="date" /></label><label>Início realizado<input name="actualStartAt" type="date" /></label><label>Situação do tratamento<select name="status" defaultValue="PLANNED">{ONCOGERIATRIC_COURSE_STATUS_OPTIONS.map((item)=><option key={item.value} value={item.value}>{item.label}</option>)}</select></label><fieldset><legend>Riscos relevantes selecionados pelo médico</legend><label><input type="checkbox" name="neuro"/> Neurotoxicidade</label><label><input type="checkbox" name="cardio"/> Cardiotoxicidade</label><label><input type="checkbox" name="nephro"/> Nefrotoxicidade</label><label><input type="checkbox" name="oto"/> Ototoxicidade</label><label><input type="checkbox" name="hema"/> Toxicidade hematológica</label><label><input type="checkbox" name="gi"/> Toxicidade gastrointestinal</label><label><input type="checkbox" name="nutrition"/> Risco nutricional</label></fieldset><label>Efeitos adversos frequentes esperados, confirmados para este esquema<textarea name="commonAdverseEffects" rows={3} placeholder="Registre os efeitos confirmados para este esquema."/></label><label>Fonte clínica dos efeitos adversos<textarea name="commonAdverseEffectsSource" rows={2} placeholder="Informe a diretriz, bula, publicação ou protocolo consultado."/></label><label>Orientações específicas do esquema confirmadas pela equipe oncológica<textarea name="clinicianGuidance" rows={4} placeholder="Registre apenas monitorização, cuidados ou condutas já confirmados para este esquema."/></label><p className="muted">O sistema não infere efeitos ou recomendações pelo nome do antineoplásico. Dose, intervalo, adiamento, suspensão ou troca permanecem decisões clínicas humanas.</p><label>Outras observações sobre o tratamento<textarea name="notes" rows={3}/></label><button disabled={state.pending} type="submit">{state.pending?"Salvando…":"Registrar tratamento"}</button><Feedback message={state.message}/></form>;
 }
 
+const SAFETY_FLAGS = [
+  ["neuro", "Neurotoxicidade"], ["cardio", "Cardiotoxicidade"], ["nephro", "Nefrotoxicidade"],
+  ["oto", "Ototoxicidade"], ["hema", "Toxicidade hematológica"],
+  ["gi", "Toxicidade gastrointestinal"], ["nutrition", "Risco nutricional"],
+] as const;
+
+export function TreatmentSafetyEditForm({patientId,episodeId,courseId,updatedAt,initial}:{patientId:string;episodeId:string;courseId:string;updatedAt:string;initial:Record<string,unknown>}) {
+  const state=useSubmission();
+  const selected=Array.isArray(initial.selected) ? initial.selected.filter((item):item is string=>typeof item==="string") : [];
+  async function submit(event:FormEvent<HTMLFormElement>){
+    event.preventDefault();
+    const form=new FormData(event.currentTarget);
+    await state.runCreate((operationId)=>postAction(patientId,{
+      action:"TREATMENT_COURSE_SAFETY_UPDATE", operationId, episodeId, courseId, expectedUpdatedAt:updatedAt,
+      riskFlags:{selected:SAFETY_FLAGS.map(([key])=>key).filter((key)=>form.get(key)==="on"),commonAdverseEffects:text(form,"commonAdverseEffects"),commonAdverseEffectsSource:text(form,"commonAdverseEffectsSource"),clinicianGuidance:text(form,"clinicianGuidance")},
+    }));
+  }
+  return <form className={styles.form} onSubmit={submit}>
+    <fieldset><legend>Riscos relevantes confirmados pelo médico</legend>{SAFETY_FLAGS.map(([key,label])=><label key={key}><input name={key} type="checkbox" defaultChecked={selected.includes(key)}/>{label}</label>)}</fieldset>
+    <label>Efeitos adversos frequentes esperados<textarea name="commonAdverseEffects" rows={3} defaultValue={typeof initial.commonAdverseEffects==="string"?initial.commonAdverseEffects:""}/></label>
+    <label>Fonte clínica dos efeitos adversos<textarea name="commonAdverseEffectsSource" rows={2} defaultValue={typeof initial.commonAdverseEffectsSource==="string"?initial.commonAdverseEffectsSource:""}/></label>
+    <label>Orientações específicas confirmadas pela equipe oncológica<textarea name="clinicianGuidance" rows={4} defaultValue={typeof initial.clinicianGuidance==="string"?initial.clinicianGuidance:""}/></label>
+    <p className="muted">Revise as informações do esquema antes de salvar. As orientações não são inferidas pelo nome da droga.</p>
+    <button type="submit" disabled={state.pending}>{state.pending?"Salvando…":"Salvar orientações deste tratamento"}</button><Feedback message={state.message}/>
+  </form>;
+}
+
 export interface SelectOption {id:string;label:string}
 export function BaselineCheckpointForm({patientId,episodeId,consultations,courses}:{patientId:string;episodeId:string;consultations:SelectOption[];courses:SelectOption[]}) {
   const state=useSubmission(); const router=useRouter(); async function submit(event:FormEvent<HTMLFormElement>){event.preventDefault();const form=new FormData(event.currentTarget);const result=await state.runCreate((operationId)=>postAction(patientId,{action:"CHECKPOINT_CREATE",operationId,episodeId,type:"PRE_TREATMENT",consultationId:text(form,"consultationId"),treatmentCourseId:text(form,"treatmentCourseId"),occurredAt:text(form,"occurredAt"),structuredData:{ecogKps:text(form,"ecogKps"),whatMatters:text(form,"whatMatters")}}));if(result?.id) router.replace(buildOncogeriatricCargHref({patientId,episodeId,checkpointId:String(result.id)}));}

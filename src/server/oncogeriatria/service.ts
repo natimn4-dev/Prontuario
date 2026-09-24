@@ -50,6 +50,13 @@ function safeText(value: unknown, maxLength = 5000): string | null {
   return text;
 }
 
+function clinicalSafetyText(value: unknown): string | null {
+  if (value !== null && value !== undefined && typeof value !== "string") {
+    throw new OncogeriatricError("INVALID_RISK_FLAGS", "As orientações do tratamento devem conter texto clínico válido.");
+  }
+  return safeText(value);
+}
+
 function requiredText(value: unknown, label: string, maxLength = 5000): string {
   const text = safeText(value, maxLength);
   if (!text) throw new OncogeriatricError("REQUIRED_FIELD", `${label} é obrigatório.`);
@@ -330,11 +337,15 @@ export async function createOncogeriatricTreatmentCourse(patientId: string, inpu
   const episodeId = requiredText(input.episodeId, "Episódio", 191);
   await episodeContext(patientId, episodeId);
   const plannedCycles = optionalPositiveInt(input.plannedCycles, "Número de ciclos");
+  const initialSafety = safeObject(input.riskFlags);
+  if (initialSafety && clinicalSafetyText(initialSafety.commonAdverseEffects) && !clinicalSafetyText(initialSafety.commonAdverseEffectsSource)) {
+    throw new OncogeriatricError("SOURCE_REQUIRED", "Informe a fonte clínica dos efeitos adversos esperados.");
+  }
 
   try {
     return await prisma.$transaction(async (tx) => {
       const course = await tx.oncogeriatricTreatmentCourse.create({
-        data: { episodeId, patientId, modality: requiredText(input.modality, "Modalidade", 64), intent: requiredText(input.intent, "Intenção terapêutica", 64), therapyLine: safeText(input.therapyLine, 100), regimenName: requiredText(input.regimenName, "Esquema", 255), plannedCycles, plannedStartAt: optionalDate(input.plannedStartAt), actualStartAt: optionalDate(input.actualStartAt), endedAt: optionalDate(input.endedAt), status: safeText(input.status, 32) ?? "PLANNED", riskFlags: safeObject(input.riskFlags), notes: safeText(input.notes), createdById: user.id },
+        data: { episodeId, patientId, modality: requiredText(input.modality, "Modalidade", 64), intent: requiredText(input.intent, "Intenção terapêutica", 64), therapyLine: safeText(input.therapyLine, 100), regimenName: requiredText(input.regimenName, "Esquema", 255), plannedCycles, plannedStartAt: optionalDate(input.plannedStartAt), actualStartAt: optionalDate(input.actualStartAt), endedAt: optionalDate(input.endedAt), status: safeText(input.status, 32) ?? "PLANNED", riskFlags: initialSafety, notes: safeText(input.notes), createdById: user.id },
         select: { id: true, status: true },
       });
       await tx.auditEvent.create({ data: { userId: user.id, entityType: "OncogeriatricTreatmentCourse", entityId: course.id, action: "oncogeriatria.treatment-course.create", outcome: "success", requestId: opId } });
@@ -345,6 +356,53 @@ export async function createOncogeriatricTreatmentCourse(patientId: string, inpu
     if (isUniqueConstraintError(error)) {
       const repeated = await replayCourse(patientId, opId);
       if (repeated) return repeated;
+    }
+    throw error;
+  }
+}
+
+/** Revise only the scheme safety notes; preserve treatment identity and prior course records. */
+export async function updateOncogeriatricCourseSafety(patientId: string, input: Record<string, unknown>) {
+  const user = await writeActor();
+  const episodeId = requiredText(input.episodeId, "Episódio", 191);
+  const courseId = requiredText(input.courseId, "Tratamento", 191);
+  const opId = operationId(input);
+  await episodeContext(patientId, episodeId);
+  const receipt = await existingReceipt(patientId, opId, "TREATMENT_COURSE_SAFETY_UPDATE");
+  if (receipt) {
+    if (receipt.entityId !== courseId) throw new OncogeriatricError("IDEMPOTENCY_KEY_REUSED", "Esta operação pertence a outro tratamento.", 409);
+    return { id: courseId, saveStatus: "already_saved" as const, message: saveStatusMessage("already_saved") };
+  }
+  const expectedUpdatedAt = requiredText(input.expectedUpdatedAt, "Versão do tratamento", 50);
+  const expectedDate = new Date(expectedUpdatedAt);
+  if (!Number.isFinite(expectedDate.getTime())) throw new OncogeriatricError("INVALID_DATE", "Versão do tratamento inválida.");
+  const safety = safeObject(input.riskFlags);
+  if (!safety || !Array.isArray(safety.selected) || safety.selected.some((item) => typeof item !== "string" || !["neuro", "cardio", "nephro", "oto", "hema", "gi", "nutrition"].includes(item))) {
+    throw new OncogeriatricError("INVALID_RISK_FLAGS", "Selecione somente os riscos disponíveis.");
+  }
+  const commonAdverseEffects = clinicalSafetyText(safety.commonAdverseEffects);
+  const commonAdverseEffectsSource = clinicalSafetyText(safety.commonAdverseEffectsSource);
+  if (commonAdverseEffects && !commonAdverseEffectsSource) throw new OncogeriatricError("SOURCE_REQUIRED", "Informe a fonte clínica dos efeitos adversos esperados.");
+  const clinicianGuidance = clinicalSafetyText(safety.clinicianGuidance);
+
+  try {
+    return await prisma.$transaction(async (tx) => {
+      const course = await tx.oncogeriatricTreatmentCourse.findFirst({ where: { id: courseId, patientId, episodeId }, select: { riskFlags: true } });
+      if (!course) throw new OncogeriatricError("COURSE_NOT_FOUND", "Tratamento não encontrado neste episódio.", 404);
+      const previous = safeObject(course.riskFlags) ?? {};
+      const changed = await tx.oncogeriatricTreatmentCourse.updateMany({
+        where: { id: courseId, patientId, episodeId, updatedAt: expectedDate },
+        data: { riskFlags: { ...previous, selected: [...new Set(safety.selected as string[])], commonAdverseEffects, commonAdverseEffectsSource, clinicianGuidance } },
+      });
+      if (changed.count !== 1) throw new OncogeriatricError("COURSE_CHANGED", "O tratamento foi modificado em outra sessão. Recarregue antes de salvar.", 409);
+      await tx.auditEvent.create({ data: { userId: user.id, entityType: "OncogeriatricTreatmentCourse", entityId: courseId, action: "oncogeriatria.treatment-course.safety-update", outcome: "success", requestId: opId } });
+      await tx.oncogeriatricOperationReceipt.create({ data: { patientId, episodeId, operationId: opId, action: "TREATMENT_COURSE_SAFETY_UPDATE", entityType: "OncogeriatricTreatmentCourse", entityId: courseId } });
+      return { id: courseId, saveStatus: "created" as const, message: "Orientações do tratamento atualizadas." };
+    });
+  } catch (error) {
+    if (isUniqueConstraintError(error)) {
+      const repeated = await existingReceipt(patientId, opId, "TREATMENT_COURSE_SAFETY_UPDATE");
+      if (repeated?.entityId === courseId) return { id: courseId, saveStatus: "already_saved" as const, message: saveStatusMessage("already_saved") };
     }
     throw error;
   }

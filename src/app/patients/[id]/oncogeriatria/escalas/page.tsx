@@ -12,5 +12,5 @@ export default async function LegacyScalesPage({ params, searchParams }: {
   await loadOncogeriatricPatient(patientId);
   const episode = await resolveOncogeriatricEpisode(patientId, query.episode);
   if (!episode) redirect(`/patients/${encodeURIComponent(patientId)}/oncogeriatria`);
-  redirect(buildOncogeriatricCargHref({ patientId, episodeId: episode.id, checkpointId: query.checkpoint, consultationId: query.consultation }));
+  redirect(`${buildOncogeriatricCargHref({ patientId, episodeId: episode.id, checkpointId: query.checkpoint, consultationId: query.consultation })}#escalas`);
 }

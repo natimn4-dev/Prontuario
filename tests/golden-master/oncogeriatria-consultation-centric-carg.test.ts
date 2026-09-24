@@ -21,7 +21,8 @@ test("avaliação canônica preserva contexto e rotas legadas redirecionam", asy
   assert.match(read, /where: \{ id: requestedCheckpointId, patientId, episodeId \}/);
   assert.match(read, /where: \{ patientId, episodeId, consultationId: requestedConsultationId \}/);
   assert.match(legacy, /redirect\(buildOncogeriatricCargHref/);
-  assert.match(scales, /redirect\(buildOncogeriatricCargHref/);
+  assert.match(scales, /buildOncogeriatricCargHref/);
+  assert.match(scales, /#escalas/);
   assert.match(navigation, /path: "\/avaliacao"/);
   assert.match(links, /\/oncogeriatria\/avaliacao/);
 });

@@ -59,7 +59,7 @@ test("etapas clínicas reutilizam medicamentos, SOAP, vacinas, condutas e escala
     const page = readFileSync(`src/app/patients/[id]/oncogeriatria/${stage}/page.tsx`, "utf8");
     assert.match(page, /OncogeriatricClinicalContinuity/);
   }
-  for (const anchor of ["medicamentos", "soap", "escalas", "relatorio"]) assert.ok(continuity.includes(`hash: "${anchor}"`));
+  for (const anchor of ["medicamentos", "soap", "escalas", "diretivas", "relatorio"]) assert.ok(continuity.includes(`hash: "${anchor}"`));
   assert.match(continuity, /Evolução, vacinas e condutas/);
   assert.match(continuity, /não cria registros clínicos paralelos/);
 });

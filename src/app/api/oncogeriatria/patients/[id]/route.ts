@@ -10,6 +10,7 @@ import {
   createOncogeriatricReportSnapshot,
   createOncogeriatricToxicityEvent,
   createOncogeriatricTreatmentCourse,
+  updateOncogeriatricCourseSafety,
   OncogeriatricError,
   saveCarg,
   saveCargDraft,
@@ -26,6 +27,7 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
 
     if (action === "EPISODE_CREATE") return NextResponse.json(await createOncogeriatricEpisode(patientId, body), { status: 201 });
     if (action === "TREATMENT_COURSE_CREATE") return NextResponse.json(await createOncogeriatricTreatmentCourse(patientId, body), { status: 201 });
+    if (action === "TREATMENT_COURSE_SAFETY_UPDATE") return NextResponse.json(await updateOncogeriatricCourseSafety(patientId, body), { status: 200 });
     if (action === "CHECKPOINT_CREATE") return NextResponse.json(await createOncogeriatricCheckpoint(patientId, body), { status: 201 });
     if (action === "CHECKPOINT_UPDATE") return NextResponse.json(await saveOncogeriatricCheckpointData(patientId, body), { status: 200 });
     if (action === "CHECKPOINT_LINK_CONSULTATION") return NextResponse.json(await linkOncogeriatricCheckpointConsultation(patientId, body), { status: 200 });

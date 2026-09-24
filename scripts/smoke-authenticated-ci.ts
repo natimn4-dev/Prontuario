@@ -27,12 +27,19 @@ const assignedPatientId = "ci-e2e-patient-assigned";
 const unassignedPatientId = "ci-e2e-patient-unassigned";
 const assignedConsultationId = "ci-e2e-consultation-assigned";
 const unassignedConsultationId = "ci-e2e-consultation-unassigned";
+const oncogeriatricEpisodeId = "ci-e2e-onco-episode";
+const oncogeriatricCourseId = "ci-e2e-onco-course";
+const oncogeriatricCheckpointId = "ci-e2e-onco-checkpoint";
 
 function fingerprint(value: string): string {
   return createHash("sha256").update(value).digest("hex");
 }
 
 async function cleanup() {
+  await prisma.oncogeriatricOperationReceipt.deleteMany({ where: { patientId: assignedPatientId } });
+  await prisma.oncogeriatricCheckpoint.deleteMany({ where: { id: oncogeriatricCheckpointId } });
+  await prisma.oncogeriatricTreatmentCourse.deleteMany({ where: { id: oncogeriatricCourseId } });
+  await prisma.oncogeriatricEpisode.deleteMany({ where: { id: oncogeriatricEpisodeId } });
   await prisma.auditEvent.deleteMany({ where: { userId } });
   await prisma.patientUserAssignment.deleteMany({
     where: { OR: [{ userId }, { assignedByUserId: userId }] },
@@ -110,15 +117,21 @@ async function seed() {
       active: true,
     },
   });
+  await prisma.oncogeriatricEpisode.create({ data: { id: oncogeriatricEpisodeId, patientId: assignedPatientId, diagnosis: "Neoplasia sintética E2E", createdById: userId } });
+  await prisma.oncogeriatricTreatmentCourse.create({ data: { id: oncogeriatricCourseId, patientId: assignedPatientId, episodeId: oncogeriatricEpisodeId, modality: "SYSTEMIC", intent: "CURATIVE", regimenName: "Esquema sintético", status: "ACTIVE", createdById: userId } });
+  await prisma.oncogeriatricCheckpoint.create({ data: { id: oncogeriatricCheckpointId, patientId: assignedPatientId, episodeId: oncogeriatricEpisodeId, treatmentCourseId: oncogeriatricCourseId, consultationId: assignedConsultationId, type: "PRE_TREATMENT", occurredAt: new Date("2026-01-15T12:00:00.000Z"), createdById: userId } });
 }
 
-async function request(path: string, authenticated: boolean) {
+async function request(path: string, authenticated: boolean, body?: Record<string, unknown>) {
   const headers = new Headers({ "cache-control": "no-cache" });
+  if (body) headers.set("content-type", "application/json");
   if (authenticated) {
     headers.set("x-prontuario-e2e-user", email);
     headers.set("x-prontuario-e2e-secret", secret);
   }
   return fetch(new URL(path, baseUrl), {
+    method: body ? "POST" : "GET",
+    body: body ? JSON.stringify(body) : undefined,
     headers,
     cache: "no-store",
     redirect: "manual",
@@ -178,6 +191,39 @@ async function main() {
   });
   assert.ok(audit, "A tentativa de acesso ao paciente não atribuído precisa deixar trilha de auditoria.");
 
+  const oncoPath = `/patients/${assignedPatientId}/oncogeriatria`;
+  const episodeQuery = `?episode=${oncogeriatricEpisodeId}`;
+  const scales = await request(`${oncoPath}/avaliacao${episodeQuery}&checkpoint=${oncogeriatricCheckpointId}`, true);
+  assert.equal(scales.status, 200);
+  const scalesHtml = await scales.text();
+  assert.match(scalesHtml, /Demais escalas por domínio/);
+  assert.match(scalesHtml, /clinical-scales-title|Carregando escalas clínicas/);
+  const scalesWorkspace = await request(`/api/consultations/${assignedConsultationId}/scales/workspace`, true);
+  assert.equal(scalesWorkspace.status, 200, "O catálogo de escalas da consulta vinculada deve carregar.");
+  const treatmentPage = await request(`${oncoPath}/tratamento${episodeQuery}`, true);
+  assert.equal(treatmentPage.status, 200);
+  const treatmentHtml = await treatmentPage.text();
+  assert.match(treatmentHtml, new RegExp(`/consultations/${assignedConsultationId}\\?oncogeriatriaReturn=tratamento`));
+  assert.match(treatmentHtml, /#escalas/);
+  assert.match(treatmentHtml, /Revisar riscos, efeitos e orientações deste tratamento/);
+
+  const oldCourse = await prisma.oncogeriatricTreatmentCourse.findUniqueOrThrow({ where: { id: oncogeriatricCourseId }, select: { updatedAt: true } });
+  const updateBody = { action: "TREATMENT_COURSE_SAFETY_UPDATE", operationId: `ci-e2e-onco-${Date.now()}`, episodeId: oncogeriatricEpisodeId, courseId: oncogeriatricCourseId, expectedUpdatedAt: oldCourse.updatedAt.toISOString(), riskFlags: { selected: ["hema"], commonAdverseEffects: "Efeito sintético confirmado", commonAdverseEffectsSource: "Fonte sintética de teste", clinicianGuidance: "Orientação sintética revisada" } };
+  const deniedUpdate = await request(`/api/oncogeriatria/patients/${unassignedPatientId}`, true, updateBody);
+  assert.equal(deniedUpdate.status, 403, "Não se pode alterar tratamento de paciente não atribuído.");
+  const updated = await request(`/api/oncogeriatria/patients/${assignedPatientId}`, true, updateBody);
+  assert.equal(updated.status, 200, `Atualização do tratamento existente falhou: HTTP ${updated.status}.`);
+  const replay = await request(`/api/oncogeriatria/patients/${assignedPatientId}`, true, updateBody);
+  assert.equal(replay.status, 200, "Repetição da mesma operação deve ser idempotente.");
+  const stale = await request(`/api/oncogeriatria/patients/${assignedPatientId}`, true, { ...updateBody, operationId: `ci-e2e-stale-${Date.now()}` });
+  assert.equal(stale.status, 409, "Uma versão desatualizada não pode sobrescrever as orientações atuais.");
+  const report = await request(`${oncoPath}/relatorio${episodeQuery}`, true);
+  assert.equal(report.status, 200);
+  const reportHtml = await report.text();
+  assert.match(reportHtml, /Efeito sintético confirmado/);
+  assert.match(reportHtml, /Fonte sintética de teste/);
+  assert.match(reportHtml, /Trajetória geriátrica/);
+
   console.log("AUTHENTICATED_CI_E2E=SMOKE_OK");
   console.log("- usuário sintético autenticado exclusivamente pelo contexto de CI");
   console.log("- MySQL efêmero validado");
@@ -185,6 +231,8 @@ async function main() {
   console.log("- rota alimentar protegida retornou 401 sem autenticação");
   console.log("- paciente atribuído retornou 200");
   console.log("- paciente não atribuído retornou 403 e gerou auditoria");
+  console.log("- CARG, catálogo de escalas e relatório do episódio sintético responderam");
+  console.log("- esquema existente atualizado com efeitos, fonte e orientações; isolado, idempotente e protegido contra versão antiga");
 }
 
 try {

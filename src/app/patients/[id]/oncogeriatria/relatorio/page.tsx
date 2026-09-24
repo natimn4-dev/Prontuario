@@ -73,7 +73,9 @@ export default async function OncogeriatricReportPage({
   const capacityHistory = capacityHistoryForOncogeriatricEpisode(patientId, workspace);
   const domainGuidance = buildOncogeriatricReportGuidance(capacityHistory);
   const professional = buildProfessionalIdentity({ name: user.name, email: user.email, brandOwnerEmail: process.env.PROFESSIONAL_BRAND_OWNER_EMAIL });
-  const currentCourse = workspace.courses.find((item) => item.status === "ACTIVE") ?? workspace.courses[0];
+  const latestCheckpoint = workspace.checkpoints[workspace.checkpoints.length - 1];
+  const currentCourse = workspace.courses.find((item) => item.id === latestCheckpoint?.treatmentCourseId)
+    ?? workspace.courses.find((item) => item.status === "ACTIVE") ?? workspace.courses[0];
   const currentCourseRiskData = readStructuredRecord(currentCourse?.riskFlags);
   const selectedRiskFlags = Array.isArray(currentCourseRiskData.selected)
     ? currentCourseRiskData.selected.filter((item): item is string => typeof item === "string").map(oncogeriatricRiskFlagLabel)
@@ -81,7 +83,6 @@ export default async function OncogeriatricReportPage({
   const commonAdverseEffects = typeof currentCourseRiskData.commonAdverseEffects === "string" ? currentCourseRiskData.commonAdverseEffects.trim() : "";
   const commonAdverseEffectsSource = typeof currentCourseRiskData.commonAdverseEffectsSource === "string" ? currentCourseRiskData.commonAdverseEffectsSource.trim() : "";
   const clinicianRegimenGuidance = typeof currentCourseRiskData.clinicianGuidance === "string" ? currentCourseRiskData.clinicianGuidance.trim() : "";
-  const latestCheckpoint = workspace.checkpoints[workspace.checkpoints.length - 1];
   const g8 = latestAssessmentByIds(workspace.checkpoints.map((item) => item.g8AssessmentId), workspace.scaleAssessments);
   const latestCargCheckpoint = [...workspace.checkpoints].reverse().find((item) => {
     const draft = readStructuredRecord(item.cargDraft);
