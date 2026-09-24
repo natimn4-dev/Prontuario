@@ -888,7 +888,7 @@ export function buildReportDomainSummaries(
       ? (() => {
           const profile = frailtyProfileFor(dimensionScales);
           if (profile) return FRAILTY_GUIDANCE[profile];
-          return state === "not-assessed" ? undefined : FRAILTY_STATE_FALLBACK_GUIDANCE[state];
+          return FRAILTY_STATE_FALLBACK_GUIDANCE[state];
         })()
       : dimension === "cognicao" && (state === "preserved" || state === "attention" || state === "altered")
         ? cognitiveGuidanceFor(dimensionScales, state)
