@@ -1,4 +1,5 @@
 import { buildClinicalChangeSummary, type LongitudinalAssessment } from "./clinical-change-summary.ts";
+import type { ClinicalAlert } from "./clinical-alerts.ts";
 import {
   buildFamilyReportSafetyGuidance,
   type FamilyReportSafetyGuidance,
@@ -144,6 +145,15 @@ function interventionTexts(card: ReturnType<typeof buildClinicalChangeSummary>["
   ])];
 }
 
+function sharedReportAlerts(alerts: readonly ClinicalAlert[]): AgaReportModel["alerts"] {
+  return alerts
+    .filter((alert) => alert.audience !== "professional")
+    .map((alert) => ({
+      severity: alert.severity,
+      message: alert.familyMessage ?? alert.message,
+    }));
+}
+
 export function buildAgaReportModel(input: {
   patientId: string;
   consultationId: string;
@@ -245,10 +255,7 @@ export function buildAgaReportModel(input: {
       };
     }),
     notAssessedScaleCodes: Object.keys(SCALE_CATALOG).filter((code) => !assessedCodes.has(code)),
-    alerts: [...summary.urgentAlerts, ...summary.attentionAlerts].map((alert) => ({
-      severity: alert.severity,
-      message: alert.message,
-    })),
+    alerts: sharedReportAlerts([...summary.urgentAlerts, ...summary.attentionAlerts]),
     changeSummary: {
       headline: summary.headline,
       narrative: [...summary.narrative],
