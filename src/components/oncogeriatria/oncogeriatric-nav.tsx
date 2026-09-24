@@ -16,8 +16,7 @@ const supportSteps = [
   { id: "check", label: "Durante o tratamento", path: "/check", description: "Eventos e toxicidade" },
   { id: "tratamento", label: "Tratamento oncológico", path: "/tratamento", description: "Esquema e ciclos" },
   { id: "pos-tratamento", label: "Planejamento", path: "/pos-tratamento", description: "Recuperação" },
-  { id: "carg", label: "CARG", path: "/carg", description: "Rota legada" },
-  { id: "escalas", label: "Escalas", path: "/escalas", description: "Rota legada" },
+  { id: "escalas", label: "Demais escalas", path: "/escalas", description: "Instrumentos da consulta" },
 ] as const;
 
 const allSteps = [...workflowSteps, ...supportSteps] as const;
@@ -123,6 +122,16 @@ export function OncogeriatricNav({ patientId, episodeId }: { patientId: string; 
             </Link>
           );
         })}
+      </div>
+
+      <div className={styles.supportRail} aria-label="Etapas do cuidado oncogeriátrico">
+        <span>Antes · durante · depois</span>
+        <div>{supportSteps.map((step) => {
+          const active = pathname === `${overviewPath}${step.path}`;
+          return <Link key={step.id} href={stepHref(patientId, step.path, episodeId)} prefetch={false} className={active ? styles.activeSupport : undefined} aria-current={active ? "page" : undefined}>
+            <strong>{step.label}</strong><small>{step.description}</small>
+          </Link>;
+        })}</div>
       </div>
 
     </nav>

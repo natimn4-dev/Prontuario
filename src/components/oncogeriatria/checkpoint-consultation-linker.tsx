@@ -36,7 +36,7 @@ export function CheckpointConsultationLinker({
     });
     const result = await response.json().catch(() => null) as { message?: string } | null;
     if (!response.ok) throw new Error(result?.message ?? "Não foi possível vincular a consulta.");
-    window.location.assign(`${buildOncogeriatricCargHref({ patientId, episodeId, checkpointId, consultationId })}#escalas`);
+    window.location.assign(`${buildOncogeriatricCargHref({ patientId, episodeId, checkpointId, consultationId })}#carg`);
   }
 
   async function createAndLink() {

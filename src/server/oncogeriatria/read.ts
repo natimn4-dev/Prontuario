@@ -5,6 +5,8 @@ import { buildOncogeriatricCapacityHistory } from "@/domain/oncogeriatria/capaci
 import { isOncogeriatriaEnabled } from "@/domain/oncogeriatria/feature";
 import { buildOncogeriatricTemporalMarkers } from "@/domain/oncogeriatria/temporal-markers";
 import { requireAuthenticatedUser } from "@/server/auth/require-user";
+import { assertPatientAccessForUser } from "@/server/auth/patient-access";
+import { AccessForbiddenError } from "@/server/auth/access-errors";
 import { prisma } from "@/server/db";
 
 export type OncogeriatricWorkspaceProjection =
@@ -61,6 +63,13 @@ export async function requireOncogeriatricReadAccess() {
 }
 
 export async function loadOncogeriatricPatient(patientId: string) {
+  const { user } = await requireOncogeriatricReadAccess();
+  try {
+    await assertPatientAccessForUser(user, patientId);
+  } catch (error) {
+    if (error instanceof AccessForbiddenError) notFound();
+    throw error;
+  }
   const patient = await prisma.patient.findUnique({
     where: { id: patientId },
     select: { id: true, fullName: true, birthDate: true, sex: true, baselineConsultationId: true },

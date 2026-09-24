@@ -67,6 +67,20 @@ export function buildOncogeriatricCargHref({
   return `/patients/${encodeURIComponent(patientId)}/oncogeriatria/avaliacao?${query.toString()}`;
 }
 
+export function buildOncogeriatricScalesHref({
+  patientId,
+  episodeId,
+  consultationId,
+}: {
+  patientId: string;
+  episodeId: string;
+  consultationId?: string | null;
+}): string {
+  const query = new URLSearchParams({ episode: episodeId });
+  if (consultationId) query.set("consultation", consultationId);
+  return `/patients/${encodeURIComponent(patientId)}/oncogeriatria/escalas?${query.toString()}`;
+}
+
 export function oncogeriatricReturnLabel(stage: OncogeriatricReturnStage): string {
   return ONCOGERIATRIC_RETURN_STAGES[stage].label;
 }

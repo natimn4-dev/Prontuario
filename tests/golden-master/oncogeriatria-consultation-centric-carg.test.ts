@@ -4,7 +4,7 @@ import test from "node:test";
 
 async function source(path: string) { return readFile(path, "utf8"); }
 
-test("avaliação canônica preserva contexto e rotas legadas redirecionam", async () => {
+test("avaliação canônica mantém CARG e página de demais escalas carrega consulta identificada", async () => {
   const [route, legacy, scales, read, navigation, links] = await Promise.all([
     source("src/app/patients/[id]/oncogeriatria/avaliacao/page.tsx"),
     source("src/app/patients/[id]/oncogeriatria/carg/page.tsx"),
@@ -22,7 +22,8 @@ test("avaliação canônica preserva contexto e rotas legadas redirecionam", asy
   assert.match(read, /where: \{ patientId, episodeId, consultationId: requestedConsultationId \}/);
   assert.match(legacy, /redirect\(buildOncogeriatricCargHref/);
   assert.match(scales, /buildOncogeriatricCargHref/);
-  assert.match(scales, /#escalas/);
+  assert.match(scales, /ClinicalScalesWorkspace/);
+  assert.match(scales, /consultationId=\{consultation.id\}/);
   assert.match(navigation, /path: "\/avaliacao"/);
   assert.match(links, /\/oncogeriatria\/avaliacao/);
 });

@@ -58,7 +58,7 @@ jobs:
           NODE_ENV: test
         run: npm run test:backup
       - name: Install dependencies
-        run: npm ci
+        run: npm ci --include=dev
       - name: Generate Prisma Client
         run: npm run prisma:generate
       - name: Apply migrations to ephemeral MySQL
@@ -67,6 +67,8 @@ jobs:
         run: npm run test:integration
       - name: Clinical golden master
         run: npm run test:golden
+      - name: Install Chromium for synthetic clinical browser verification
+        run: npx playwright install --with-deps chromium
       - name: Authenticated E2E smoke on ephemeral data
         env:
           CI: "true"
@@ -92,6 +94,13 @@ jobs:
             sleep 1
           done
           npm run test:e2e:auth
+      - name: Save synthetic oncogeriatric browser evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: oncogeriatric-scales-synthetic
+          path: /tmp/prontuario-onco-*.png
+          if-no-files-found: ignore
       - name: Domain typecheck
         run: npm run typecheck:domain
       - name: Full typecheck
