@@ -347,6 +347,15 @@ const LATE_LIFE_DEPRESSION_EVIDENCE: readonly IntrinsicCapacityEvidenceReference
   },
 ];
 
+const CORNELL_DEMENTIA_DEPRESSION_EVIDENCE: readonly IntrinsicCapacityEvidenceReference[] = [
+  {
+    label: "Cornell Scale for Depression in Dementia",
+    pmid: "3337862",
+    url: "https://pubmed.ncbi.nlm.nih.gov/3337862/",
+    relevance: "Instrumento clínico desenvolvido para avaliar sinais de depressão em pessoas com demência combinando entrevista e observação clínica.",
+  },
+];
+
 const IADL_FAMILY_GUIDANCE: readonly string[] = [
   "Algumas atividades mais complexas, como finanças, compras, transporte, organização da casa e medicamentos, podem precisar de ajuda por perto. Preserve o que a pessoa ainda faz bem e ofereça apoio apenas onde começaram a aparecer erros ou insegurança.",
   "Mantenha a participação da pessoa nas decisões e tarefas que continuam possíveis. Aumente a ajuda aos poucos, apenas onde a dificuldade realmente apareceu.",
@@ -392,6 +401,63 @@ function currentGdsScore(scales: readonly AgaScaleReportSection[]): number | und
 
 function collectedValues(scale: AgaScaleReportSection): Map<string, string> {
   return new Map(scale.collectedData.map((item) => [item.field, item.value]));
+}
+
+function cornellFamilyGuidance(
+  allScales: readonly AgaScaleReportSection[],
+  dimensionScales: readonly AgaScaleReportSection[],
+): DomainGuidance | undefined {
+  const cornell = dimensionScales.find(
+    (scale) => scale.assessedInTargetConsultation && scale.code === "cornell",
+  );
+  if (!cornell) return undefined;
+
+  const actions: string[] = [];
+  if (cornell.clinicalColor === "verde") {
+    actions.push(
+      "A escala Cornell, específica para avaliar sinais de depressão em pessoas com demência, não mostrou um conjunto importante de sintomas depressivos nesta consulta. Mesmo assim, o resultado deve ser entendido junto com mudanças de comportamento, sono, apetite, interesse e conforto.",
+    );
+  } else if (cornell.clinicalColor === "amarelo" || cornell.clinicalColor === "vermelho") {
+    actions.push(
+      "A escala Cornell, específica para avaliar sinais de depressão em pessoas com demência, mostrou sinais que merecem acompanhamento. O resultado deve ser entendido junto com mudanças de comportamento, sono, apetite, interesse e conforto.",
+    );
+  } else {
+    actions.push(
+      "A escala Cornell é específica para avaliar sinais de depressão em pessoas com demência e combina informações do paciente, do cuidador e da observação clínica. O resultado deve ser lido junto com mudanças de comportamento, sono, apetite, interesse e conforto.",
+    );
+  }
+
+  const fast = allScales.find((scale) => scale.code === "fast");
+  const fastScore = fast ? scoreNumber(fast) : undefined;
+  const severeDementia = Boolean(
+    fast && (
+      /demência grave/i.test(fast.result.classification ?? "")
+      || (typeof fastScore === "number" && fastScore >= 7)
+    )
+  );
+
+  if (severeDementia) {
+    actions.push(
+      "Como o FAST já registra demência grave, a pessoa pode ter mais dificuldade para explicar tristeza, medo ou sofrimento. Observe principalmente mudanças em relação ao jeito habitual: ficar mais retraída ou irritada, perder interesse no contato, recusar alimentação ou cuidados, dormir de forma muito diferente ou parecer desconfortável.",
+      "Mantenha uma rotina previsível e tranquila, fale com calma e ofereça contato e atividades simples que tragam conforto, sem cobrar que a pessoa “se anime”. Compartilhe com a equipe mudanças persistentes para que também sejam avaliadas dor, infecção, alterações do sono, medicamentos e outras causas de mudança de comportamento.",
+    );
+  } else {
+    actions.push(
+      "Observe mudanças persistentes em relação ao habitual, como maior isolamento, irritabilidade, perda de interesse, alteração importante do sono ou do apetite e sinais de sofrimento. Anote o que mudou e compartilhe com a equipe.",
+    );
+  }
+
+  const co16 = Number(collectedValues(cornell).get("co16"));
+  if (Number.isFinite(co16) && co16 > 0) {
+    actions.push(
+      "Se a pessoa disser que a vida não vale a pena, falar em morte de forma preocupante ou tentar se machucar, permaneça com ela e procure atendimento médico imediatamente.",
+    );
+  }
+
+  return {
+    actions,
+    evidenceReferences: CORNELL_DEMENTIA_DEPRESSION_EVIDENCE,
+  };
 }
 
 const CONTEXT_ONLY_SCALE_CODES = new Set(["walking_aid_context"]);
@@ -809,6 +875,7 @@ export function buildReportDomainSummaries(
     if (familyVisibleScales.length === 0) return [];
 
     const state = stateFor(dimensionScales, dimension);
+    if (state === "not-assessed") return [];
     const intrinsicCode = INTRINSIC_DOMAIN_FOR_DIMENSION[dimension];
     const alteredIntrinsicGuidance = intrinsicCode
       ? intrinsicCapacity.alteredDomains.find((domain) => domain.code === intrinsicCode)
@@ -830,7 +897,9 @@ export function buildReportDomainSummaries(
       ? mobilityTargetedGuidance(dimensionScales)
       : dimension === "nutricao"
         ? eat10TargetedGuidance(dimensionScales)
-        : undefined;
+        : dimension === "humor"
+          ? cornellFamilyGuidance(scales, dimensionScales)
+          : undefined;
     const fallbackGuidance = stateAwareGuidance?.actions
       ?? alteredIntrinsicGuidance?.actions
       ?? intrinsicGuidance?.actions
@@ -853,8 +922,10 @@ export function buildReportDomainSummaries(
           genericGuidance,
           functionalContext,
         );
+    const hasCornell = dimension === "humor"
+      && dimensionScales.some((scale) => scale.assessedInTargetConsultation && scale.code === "cornell");
     const gdsScore = dimension === "humor" ? currentGdsScore(dimensionScales) : undefined;
-    const isAlteredGds = typeof gdsScore === "number" && gdsScore >= 6;
+    const isAlteredGds = !hasCornell && typeof gdsScore === "number" && gdsScore >= 6;
     const isIadlSupport = dimension === "funcionalidade" && functionalContext.level === "iadl-support";
     // Imobilidade contextualiza mobilidade, mas não pode apagar a orientação de
     // Funcionalidade derivada de Katz/Barthel/Lawton.
