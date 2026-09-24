@@ -15,6 +15,15 @@ test("evolução clínica usa fluxo vertical e deixa ações de cópia após o p
   assert.ok(styles.includes(".copyPanel {\n  order: 30;"));
 });
 
+test("salvamento da evolução fica visível no topo e no fim da página", () => {
+  const saveLabels = editor.match(/Salvar evolução e plano/g) ?? [];
+  assert.equal(saveLabels.length, 2);
+  assert.ok(editor.includes("bottomSaveBar"));
+  assert.ok(editor.includes("className={styles.saveButton}"));
+  assert.ok(styles.includes(".bottomSaveBar {"));
+  assert.ok(styles.includes("order: 40;"));
+});
+
 test("vacinas permanecem clinicamente intactas e ganham separação visual", () => {
   assert.ok(editor.includes("deriveVaccinationReview"));
   assert.ok(editor.includes("GERIATRIC_VACCINE_CHECKLIST"));
