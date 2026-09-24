@@ -523,7 +523,7 @@ export function SoapEditor({ consultationId, onDirtyChange }: { consultationId: 
           <p className={styles.muted}>A evolução e as condutas ficam no mesmo fluxo. O plano é vinculado aos problemas confirmados e permanece editável antes da finalização.</p>
         </div>
         <div className={styles.actions}>
-          <button type="button" onClick={() => void save()} disabled={!dirty || saving || finalized}>
+          <button className={styles.saveButton} type="button" onClick={() => void save()} disabled={!dirty || saving || finalized}>
             {saving ? "Salvando…" : "Salvar evolução e plano"}
           </button>
         </div>
@@ -680,6 +680,16 @@ export function SoapEditor({ consultationId, onDirtyChange }: { consultationId: 
             );
           })}
         </section>
+      </div>
+
+      <div className={styles.bottomSaveBar} aria-label="Salvar evolução SOAP">
+        <div>
+          <strong>Salvar evolução</strong>
+          <span>Grave as alterações desta consulta antes de sair ou avançar para outra etapa.</span>
+        </div>
+        <button className={styles.saveButton} type="button" onClick={() => void save()} disabled={!dirty || saving || finalized}>
+          {saving ? "Salvando…" : "Salvar evolução e plano"}
+        </button>
       </div>
     </section>
   );
