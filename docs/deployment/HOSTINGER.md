@@ -72,9 +72,9 @@ O endpoint público de health check deve responder HTTP 200 e incluir:
 
 - `status: "ok"`
 - `database: "ok"`
-- `releaseId: "2026-09-24-soap-sem-avaliacao-v1"`
+- `releaseId: "2026-09-25-sensory-functional-observation-v1"`
 
-Nesta release, a cópia SOAP omite a seção “A — Avaliação”; os problemas permanecem na seção própria da cópia combinada. Não há migration de banco nesta release.
+Nesta release, a cópia SOAP omite a seção “A — Avaliação”; os problemas permanecem na seção própria da cópia combinada. A migration aditiva `20260925063000_sensory_functional_observation` cria o histórico de observações sensoriais funcionais vinculado a paciente e consulta. Antes de promover uma alteração de schema, gere e verifique um backup criptografado conforme `docs/BACKUP_RESTORE.md`.
 
 O `releaseId` é deliberadamente servido com `Cache-Control: no-store`; uma CDN ou proxy não deve reutilizar um identificador antigo para declarar a implantação como atual. O smoke também exige esse header antes de aceitar a resposta de health.
 

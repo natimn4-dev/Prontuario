@@ -11,6 +11,7 @@ import {
   type ScopedWorkspaceValue,
   visibleWorkspaceValue,
 } from "./scoped-workspace-state";
+import { SensoryFunctionalObservation } from "./sensory-functional-observation";
 import styles from "./clinical-scales-workspace.module.css";
 
 type Choice = { value: number | string; label: string };
@@ -252,10 +253,11 @@ export function ClinicalScalesWorkspace({ consultationId, onDirtyChange }: { con
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [dirty, setDirty] = useState(false);
+  const [sensoryDirty, setSensoryDirty] = useState(false);
   const [feedbackState, setFeedbackState] = useState<ScopedWorkspaceValue<Feedback>>(null);
   const [oncogeriatricReadWarning, setOncogeriatricReadWarning] = useState<string | null>(null);
 
-  useEffect(() => { onDirtyChange?.(dirty); }, [dirty, onDirtyChange]);
+  useEffect(() => { onDirtyChange?.(dirty || sensoryDirty); }, [dirty, sensoryDirty, onDirtyChange]);
 
   async function fetchJson<T>(url: string): Promise<T> {
     const response = await fetch(url, { cache: "no-store" });
@@ -553,6 +555,8 @@ export function ClinicalScalesWorkspace({ consultationId, onDirtyChange }: { con
     <div className={styles.heading}><div><p className="eyebrow">Avaliação geriátrica</p><h2 id="clinical-scales-title">Escalas clínicas</h2><p>Selecione por domínio as escalas que deseja aplicar. É possível marcar várias e alternar entre elas sem sair da consulta.</p></div><span className={styles.count}>{appliedCodes.size} nesta consulta · {previousByCode.size} com histórico anterior</span></div>
     {coreView.licensingRestrictions?.length ? <p className={styles.licenseNotice}>Alguns instrumentos eletrônicos permanecem indisponíveis até confirmação da licença aplicável; registros rápidos permitidos continuam disponíveis quando previstos.</p> : null}
     {finalized ? <p className={styles.locked}>Consulta finalizada: resultados e histórico permanecem visíveis, sem nova aplicação.</p> : null}
+
+    <SensoryFunctionalObservation consultationId={consultationId} onDirtyChange={setSensoryDirty} />
 
     <div className={styles.domainGrid}>
       {groups.map((group) => <fieldset className={styles.domainBox} key={group.domain}><legend>{group.domain}</legend>{group.options.map((option) => {

@@ -171,6 +171,14 @@ function OverviewContent({ overview }: { overview: AgaReportOverview }) {
           <strong>{index === 0 ? `Funcionalidade — ${item.label}` : item.label}:</strong> {scaleOverviewText(item)}
         </li>
       ))}
+      {overview.sensoryFunction ? (
+        <li>
+          <strong>Audição e visão:</strong> {overview.sensoryFunction.label}
+          {overview.sensoryFunction.assessmentStatus === "ASSESSED" ? (
+            <> Alterações observadas em conjunto: {overview.sensoryFunction.multisensoryDysfunction ? "identificadas" : "não identificadas"}; usa lentes corretoras: {overview.sensoryFunction.usesCorrectiveLenses ? "sim" : "não"}.</>
+          ) : null}
+        </li>
+      ) : null}
       {overview.device ? <li><strong>Dispositivo:</strong> {overview.device.label}</li> : null}
       {overview.advanceDirectives ? <li><strong>Diretivas antecipadas:</strong> {overview.advanceDirectives.label}</li> : null}
     </ul>
