@@ -116,7 +116,8 @@ test("rastreio SARC-CalF positivo aciona orientações específicas de Vitalidad
   assert.deepEqual(guidance.alteredDomains.map((domain) => domain.code), ["vitalidade"]);
   const vitality = guidance.alteredDomains[0];
   assert.deepEqual(vitality?.triggeredBy, ["SARC-CalF"]);
-  assert.ok(vitality?.actions.some((action) => /SARC-CalF/i.test(action)));
+  assert.ok(vitality?.actions.some((action) => /avaliação indicar maior risco de perda de força muscular/i.test(action)));
+  assert.ok(vitality?.actions.every((action) => !/SARC-CalF/i.test(action)));
   assert.ok(vitality?.evidenceReferences.some((reference) => reference.pmid === "27650212"));
 });
 
