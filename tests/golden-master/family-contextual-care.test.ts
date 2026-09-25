@@ -106,7 +106,7 @@ test("tabela resume imobilidade sem repetir literalmente o plano detalhado", () 
   });
 
   assert.equal(summary.length, 1);
-  assert.match(summary[0]!, /cuidado deve priorizar conforto/i);
+  assert.match(summary[0]!, /priorize conforto e segurança/i);
   assert.ok(!detailed.now.includes(summary[0]!));
   assert.ok(!detailed.caregiver.includes(summary[0]!));
 });
