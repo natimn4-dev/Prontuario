@@ -154,6 +154,42 @@ test("orientação de dispositivo só aparece quando o uso está registrado e é
   assert.doesNotMatch(guidance, /bengala, andador/i);
 });
 
+test("baixa mobilidade contextual sozinha aparece em Locomoção sem gerar 'não avaliado'", () => {
+  const report = buildAgaReportModel({
+    patientId: "patient-low-mobility-context",
+    consultationId: "consultation-current",
+    consultationStatus: "IN_REVIEW",
+    patientName: "Paciente Sintético",
+    longitudinalProblems: [],
+    longitudinalAssessments: [{
+      patientId: "patient-low-mobility-context",
+      consultationId: "consultation-current",
+      scaleCode: "walking_aid_context",
+      scaleVersion: "walking-aid-context-2026-09-v2",
+      score: 1,
+      scoreText: "Ajuda de terceiros",
+      classification: "Caminha apenas com ajuda de outra pessoa",
+      interpretation: "Registro contextual.",
+      color: undefined,
+      answers: {
+        usesWalkingAid: 1,
+        walkingAidType: "Ajuda de terceiros",
+        mostlySeatedOrLying: 1,
+      },
+      appliedAt: "2026-09-24",
+    }],
+  });
+
+  const mobility = buildReportDomainSummaries(report.assessedScales, report.intrinsicCapacity)
+    .find((domain) => domain.code === "mobilidade");
+  const guidance = mobility?.guidance.join(" ") ?? "";
+
+  assert.equal(mobility?.state, "attention");
+  assert.doesNotMatch(mobility?.stateLabel ?? "", /não avaliado/i);
+  assert.match(guidance, /variar a posição ao longo do dia/i);
+  assert.match(guidance, /contraturas/i);
+});
+
 test("ajuda de terceiros com maior parte do dia sentada ou deitada ativa prevenção de lesão por pressão e contraturas", () => {
   const mobility = mobilityDomain({
     usesWalkingAid: 1,
