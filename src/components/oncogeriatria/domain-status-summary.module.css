@@ -1,0 +1,89 @@
+.evolutionList {
+  display: grid;
+  gap: 10px;
+}
+
+.evolutionCard {
+  display: grid;
+  grid-template-columns: minmax(0, 1.4fr) minmax(190px, 0.75fr) minmax(180px, 0.75fr);
+  align-items: stretch;
+  gap: 16px;
+  min-width: 0;
+  padding: 18px 20px;
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  background: var(--surface);
+  box-shadow: var(--shadow-sm);
+}
+
+.domainSummary,
+.metricBlock {
+  min-width: 0;
+}
+
+.domainSummary h3 {
+  margin: 2px 0 8px;
+  color: var(--ink);
+  font-size: 16px;
+  line-height: 1.3;
+  overflow-wrap: anywhere;
+}
+
+.statusReason {
+  margin: 8px 0 0;
+  font-size: 14px;
+  line-height: 1.45;
+}
+
+.metricBlock {
+  display: grid;
+  align-content: center;
+  gap: 7px;
+  padding-left: 16px;
+  border-left: 1px solid var(--line);
+}
+
+.metricBlock > span {
+  color: var(--muted);
+  font-size: 11px;
+  font-weight: 750;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+
+.metricBlock > strong {
+  color: var(--primary-strong);
+  font-size: 15px;
+  font-weight: 750;
+  line-height: 1.4;
+  overflow-wrap: anywhere;
+}
+
+@media (max-width: 900px) {
+  .evolutionCard {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  }
+
+  .domainSummary {
+    grid-column: 1 / -1;
+  }
+
+  .metricBlock {
+    align-content: start;
+    padding: 12px 0 0;
+    border-top: 1px solid var(--line);
+    border-left: 0;
+  }
+}
+
+@media (max-width: 560px) {
+  .evolutionCard {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 12px;
+    padding: 16px;
+  }
+
+  .domainSummary {
+    grid-column: auto;
+  }
+}
