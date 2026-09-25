@@ -263,6 +263,7 @@ model Patient {
   consultations          Consultation[]      @relation("PatientConsultations")
   problems               ClinicalProblem[]
   scaleAssessments       ScaleAssessment[]
+  sensoryFunctionalObservations SensoryFunctionalObservation[]
   clinicalExamRecords    ClinicalExamRecord[]
   medications            Medication[]
   documents              DocumentSnapshot[]
@@ -314,6 +315,7 @@ model Consultation {
   problemsOriginated ClinicalProblem[]  @relation("ProblemOrigin")
   problemEvents     ProblemEvent[]
   scaleAssessments  ScaleAssessment[]
+  sensoryFunctionalObservations SensoryFunctionalObservation[]
   clinicalExamRecord ClinicalExamRecord?
   medicationRegimens MedicationRegimen[]
   medicationStatusEvents MedicationStatusEvent[]
@@ -482,6 +484,23 @@ model ScaleAssessment {
   @@index([patientId, scaleCode, appliedAt])
   @@index([scaleDefinitionId])
   @@index([consultationId])
+}
+
+model SensoryFunctionalObservation {
+  id                      String       @id @default(cuid())
+  patientId               String
+  consultationId          String
+  assessmentStatus        String       @default("NOT_ASSESSED")
+  multisensoryDysfunction Boolean      @default(false)
+  usesCorrectiveLenses    Boolean      @default(false)
+  protocolVersion         String       @default("sensory-functional-observation-v1")
+  revision                Int          @default(1)
+  createdAt               DateTime     @default(now())
+  patient                 Patient      @relation(fields: [patientId], references: [id], onDelete: Restrict, map: "sensory_obs_patient_fk")
+  consultation            Consultation @relation(fields: [consultationId, patientId], references: [id, patientId], onDelete: Restrict, map: "sensory_obs_consult_patient_fk")
+
+  @@unique([consultationId, patientId, revision], map: "sensory_obs_consult_patient_revision_uq")
+  @@index([patientId, consultationId], map: "sensory_obs_patient_consult_idx")
 }
 
 model Medication {

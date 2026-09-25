@@ -116,12 +116,19 @@ test("visão geral respeita FAST > MEEM > MoCA > 10-CS e Katz > Barthel > Lawton
     consultationDate: "2026-08-30",
     scales: report.assessedScales,
     gastrostomyPresent: true,
+    sensoryFunction: {
+      assessmentStatus: "ASSESSED",
+      multisensoryDysfunction: true,
+      usesCorrectiveLenses: true,
+    },
     directiveHistory: [],
   });
 
   assert.equal(enrichment.overview.ageYears, 81);
   assert.equal(enrichment.overview.cognition?.scaleCode, "fast");
   assert.deepEqual(enrichment.overview.functionality.map((item) => item.scaleCode), ["katz", "barthel", "lawton"]);
+  assert.equal(enrichment.overview.sensoryFunction?.multisensoryDysfunction, true);
+  assert.equal(enrichment.overview.sensoryFunction?.usesCorrectiveLenses, true);
   assert.equal(enrichment.overview.device?.label, "Gastrostomia (GTT)");
   assert.equal(enrichment.overview.advanceDirectives, undefined);
 });
@@ -251,6 +258,11 @@ test("exportação acessível usa visão geral estruturada, preferência documen
     consultationDate: "2026-08-30",
     scales: report.assessedScales,
     gastrostomyPresent: true,
+    sensoryFunction: {
+      assessmentStatus: "ASSESSED",
+      multisensoryDysfunction: true,
+      usesCorrectiveLenses: false,
+    },
     directiveHistory: [
       directiveRecord({
         id: "directive-current",
@@ -273,10 +285,39 @@ test("exportação acessível usa visão geral estruturada, preferência documen
   assert.match(text, /Idade: 82 anos/);
   assert.match(text, /Cognição — FAST: 6E — FAST 6e/);
   assert.doesNotMatch(text, /Cognição — FAST: 6\.5/);
+  assert.match(text, /Audição e visão: Avaliação realizada nesta consulta\. Alterações de visão e audição observadas em conjunto: identificadas; usa lentes corretoras: não\./);
   assert.match(text, /Dispositivo: Gastrostomia \(GTT\)/);
   assert.match(text, /DIRETIVAS ANTECIPADAS/);
   assert.match(text, new RegExp(recordedPreference.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")));
   assert.doesNotMatch(text, /Preferência registrada/i);
   assert.doesNotMatch(text, /\nHistórico\n/i);
   assert.doesNotMatch(text, /Sem mudança numérica classificável/);
+});
+
+test("visão geral não infere resposta sensorial quando não há observação salva", () => {
+  const enrichment = buildAgaReportEnrichment({
+    consultationDate: "2026-08-30",
+    scales: [],
+    gastrostomyPresent: false,
+    directiveHistory: [],
+  });
+
+  assert.equal(enrichment.overview.sensoryFunction, undefined);
+});
+
+test("situação sensorial não avaliada permanece diferente de achados ausentes", () => {
+  const enrichment = buildAgaReportEnrichment({
+    consultationDate: "2026-08-30",
+    scales: [],
+    gastrostomyPresent: false,
+    sensoryFunction: {
+      assessmentStatus: "NOT_ASSESSED",
+      multisensoryDysfunction: false,
+      usesCorrectiveLenses: false,
+    },
+    directiveHistory: [],
+  });
+
+  assert.equal(enrichment.overview.sensoryFunction?.label, "Avaliação sensorial não realizada nesta consulta.");
+  assert.equal(enrichment.overview.sensoryFunction?.multisensoryDysfunction, undefined);
 });

@@ -1,1 +1,1 @@
-export const CLINICAL_RELEASE_ID = "2026-09-24-soap-sem-avaliacao-v1" as const;
+export const CLINICAL_RELEASE_ID = "2026-09-25-sensory-functional-observation-v1" as const;

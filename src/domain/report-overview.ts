@@ -1,5 +1,10 @@
 import type { AgaScaleReportSection } from "./aga-report.ts";
 import {
+  buildSensoryFunctionOverview,
+  type SensoryFunctionalObservationValues,
+  type SensoryFunctionOverview,
+} from "./sensory-functional-observation.ts";
+import {
   ADVANCE_DIRECTIVE_TOPIC_CODES,
   DOCUMENT_STATUS_LABELS,
   PARTICIPATION_LABELS,
@@ -44,6 +49,7 @@ export interface AgaReportOverview {
   ageYears?: number;
   cognition?: AgaReportOverviewScaleItem;
   functionality: AgaReportOverviewScaleItem[];
+  sensoryFunction?: SensoryFunctionOverview;
   device?: {
     label: "Gastrostomia (GTT)";
     source: "structured-medication-route";
@@ -254,6 +260,7 @@ export function buildAgaReportEnrichment(input: {
   consultationDate: Date | string;
   scales: readonly AgaScaleReportSection[];
   gastrostomyPresent: boolean;
+  sensoryFunction?: SensoryFunctionalObservationValues | null;
   directiveHistory: readonly AdvanceDirectiveRecordView[];
 }): AgaReportEnrichment {
   const byCode = new Map(input.scales.map((scale) => [scale.code, scale]));
@@ -263,6 +270,7 @@ export function buildAgaReportEnrichment(input: {
   const functionality = FUNCTIONALITY_ORDER
     .map((code) => scaleOverviewItem(byCode.get(code)))
     .filter((item): item is AgaReportOverviewScaleItem => Boolean(item));
+  const sensoryFunction = buildSensoryFunctionOverview(input.sensoryFunction);
   const advanceDirectives = buildAdvanceDirectivesReportSection(input.directiveHistory);
 
   return {
@@ -272,6 +280,7 @@ export function buildAgaReportEnrichment(input: {
         : {}),
       ...(cognition ? { cognition } : {}),
       functionality,
+      ...(sensoryFunction ? { sensoryFunction } : {}),
       ...(input.gastrostomyPresent ? {
         device: {
           label: "Gastrostomia (GTT)" as const,

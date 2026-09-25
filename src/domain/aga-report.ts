@@ -89,7 +89,7 @@ export interface AgaMedicationPlanSection {
 }
 
 export interface AgaReportModel {
-  schemaVersion: "1.3";
+  schemaVersion: "1.4";
   patientId: string;
   consultationId: string;
   consultationStatus: AgaReportConsultationStatus;
@@ -188,7 +188,7 @@ export function buildAgaReportModel(input: {
     .map((card) => card.scaleId));
 
   return {
-    schemaVersion: "1.3",
+    schemaVersion: "1.4",
     patientId: input.patientId,
     consultationId: input.consultationId,
     consultationStatus: input.consultationStatus,

@@ -54,6 +54,13 @@ function overviewBlocks(overview: AgaReportOverview): string[] {
   if (overview.functionality.length > 0) {
     items.push(...overview.functionality.map((item) => `Funcionalidade — ${item.label}: ${item.value}`));
   }
+  if (overview.sensoryFunction) {
+    const sensory = overview.sensoryFunction;
+    const findings = sensory.assessmentStatus === "ASSESSED"
+      ? `${sensory.label} Alterações de visão e audição observadas em conjunto: ${sensory.multisensoryDysfunction ? "identificadas" : "não identificadas"}; usa lentes corretoras: ${sensory.usesCorrectiveLenses ? "sim" : "não"}.`
+      : sensory.label;
+    items.push(`Audição e visão: ${findings}`);
+  }
   if (overview.device) items.push(`Dispositivo: ${overview.device.label}`);
   if (overview.advanceDirectives) items.push(`Diretivas antecipadas: ${overview.advanceDirectives.label}`);
   return items.length > 0 ? ["", "VISÃO GERAL", list(items)] : [];

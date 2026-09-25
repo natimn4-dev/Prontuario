@@ -90,7 +90,7 @@ export async function generateAgaReport(input: {
       });
       const consultationIds = horizon.map((item) => item.id);
 
-      const [scaleAssessments, persistedProblems] = await Promise.all([
+      const [scaleAssessments, persistedProblems, sensoryObservation] = await Promise.all([
         tx.scaleAssessment.findMany({
           where: {
             patientId: consultation.patientId,
@@ -155,6 +155,15 @@ export async function generateAgaReport(input: {
                 createdAt: true,
               },
             },
+          },
+        }),
+        tx.sensoryFunctionalObservation.findFirst({
+          where: { patientId: consultation.patientId, consultationId: consultation.id },
+          orderBy: [{ revision: "desc" }, { id: "desc" }],
+          select: {
+            assessmentStatus: true,
+            multisensoryDysfunction: true,
+            usesCorrectiveLenses: true,
           },
         }),
       ]);
@@ -260,6 +269,13 @@ export async function generateAgaReport(input: {
         consultationDate: consultation.occurredAt,
         scales: clinicalReport.assessedScales,
         gastrostomyPresent,
+        sensoryFunction: sensoryObservation
+          ? {
+            assessmentStatus: sensoryObservation.assessmentStatus as "ASSESSED" | "NOT_ASSESSED",
+            multisensoryDysfunction: sensoryObservation.multisensoryDysfunction,
+            usesCorrectiveLenses: sensoryObservation.usesCorrectiveLenses,
+          }
+          : null,
         directiveHistory: directiveWorkspace.history,
       });
       const reportCareSections = buildAgaReportCareSections({
