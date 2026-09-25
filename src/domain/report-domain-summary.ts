@@ -1018,9 +1018,11 @@ export function buildReportDomainSummaries(
       ? state === "preserved"
         ? 3
         : (npiPositiveDomains(dimensionScales).length > 0 ? 5 : targetedCognitiveGuidance(dimensionScales).length > 0 ? 4 : 2)
-      : dimension === "mobilidade" && (targetedGuidance || immobilityContext.established)
+      : targetedGuidance
         ? 4
-        : 2;
+        : dimension === "mobilidade" && immobilityContext.established
+          ? 4
+          : 2;
     const guidance = unique(contextGuidance).slice(0, isAlteredGds ? 3 : guidanceLimit);
     const requiresMedicalGuidance = (state === "altered" || state === "attention") && guidance.length === 0;
     const fallbackEvidence = stateAwareGuidance?.evidenceReferences
