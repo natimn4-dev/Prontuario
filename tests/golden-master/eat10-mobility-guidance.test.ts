@@ -4,7 +4,7 @@ import { buildAgaReportModel } from "../../src/domain/aga-report.ts";
 import type { LongitudinalAssessment } from "../../src/domain/clinical-change-summary.ts";
 import { scoreEat10 } from "../../src/domain/eat10.ts";
 import { buildReportDomainSummaries } from "../../src/domain/report-domain-summary.ts";
-import { scoreWalkingAidContext } from "../../src/domain/walking-aid-context.ts";
+import { WALKING_AID_CONTEXT_DEFINITION, scoreWalkingAidContext } from "../../src/domain/walking-aid-context.ts";
 
 const zeroEat10 = {
   weight_loss: 0,
@@ -34,7 +34,7 @@ test("EAT-10 calcula 0–40 e usa corte >=3 para rastreio positivo", () => {
   assert.throws(() => scoreEat10({ ...zeroEat10, cough: 5 }), /EAT-10 inválido/i);
 });
 
-test("registro de dispositivo exige tipo somente quando o uso está marcado", () => {
+test("registro de apoio contempla dispositivo, ajuda de terceiros, não deambulação e tempo sentado/deitado", () => {
   const none = scoreWalkingAidContext({ usesWalkingAid: 0 });
   assert.match(none.result.scoreText, /não utiliza/i);
   assert.equal(none.result.clinicalColor, undefined);
@@ -43,6 +43,28 @@ test("registro de dispositivo exige tipo somente quando o uso está marcado", ()
   assert.equal(cane.result.scoreText, "Bengala");
   assert.match(cane.result.classification, /utiliza dispositivo/i);
   assert.equal(cane.result.clinicalColor, undefined);
+
+  const assisted = scoreWalkingAidContext({
+    usesWalkingAid: 1,
+    walkingAidType: "Ajuda de terceiros",
+    mostlySeatedOrLying: 1,
+  });
+  assert.match(assisted.result.classification, /caminha apenas com ajuda/i);
+  assert.deepEqual(assisted.answers, {
+    usesWalkingAid: 1,
+    walkingAidType: "Ajuda de terceiros",
+    mostlySeatedOrLying: 1,
+  });
+
+  const nonAmbulatory = scoreWalkingAidContext({ usesWalkingAid: 1, walkingAidType: "Não deambula" });
+  assert.match(nonAmbulatory.result.classification, /não deambula/i);
+
+  const typeField = WALKING_AID_CONTEXT_DEFINITION.fields.find((field) => field.id === "walkingAidType");
+  assert.ok(typeField && "choices" in typeField);
+  const labels = typeField?.choices?.map((choice) => String(choice.label)) ?? [];
+  assert.ok(labels.includes("Caminha apenas com ajuda de outra pessoa"));
+  assert.ok(labels.includes("Não caminha"));
+  assert.ok(WALKING_AID_CONTEXT_DEFINITION.fields.some((field) => field.id === "mostlySeatedOrLying"));
 
   assert.throws(
     () => scoreWalkingAidContext({ usesWalkingAid: 1 }),
@@ -53,6 +75,7 @@ test("registro de dispositivo exige tipo somente quando o uso está marcado", ()
 function mobilityDomain(input: {
   usesWalkingAid?: 0 | 1;
   walkingAidType?: string;
+  mostlySeatedOrLying?: 0 | 1;
 }) {
   const assessments: LongitudinalAssessment[] = [
     {
@@ -75,7 +98,7 @@ function mobilityDomain(input: {
       patientId: "patient-mobility",
       consultationId: "consultation-current",
       scaleCode: "walking_aid_context",
-      scaleVersion: "walking-aid-context-2026-09-v1",
+      scaleVersion: "walking-aid-context-2026-09-v2",
       score: input.usesWalkingAid,
       scoreText: input.usesWalkingAid === 1 ? input.walkingAidType ?? "Outro" : "Não utiliza dispositivo de locomoção",
       classification: input.usesWalkingAid === 1
@@ -84,7 +107,11 @@ function mobilityDomain(input: {
       interpretation: "Registro contextual.",
       color: undefined,
       answers: input.usesWalkingAid === 1
-        ? { usesWalkingAid: 1, walkingAidType: input.walkingAidType ?? "Outro" }
+        ? {
+          usesWalkingAid: 1,
+          walkingAidType: input.walkingAidType ?? "Outro",
+          ...(input.mostlySeatedOrLying === undefined ? {} : { mostlySeatedOrLying: input.mostlySeatedOrLying }),
+        }
         : { usesWalkingAid: 0 },
       appliedAt: "2026-09-20",
     });
@@ -125,6 +152,87 @@ test("orientação de dispositivo só aparece quando o uso está registrado e é
   assert.match(guidance, /Mantenha o andador ao alcance/i);
   assert.doesNotMatch(guidance, /Como a pessoa usa|vale pedir/i);
   assert.doesNotMatch(guidance, /bengala, andador/i);
+});
+
+test("baixa mobilidade contextual sozinha aparece em Locomoção sem gerar 'não avaliado'", () => {
+  const report = buildAgaReportModel({
+    patientId: "patient-low-mobility-context",
+    consultationId: "consultation-current",
+    consultationStatus: "IN_REVIEW",
+    patientName: "Paciente Sintético",
+    longitudinalProblems: [],
+    longitudinalAssessments: [{
+      patientId: "patient-low-mobility-context",
+      consultationId: "consultation-current",
+      scaleCode: "walking_aid_context",
+      scaleVersion: "walking-aid-context-2026-09-v2",
+      score: 1,
+      scoreText: "Ajuda de terceiros",
+      classification: "Caminha apenas com ajuda de outra pessoa",
+      interpretation: "Registro contextual.",
+      color: undefined,
+      answers: {
+        usesWalkingAid: 1,
+        walkingAidType: "Ajuda de terceiros",
+        mostlySeatedOrLying: 1,
+      },
+      appliedAt: "2026-09-24",
+    }],
+  });
+
+  const mobility = buildReportDomainSummaries(report.assessedScales, report.intrinsicCapacity)
+    .find((domain) => domain.code === "mobilidade");
+  const guidance = mobility?.guidance.join(" ") ?? "";
+
+  assert.equal(mobility?.state, "attention");
+  assert.doesNotMatch(mobility?.stateLabel ?? "", /não avaliado/i);
+  assert.match(guidance, /variar a posição ao longo do dia/i);
+  assert.match(guidance, /contraturas/i);
+});
+
+test("ajuda de terceiros com maior parte do dia sentada ou deitada ativa prevenção de lesão por pressão e contraturas", () => {
+  const mobility = mobilityDomain({
+    usesWalkingAid: 1,
+    walkingAidType: "Ajuda de terceiros",
+    mostlySeatedOrLying: 1,
+  });
+  const guidance = mobility?.guidance.join(" ") ?? "";
+
+  assert.equal(mobility?.state, "altered");
+  assert.match(guidance, /caminha apenas com ajuda de outra pessoa/i);
+  assert.match(guidance, /variar a posição ao longo do dia/i);
+  assert.match(guidance, /cóccix|nádegas|calcanhares/i);
+  assert.match(guidance, /reduzir o risco de contraturas/i);
+  assert.match(guidance, /participe|participação/i);
+  assert.doesNotMatch(guidance, /a cada 2 horas|de duas em duas horas/i);
+  assert.ok(mobility?.evidenceReferences.some((reference) => reference.pmid === "42240176"));
+  assert.ok(mobility?.evidenceReferences.some((reference) => reference.pmid === "23772994"));
+  assert.ok(mobility?.evidenceReferences.some((reference) => reference.pmid === "21638258"));
+});
+
+test("ajuda de terceiros sem permanência prolongada sentada ou deitada não recebe automaticamente cuidados de pressão", () => {
+  const mobility = mobilityDomain({
+    usesWalkingAid: 1,
+    walkingAidType: "Ajuda de terceiros",
+    mostlySeatedOrLying: 0,
+  });
+  const guidance = mobility?.guidance.join(" ") ?? "";
+
+  assert.match(guidance, /forma mais segura de apoiar a marcha e as transferências/i);
+  assert.doesNotMatch(guidance, /cóccix|redistribuir a pressão|contraturas/i);
+});
+
+test("não deambulação ativa cuidados preventivos mesmo sem marcar permanência sentada ou deitada", () => {
+  const mobility = mobilityDomain({
+    usesWalkingAid: 1,
+    walkingAidType: "Não deambula",
+  });
+  const guidance = mobility?.guidance.join(" ") ?? "";
+
+  assert.match(guidance, /Mesmo sem estar caminhando/i);
+  assert.match(guidance, /sem forçar a marcha|não force a marcha/i);
+  assert.match(guidance, /pele todos os dias/i);
+  assert.match(guidance, /contraturas/i);
 });
 
 test("orientação respeita o tipo de dispositivo registrado e a concordância da frase", () => {

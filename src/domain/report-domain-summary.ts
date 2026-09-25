@@ -462,12 +462,31 @@ function cornellFamilyGuidance(
 
 const CONTEXT_ONLY_SCALE_CODES = new Set(["walking_aid_context"]);
 
+type MobilitySupportContext = {
+  supportType?: string;
+  mostlySeatedOrLying: boolean;
+  prolongedLowMobility: boolean;
+};
+
+function mobilitySupportContext(scales: readonly AgaScaleReportSection[]): MobilitySupportContext {
+  const support = scales.find((scale) => scale.assessedInTargetConsultation && scale.code === "walking_aid_context");
+  if (!support) return { mostlySeatedOrLying: false, prolongedLowMobility: false };
+  const values = collectedValues(support);
+  if (values.get("usesWalkingAid") !== "1") {
+    return { mostlySeatedOrLying: false, prolongedLowMobility: false };
+  }
+  const supportType = values.get("walkingAidType") || support.result.scoreText || undefined;
+  const mostlySeatedOrLying = values.get("mostlySeatedOrLying") === "1";
+  const doesNotWalk = supportType?.trim().toLocaleLowerCase("pt-BR") === "não deambula";
+  return {
+    supportType,
+    mostlySeatedOrLying,
+    prolongedLowMobility: Boolean(doesNotWalk || mostlySeatedOrLying),
+  };
+}
+
 function walkingAidType(scales: readonly AgaScaleReportSection[]): string | undefined {
-  const device = scales.find((scale) => scale.assessedInTargetConsultation && scale.code === "walking_aid_context");
-  if (!device) return undefined;
-  const values = collectedValues(device);
-  if (values.get("usesWalkingAid") !== "1") return undefined;
-  return values.get("walkingAidType") || device.result.scoreText || undefined;
+  return mobilitySupportContext(scales).supportType;
 }
 
 function reducedGripDetected(scales: readonly AgaScaleReportSection[]): boolean {
@@ -487,15 +506,64 @@ function personalizedWalkingAidGuidance(device: string): string {
       return "Converse com o seu fisioterapeuta sobre o ajuste e o uso correto das suas muletas, incluindo segurança nos trajetos do dia a dia. Mantenha as muletas ao alcance antes de se levantar.";
     case "cadeira de rodas":
       return "Converse com o seu fisioterapeuta sobre o ajuste e o uso correto da sua cadeira de rodas, incluindo posicionamento, transferências e segurança nos deslocamentos do dia a dia.";
+    case "ajuda de terceiros":
+      return "Como a pessoa caminha apenas com ajuda de outra pessoa, combine com o fisioterapeuta a forma mais segura de apoiar a marcha e as transferências. Explique cada movimento antes de começar, dê tempo para que ela participe do que conseguir e evite puxá-la pelos braços.";
+    case "não deambula":
+      return "Mesmo sem estar caminhando, mantenha a pessoa incluída nas escolhas e nos movimentos que ainda consegue fazer. Não force a marcha; priorize posicionamento confortável, transferências seguras e movimentos ativos ou assistidos conforme a tolerância.";
     default:
-      return `Converse com o seu fisioterapeuta sobre o ajuste e o uso correto do dispositivo de locomoção registrado (${device}), incluindo segurança nos trajetos do dia a dia.`;
+      return `Converse com o seu fisioterapeuta sobre o apoio para locomoção registrado (${device}), incluindo segurança nos deslocamentos e nas transferências do dia a dia.`;
   }
+}
+
+const IMMOBILITY_PREVENTION_EVIDENCE: readonly IntrinsicCapacityEvidenceReference[] = [
+  {
+    label: "Reposicionamento para prevenção de lesão por pressão",
+    pmid: "42240176",
+    url: "https://pubmed.ncbi.nlm.nih.gov/42240176/",
+    relevance: "Revisão Cochrane atualizada em 2026: reposicionamento faz parte do cuidado preventivo, mas a evidência não sustenta uma frequência fixa universal; o plano deve considerar risco, tolerância, posição e superfície de apoio.",
+  },
+  {
+    label: "Contraturas em pessoas idosas — fatores de risco e implicações práticas",
+    pmid: "23772994",
+    url: "https://pubmed.ncbi.nlm.nih.gov/23772994/",
+    relevance: "Revisão sistemática: imobilidade tem papel central no desenvolvimento de contraturas; manutenção da mobilidade e programas de movimento são estratégias plausíveis de prevenção.",
+  },
+  {
+    label: "Prevenção de contraturas no cuidado geriátrico",
+    pmid: "21638258",
+    url: "https://pubmed.ncbi.nlm.nih.gov/21638258/",
+    relevance: "Revisão sistemática em cuidado geriátrico: intervenções preventivas incluem estímulo à mobilidade, exercícios de amplitude de movimento e suporte adequado ao posicionamento, embora a qualidade da evidência seja limitada.",
+  },
+];
+
+function prolongedLowMobilityGuidance(context: MobilitySupportContext): string[] {
+  const support = context.supportType?.trim().toLocaleLowerCase("pt-BR");
+  const opening = support === "ajuda de terceiros"
+    ? "Como a pessoa caminha apenas com ajuda de outra pessoa e passa grande parte do dia sentada ou deitada, o cuidado deve preservar conforto, segurança e participação no que ela ainda consegue fazer, sem apressar ou forçar os movimentos."
+    : support === "não deambula"
+      ? "Mesmo sem estar caminhando, a pessoa deve continuar sendo incluída nas escolhas e nos movimentos que ainda consegue fazer. O cuidado deve priorizar conforto, posicionamento e mobilidade assistida, sem forçar a marcha."
+      : "Como a pessoa passa grande parte do dia sentada ou deitada, o cuidado deve preservar conforto, segurança e participação no que ela ainda consegue fazer.";
+
+  return [
+    opening,
+    "Ajude a variar a posição ao longo do dia, na cama e na cadeira, conforme conforto, condição da pele, superfície de apoio e tolerância. A frequência deve ser individualizada com a equipe, em vez de seguir um horário rígido igual para todas as pessoas. Se houver risco aumentado, converse sobre colchão ou almofada que ajudem a redistribuir a pressão.",
+    "Observe a pele todos os dias, principalmente na região do cóccix e das nádegas, quadris, calcanhares, tornozelos, cotovelos e outras áreas de apoio. Mantenha a pele limpa e seca e procure a equipe se aparecer vermelhidão persistente, bolha, ferida, endurecimento, calor local ou dor.",
+    "Movimente braços e pernas com delicadeza, dentro do limite confortável e sem forçar as articulações. Converse com o fisioterapeuta sobre movimentos ativos, assistidos ou passivos, posicionamento e outras medidas para preservar a amplitude dos movimentos e reduzir o risco de contraturas.",
+  ];
 }
 
 function mobilityTargetedGuidance(scales: readonly AgaScaleReportSection[]): DomainGuidance | undefined {
   const reducedGrip = reducedGripDetected(scales);
-  const device = walkingAidType(scales);
-  if (!reducedGrip && !device) return undefined;
+  const support = mobilitySupportContext(scales);
+  const device = support.supportType;
+  if (!reducedGrip && !device && !support.prolongedLowMobility) return undefined;
+
+  if (support.prolongedLowMobility) {
+    return {
+      actions: prolongedLowMobilityGuidance(support),
+      evidenceReferences: IMMOBILITY_PREVENTION_EVIDENCE,
+    };
+  }
 
   const actions: string[] = [];
   if (reducedGrip) {
@@ -511,7 +579,7 @@ function mobilityTargetedGuidance(scales: readonly AgaScaleReportSection[]): Dom
 
   return {
     actions,
-    evidenceReferences: [
+    evidenceReferences: reducedGrip ? [
       {
         label: "Força de preensão e risco de quedas graves em idosos",
         pmid: "37155689",
@@ -524,7 +592,7 @@ function mobilityTargetedGuidance(scales: readonly AgaScaleReportSection[]): Dom
         url: "https://pubmed.ncbi.nlm.nih.gov/30703272/",
         relevance: "Revisão sistemática: exercícios de equilíbrio e funcionais reduzem quedas; programas devem ser individualizados e seguros.",
       },
-    ],
+    ] : [],
   };
 }
 
@@ -874,7 +942,13 @@ export function buildReportDomainSummaries(
     const familyVisibleScales = dimensionScales.filter(shouldShowFamilyResult);
     if (familyVisibleScales.length === 0) return [];
 
-    const state = stateFor(dimensionScales, dimension);
+    const mobilitySupport = dimension === "mobilidade"
+      ? mobilitySupportContext(dimensionScales)
+      : undefined;
+    const rawState = stateFor(dimensionScales, dimension);
+    const state = rawState === "not-assessed" && mobilitySupport?.prolongedLowMobility
+      ? "attention"
+      : rawState;
     if (state === "not-assessed") return [];
     const intrinsicCode = INTRINSIC_DOMAIN_FOR_DIMENSION[dimension];
     const alteredIntrinsicGuidance = intrinsicCode
@@ -946,7 +1020,9 @@ export function buildReportDomainSummaries(
         : (npiPositiveDomains(dimensionScales).length > 0 ? 5 : targetedCognitiveGuidance(dimensionScales).length > 0 ? 4 : 2)
       : targetedGuidance
         ? 4
-        : 2;
+        : dimension === "mobilidade" && immobilityContext.established
+          ? 4
+          : 2;
     const guidance = unique(contextGuidance).slice(0, isAlteredGds ? 3 : guidanceLimit);
     const requiresMedicalGuidance = (state === "altered" || state === "attention") && guidance.length === 0;
     const fallbackEvidence = stateAwareGuidance?.evidenceReferences
@@ -954,9 +1030,12 @@ export function buildReportDomainSummaries(
       ?? intrinsicGuidance?.evidenceReferences
       ?? domainGuidance?.evidenceReferences
       ?? [];
+    const mobilityImmobilityEvidence = dimension === "mobilidade" && immobilityContext.established
+      ? IMMOBILITY_PREVENTION_EVIDENCE
+      : undefined;
     const evidenceReferences = isAlteredGds
       ? LATE_LIFE_DEPRESSION_EVIDENCE
-      : uniqueEvidence([targetedGuidance?.evidenceReferences, fallbackEvidence]);
+      : uniqueEvidence([targetedGuidance?.evidenceReferences, mobilityImmobilityEvidence, fallbackEvidence]);
 
     return [{
       code: dimension,
