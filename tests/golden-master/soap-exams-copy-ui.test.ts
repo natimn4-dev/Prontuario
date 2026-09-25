@@ -38,6 +38,11 @@ test("cópias separada e combinada preservam o fluxo aprovado e possuem fallback
   assert.match(editor, /A cópia usa o conteúdo atual da tela/);
 });
 
+test("cópia SOAP omite a seção A — Avaliação porque os problemas já têm seção própria", () => {
+  assert.doesNotMatch(editor, /lines\.push\("", "A — AVALIAÇÃO"\)/);
+  assert.match(editor, /function renderSoapParts\([\s\S]*?evolution: lines\.join\("\\n"\)/);
+});
+
 test("cópia do SOAP não remove a salvaguarda da reconciliação medicamentosa", () => {
   assert.match(editor, /async function medicationsForCopy\(\): Promise<MedicationItem\[\] \| null>/);
   assert.match(editor, /const provenance = summarizeSoapMedicationProvenance\(items\)/);

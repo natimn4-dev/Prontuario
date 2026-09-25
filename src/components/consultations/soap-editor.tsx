@@ -146,7 +146,6 @@ function medicationLine(item: MedicationItem): string {
 }
 
 function renderSoapParts(draft: Draft, problems: Problem[], medications: MedicationItem[], separateMedications = false): { evolution: string; medications: string; plan: string } {
-  const active = problems.filter((problem) => problem.status !== "RESOLVED");
   const activeMedications = medications.filter(isExplicitActiveMedication);
   const lines = [
     "S — SUBJETIVO",
@@ -159,10 +158,6 @@ function renderSoapParts(draft: Draft, problems: Problem[], medications: Medicat
   ];
   const medicationLines = ["MEDICAMENTOS EM USO", ...(activeMedications.length ? activeMedications.map(medicationLine) : ["- sem dados registrados"])];
   if (!separateMedications) lines.push("Medicações em uso:", ...medicationLines.slice(1));
-
-  lines.push("", "A — AVALIAÇÃO");
-  if (active.length === 0) lines.push("sem problemas ativos registrados");
-  else active.forEach((problem, index) => lines.push(`${index + 1}. ${problem.title}`));
 
   return {
     evolution: lines.join("\n"),
