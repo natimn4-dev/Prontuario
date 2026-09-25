@@ -72,7 +72,7 @@ O endpoint público de health check deve responder HTTP 200 e incluir:
 
 - `status: "ok"`
 - `database: "ok"`
-- `releaseId: "2026-09-24-orientacoes-familiares-empaticas-v1"`
+- `releaseId: "2026-09-24-locomocao-baixa-mobilidade-v1"`
 
 Nesta release, snapshots do relatório oncogeriátrico exigem vínculo da consulta e checkpoint ao mesmo episódio. O curso terapêutico permite registrar efeitos adversos esperados e sua fonte clínica, sem inferi-los pelo nome do antineoplásico; o relatório sinaliza quando não foram registrados. O cálculo e a interpretação do CARG, demais escalas, funcionalidade e o modelo do gráfico longitudinal aprovado permanecem inalterados. Não há migration de banco nesta release.
 
