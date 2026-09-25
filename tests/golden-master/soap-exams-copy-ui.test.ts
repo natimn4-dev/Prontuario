@@ -28,7 +28,7 @@ test("Evolução SOAP oferece checklist explícito de exames e rastreios solicit
 });
 
 test("cópias separada e combinada preservam o fluxo aprovado e possuem fallback de navegador", () => {
-  assert.match(editor, /Copiar SOAP \+ exames \+ escalas/);
+  assert.match(editor, /Copiar resumo clínico completo/);
   assert.match(editor, />Copiar SOAP</);
   assert.match(editor, /Copiar exames/);
   assert.match(editor, /Copiar escalas preenchidas/);
