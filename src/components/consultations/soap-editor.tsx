@@ -16,6 +16,7 @@ import {
   renderClinicalExamsText,
   renderCompletedScalesText,
   renderSoapExamsScalesReport,
+  renderSoapPlan,
   type CompletedScaleResult,
 } from "@/domain/clinical-copy-report";
 import type { ClinicalExamHistoryItem } from "@/domain/consultation-exams";
@@ -144,7 +145,7 @@ function medicationLine(item: MedicationItem): string {
   return `- ${parts.join(" — ")}`;
 }
 
-function renderSoap(draft: Draft, problems: Problem[], medications: MedicationItem[]): string {
+function renderSoapParts(draft: Draft, problems: Problem[], medications: MedicationItem[], separateMedications = false): { evolution: string; medications: string; plan: string } {
   const active = problems.filter((problem) => problem.status !== "RESOLVED");
   const activeMedications = medications.filter(isExplicitActiveMedication);
   const lines = [
@@ -155,28 +156,28 @@ function renderSoap(draft: Draft, problems: Problem[], medications: MedicationIt
     `Exame físico: ${valueOrMissing(draft.physicalExam)}`,
     `Sinais vitais: ${valueOrMissing(draft.vitalSigns)}`,
     `Antropometria: ${valueOrMissing(draft.anthropometry)}`,
-    "Medicações em uso:",
   ];
-  if (activeMedications.length === 0) lines.push("- sem dados registrados");
-  else activeMedications.forEach((item) => lines.push(medicationLine(item)));
+  const medicationLines = ["MEDICAMENTOS EM USO", ...(activeMedications.length ? activeMedications.map(medicationLine) : ["- sem dados registrados"])];
+  if (!separateMedications) lines.push("Medicações em uso:", ...medicationLines.slice(1));
 
   lines.push("", "A — AVALIAÇÃO");
   if (active.length === 0) lines.push("sem problemas ativos registrados");
   else active.forEach((problem, index) => lines.push(`${index + 1}. ${problem.title}`));
 
-  lines.push("", "P — PLANO");
-  if (draft.preventiveExamOrders.length > 0) {
-    lines.push("Solicitações de exames e rastreios:");
-    draft.preventiveExamOrders.forEach((order) => lines.push(`- ${preventiveExamOrderLabel(order)}`));
-  }
-  if (active.length === 0 && draft.preventiveExamOrders.length === 0) lines.push("sem dados registrados");
-  else active.forEach((problem, index) => {
-    lines.push(`${index + 1}. ${problem.title}`);
-    const actions = actionsFromText(draft.planTextByProblem[problem.id] ?? "");
-    if (actions.length === 0) lines.push("- sem dados registrados");
-    else actions.forEach((action) => lines.push(`- ${action}`));
-  });
-  return lines.join("\n");
+  return {
+    evolution: lines.join("\n"),
+    medications: medicationLines.join("\n"),
+    plan: renderSoapPlan({
+      problems,
+      planTextByProblem: draft.planTextByProblem,
+      examOrders: draft.preventiveExamOrders.map(preventiveExamOrderLabel),
+    }),
+  };
+}
+
+function renderSoap(draft: Draft, problems: Problem[], medications: MedicationItem[]): string {
+  const { evolution, plan } = renderSoapParts(draft, problems, medications);
+  return `${evolution}\n\n${plan}`;
 }
 
 function asCompletedScaleResults(results: readonly ScaleStatusItem[]): CompletedScaleResult[] {
@@ -460,13 +461,32 @@ export function SoapEditor({ consultationId, onDirtyChange }: { consultationId: 
     if (!items) return;
     const results = await ensureScaleResults();
     if (!results) return;
+    let dietaryOrientation: { text: string; reviewed: boolean; includeInSoap: boolean } | null = null;
+    try {
+      const response = await fetch(`/api/consultations/${consultationId}/dietary-assessment`, { cache: "no-store" });
+      if (!response.ok) throw new Error("Não foi possível conferir as orientações da aba Alimentação.");
+      const body = await response.json() as { assessment?: { orientationDraft?: string; orientationReviewed?: boolean; includeInSoap?: boolean } | null };
+      if (body.assessment) dietaryOrientation = {
+        text: body.assessment.orientationDraft ?? "",
+        reviewed: Boolean(body.assessment.orientationReviewed),
+        includeInSoap: Boolean(body.assessment.includeInSoap),
+      };
+    } catch {
+      setFeedback({ kind: "error", text: "Não foi possível conferir as orientações da aba Alimentação. Tente copiar novamente." });
+      return;
+    }
+    const { evolution, medications: medicationText, plan } = renderSoapParts(draft, view.problems, items, true);
     await copyText(
       renderSoapExamsScalesReport({
-        soap: renderSoap(draft, view.problems, items),
+        evolution,
+        medications: medicationText,
+        plan,
         problems: view.problems,
         currentExams: draft.examsText,
         examHistory: view.exams.history,
         scaleResults: asCompletedScaleResults(results),
+        dietaryOrientation,
+        pendingVaccines: draft.vaccinationReviewed ? [...draft.pendingVaccines, ...draft.legacyPendingVaccines] : [],
       }),
       "SOAP, exames e resultados das escalas copiados para a área de transferência.",
     );
@@ -542,10 +562,10 @@ export function SoapEditor({ consultationId, onDirtyChange }: { consultationId: 
       <aside className={styles.copyPanel} aria-labelledby="clinical-copy-title">
         <div>
           <strong id="clinical-copy-title">Cópia para o prontuário</strong>
-          <span>Para deixar a tela mais leve, medicações e escalas são verificadas somente quando você usa um botão de cópia. O relatório combinado inclui apenas as escalas preenchidas nesta consulta.</span>
+          <span>Para deixar a tela mais leve, os dados auxiliares são carregados ao copiar. O resumo combinado reúne problemas, evolução, medicamentos, exames, escalas preenchidas, plano, orientação alimentar revisada e pendências vacinais registradas nesta consulta.</span>
         </div>
         <div className={styles.copyActions}>
-          <button type="button" onClick={() => void copyCombinedReport()} disabled={medicationLoadState === "loading" || scaleLoadState === "loading"}>Copiar SOAP + exames + escalas</button>
+          <button type="button" onClick={() => void copyCombinedReport()} disabled={medicationLoadState === "loading" || scaleLoadState === "loading"}>Copiar resumo clínico completo</button>
           <button type="button" onClick={() => void copySoap()} disabled={medicationLoadState === "loading"}>Copiar SOAP</button>
           <button type="button" onClick={() => void copyExams()} disabled={!canCopyExams}>Copiar exames</button>
           <button type="button" onClick={() => void copyScales()} disabled={scaleLoadState === "loading"}>Copiar escalas preenchidas</button>

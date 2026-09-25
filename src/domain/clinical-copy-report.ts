@@ -84,16 +84,46 @@ export function renderProblemsText(problems: readonly CopyProblem[]): string {
 }
 
 export function renderSoapExamsScalesReport(input: {
-  soap: string;
+  evolution: string;
+  medications: string;
+  plan: string;
   problems: readonly CopyProblem[];
   currentExams: string;
   examHistory: readonly ClinicalExamHistoryItem[];
   scaleResults: readonly CompletedScaleResult[];
+  dietaryOrientation?: { text: string; reviewed: boolean; includeInSoap: boolean } | null;
+  pendingVaccines?: readonly string[];
 }): string {
+  const nutrition = input.dietaryOrientation?.reviewed && input.dietaryOrientation.includeInSoap
+    ? input.dietaryOrientation.text.trim()
+    : "";
+  const vaccines = (input.pendingVaccines ?? []).map((name) => name.trim()).filter(Boolean);
   return [
-    input.soap.trim(),
     renderProblemsText(input.problems),
+    ["EVOLUÇÃO", input.evolution.trim()].filter(Boolean).join("\n"),
+    input.medications.trim(),
     renderClinicalExamsText({ current: input.currentExams, history: input.examHistory }),
     renderCompletedScalesText(input.scaleResults),
+    input.plan.trim(),
+    nutrition ? `RECOMENDAÇÕES NUTRICIONAIS\n${nutrition}` : "",
+    vaccines.length ? ["VACINAS RECOMENDADAS PARA REVISÃO", ...vaccines.map((name) => `- ${name}`), "Pendências registradas nesta consulta; confirmar indicação individual antes de prescrever."].join("\n") : "",
   ].filter(Boolean).join("\n\n");
+}
+
+export function renderSoapPlan(input: {
+  problems: readonly { id: string; title: string; status: ProblemStatus }[];
+  planTextByProblem: Readonly<Record<string, string>>;
+  examOrders: readonly string[];
+}): string {
+  const lines = ["P — PLANO"];
+  if (input.examOrders.length) lines.push("Solicitações de exames e rastreios:", ...input.examOrders.map((order) => `- ${order}`));
+  const withActions = input.problems
+    .filter((problem) => problem.status !== "RESOLVED")
+    .map((problem) => ({ problem, actions: (input.planTextByProblem[problem.id] ?? "").split(/\r?\n/).map((line) => line.trim()).filter(Boolean) }))
+    .filter(({ actions }) => actions.length > 0);
+  withActions.forEach(({ problem, actions }, index) => {
+    lines.push(`${index + 1}. ${problem.title}`, ...actions.map((action) => `- ${action}`));
+  });
+  if (!input.examOrders.length && !withActions.length) lines.push("sem dados registrados");
+  return lines.join("\n");
 }

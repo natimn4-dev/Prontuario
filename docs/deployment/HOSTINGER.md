@@ -72,9 +72,9 @@ O endpoint público de health check deve responder HTTP 200 e incluir:
 
 - `status: "ok"`
 - `database: "ok"`
-- `releaseId: "2026-09-24-locomocao-baixa-mobilidade-v1"`
+- `releaseId: "2026-09-24-soap-copia-clinica-v1"`
 
-Nesta release, snapshots do relatório oncogeriátrico exigem vínculo da consulta e checkpoint ao mesmo episódio. O curso terapêutico permite registrar efeitos adversos esperados e sua fonte clínica, sem inferi-los pelo nome do antineoplásico; o relatório sinaliza quando não foram registrados. O cálculo e a interpretação do CARG, demais escalas, funcionalidade e o modelo do gráfico longitudinal aprovado permanecem inalterados. Não há migration de banco nesta release.
+Nesta release, a cópia clínica combinada segue a ordem problemas, evolução, medicamentos, exames, escalas, plano, orientação nutricional revisada e pendências vacinais registradas. O plano omite problemas sem conduta. Não há migration de banco nesta release.
 
 O `releaseId` é deliberadamente servido com `Cache-Control: no-store`; uma CDN ou proxy não deve reutilizar um identificador antigo para declarar a implantação como atual. O smoke também exige esse header antes de aceitar a resposta de health.
 
