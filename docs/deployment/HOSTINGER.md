@@ -72,9 +72,9 @@ O endpoint público de health check deve responder HTTP 200 e incluir:
 
 - `status: "ok"`
 - `database: "ok"`
-- `releaseId: "2026-09-24-soap-copia-clinica-v1"`
+- `releaseId: "2026-09-24-soap-sem-avaliacao-v1"`
 
-Nesta release, a cópia clínica combinada segue a ordem problemas, evolução, medicamentos, exames, escalas, plano, orientação nutricional revisada e pendências vacinais registradas. O plano omite problemas sem conduta. Não há migration de banco nesta release.
+Nesta release, a cópia SOAP omite a seção “A — Avaliação”; os problemas permanecem na seção própria da cópia combinada. Não há migration de banco nesta release.
 
 O `releaseId` é deliberadamente servido com `Cache-Control: no-store`; uma CDN ou proxy não deve reutilizar um identificador antigo para declarar a implantação como atual. O smoke também exige esse header antes de aceitar a resposta de health.
 
