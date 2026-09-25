@@ -125,12 +125,12 @@ const DOMAIN_CONTENT: Readonly<Record<IntrinsicCapacityDomainCode, Omit<Intrinsi
   },
   vitalidade: {
     label: "Vitalidade",
-    whyItMatters: "Vitalidade representa a reserva que o organismo usa para enfrentar doenças e manter as atividades do dia. Nesta versão, o estado nutricional e o rastreio de vulnerabilidade muscular pelo SARC-CalF são sinais acompanhados e devem ser interpretados junto com força, funcionalidade e condições clínicas.",
+    whyItMatters: "Vitalidade representa a reserva que o organismo usa para enfrentar doenças e manter as atividades do dia. O estado nutricional e os sinais de possível perda de força muscular são acompanhados junto com a funcionalidade e as demais condições de saúde.",
     actions: [
       "Para tornar as refeições mais agradáveis e menos cansativas, ofereça porções menores ao longo do dia quando refeições grandes forem difíceis. Valorize alimentos de que a pessoa gosta, respeite o ritmo da refeição e procure manter esse momento tranquilo e prazeroso.",
       "Ofereça líquidos várias vezes ao longo do dia, em pequenas quantidades e nos horários de melhor aceitação. Se foi combinado um limite diário de líquidos, distribua essa quantidade ao longo do dia para facilitar a hidratação sem ultrapassar o volume recomendado.",
       "Observe sinais simples que podem mostrar perda de força ou de reserva: roupas ficando mais folgadas, porções menores, falta de apetite, dificuldade para mastigar ou engolir e cansaço maior durante as refeições.",
-      "Se o SARC-CalF vier positivo, converse com a equipe sobre uma avaliação mais completa de força, mobilidade e nutrição. Esse resultado é um sinal de atenção e, sozinho, não confirma sarcopenia.",
+      "Se a avaliação indicar maior risco de perda de força muscular, converse com a equipe sobre uma avaliação mais completa de força, mobilidade e nutrição. Esse resultado é um sinal de atenção e, sozinho, não confirma sarcopenia.",
       "Ajude a pessoa a continuar ativa nas tarefas que fazem parte da sua rotina e que consegue realizar com segurança. Exercícios de força e movimentos funcionais podem ser incluídos de forma gradual, respeitando a capacidade, o equilíbrio e o risco de quedas.",
     ],
     attentionSigns: [

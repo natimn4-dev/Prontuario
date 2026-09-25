@@ -148,7 +148,7 @@ test("MEEM exibe as faixas de rastreio solicitadas", () => {
 test("FRAIL-BR diferencia orientações para robusto, pré-frágil e frágil", () => {
   const cases = [
     { score: 0, color: "verde" as const, marker: "não mostrou sinais de fragilidade" },
-    { score: 1, color: "amarelo" as const, marker: "mostrou sinais de pré-fragilidade" },
+    { score: 1, color: "amarelo" as const, marker: "mostrou sinais iniciais de fragilidade" },
     { score: 3, color: "vermelho" as const, marker: "mostrou fragilidade" },
   ];
 
@@ -327,7 +327,7 @@ test("MoCA preservado com NPI positivo mantém cognição preservada no texto e 
   assert.match(summary.results.find((item) => item.scaleCode === "cognitive_domain_observation")?.value ?? "", /Cognição Normal no rastreio/i);
   assert.doesNotMatch(guidance, /rastreio cognitivo foi positivo/i);
   assert.doesNotMatch(guidance, /Memória\/orientação foi uma das áreas mais acometidas/i);
-  assert.match(guidance, /rastreio cognitivo desta consulta está preservado/i);
+  assert.match(guidance, /avaliação da memória e do raciocínio nesta consulta foi tranquilizadora/i);
   assert.match(guidance, /NPI registrou sintomas neuropsiquiátricos/i);
   assert.match(guidance, /agitação, agressividade ou irritabilidade/i);
   assert.ok(summary.evidenceReferences.some((reference) => reference.pmid === "40051590"));

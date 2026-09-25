@@ -31,9 +31,10 @@ test("MNA-SF e SARC-CalF sinalizam Vitalidade; FRAIL-BR permanece contextual", (
   assert.ok(vitality);
   assert.deepEqual(vitality.triggeredBy, ["MNA-SF", "SARC-CalF"]);
   assert.ok(!guidance.alteredDomains.some((domain) => domain.triggeredBy.includes("FRAIL-BR")));
-  assert.match(vitality.whyItMatters, /estado nutricional e o rastreio de vulnerabilidade muscular pelo SARC-CalF/i);
-  assert.match(vitality.whyItMatters, /junto com força, funcionalidade e condições clínicas/i);
-  assert.ok(vitality.actions.some((action) => /SARC-CalF vier positivo/i.test(action)));
+  assert.match(vitality.whyItMatters, /estado nutricional e os sinais de possível perda de força muscular/i);
+  assert.match(vitality.whyItMatters, /junto com a funcionalidade e as demais condições de saúde/i);
+  assert.ok(vitality.actions.some((action) => /avaliação indicar maior risco de perda de força muscular/i.test(action)));
+  assert.ok(vitality.actions.every((action) => !/SARC-CalF/i.test(action)));
   assert.ok(vitality.evidenceReferences.some((reference) => reference.pmid === "27650212"));
 });
 
