@@ -41,8 +41,11 @@ test("FAST 7c ou superior estabelece imobilidade e elimina metas incompatíveis"
   const text = [...contextual.now, ...contextual.mediumTerm, ...contextual.caregiver].join(" ");
   assert.doesNotMatch(text, /caminhar 20|minutos.*caminh|marcha de forma independente|estimular caminhadas/i);
   assert.doesNotMatch(text, /treino de força|exercício resistido|carga progressiva|mesma balança/i);
-  assert.match(text, /FAST 7c/i);
-  assert.match(text, /transferências seguras/i);
+  assert.doesNotMatch(text, /FAST 7c/i);
+  assert.match(text, /não conseguir caminhar de forma independente/i);
+  assert.match(text, /transferências/i);
+  assert.match(text, /contraturas/i);
+  assert.match(text, /cóccix|nádegas|calcanhares/i);
   assert.match(text, /Manter rotina de sono/i);
 });
 
@@ -67,9 +70,26 @@ test("problema geriátrico Imobilidade aplica as mesmas prioridades sem inventar
     immobility,
     gastrostomyPresent: false,
   });
-  assert.match(contextual.now.join(" "), /imobilidade está registrada como um problema atual/i);
+  assert.match(contextual.now.join(" "), /imobilidade já faz parte do quadro atual/i);
   assert.match(contextual.caregiver.join(" "), /transferências/i);
   assert.doesNotMatch(contextual.now.join(" "), /treino de força/i);
+});
+
+test("aba Locomoção traduz imobilidade em cuidados preventivos sem expor FAST", () => {
+  const immobility = deriveEstablishedImmobilityContext({ scales: [fastScale(7.4)] });
+  const summary = contextualizeImmobilityDomainGuidance(
+    "mobilidade",
+    ["orientação genérica"],
+    immobility,
+  );
+  const text = summary.join(" ");
+
+  assert.equal(summary.length, 4);
+  assert.match(text, /preservar conforto, segurança e participação/i);
+  assert.match(text, /variar a posição ao longo do dia/i);
+  assert.match(text, /pele diariamente/i);
+  assert.match(text, /reduzir o risco de contraturas/i);
+  assert.doesNotMatch(text, /FAST|a cada 2 horas|de duas em duas horas/i);
 });
 
 test("tabela resume imobilidade sem repetir literalmente o plano detalhado", () => {
