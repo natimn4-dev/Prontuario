@@ -1,5 +1,6 @@
 import type { CapacityDimensionHistory } from "@/domain/capacity-dimension-history";
 import { latestOncogeriatricDomainStates } from "@/domain/oncogeriatria/capacity-history";
+import styles from "./domain-status-summary.module.css";
 
 function displayDate(value: string | null): string {
   if (!value) return "Sem avaliação vinculada";
@@ -28,20 +29,20 @@ export function OncogeriatricDomainStatusSummary({ history }: { history: Capacit
         Entram nesta visão apenas consultas explicitamente vinculadas a avaliações deste acompanhamento oncogeriátrico. Uma consulta posterior sem reaplicação não apaga o último estado registrado do domínio.
       </p>
       {evaluated.length ? (
-        <div className="evolution-list">
+        <div className={styles.evolutionList}>
           {states.map((item) => (
-            <article className="evolution-card" key={item.code}>
-              <div>
+            <article className={styles.evolutionCard} key={item.code}>
+              <div className={styles.domainSummary}>
                 <h3>{item.label}</h3>
                 <p className="dimension">Última avaliação: {displayDate(item.occurredAt)}</p>
                 <p className="trend">{item.statusLabel}</p>
-                <p className="muted">{item.statusReason}</p>
+                <p className={`${styles.statusReason} muted`}>{item.statusReason}</p>
               </div>
-              <div className="score-block">
+              <div className={styles.metricBlock}>
                 <span>Instrumentos</span>
                 <strong>{item.instruments.length ? item.instruments.map((instrument) => instrument.name).join(" · ") : "—"}</strong>
               </div>
-              <div className="score-block">
+              <div className={styles.metricBlock}>
                 <span>Resultados</span>
                 <strong>{item.instruments.length ? item.instruments.map((instrument) => instrument.score ?? instrument.classification ?? "registrado").join(" · ") : "—"}</strong>
               </div>
