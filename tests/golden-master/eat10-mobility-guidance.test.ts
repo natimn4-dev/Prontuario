@@ -230,7 +230,7 @@ test("não deambulação ativa cuidados preventivos mesmo sem marcar permanênci
   const guidance = mobility?.guidance.join(" ") ?? "";
 
   assert.match(guidance, /Mesmo sem estar caminhando/i);
-  assert.match(guidance, /não force a marcha/i);
+  assert.match(guidance, /sem forçar a marcha|não force a marcha/i);
   assert.match(guidance, /pele todos os dias/i);
   assert.match(guidance, /contraturas/i);
 });
