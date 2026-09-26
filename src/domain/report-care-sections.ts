@@ -1,6 +1,10 @@
 import { parsePlanNote } from "./consultation-note-contract.ts";
 import { gastrostomyFamilyGuidance } from "./family-contextual-care.ts";
 import { preventiveExamOrderLabel } from "./preventive-exam-orders.ts";
+import {
+  swallowingSupportGuidance,
+  type SwallowingSupportContext,
+} from "./swallowing-support.ts";
 
 export interface ReportProblemInput {
   id: string;
@@ -19,13 +23,21 @@ export interface AgaReportGastrostomyCare {
   contactGuidance: string[];
 }
 
+export interface AgaReportSwallowingSupportCare {
+  practicalActions: string[];
+  caregiverActions: string[];
+  contactGuidance: string[];
+}
+
 export interface AgaReportCareSections {
   clinicalConducts: AgaReportClinicalConduct[];
   gastrostomyCare?: AgaReportGastrostomyCare;
+  swallowingSupportCare?: AgaReportSwallowingSupportCare;
 }
 
 export function buildAgaReportCareSections(input: {
   gastrostomyPresent: boolean;
+  swallowingSupport?: SwallowingSupportContext;
   savedPlan: unknown;
   problems: readonly ReportProblemInput[];
 }): AgaReportCareSections {
@@ -57,7 +69,11 @@ export function buildAgaReportCareSections(input: {
     });
   }
 
-  const gastrostomyGuidance = input.gastrostomyPresent ? gastrostomyFamilyGuidance() : undefined;
+  const gastrostomyPresent = input.gastrostomyPresent || Boolean(input.swallowingSupport?.gastrostomy);
+  const gastrostomyGuidance = gastrostomyPresent ? gastrostomyFamilyGuidance() : undefined;
+  const swallowingGuidance = input.swallowingSupport
+    ? swallowingSupportGuidance(input.swallowingSupport)
+    : undefined;
 
   return {
     clinicalConducts,
@@ -68,5 +84,6 @@ export function buildAgaReportCareSections(input: {
         contactGuidance: [...gastrostomyGuidance.contact],
       },
     } : {}),
+    ...(swallowingGuidance ? { swallowingSupportCare: swallowingGuidance } : {}),
   };
 }

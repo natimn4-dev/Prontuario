@@ -25,6 +25,7 @@ import {
   MedicationPlanSnapshotError,
 } from "../../domain/medication-plan-snapshot";
 import { buildAgaReportCareSections } from "../../domain/report-care-sections";
+import { readSwallowingSupportContext } from "../../domain/swallowing-support.ts";
 import { buildAgaReportEnrichment } from "../../domain/report-overview";
 import type { VaccinationReview } from "../../domain/vaccination-prevention";
 import { prisma } from "../db";
@@ -63,6 +64,7 @@ export async function generateAgaReport(input: {
           occurredAt: true,
           createdAt: true,
           objective: true,
+          assessment: true,
           plan: true,
           patient: {
             select: {
@@ -221,7 +223,13 @@ export async function generateAgaReport(input: {
       });
 
       const medicationWorkspace = (await workspaceContext(tx, consultation.id)).view;
-      const gastrostomyPresent = hasGastrostomyMedicationRoute(medicationWorkspace.items);
+      const swallowingSupport = readSwallowingSupportContext(
+        consultation.assessment && typeof consultation.assessment === "object" && !Array.isArray(consultation.assessment)
+          ? consultation.assessment.swallowingSupportContext
+          : undefined,
+      );
+      const gastrostomyPresent = hasGastrostomyMedicationRoute(medicationWorkspace.items)
+        || Boolean(swallowingSupport?.gastrostomy);
       const directiveWorkspace = await advanceDirectiveWorkspaceContext(tx, consultation.id);
       let medicationPlan;
       try {
@@ -264,6 +272,7 @@ export async function generateAgaReport(input: {
       });
       const reportCareSections = buildAgaReportCareSections({
         gastrostomyPresent,
+        swallowingSupport,
         savedPlan: consultation.plan,
         problems: problems.map((problem) => ({ id: problem.id, title: problem.title })),
       });

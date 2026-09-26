@@ -271,7 +271,7 @@ test("exportação acessível usa visão geral estruturada, preferência documen
   const text = renderAccessibleAgaReportText({ ...report, ...enrichment });
   assert.match(text, /VISÃO GERAL/);
   assert.match(text, /Idade: 82 anos/);
-  assert.match(text, /Cognição — FAST: 6E — FAST 6e/);
+  assert.match(text, /Cognição — FAST: 6E — FAST 6E/);
   assert.doesNotMatch(text, /Cognição — FAST: 6\.5/);
   assert.match(text, /Dispositivo: Gastrostomia \(GTT\)/);
   assert.match(text, /DIRETIVAS ANTECIPADAS/);

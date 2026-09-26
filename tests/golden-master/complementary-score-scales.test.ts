@@ -59,6 +59,7 @@ test("mobility quick entries keep historical thresholds", () => {
 
 test("FAST and PPS preserve discrete-version semantics", () => {
   assert.equal(scoreComplementaryScale("fast", { score: 7.6 }).result.score, 7.6);
+  assert.equal(scoreComplementaryScale("fast", { score: 7.5 }).result.scoreText, "7E");
   assert.equal(scoreComplementaryScale("pps", { score: 40 }).result.score, 40);
   assert.match(scoreComplementaryScale("fast", { score: 6.7 }).result.classification, /não permitido/i);
 });
@@ -71,6 +72,8 @@ test("FAST, PPS and KPS expose the meaning beside every selectable value", () =>
     assert.ok(choices.every((choice) => choice.label.includes("—")));
     assert.ok(choices.every((choice) => choice.label.length > String(choice.value).length + 5));
   }
+  const fastChoices = COMPLEMENTARY_SCORE_SCALES.find((item) => item.code === "fast")!.fields[0]?.choices ?? [];
+  assert.match(fastChoices.find((choice) => choice.value === 7.5)?.label ?? "", /^7E —/);
   assert.match(scoreComplementaryScale("kps", { score: 75 }).result.classification, /não permitido/i);
 });
 

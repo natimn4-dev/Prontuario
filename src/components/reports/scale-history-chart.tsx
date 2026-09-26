@@ -3,6 +3,7 @@
 import { useState } from "react";
 import type { AgaScaleReportSection } from "@/domain/aga-report";
 import { proportionalAxisPosition } from "@/domain/chart-geometry";
+import { displayScaleScore } from "@/domain/fast-stage";
 import {
   buildScaleChartPresentation,
   isOrdinalScaleChart,
@@ -197,7 +198,9 @@ export function ScaleHistoryChart({ scale }: { scale: AgaScaleReportSection }) {
             <tr key={`row-${point.consultationId}-${point.appliedAt}`}>
               <td>{displayDate(point.appliedAt)}</td>
               <th scope="row">{point.isBaseline ? "AGA inicial" : "Acompanhamento"}</th>
-              <td>{point.score ?? "Sem dado registrado"}</td>
+              <td>{point.score === null
+                ? "Sem dado registrado"
+                : displayScaleScore({ scaleCode: scale.code, score: point.score }) ?? point.score}</td>
             </tr>
           ))}
         </tbody>

@@ -26,6 +26,10 @@ import {
   type HouseholdMeasure,
 } from "@/domain/dietary-assessment";
 import {
+  EMPTY_SWALLOWING_SUPPORT,
+  type SwallowingSupportContext,
+} from "@/domain/swallowing-support";
+import {
   DIETARY_PORTION_DEFINITIONS,
   buildConditionalDietaryGuidance,
 } from "@/domain/dietary-guidance";
@@ -47,6 +51,7 @@ type LoadPayload = {
   clinicalContext: DietaryClinicalContext;
   references: { calciumMg: number | null; fiberG: number | null };
   assessment: DietaryAssessmentSnapshot | null;
+  swallowingSupport: SwallowingSupportContext | null;
   history: Array<{
     occurredAt: string;
     summary: DietaryAssessmentSnapshot["summary"];
@@ -186,6 +191,10 @@ export function DietaryAssessmentWorkspace({
   onDirtyChange?: (dirty: boolean) => void;
 }) {
   const [data, setData] = useState<LoadPayload | null>(null);
+  const [swallowingSupport, setSwallowingSupport] = useState<SwallowingSupportContext>({ ...EMPTY_SWALLOWING_SUPPORT });
+  const [swallowingSupportDirty, setSwallowingSupportDirty] = useState(false);
+  const [swallowingSupportSaving, setSwallowingSupportSaving] = useState(false);
+  const [swallowingSupportFeedback, setSwallowingSupportFeedback] = useState<{ kind: "error" | "success"; text: string } | null>(null);
   const [meals, setMeals] = useState<UiDietaryMeal[]>(freshMeals);
   const [targets, setTargets] = useState<DietaryTargets>({});
   const [weightOverride, setWeightOverride] = useState("");
@@ -356,7 +365,7 @@ export function DietaryAssessmentWorkspace({
     setDirty(true);
   };
 
-  useEffect(() => { onDirtyChange?.(dirty); }, [dirty, onDirtyChange]);
+  useEffect(() => { onDirtyChange?.(dirty || swallowingSupportDirty); }, [dirty, swallowingSupportDirty, onDirtyChange]);
 
   async function load() {
     setLoading(true);
@@ -375,6 +384,9 @@ export function DietaryAssessmentWorkspace({
       const savedEntry = body.assessment?.entryDraft;
       const nextMeals = draftMeals(body.assessment);
       setData(body);
+      setSwallowingSupport(body.swallowingSupport ?? { ...EMPTY_SWALLOWING_SUPPORT });
+      setSwallowingSupportDirty(false);
+      setSwallowingSupportFeedback(null);
       setMeals(nextMeals);
       setMealId((current) =>
         nextMeals.some((meal) => meal.id === current)
@@ -455,6 +467,47 @@ export function DietaryAssessmentWorkspace({
       );
     } finally {
       setLoading(false);
+    }
+  }
+
+  function setSwallowingSupportField(field: keyof SwallowingSupportContext, checked: boolean) {
+    setSwallowingSupport((current) => ({ ...current, [field]: checked }));
+    setSwallowingSupportDirty(true);
+    setSwallowingSupportFeedback(null);
+  }
+
+  async function saveSwallowingSupport() {
+    if (!data || !swallowingSupportDirty || swallowingSupportSaving || isFinalized) return;
+    setSwallowingSupportSaving(true);
+    setSwallowingSupportFeedback(null);
+    try {
+      const response = await fetch(`/api/consultations/${consultationId}/dietary-assessment`, {
+        method: "PUT",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ expectedUpdatedAt: data.updatedAt, swallowingSupport }),
+      });
+      const body = await response.json().catch(() => null) as {
+        error?: string;
+        code?: string;
+        updatedAt?: string;
+        swallowingSupport?: SwallowingSupportContext;
+      } | null;
+      if (!response.ok || !body?.updatedAt || !body.swallowingSupport) {
+        throw new Error(body?.error ?? "Não foi possível salvar a situação de deglutição e alimentação.");
+      }
+      setData((current) => current ? {
+        ...current,
+        updatedAt: body.updatedAt!,
+        swallowingSupport: body.swallowingSupport!,
+      } : current);
+      setSwallowingSupport(body.swallowingSupport);
+      setSwallowingSupportDirty(false);
+      setSwallowingSupportFeedback({ kind: "success", text: "Situação salva nesta consulta; as orientações correspondentes serão incluídas no relatório." });
+      window.dispatchEvent(new CustomEvent("clinical-nutrition-context-changed", { detail: { consultationId } }));
+    } catch (cause) {
+      setSwallowingSupportFeedback({ kind: "error", text: cause instanceof Error ? cause.message : "Não foi possível salvar a situação de deglutição e alimentação." });
+    } finally {
+      setSwallowingSupportSaving(false);
     }
   }
   useEffect(() => {
@@ -1492,6 +1545,32 @@ export function DietaryAssessmentWorkspace({
                     <span>{label}</span>
                   </label>
                 ))}
+              </fieldset>
+              <fieldset className={styles.choiceGrid} aria-describedby="swallowing-support-help">
+                <legend>Deglutição e forma de alimentação</legend>
+                <p id="swallowing-support-help">Marque apenas condições e recursos confirmados nesta consulta. As orientações serão incluídas no relatório da família depois de salvar.</p>
+                {([
+                  ["dysphagia", "Disfagia"],
+                  ["adaptedDiet", "Dieta adaptada para deglutição"],
+                  ["enteralTube", "Alimentação por sonda nasogástrica/nasoenteral"],
+                  ["gastrostomy", "Gastrostomia (GTT)"],
+                ] as const).map(([field, label]) => (
+                  <label key={field}>
+                    <input
+                      type="checkbox"
+                      checked={swallowingSupport[field]}
+                      disabled={isFinalized || swallowingSupportSaving}
+                      onChange={(event) => setSwallowingSupportField(field, event.target.checked)}
+                    />
+                    <span>{label}</span>
+                  </label>
+                ))}
+                <div className={styles.actionRow}>
+                  <button type="button" className={styles.primaryButton} onClick={() => void saveSwallowingSupport()} disabled={!swallowingSupportDirty || swallowingSupportSaving || isFinalized}>
+                    {swallowingSupportSaving ? "Salvando…" : isFinalized ? "Consulta finalizada" : "Salvar situação de deglutição"}
+                  </button>
+                  {swallowingSupportFeedback ? <span role={swallowingSupportFeedback.kind === "error" ? "alert" : "status"}>{swallowingSupportFeedback.text}</span> : null}
+                </div>
               </fieldset>
               {data?.clinicalContext.ckd ? (
                 <section

@@ -748,6 +748,29 @@ class StyledPdfBuilder {
     );
   }
 
+  drawSwallowingSupport(care: AgaReportModel["swallowingSupportCare"]): void {
+    if (!care) return;
+    this.sectionHeading(
+      "Nutrição",
+      "Deglutição e forma de alimentação",
+      "Orientações baseadas nas opções registradas nesta consulta. Confirme se continuam de acordo com o plano atual da equipe.",
+    );
+    this.drawTwoCards(
+      {
+        title: "Cuidados práticos",
+        items: [...care.practicalActions, ...care.caregiverActions],
+        fill: "#fcfbfd",
+      },
+      {
+        title: "Quando conversar com a equipe",
+        items: care.contactGuidance,
+        fill: COLORS.warningSoft,
+        border: "#f1dfc7",
+        titleColor: COLORS.warning,
+      },
+    );
+  }
+
   drawSafety(report: AgaSignedReportModel): void {
     const left: StyledCard = {
       title: "Situações de urgência",
@@ -896,6 +919,7 @@ export function buildAgaReportPdf(input: {
   builder.drawDomains(input.report);
   builder.drawCapacityChart(input.report.capacityHistory);
   builder.drawClinicalConducts(input.report.clinicalConducts);
+  builder.drawSwallowingSupport(input.report.swallowingSupportCare);
   builder.drawGastrostomy(input.report.gastrostomyCare);
   builder.drawSafety(input.report);
   builder.drawSupport(input.report);

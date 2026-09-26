@@ -104,5 +104,12 @@ export function sanitizeFamilyReportModel(report: AgaReportModel): AgaReportMode
       contact: filterFamilySafeCareItems(report.carePlan.contact),
       urgent: filterFamilySafeCareItems(report.carePlan.urgent),
     },
+    ...(report.swallowingSupportCare ? {
+      swallowingSupportCare: {
+        practicalActions: filterFamilySafeCareItems(report.swallowingSupportCare.practicalActions),
+        caregiverActions: filterFamilySafeCareItems(report.swallowingSupportCare.caregiverActions),
+        contactGuidance: filterFamilySafeCareItems(report.swallowingSupportCare.contactGuidance),
+      },
+    } : {}),
   };
 }

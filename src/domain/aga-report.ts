@@ -22,6 +22,7 @@ import {
   type VaccinationPreventionSection,
   type VaccinationReview,
 } from "./vaccination-prevention.ts";
+import { displayScaleScore } from "./fast-stage.ts";
 
 export type AgaReportConsultationStatus = "DRAFT" | "IN_REVIEW" | "FINALIZED";
 export type AgaScaleTrend =
@@ -89,7 +90,7 @@ export interface AgaMedicationPlanSection {
 }
 
 export interface AgaReportModel {
-  schemaVersion: "1.3";
+  schemaVersion: "1.4";
   patientId: string;
   consultationId: string;
   consultationStatus: AgaReportConsultationStatus;
@@ -115,6 +116,11 @@ export interface AgaReportModel {
   vaccinationPrevention: VaccinationPreventionSection;
   intrinsicCapacity: IntrinsicCapacityGuidance;
   safetyGuidance: FamilyReportSafetyGuidance;
+  swallowingSupportCare?: {
+    practicalActions: string[];
+    caregiverActions: string[];
+    contactGuidance: string[];
+  };
   carePlan: {
     now: string[];
     mediumTerm: string[];
@@ -171,7 +177,17 @@ export function buildAgaReportModel(input: {
     throw new Error("Problema de outro paciente detectado no relatório AGA.");
   }
 
-  const summary = buildClinicalChangeSummary(input.longitudinalAssessments, {
+  const reportAssessments = input.longitudinalAssessments.map((assessment) => assessment.scaleCode === "fast"
+    ? {
+      ...assessment,
+      scoreText: displayScaleScore({
+        scaleCode: assessment.scaleCode,
+        score: assessment.score,
+        scoreText: assessment.scoreText,
+      }) ?? assessment.scoreText,
+    }
+    : assessment);
+  const summary = buildClinicalChangeSummary(reportAssessments, {
     targetConsultationId: input.consultationId,
   });
   if (summary.patientId && summary.patientId !== input.patientId) {
@@ -188,7 +204,7 @@ export function buildAgaReportModel(input: {
     .map((card) => card.scaleId));
 
   return {
-    schemaVersion: "1.3",
+    schemaVersion: "1.4",
     patientId: input.patientId,
     consultationId: input.consultationId,
     consultationStatus: input.consultationStatus,
@@ -203,11 +219,18 @@ export function buildAgaReportModel(input: {
         .map((proposal) => ({ title: proposal.title, type: proposal.type }));
       const collectedData = Object.entries(card.current.answers ?? {})
         .flatMap(([field, value]): AgaCollectedDatum[] => {
-          const displayed = displayCollectedValue(value);
+          const fastStage = card.scaleId === "fast" && /stage/i.test(field)
+            ? displayScaleScore({
+              scaleCode: "fast",
+              score: card.current.score,
+              scoreText: typeof value === "string" ? value : undefined,
+            })
+            : undefined;
+          const displayed = fastStage ?? displayCollectedValue(value);
           return displayed === null ? [] : [{ field, value: displayed }];
         });
       const chartSeries = buildScaleChartSeries(
-        input.longitudinalAssessments.filter((assessment) => assessment.scaleCode === card.scaleId),
+        reportAssessments.filter((assessment) => assessment.scaleCode === card.scaleId),
       );
 
       return {
@@ -329,12 +352,18 @@ export function renderAgaReportText(model: AgaReportModel): string {
   );
 
   for (const scale of model.assessedScales.filter((item) => item.assessedInTargetConsultation)) {
+    const displayScore = (score: number | null): string | number => {
+      if (scale.code === "fast" && score !== null) {
+        return displayScaleScore({ scaleCode: "fast", score }) ?? score;
+      }
+      return score ?? "—";
+    };
     const resultLabel = scale.assessedInTargetConsultation
       ? "Avaliado nesta consulta"
       : `Último valor conhecido — não avaliado nesta consulta (consulta ${scale.lastKnown.consultationId}, ${scale.lastKnown.appliedAt.slice(0, 10)})`;
     const finalPoint = scale.assessedInTargetConsultation
-      ? `atual ${scale.evolution.current ?? "—"}${scale.evolution.currentVersion ? ` (v${scale.evolution.currentVersion})` : ""}`
-      : `último conhecido ${scale.lastKnown.score ?? "—"} (v${scale.lastKnown.version}; consulta ${scale.lastKnown.consultationId})`;
+      ? `atual ${displayScore(scale.evolution.current)}${scale.evolution.currentVersion ? ` (v${scale.evolution.currentVersion})` : ""}`
+      : `último conhecido ${displayScore(scale.lastKnown.score)} (v${scale.lastKnown.version}; consulta ${scale.lastKnown.consultationId})`;
     const collectedDataLabel = scale.assessedInTargetConsultation
       ? "Dado coletado nesta consulta"
       : "Dados do último registro conhecido";
@@ -345,7 +374,7 @@ export function renderAgaReportText(model: AgaReportModel): string {
       `${resultLabel}: ${scale.result.scoreText ?? scale.result.score ?? "sem pontuação registrada"}`,
       `Classificação: ${scale.result.classification ?? "sem classificação registrada"}`,
       `Interpretação: ${scale.interpretation ?? "sem interpretação registrada"}`,
-      `Trajetória: baseline ${scale.evolution.baseline ?? "—"} (v${scale.evolution.baselineVersion}); anterior ${scale.evolution.previous ?? "—"}${scale.evolution.previousVersion ? ` (v${scale.evolution.previousVersion})` : ""}; ${finalPoint}; ${scale.evolution.vsPrevious}`,
+      `Trajetória: baseline ${displayScore(scale.evolution.baseline)} (v${scale.evolution.baselineVersion}); anterior ${displayScore(scale.evolution.previous)}${scale.evolution.previousVersion ? ` (v${scale.evolution.previousVersion})` : ""}; ${finalPoint}; ${scale.evolution.vsPrevious}`,
       `Problema relacionado (proposta): ${scale.relatedProblemProposals.map((problem) => `[${problem.type}] ${problem.title}`).join("; ") || "nenhum proposto"}`,
       `Fonte/status: ${scale.source.status}${scale.source.citation ? ` · ${scale.source.citation}` : ""}`,
       "Intervenções/sugestões pendentes de revisão médica:",

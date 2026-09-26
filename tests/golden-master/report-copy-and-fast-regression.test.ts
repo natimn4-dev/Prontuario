@@ -2,6 +2,10 @@ import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 import test from "node:test";
 import type { AgaScaleReportSection } from "../../src/domain/aga-report.ts";
+import { completedScaleResultLines } from "../../src/domain/clinical-copy-report.ts";
+import { buildClinicalChangeSummary } from "../../src/domain/clinical-change-summary.ts";
+import { scoreComplementaryScale } from "../../src/domain/complementary-score-scales.ts";
+import { displayScaleScore } from "../../src/domain/fast-stage.ts";
 import { intrinsicCapacityGuidanceForDomain } from "../../src/domain/intrinsic-capacity-guidance.ts";
 import { buildAgaReportEnrichment } from "../../src/domain/report-overview.ts";
 
@@ -67,6 +71,49 @@ test("FAST usa nomenclatura clínica canônica na visão geral sem expor o decim
 test("FAST preserva a semântica do estágio: 6.3 não é convertido indevidamente em 6E", () => {
   assert.match(overviewValue(6.3), /^6C(?:\s|—|$)/);
   assert.doesNotMatch(overviewValue(6.3), /^6E(?:\s|—|$)/);
+});
+
+test("FAST apresenta o estágio canônico em vez do código decimal em avaliação, histórico e cópia", () => {
+  const result = scoreComplementaryScale("fast", { score: 7.5 }).result;
+  assert.equal(result.score, 7.5, "o valor ordinal interno permanece para comparações longitudinais");
+  assert.equal(result.scoreText, "7E");
+  assert.equal(displayScaleScore({ scaleCode: "fast", score: 7.5, scoreText: "7.4" }), "7E");
+  assert.equal(displayScaleScore({ scaleCode: "fast", score: 7.4, scoreText: "7.4" }), "7D");
+  assert.deepEqual(completedScaleResultLines([{
+    scaleCode: "fast",
+    scaleName: "FAST",
+    scoreNumeric: 7.5,
+    scoreText: "7.5",
+    appliedAt: "2026-09-25T12:00:00.000Z",
+  }]), ["- FAST: 7E"]);
+});
+
+test("trajetória FAST usa os estágios clínicos sem expor a codificação decimal", () => {
+  const summary = buildClinicalChangeSummary([
+    {
+      patientId: "patient-fast-history",
+      consultationId: "consultation-fast-before",
+      scaleCode: "fast",
+      scaleVersion: "1.0",
+      score: 7.4,
+      scoreText: "7.4",
+      classification: "FAST 7.4",
+      appliedAt: "2026-08-20T12:00:00.000Z",
+    },
+    {
+      patientId: "patient-fast-history",
+      consultationId: "consultation-fast-current",
+      scaleCode: "fast",
+      scaleVersion: "1.0",
+      score: 7.5,
+      scoreText: "7.5",
+      classification: "FAST 7.5",
+      appliedAt: "2026-09-20T12:00:00.000Z",
+    },
+  ], { targetConsultationId: "consultation-fast-current" });
+
+  assert.match(summary.narrative.join(" "), /7D ↑ 7E/);
+  assert.doesNotMatch(summary.narrative.join(" "), /7\.4|7\.5/);
 });
 
 test("vitalidade mantém orientação familiar prática e referência geriátrica verificável", () => {

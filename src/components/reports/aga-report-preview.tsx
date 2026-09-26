@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import type { AgaReportModel, AgaScaleReportSection, AgaScaleTrend } from "@/domain/aga-report";
+import { displayScaleScore } from "@/domain/fast-stage";
 import type { CapacityDimensionHistory } from "@/domain/capacity-dimension-history";
 import { buildChangeSummaryDashboard } from "@/domain/change-summary-dashboard";
 import { ProblemColumns } from "@/components/problems/problem-columns";
@@ -56,7 +57,7 @@ const TREND_LABEL: Record<AgaScaleTrend, string> = {
 const BRAND_LOGO_PATH = "/brand/natalia-mendes-logo.svg";
 
 function displayResult(scale: AgaScaleReportSection): string {
-  return scale.result.scoreText ?? (scale.result.score === null ? "—" : String(scale.result.score));
+  return displayScaleScore({ scaleCode: scale.code, score: scale.result.score, scoreText: scale.result.scoreText }) ?? "—";
 }
 
 function displayAssessmentDate(value: string): string {

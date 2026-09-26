@@ -49,9 +49,9 @@ test("FAST 7d não apaga dependência em ABVD identificada pelo Katz", () => {
   ]);
 
   assert.equal(context.level, "advanced-dementia");
-  assert.equal(context.fastStage, "7d");
+  assert.equal(context.fastStage, "7D");
   assert.equal(context.katzScore, 2);
-  assert.match(context.sourceSummary, /FAST 7d/);
+  assert.match(context.sourceSummary, /FAST 7D/);
   assert.match(context.sourceSummary, /Katz 2/);
 
   const guidance = contextualFamilyGuidance("funcionalidade", ["Orientação genérica"], context).join(" ");

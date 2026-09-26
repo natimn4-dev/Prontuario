@@ -5,6 +5,7 @@ import { withClinicalPerformance } from "@/server/observability/clinical-perform
 import {
   DietaryAssessmentError,
   getDietaryAssessment,
+  saveSwallowingSupport,
   saveDietaryAssessment,
 } from "@/server/clinical/dietary-assessment";
 
@@ -53,10 +54,22 @@ export async function PUT(request: Request, { params }: { params: Promise<{ id: 
       const body = await request.json() as {
         expectedUpdatedAt?: string;
         assessment?: DietaryAssessmentInput;
+        swallowingSupport?: unknown;
       };
-      if (!body.expectedUpdatedAt || !body.assessment) {
+      if (!body.expectedUpdatedAt || (Boolean(body.assessment) === (body.swallowingSupport !== undefined))) {
         return NextResponse.json({ error: "Dados incompletos." }, { status: 400 });
       }
+      if (body.swallowingSupport !== undefined) {
+        return NextResponse.json(await saveSwallowingSupport({
+          consultationId: id,
+          expectedUpdatedAt: body.expectedUpdatedAt,
+          swallowingSupport: body.swallowingSupport,
+          requestId: request.headers.get("x-request-id") ?? undefined,
+        }), {
+          headers: { "Cache-Control": "private, no-store" },
+        });
+      }
+      if (!body.assessment) return NextResponse.json({ error: "Dados incompletos." }, { status: 400 });
       return NextResponse.json(await saveDietaryAssessment({
         consultationId: id,
         expectedUpdatedAt: body.expectedUpdatedAt,

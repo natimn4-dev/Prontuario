@@ -1,3 +1,5 @@
+import { canonicalFastStageLabel } from "./fast-stage.ts";
+
 export interface ContextScaleInput {
   code: string;
   assessedInTargetConsultation: boolean;
@@ -48,13 +50,7 @@ function normalized(value: string): string {
 }
 
 function fastStageLabel(score: number): string {
-  const known: Record<string, string> = {
-    "7.3": "7c",
-    "7.4": "7d",
-    "7.5": "7e",
-    "7.6": "7f",
-  };
-  return known[String(score)] ?? String(score);
+  return canonicalFastStageLabel(score) ?? String(score);
 }
 
 function activeImmobilityProblem(problems: readonly ContextProblemInput[]): boolean {

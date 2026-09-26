@@ -33,6 +33,7 @@ import {
   VES13,
 } from "./clinical-config/legacy-core.ts";
 import { KPS_OPTIONS } from "./performance-status-options.ts";
+import { canonicalFastStageLabel } from "./fast-stage.ts";
 
 export type ComplementaryScoreScaleCode =
   | "moca"
@@ -110,17 +111,17 @@ const FAST_CHOICES: readonly ComplementaryChoice[] = [
   { value: 3, label: "3 — Dificuldade em tarefas complexas, trabalho ou organização" },
   { value: 4, label: "4 — Precisa de ajuda nas atividades instrumentais complexas" },
   { value: 5, label: "5 — Precisa de ajuda para escolher roupas adequadas" },
-  { value: 6.1, label: "6a — Precisa de ajuda para vestir-se" },
-  { value: 6.2, label: "6b — Precisa de ajuda para banhar-se" },
-  { value: 6.3, label: "6c — Precisa de ajuda com a mecânica do toalete" },
-  { value: 6.4, label: "6d — Incontinência urinária" },
-  { value: 6.5, label: "6e — Incontinência fecal" },
-  { value: 7.1, label: "7a — Fala limitada a cerca de seis palavras compreensíveis ao dia" },
-  { value: 7.2, label: "7b — Fala limitada a uma palavra compreensível ao dia" },
-  { value: 7.3, label: "7c — Perdeu a capacidade de caminhar" },
-  { value: 7.4, label: "7d — Perdeu a capacidade de sentar sem apoio" },
-  { value: 7.5, label: "7e — Perdeu a capacidade de sorrir" },
-  { value: 7.6, label: "7f — Perdeu a capacidade de sustentar a cabeça" },
+  { value: 6.1, label: "6A — Precisa de ajuda para vestir-se" },
+  { value: 6.2, label: "6B — Precisa de ajuda para banhar-se" },
+  { value: 6.3, label: "6C — Precisa de ajuda com a mecânica do toalete" },
+  { value: 6.4, label: "6D — Incontinência urinária" },
+  { value: 6.5, label: "6E — Incontinência fecal" },
+  { value: 7.1, label: "7A — Fala limitada a cerca de seis palavras compreensíveis ao dia" },
+  { value: 7.2, label: "7B — Fala limitada a uma palavra compreensível ao dia" },
+  { value: 7.3, label: "7C — Perdeu a capacidade de caminhar" },
+  { value: 7.4, label: "7D — Perdeu a capacidade de sentar sem apoio" },
+  { value: 7.5, label: "7E — Perdeu a capacidade de sorrir" },
+  { value: 7.6, label: "7F — Perdeu a capacidade de sustentar a cabeça" },
 ];
 
 const PPS_CHOICES: readonly ComplementaryChoice[] = [
@@ -315,7 +316,8 @@ export function scoreComplementaryScale(
   else if (code === "charlson") result = numeric(raw, 40, CHARLSON_RANGES);
   else if (code === "fast") {
     const score = requiredNumber(raw, "score", 1, 7.6);
-    result = fromLegacy(scoreDiscreteNumeric({ raw: score, allowedValues: FAST_ALLOWED_VALUES, ranges: FAST_RANGES }));
+    const scored = fromLegacy(scoreDiscreteNumeric({ raw: score, allowedValues: FAST_ALLOWED_VALUES, ranges: FAST_RANGES }));
+    result = { ...scored, scoreText: canonicalFastStageLabel(score) ?? scored.scoreText };
   } else if (code === "pps") {
     const score = requiredNumber(raw, "score", 10, 100);
     result = fromLegacy(scoreDiscreteNumeric({ raw: score, allowedValues: PPS_ALLOWED_VALUES, ranges: PPS_RANGES, unit: "%" }));

@@ -30,11 +30,11 @@ test("relatório familiar limita orientações, mostra resultados e omite detalh
   assert.deepEqual(domains[0]?.results[0], {
     scaleCode: "fast",
     scaleName: "FAST",
-    value: "7d — FAST 7d",
+    value: "7D — FAST 7D",
   });
 
   const text = renderAccessibleAgaReportText(report);
-  assert.match(text, /FAST.*7d — FAST 7d/);
+  assert.match(text, /FAST.*7D — FAST 7D/);
   assert.doesNotMatch(text, /Dado coletado|stage=7d|Fonte:|Trajetória:|Sugestões que ainda/);
   assert.doesNotMatch(text, /PLANO DE CUIDADO/);
   assert.doesNotMatch(text, /Base científica|PMID/);
