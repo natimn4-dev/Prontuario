@@ -289,6 +289,7 @@ export function AgaReportDocumentPreview({
     return buildReportDomainSummaries(
       generated.report.assessedScales,
       generated.report.intrinsicCapacity,
+      generated.report.swallowingSupportCare,
     );
   }, [generated]);
 

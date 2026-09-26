@@ -74,6 +74,28 @@ type DomainGuidance = {
   evidenceReferences: readonly IntrinsicCapacityEvidenceReference[];
 };
 
+const ENTERAL_NUTRITION_GUIDANCE: DomainGuidance = {
+  actions: [
+    "Na dieta pela sonda, siga o plano individual: confira fórmula, volume, velocidade e horários; não faça ajustes por conta própria e avise a equipe se não conseguir administrar como orientado.",
+    "Durante a dieta, mantenha o tronco elevado conforme a orientação da equipe e pelo período indicado após o término. Se essa orientação não estiver clara ou a posição não for possível, peça ajuda à equipe.",
+    "Ofereça alimentos ou líquidos pela boca somente se o plano atual da equipe liberar, respeitando a consistência e a quantidade nele descritas.",
+  ],
+  evidenceReferences: [
+    {
+      label: "Diretriz prática ESPEN para nutrição enteral domiciliar",
+      pmid: "35007816",
+      url: "https://pubmed.ncbi.nlm.nih.gov/35007816/",
+      relevance: "Diretriz prática para pacientes e equipes sobre implementação e monitoramento da nutrição enteral domiciliar, conforme plano individual.",
+    },
+    {
+      label: "Práticas seguras ASPEN para terapia nutricional enteral",
+      pmid: "27815525",
+      url: "https://pubmed.ncbi.nlm.nih.gov/27815525/",
+      relevance: "Recomendações de segurança ao longo da prescrição, seleção, preparo e administração da terapia nutricional enteral.",
+    },
+  ],
+};
+
 type FrailtyGuidanceProfile = "robust" | "pre-frail" | "frail";
 
 const FRAILTY_GUIDANCE: Readonly<Record<FrailtyGuidanceProfile, DomainGuidance>> = {
@@ -925,6 +947,7 @@ function shouldShowFamilyResult(scale: AgaScaleReportSection): boolean {
 export function buildReportDomainSummaries(
   scales: readonly AgaScaleReportSection[],
   intrinsicCapacity: IntrinsicCapacityGuidance,
+  swallowingSupport?: { enteralRoute: boolean },
 ): ReportDomainSummary[] {
   const grouped = new Map<string, AgaScaleReportSection[]>();
   for (const scale of scales.filter((item) => item.assessedInTargetConsultation)) {
@@ -1003,7 +1026,7 @@ export function buildReportDomainSummaries(
     const isIadlSupport = dimension === "funcionalidade" && functionalContext.level === "iadl-support";
     // Imobilidade contextualiza mobilidade, mas não pode apagar a orientação de
     // Funcionalidade derivada de Katz/Barthel/Lawton.
-    const contextGuidance = isIadlSupport
+    const contextualGuidance = isIadlSupport
       ? IADL_FAMILY_GUIDANCE
       : isAlteredGds
         ? LATE_LIFE_DEPRESSION_GUIDANCE
@@ -1014,11 +1037,17 @@ export function buildReportDomainSummaries(
               functionallyContextualized,
               immobilityContext,
             );
+    const enteralNutritionGuidance = dimension === "nutricao" && swallowingSupport?.enteralRoute
+      ? ENTERAL_NUTRITION_GUIDANCE
+      : undefined;
+    const contextGuidance = enteralNutritionGuidance?.actions ?? contextualGuidance;
     const guidanceLimit = dimension === "cognicao"
       ? state === "preserved"
         ? 3
         : (npiPositiveDomains(dimensionScales).length > 0 ? 5 : targetedCognitiveGuidance(dimensionScales).length > 0 ? 4 : 2)
-      : targetedGuidance
+      : enteralNutritionGuidance
+        ? enteralNutritionGuidance.actions.length
+        : targetedGuidance
         ? 4
         : dimension === "mobilidade" && immobilityContext.established
           ? 4
@@ -1035,7 +1064,12 @@ export function buildReportDomainSummaries(
       : undefined;
     const evidenceReferences = isAlteredGds
       ? LATE_LIFE_DEPRESSION_EVIDENCE
-      : uniqueEvidence([targetedGuidance?.evidenceReferences, mobilityImmobilityEvidence, fallbackEvidence]);
+      : uniqueEvidence([
+          targetedGuidance?.evidenceReferences,
+          mobilityImmobilityEvidence,
+          enteralNutritionGuidance?.evidenceReferences,
+          fallbackEvidence,
+        ]);
 
     return [{
       code: dimension,

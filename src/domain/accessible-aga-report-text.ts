@@ -149,7 +149,11 @@ export function renderAccessibleAgaReportText(model: AccessibleAgaReportModel): 
     list(model.vaccinationPrevention.guidance),
   );
 
-  const domains = buildReportDomainSummaries(model.assessedScales, model.intrinsicCapacity);
+  const domains = buildReportDomainSummaries(
+    model.assessedScales,
+    model.intrinsicCapacity,
+    model.swallowingSupportCare,
+  );
   if (domains.length > 0) {
     blocks.push(
       "",
