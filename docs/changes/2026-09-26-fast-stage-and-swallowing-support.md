@@ -1,4 +1,4 @@
-# FAST e suporte à deglutição — 2026-09-25
+# FAST e suporte à deglutição — 2026-09-26
 
 ## Escopo
 
