@@ -24,6 +24,7 @@ export interface AgaReportGastrostomyCare {
 }
 
 export interface AgaReportSwallowingSupportCare {
+  enteralRoute: boolean;
   practicalActions: string[];
   caregiverActions: string[];
   contactGuidance: string[];

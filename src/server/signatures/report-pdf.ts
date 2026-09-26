@@ -510,7 +510,11 @@ class StyledPdfBuilder {
   }
 
   drawDomains(report: AgaSignedReportModel): void {
-    const domains = buildReportDomainSummaries(report.assessedScales, report.intrinsicCapacity);
+    const domains = buildReportDomainSummaries(
+      report.assessedScales,
+      report.intrinsicCapacity,
+      report.swallowingSupportCare,
+    );
     if (domains.length === 0) return;
     this.sectionHeading(
       "2",
