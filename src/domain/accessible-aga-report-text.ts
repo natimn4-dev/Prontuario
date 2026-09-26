@@ -183,6 +183,18 @@ export function renderAccessibleAgaReportText(model: AccessibleAgaReportModel): 
     );
   }
 
+  if (model.swallowingSupportCare) {
+    blocks.push(
+      "",
+      "DEGLUTIÇÃO E FORMA DE ALIMENTAÇÃO",
+      "Orientações baseadas nas opções registradas nesta consulta; confirme que continuam de acordo com o plano atual da equipe.",
+      "Cuidados práticos:",
+      list([...model.swallowingSupportCare.practicalActions, ...model.swallowingSupportCare.caregiverActions]),
+      "Quando conversar com a equipe:",
+      list(model.swallowingSupportCare.contactGuidance),
+    );
+  }
+
   if (model.advanceDirectives) {
     blocks.push(...advanceDirectiveBlocks(model.advanceDirectives));
   }

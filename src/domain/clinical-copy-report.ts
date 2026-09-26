@@ -1,6 +1,7 @@
 import type { ClinicalExamHistoryItem } from "./consultation-exams.ts";
 import { problemStatusLabel } from "./accessible-report-language.ts";
 import type { ProblemStatus, ProblemType } from "./problems.ts";
+import { displayScaleScore } from "./fast-stage.ts";
 
 export interface CompletedScaleResult {
   scaleCode: string;
@@ -30,11 +31,11 @@ function formatDate(value: string): string {
 }
 
 function resultValue(result: CompletedScaleResult): string | undefined {
-  const scoreText = result.scoreText?.trim();
-  if (scoreText) return scoreText;
-  return result.scoreNumeric === null || result.scoreNumeric === undefined
-    ? undefined
-    : String(result.scoreNumeric);
+  return displayScaleScore({
+    scaleCode: result.scaleCode,
+    score: result.scoreNumeric,
+    scoreText: result.scoreText,
+  });
 }
 
 export function completedScaleResultLines(results: readonly CompletedScaleResult[]): string[] {

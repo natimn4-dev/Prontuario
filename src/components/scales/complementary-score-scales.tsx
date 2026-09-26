@@ -7,6 +7,7 @@ import type {
   ComplementaryScoreScaleDefinition,
 } from "@/domain/complementary-score-scales";
 import styles from "./complementary-score-scales.module.css";
+import { displayScaleScore } from "@/domain/fast-stage";
 
 type Latest = {
   id: string;
@@ -164,7 +165,7 @@ export function ComplementaryScoreScales({ consultationId }: { consultationId: s
                   <span className={styles.dimension}>{dimensionLabel(definition.dimension)}</span>
                   <h3>{compactScaleName(definition.name)}</h3>
                 </div>
-                {latest ? <span className={styles.lastBadge}>Último: {latest.scoreText ?? latest.scoreNumeric ?? "—"}</span> : null}
+                {latest ? <span className={styles.lastBadge}>Último: {displayScaleScore({ scaleCode: latest.scaleCode, score: latest.scoreNumeric, scoreText: latest.scoreText }) ?? "—"}</span> : null}
               </header>
 
               <p className={styles.instruction}>{definition.instruction}</p>
@@ -246,7 +247,7 @@ export function ComplementaryScoreScales({ consultationId }: { consultationId: s
               {result ? (
                 <div className={styles.result} role="status">
                   <span className={styles.resultLabel}>Interpretação</span>
-                  <strong>{result.scoreText} · {result.classification}</strong>
+                  <strong>{displayScaleScore({ scaleCode: definition.code, score: result.score, scoreText: result.scoreText })} · {result.classification}</strong>
                   <span>{result.interpretation}</span>
                 </div>
               ) : null}
@@ -254,7 +255,7 @@ export function ComplementaryScoreScales({ consultationId }: { consultationId: s
               {latest ? (
                 <div className={styles.previous}>
                   <span>Último registro</span>
-                  <strong>{latest.scoreText ?? latest.scoreNumeric ?? "sem escore"}</strong>
+                  <strong>{displayScaleScore({ scaleCode: latest.scaleCode, score: latest.scoreNumeric, scoreText: latest.scoreText }) ?? "sem escore"}</strong>
                   <span>{latest.classification ?? "resultado registrado"}</span>
                   <time dateTime={latest.appliedAt}>{formatDate(latest.appliedAt)}</time>
                 </div>

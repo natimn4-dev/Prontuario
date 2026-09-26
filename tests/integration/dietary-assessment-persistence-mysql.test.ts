@@ -2,7 +2,8 @@ import assert from "node:assert/strict";
 import { randomUUID } from "node:crypto";
 import test from "node:test";
 import { PrismaMariaDb } from "@prisma/adapter-mariadb";
-import { PrismaClient } from "../../src/generated/prisma/client.ts";
+import { Prisma, PrismaClient } from "../../src/generated/prisma/client.ts";
+import { mergeStoredSwallowingSupportContext } from "../../src/domain/swallowing-support.ts";
 
 const databaseUrl = process.env.TEST_DATABASE_URL;
 
@@ -28,6 +29,7 @@ test("avaliação alimentar e formulário parcial sobrevivem à gravação e rea
   const suffix = randomUUID();
   const userId = `dietary-persist-u-${suffix}`;
   const patientId = `dietary-persist-p-${suffix}`;
+  const otherPatientId = `dietary-persist-other-p-${suffix}`;
   const consultationId = `dietary-persist-c-${suffix}`;
   const dietaryAssessment = {
     schemaVersion: "dietary-assessment-v1",
@@ -59,6 +61,14 @@ test("avaliação alimentar e formulário parcial sobrevivem à gravação e rea
         identityFingerprint: `dietary-${suffix}`,
       },
     });
+    await db.patient.create({
+      data: {
+        id: otherPatientId,
+        fullName: "Outro Paciente Sintético — Teste Alimentar",
+        normalizedFullName: `outro paciente sintetico teste alimentar ${suffix}`,
+        identityFingerprint: `dietary-other-${suffix}`,
+      },
+    });
     await db.consultation.create({
       data: {
         id: consultationId,
@@ -84,7 +94,7 @@ test("avaliação alimentar e formulário parcial sobrevivem à gravação e rea
     });
     assert.equal(write.count, 1);
 
-    const reopened = await db.consultation.findUniqueOrThrow({
+    let reopened = await db.consultation.findUniqueOrThrow({
       where: { id: consultationId },
       select: { patientId: true, assessment: true },
     });
@@ -99,9 +109,54 @@ test("avaliação alimentar e formulário parcial sobrevivem à gravação e rea
         .dietaryAssessment.targets,
       dietaryAssessment.targets,
     );
+
+    const support = {
+      dysphagia: true,
+      adaptedDiet: true,
+      enteralTube: false,
+      gastrostomy: false,
+    };
+    const updatedVersion = await db.consultation.findUniqueOrThrow({
+      where: { id: consultationId },
+      select: { updatedAt: true },
+    });
+    const merge = mergeStoredSwallowingSupportContext(
+      reopened.assessment as Record<string, unknown>,
+      support,
+      new Date().toISOString(),
+    );
+    const supportWrite = await db.consultation.updateMany({
+      where: { id: consultationId, patientId, status: { not: "FINALIZED" }, updatedAt: updatedVersion.updatedAt },
+      data: { assessment: merge as unknown as Prisma.InputJsonValue },
+    });
+    assert.equal(supportWrite.count, 1);
+
+    const crossPatientWrite = await db.consultation.updateMany({
+      where: { id: consultationId, patientId: otherPatientId, status: { not: "FINALIZED" }, updatedAt: updatedVersion.updatedAt },
+      data: { assessment: { crossPatient: true } },
+    });
+    assert.equal(crossPatientWrite.count, 0);
+
+    reopened = await db.consultation.findUniqueOrThrow({
+      where: { id: consultationId },
+      select: { patientId: true, assessment: true },
+    });
+    const persistedAssessment = reopened.assessment as {
+      dietaryAssessment: typeof dietaryAssessment;
+      swallowingSupportContext: { dysphagia: boolean; adaptedDiet: boolean; enteralTube: boolean; gastrostomy: boolean };
+    };
+    assert.equal(reopened.patientId, patientId);
+    assert.deepEqual(persistedAssessment.dietaryAssessment.entryDraft, dietaryAssessment.entryDraft);
+    assert.deepEqual({
+      dysphagia: persistedAssessment.swallowingSupportContext.dysphagia,
+      adaptedDiet: persistedAssessment.swallowingSupportContext.adaptedDiet,
+      enteralTube: persistedAssessment.swallowingSupportContext.enteralTube,
+      gastrostomy: persistedAssessment.swallowingSupportContext.gastrostomy,
+    }, support);
   } finally {
     await db.consultation.deleteMany({ where: { id: consultationId } });
     await db.patient.deleteMany({ where: { id: patientId } });
+    await db.patient.deleteMany({ where: { id: otherPatientId } });
     await db.user.deleteMany({ where: { id: userId } });
     await db.$disconnect();
   }

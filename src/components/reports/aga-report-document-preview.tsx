@@ -457,6 +457,21 @@ export function AgaReportDocumentPreview({
               </div>
             </section> : null}
 
+            {generated.report.swallowingSupportCare ? <section className={`${styles.section} ${styles.supportPanel}`}>
+              <div className={styles.sectionHeading}><span>Nutrição</span><h2>Deglutição e forma de alimentação</h2></div>
+              <p className={styles.sectionLead}>Orientações baseadas nas opções registradas nesta consulta. Confirme se continuam de acordo com o plano atual da equipe.</p>
+              <div className={styles.problemGrid}>
+                <article>
+                  <div className={styles.problemTitle}><ReportGlyph name="nutrition" /><h3>Cuidados práticos</h3></div>
+                  <ul className={styles.compactList}>{[...generated.report.swallowingSupportCare.practicalActions, ...generated.report.swallowingSupportCare.caregiverActions].map((item) => <li key={item}>{item}</li>)}</ul>
+                </article>
+                {generated.report.swallowingSupportCare.contactGuidance.length > 0 ? <article>
+                  <div className={styles.problemTitle}><ReportGlyph name="attention" /><h3>Quando conversar com a equipe</h3></div>
+                  <ul className={styles.compactList}>{generated.report.swallowingSupportCare.contactGuidance.map((item) => <li key={item}>{item}</li>)}</ul>
+                </article> : null}
+              </div>
+            </section> : null}
+
             {generated.report.gastrostomyCare ? <section className={`${styles.section} ${styles.supportPanel}`}>
               <div className={styles.sectionHeading}><span>GTT</span><h2>Cuidados com gastrostomia</h2></div>
               <p className={styles.sectionLead}>Orientações práticas para o cuidado diário da gastrostomia já registrada. Fórmula, volumes, horários e preparo de medicamentos seguem a orientação individual da equipe.</p>

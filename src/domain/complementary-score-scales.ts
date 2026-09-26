@@ -33,6 +33,7 @@ import {
   VES13,
 } from "./clinical-config/legacy-core.ts";
 import { KPS_OPTIONS } from "./performance-status-options.ts";
+import { canonicalFastStageLabel } from "./fast-stage.ts";
 
 export type ComplementaryScoreScaleCode =
   | "moca"
@@ -315,7 +316,8 @@ export function scoreComplementaryScale(
   else if (code === "charlson") result = numeric(raw, 40, CHARLSON_RANGES);
   else if (code === "fast") {
     const score = requiredNumber(raw, "score", 1, 7.6);
-    result = fromLegacy(scoreDiscreteNumeric({ raw: score, allowedValues: FAST_ALLOWED_VALUES, ranges: FAST_RANGES }));
+    const scored = fromLegacy(scoreDiscreteNumeric({ raw: score, allowedValues: FAST_ALLOWED_VALUES, ranges: FAST_RANGES }));
+    result = { ...scored, scoreText: canonicalFastStageLabel(score) ?? scored.scoreText };
   } else if (code === "pps") {
     const score = requiredNumber(raw, "score", 10, 100);
     result = fromLegacy(scoreDiscreteNumeric({ raw: score, allowedValues: PPS_ALLOWED_VALUES, ranges: PPS_RANGES, unit: "%" }));

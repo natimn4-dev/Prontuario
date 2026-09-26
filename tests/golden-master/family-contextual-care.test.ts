@@ -18,7 +18,7 @@ test("FAST 7c ou superior estabelece imobilidade e elimina metas incompatíveis"
   const immobility = deriveEstablishedImmobilityContext({ scales: [fastScale(7.3)] });
   assert.equal(immobility.established, true);
   assert.equal(immobility.source, "FAST_7C_OR_HIGHER");
-  assert.equal(immobility.fastStage, "7c");
+  assert.equal(immobility.fastStage, "7C");
 
   const contextual = applyContextualFamilyCarePlan({
     plan: {

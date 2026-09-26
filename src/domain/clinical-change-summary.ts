@@ -13,6 +13,7 @@ import {
   type ScaleTrend,
 } from "./longitudinal-scales.ts";
 import { scaleCatalogEntry, type GeriatricDimension } from "./scale-catalog.ts";
+import { canonicalFastClassification, canonicalFastStageLabel, displayScaleScore } from "./fast-stage.ts";
 
 export interface LongitudinalAssessment extends LongitudinalScalePoint {
   color?: ClinicalColor;
@@ -85,10 +86,15 @@ function priorityFor(input: {
   return 7;
 }
 
-function numericPhrase(comparison: ScaleComparison): string {
+function numericPhrase(comparison: ScaleComparison, scaleCode: string): string {
   if (comparison.fromScore === null || comparison.toScore === null) return "sem dados suficientes";
   if (comparison.trend === "not-comparable") return "não comparável por diferença de instrumento/versão";
   const arrow = comparison.toScore > comparison.fromScore ? "↑" : comparison.toScore < comparison.fromScore ? "↓" : "→";
+  if (scaleCode === "fast") {
+    const from = canonicalFastStageLabel(comparison.fromScore) ?? String(comparison.fromScore);
+    const to = canonicalFastStageLabel(comparison.toScore) ?? String(comparison.toScore);
+    return `${from} ${arrow} ${to}`;
+  }
   return `${comparison.fromScore} ${arrow} ${comparison.toScore}`;
 }
 
@@ -101,7 +107,7 @@ function narrativeFor(card: ScaleChangeCard): string | null {
       : card.vsPrevious.trend === "stable"
         ? "Estável"
         : "Comparação indisponível";
-  return `${prefix} em ${card.shortName}: ${numericPhrase(card.vsPrevious)} desde a consulta anterior; baseline ${numericPhrase(card.vsBaseline)}.`;
+  return `${prefix} em ${card.shortName}: ${numericPhrase(card.vsPrevious, card.scaleId)} desde a consulta anterior; baseline ${numericPhrase(card.vsBaseline, card.scaleId)}.`;
 }
 
 function makeScaleResult(point: LongitudinalAssessment): Pick<ScaleResult, "score" | "scoreText" | "cor" | "classe"> {
@@ -130,14 +136,29 @@ export function buildClinicalChangeSummary(
     };
   }
 
-  const patientIds = new Set(assessments.map((item) => item.patientId));
+  const displayAssessments = assessments.map((assessment) => assessment.scaleCode === "fast"
+    ? {
+      ...assessment,
+      scoreText: displayScaleScore({
+        scaleCode: assessment.scaleCode,
+        score: assessment.score,
+        scoreText: assessment.scoreText,
+      })
+        ?? assessment.scoreText,
+      classification: canonicalFastClassification(assessment.classification, {
+        score: assessment.score,
+        scoreText: assessment.scoreText,
+      }) ?? assessment.classification,
+    }
+    : assessment);
+  const patientIds = new Set(displayAssessments.map((item) => item.patientId));
   if (patientIds.size !== 1) {
     throw new Error("Resumo longitudinal não pode misturar pacientes diferentes.");
   }
-  const patientId = assessments[0]!.patientId;
+  const patientId = displayAssessments[0]!.patientId;
 
   const byScale = new Map<string, LongitudinalAssessment[]>();
-  for (const assessment of assessments) {
+  for (const assessment of displayAssessments) {
     const key = assessment.scaleCode;
     const list = byScale.get(key) ?? [];
     list.push(assessment);

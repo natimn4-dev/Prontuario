@@ -7,6 +7,7 @@ import {
   type ClinicalScaleOption,
 } from "@/domain/clinical-scale-workspace";
 import { ECOG_OPTIONS } from "@/domain/oncogeriatric-scales";
+import { displayScaleScore } from "@/domain/fast-stage";
 import {
   type ScopedWorkspaceValue,
   visibleWorkspaceValue,
@@ -135,7 +136,7 @@ function displayClinicalDate(value: string): string {
 }
 
 function previousResultLabel(assessment: StatusView["previous"][number]): string {
-  const result = assessment.scoreText ?? assessment.scoreNumeric;
+  const result = displayScaleScore({ scaleCode: assessment.scaleCode, score: assessment.scoreNumeric, scoreText: assessment.scoreText });
   if (result !== null && result !== undefined && assessment.classification) return `${result} · ${assessment.classification}`;
   if (result !== null && result !== undefined) return String(result);
   return assessment.classification ?? "resultado registrado";
@@ -574,11 +575,11 @@ export function ClinicalScalesWorkspace({ consultationId, onDirtyChange }: { con
     </div> : <p className={styles.empty}>Marque uma ou mais escalas acima para abrir o preenchimento aqui.</p>}
 
     {activeOption ? <article className={styles.workspace}>
-      <header className={styles.workspaceHeader}><div><span>{activeOption.domain}</span><h3>{activeOption.name}</h3></div>{currentAssessment ? <div className={styles.appliedBadge}><strong>Aplicada nesta consulta</strong><span>{currentAssessment.scoreText ?? currentAssessment.scoreNumeric ?? "resultado registrado"}</span></div> : null}</header>
+      <header className={styles.workspaceHeader}><div><span>{activeOption.domain}</span><h3>{activeOption.name}</h3></div>{currentAssessment ? <div className={styles.appliedBadge}><strong>Aplicada nesta consulta</strong><span>{displayScaleScore({ scaleCode: currentAssessment.scaleCode, score: currentAssessment.scoreNumeric, scoreText: currentAssessment.scoreText }) ?? "resultado registrado"}</span></div> : null}</header>
       {activeCore ? renderCore(activeCore) : activeComplementary ? renderComplementary(activeComplementary) : renderOncogeriatric(activeOption)}
       {previousAssessment ? <div className={styles.previous}><strong>Último registro anterior</strong><span>{displayClinicalDate(previousAssessment.appliedAt)} · versão {previousAssessment.scaleVersion} · {previousResultLabel(previousAssessment)}</span><p>A escala não foi selecionada automaticamente; a decisão de reaplicá-la permanece médica.</p></div> : null}
       {currentAssessment ? <div className={styles.previous}><strong>Último registro desta consulta</strong><span>{currentAssessment.classification ?? "Sem classificação automática"}</span>{currentAssessment.interpretation ? <p>{currentAssessment.interpretation}</p> : null}</div> : null}
-      {result ? <div className={styles.result} role="status"><span>Resultado calculado no servidor</span><strong>{result.scoreText ?? (result.combinedScore !== undefined ? String(result.combinedScore) : "Resultado registrado")}</strong><b>{resultClassification(result)}</b><p>{resultInterpretation(result)}</p></div> : null}
+      {result ? <div className={styles.result} role="status"><span>Resultado calculado no servidor</span><strong>{displayScaleScore({ scaleCode: activeOption.code, score: result.score, scoreText: result.scoreText }) ?? (result.combinedScore !== undefined ? String(result.combinedScore) : "Resultado registrado")}</strong><b>{resultClassification(result)}</b><p>{resultInterpretation(result)}</p></div> : null}
       {feedback ? <p className={feedback.kind === "error" ? styles.error : styles.success} role={feedback.kind === "error" ? "alert" : "status"}>{feedback.text}</p> : null}
       <div className={styles.actions}><span>Nenhum resultado cria diagnóstico ou conduta automaticamente.</span><button type="button" disabled={saving || finalized} onClick={saveActive}>{saving ? "Salvando…" : "Salvar avaliação"}</button></div>
     </article> : null}

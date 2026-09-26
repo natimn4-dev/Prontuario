@@ -19,4 +19,7 @@ test("prévia alimentar preserva o item incluído no PUT do fluxo", () => {
   assert.match(source, /previewPayloadFromInput/);
   assert.match(source, /JSON\.parse\(init\.body\)/);
   assert.match(source, /payload = previewPayloadFromInput\(payload, body\.assessment\)/);
+  assert.match(source, /swallowingSupport\?: SwallowingSupportContext/);
+  assert.match(source, /swallowingSupport: body\.swallowingSupport/);
+  assert.match(source, /swallowingSupport: \{ \.\.\.EMPTY_SWALLOWING_SUPPORT \}/);
 });

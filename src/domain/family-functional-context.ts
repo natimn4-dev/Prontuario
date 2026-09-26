@@ -1,4 +1,5 @@
 import type { AgaScaleReportSection } from "./aga-report.ts";
+import { canonicalFastStageLabel } from "./fast-stage.ts";
 
 export type FamilyFunctionalCareLevel =
   | "independent"
@@ -34,20 +35,7 @@ function maxLevel(current: FamilyFunctionalCareLevel, candidate: FamilyFunctiona
 }
 
 function fastStageLabel(score: number): string {
-  const known: Record<string, string> = {
-    "6.1": "6a",
-    "6.2": "6b",
-    "6.3": "6c",
-    "6.4": "6d",
-    "6.5": "6e",
-    "7.1": "7a",
-    "7.2": "7b",
-    "7.3": "7c",
-    "7.4": "7d",
-    "7.5": "7e",
-    "7.6": "7f",
-  };
-  return known[String(score)] ?? String(score);
+  return canonicalFastStageLabel(score) ?? String(score);
 }
 
 function fastLevel(score: number): FamilyFunctionalCareLevel {

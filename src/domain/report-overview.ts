@@ -1,4 +1,5 @@
 import type { AgaScaleReportSection } from "./aga-report.ts";
+import { displayScaleScore } from "./fast-stage.ts";
 import {
   ADVANCE_DIRECTIVE_TOPIC_CODES,
   DOCUMENT_STATUS_LABELS,
@@ -12,25 +13,6 @@ import {
 
 const COGNITION_PRECEDENCE = ["fast", "meem", "moca", "dez_cs"] as const;
 const FUNCTIONALITY_ORDER = ["katz", "barthel", "lawton"] as const;
-
-const FAST_STAGE_LABELS: Readonly<Record<string, string>> = {
-  "1": "1",
-  "2": "2",
-  "3": "3",
-  "4": "4",
-  "5": "5",
-  "6.1": "6A",
-  "6.2": "6B",
-  "6.3": "6C",
-  "6.4": "6D",
-  "6.5": "6E",
-  "7.1": "7A",
-  "7.2": "7B",
-  "7.3": "7C",
-  "7.4": "7D",
-  "7.5": "7E",
-  "7.6": "7F",
-};
 
 export interface AgaReportOverviewScaleItem {
   scaleCode: string;
@@ -105,14 +87,7 @@ export function calculateAgeYearsAt(
 }
 
 function fastStageValue(scale: AgaScaleReportSection): string | undefined {
-  const numeric = scale.result.score;
-  if (typeof numeric === "number") {
-    return FAST_STAGE_LABELS[String(numeric)];
-  }
-
-  const scoreText = scale.result.scoreText?.trim();
-  if (!scoreText) return undefined;
-  return FAST_STAGE_LABELS[scoreText.replace(",", ".")];
+  return displayScaleScore({ scaleCode: scale.code, score: scale.result.score, scoreText: scale.result.scoreText });
 }
 
 function isMoca(scale: AgaScaleReportSection): boolean {

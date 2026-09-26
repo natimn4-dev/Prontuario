@@ -17,6 +17,7 @@ import {
   type DietaryFoodDraft,
   type DietaryFoodComposition,
 } from "@/domain/dietary-assessment";
+import { EMPTY_SWALLOWING_SUPPORT, type SwallowingSupportContext } from "@/domain/swallowing-support";
 
 const previewFood: DietaryFoodComposition = {
   provider: "TBCA",
@@ -158,6 +159,7 @@ function previewPayload() {
     updatedAt: assessment.updatedAt,
     clinicalContext: previewContext,
     references: { calciumMg: 1200, fiberG: 21 },
+    swallowingSupport: { ...EMPTY_SWALLOWING_SUPPORT },
     assessment,
     history: [],
   };
@@ -251,10 +253,16 @@ export default function VisualDietaryPreviewPage() {
       if (url.endsWith("/dietary-assessment") && init?.method === "PUT") {
         const body =
           typeof init.body === "string"
-            ? (JSON.parse(init.body) as { assessment?: DietaryAssessmentInput })
+            ? (JSON.parse(init.body) as { assessment?: DietaryAssessmentInput; swallowingSupport?: SwallowingSupportContext })
             : null;
         if (body?.assessment) {
           payload = previewPayloadFromInput(payload, body.assessment);
+        } else if (body?.swallowingSupport) {
+          payload = {
+            ...payload,
+            updatedAt: new Date().toISOString(),
+            swallowingSupport: body.swallowingSupport,
+          };
         }
         return new Response(JSON.stringify(payload), {
           headers: { "content-type": "application/json" },

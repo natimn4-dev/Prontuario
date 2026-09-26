@@ -20,6 +20,13 @@ import {
   type DietaryFoodComposition,
   type DietaryFoodReference,
 } from "../../domain/dietary-assessment";
+import {
+  normalizeSwallowingSupportContext,
+  mergeStoredSwallowingSupportContext,
+  readSwallowingSupportContext,
+  SWALLOWING_SUPPORT_SCHEMA_VERSION,
+  type SwallowingSupportContext,
+} from "../../domain/swallowing-support.ts";
 import { buildConditionalDietaryGuidance, guidanceAsText } from "../../domain/dietary-guidance";
 import { getTacoFood, searchTacoFoods } from "./taco-food-catalog";
 import { getCommercialFood, searchCommercialFoods } from "./commercial-food-catalog";
@@ -183,10 +190,81 @@ export async function getDietaryAssessment(id: string) {
     status: consultation.status,
     updatedAt: consultation.updatedAt.toISOString(),
     clinicalContext: context,
+    swallowingSupport: plain(consultation.assessment)
+      ? readSwallowingSupportContext(consultation.assessment.swallowingSupportContext) ?? null
+      : null,
     references: { calciumMg: calciumReferenceMg(context.ageYears, context.sex), fiberG: fiberReferenceG(context.ageYears, context.sex) },
     assessment: snapshot(consultation.assessment),
     history: prior.map((entry) => ({ occurredAt: entry.occurredAt.toISOString(), assessment: snapshot(entry.assessment) })).filter((entry) => entry.assessment).slice(0, 3).map((entry) => ({ occurredAt: entry.occurredAt, summary: entry.assessment!.summary })),
   };
+}
+
+export async function saveSwallowingSupport(args: {
+  consultationId: string;
+  expectedUpdatedAt: string;
+  swallowingSupport: unknown;
+  requestId?: string;
+}) {
+  const auth = await requireConsultationAccess(args.consultationId, "consultation.write");
+  const expected = new Date(args.expectedUpdatedAt);
+  if (!Number.isFinite(expected.getTime())) {
+    throw new DietaryAssessmentError("INVALID_VERSION", "Versão da consulta inválida.");
+  }
+  let context: SwallowingSupportContext;
+  try {
+    context = normalizeSwallowingSupportContext(args.swallowingSupport);
+  } catch (error) {
+    throw new DietaryAssessmentError(
+      "INVALID_INPUT",
+      error instanceof Error ? error.message : "Seleção de deglutição e suporte alimentar inválida.",
+    );
+  }
+
+  return measureClinicalTransaction(() => prisma.$transaction(async (tx) => {
+    const consultation = await tx.consultation.findUnique({
+      where: { id: args.consultationId },
+      select: { id: true, patientId: true, status: true, updatedAt: true, assessment: true },
+    });
+    if (!consultation) throw new DietaryAssessmentError("NOT_FOUND", "Consulta não encontrada.");
+    if (consultation.status === "FINALIZED") throw new DietaryAssessmentError("FINALIZED", "Consulta finalizada é imutável.");
+    if (consultation.assessment !== null && !plain(consultation.assessment)) {
+      throw new DietaryAssessmentError("LEGACY_ASSESSMENT", "Avaliação em formato legado requer revisão antes de incluir este registro.");
+    }
+
+    const base = consultation.assessment === null ? {} : consultation.assessment;
+    const stored = mergeStoredSwallowingSupportContext(base, context, new Date().toISOString());
+    const updated = await tx.consultation.updateMany({
+      where: {
+        id: consultation.id,
+        patientId: consultation.patientId,
+        status: { not: "FINALIZED" },
+        updatedAt: expected,
+      },
+      data: { assessment: stored as Prisma.InputJsonValue },
+    });
+    if (updated.count !== 1) {
+      throw new DietaryAssessmentError("CONCURRENT_CHANGE", "A consulta mudou em outra sessão. Recarregue antes de salvar.");
+    }
+
+    await tx.auditEvent.create({
+      data: {
+        userId: auth.user.id,
+        entityType: "Consultation",
+        entityId: consultation.id,
+        action: "consultation.swallowing-support.update",
+        requestId: args.requestId,
+        outcome: "success",
+        reasonCode: SWALLOWING_SUPPORT_SCHEMA_VERSION,
+      },
+    });
+    const saved = await tx.consultation.findUnique({ where: { id: consultation.id }, select: { updatedAt: true } });
+    if (!saved) throw new DietaryAssessmentError("NOT_FOUND", "Consulta não encontrada.");
+    return {
+      consultationId: consultation.id,
+      updatedAt: saved.updatedAt.toISOString(),
+      swallowingSupport: context,
+    };
+  }, { isolationLevel: "Serializable" }));
 }
 
 async function hydrate(input: DietaryAssessmentInput): Promise<DietaryConfirmedMeal[]> {
