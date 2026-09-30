@@ -101,6 +101,13 @@ jobs:
           name: oncogeriatric-scales-synthetic
           path: /tmp/prontuario-onco-*.png
           if-no-files-found: ignore
+      - name: Save synthetic SOAP persistence browser evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: soap-persistence-synthetic
+          path: /tmp/prontuario-soap-*.png
+          if-no-files-found: ignore
       - name: Domain typecheck
         run: npm run typecheck:domain
       - name: Full typecheck

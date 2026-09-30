@@ -4,6 +4,7 @@ import type { LongitudinalAssessment } from "../../domain/clinical-change-summar
 import {
   consultationNoteJsonToSoapDraft,
   soapDraftToConsultationNoteJson,
+  mergeSoapDraftUpdate,
   type SoapDraftFields,
 } from "../../domain/consultation-note-contract.ts";
 import {
@@ -252,7 +253,7 @@ export async function saveConsultationNote(input: {
       }
     }
 
-    const serialized = soapDraftToConsultationNoteJson(input.fields);
+    const serialized = soapDraftToConsultationNoteJson(mergeSoapDraftUpdate(context.fields, input.fields));
 
     let updatedAt: Date;
     if (input.expectedNoteVersion) {
@@ -337,7 +338,7 @@ export async function saveConsultationNote(input: {
         ...context.consultation,
         updatedAt,
       },
-      fields: input.fields,
+      fields: consultationNoteJsonToSoapDraft(serialized),
       exams: input.examsText === undefined
         ? context.exams
         : { ...context.exams, current: normalizeClinicalExamText(input.examsText) },

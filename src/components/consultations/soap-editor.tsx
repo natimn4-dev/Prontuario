@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { MEDICATION_MOMENT_LABELS, type MedicationMoment } from "@/domain/medication-plan";
 import { buildProfessionalPlanDraft } from "@/domain/professional-plan-draft";
 import {
@@ -199,24 +199,32 @@ export function SoapEditor({ consultationId, onDirtyChange }: { consultationId: 
   const [dirty, setDirty] = useState(false);
   const [dismissedSuggestions, setDismissedSuggestions] = useState<Set<string>>(new Set());
   const [feedback, setFeedback] = useState<{ kind: "error" | "success"; text: string } | null>(null);
+  const editRevision = useRef(0);
+  const loadRevision = useRef(0);
+  const saveInFlight = useRef(false);
 
   useEffect(() => { onDirtyChange?.(dirty); }, [dirty, onDirtyChange]);
 
   async function load() {
+    if (saveInFlight.current) return;
+    const requestRevision = ++loadRevision.current;
+    const revisionAtStart = editRevision.current;
     setLoading(true);
     setFeedback(null);
     try {
       const response = await fetch(`/api/consultations/${consultationId}/note`, { cache: "no-store" });
       const body = await response.json().catch(() => null) as (NoteView & { message?: string }) | null;
       if (!response.ok || !body) throw new Error(body?.message || "Não foi possível carregar a evolução.");
+      if (requestRevision !== loadRevision.current || revisionAtStart !== editRevision.current) return;
       setView(body);
       setDraft(draftFromView(body));
       setDirty(false);
       setDismissedSuggestions(new Set());
     } catch (error) {
+      if (requestRevision !== loadRevision.current) return;
       setFeedback({ kind: "error", text: error instanceof Error ? error.message : "Não foi possível carregar a evolução." });
     } finally {
-      setLoading(false);
+      if (requestRevision === loadRevision.current) setLoading(false);
     }
   }
 
@@ -256,7 +264,20 @@ export function SoapEditor({ consultationId, onDirtyChange }: { consultationId: 
     }
   }
 
-  useEffect(() => { void load(); }, [consultationId]);
+  useEffect(() => {
+    void load();
+    return () => { loadRevision.current += 1; };
+  }, [consultationId]);
+
+  useEffect(() => {
+    if (!dirty) return;
+    function preventDeparture(event: BeforeUnloadEvent) {
+      event.preventDefault();
+      event.returnValue = "";
+    }
+    window.addEventListener("beforeunload", preventDeparture);
+    return () => window.removeEventListener("beforeunload", preventDeparture);
+  }, [dirty]);
 
   useEffect(() => {
     function onProblemsChanged(event: Event) {
@@ -312,12 +333,14 @@ export function SoapEditor({ consultationId, onDirtyChange }: { consultationId: 
     key: K,
     value: Draft[K],
   ) {
+    editRevision.current += 1;
     setDraft((current) => current ? { ...current, [key]: value } : current);
     setDirty(true);
     setFeedback(null);
   }
 
   function setVaccinationReviewed(checked: boolean) {
+    editRevision.current += 1;
     setDraft((current) => current ? {
       ...current,
       vaccinationReviewed: checked,
@@ -328,6 +351,7 @@ export function SoapEditor({ consultationId, onDirtyChange }: { consultationId: 
   }
 
   function setVaccinePending(name: string, checked: boolean) {
+    editRevision.current += 1;
     setDraft((current) => {
       if (!current) return current;
       const pending = new Set(current.pendingVaccines);
@@ -340,6 +364,7 @@ export function SoapEditor({ consultationId, onDirtyChange }: { consultationId: 
   }
 
   function setProblemPlan(problemId: string, value: string) {
+    editRevision.current += 1;
     setDraft((current) => current ? {
       ...current,
       planTextByProblem: { ...current.planTextByProblem, [problemId]: value },
@@ -349,6 +374,7 @@ export function SoapEditor({ consultationId, onDirtyChange }: { consultationId: 
   }
 
   function setPreventiveExamOrder(order: PreventiveExamOrder, checked: boolean) {
+    editRevision.current += 1;
     setDraft((current) => {
       if (!current) return current;
       const selected = new Set(current.preventiveExamOrders);
@@ -366,12 +392,15 @@ export function SoapEditor({ consultationId, onDirtyChange }: { consultationId: 
   }
 
   async function save() {
-    if (!view || !draft || saving || view.consultationStatus === "FINALIZED") return;
+    if (!view || !draft || saveInFlight.current || view.consultationStatus === "FINALIZED") return;
+    saveInFlight.current = true;
+    loadRevision.current += 1;
+    const revisionAtStart = editRevision.current;
     setSaving(true);
     setFeedback(null);
     try {
       const planByProblem = Object.fromEntries(
-        activeProblems.map((problem) => [problem.id, actionsFromText(draft.planTextByProblem[problem.id] ?? "")]),
+        Object.entries(draft.planTextByProblem).map(([problemId, text]) => [problemId, actionsFromText(text)]),
       );
       const vaccinationReview = deriveVaccinationReview({
         reviewed: draft.vaccinationReviewed,
@@ -396,6 +425,10 @@ export function SoapEditor({ consultationId, onDirtyChange }: { consultationId: 
       const body = await response.json().catch(() => null) as (NoteView & { message?: string }) | null;
       if (!response.ok || !body) throw new Error(body?.message || "Não foi possível salvar a evolução e o plano.");
       setView(body);
+      if (revisionAtStart !== editRevision.current) {
+        setFeedback({ kind: "success", text: "A versão enviada foi salva. Há alterações posteriores ainda não salvas; salve novamente antes de sair." });
+        return;
+      }
       setDraft(draftFromView(body));
       setDirty(false);
       setDismissedSuggestions(new Set());
@@ -404,6 +437,7 @@ export function SoapEditor({ consultationId, onDirtyChange }: { consultationId: 
     } catch (error) {
       setFeedback({ kind: "error", text: error instanceof Error ? error.message : "Não foi possível salvar a evolução e o plano." });
     } finally {
+      saveInFlight.current = false;
       setSaving(false);
     }
   }
