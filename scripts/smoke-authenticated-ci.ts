@@ -203,6 +203,7 @@ async function verifySoapPersistence() {
   }
   const problemId = "ci-e2e-soap-resolved";
   await prisma.clinicalProblem.create({ data: { id: problemId, patientId: assignedPatientId, originConsultationId: assignedConsultationId, type: "CLINICAL", status: "RESOLVED", title: "Problema sintético resolvido" } });
+  await prisma.problemEvent.create({ data: { problemId, patientId: assignedPatientId, consultationId: assignedConsultationId, previousStatus: "ACTIVE", newStatus: "RESOLVED" } });
   const initial = await read();
   const saved = await put(initial, { subjective: "  Evolução sintética inicial  ", physicalExam: "Exame sintético", vitalSigns: "PA sintética", anthropometry: "", vaccinationReview: { status: "PENDING", pendingVaccines: ["Influenza"] }, examsText: "Exames sintéticos", planByProblem: { [problemId]: ["Conduta histórica sintética"] }, preventiveExamOrders: ["LABORATORY_TESTS", "MAMMOGRAPHY"] });
   const reread = await read();

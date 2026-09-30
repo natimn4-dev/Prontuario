@@ -400,7 +400,7 @@ export function SoapEditor({ consultationId, onDirtyChange }: { consultationId: 
     setFeedback(null);
     try {
       const planByProblem = Object.fromEntries(
-        Object.entries(draft.planTextByProblem).map(([problemId, text]) => [problemId, actionsFromText(text)]),
+        activeProblems.map((problem) => [problem.id, actionsFromText(draft.planTextByProblem[problem.id] ?? "")]),
       );
       const vaccinationReview = deriveVaccinationReview({
         reviewed: draft.vaccinationReviewed,
