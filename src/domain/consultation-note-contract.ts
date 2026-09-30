@@ -58,6 +58,18 @@ export interface SerializedConsultationNoteJson {
   plan: PlanNoteV1;
 }
 
+/** Omitted fields preserve persisted data; explicit empty values clear them. */
+export function mergeSoapDraftUpdate(current: SoapDraftFields, update: SoapDraftFields): SoapDraftFields {
+  const defined = Object.fromEntries(Object.entries(update).filter(([, value]) => value !== undefined));
+  return {
+    ...current,
+    ...defined,
+    ...(update.planByProblem !== undefined ? {
+      planByProblem: { ...current.planByProblem, ...update.planByProblem },
+    } : {}),
+  };
+}
+
 function asRecord(value: unknown, label: string): JsonRecord {
   if (!value || typeof value !== "object" || Array.isArray(value)) {
     throw new Error(`${label} deve ser um objeto JSON versionado.`);

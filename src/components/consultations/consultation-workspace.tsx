@@ -203,7 +203,7 @@ export function ConsultationWorkspace({
         {shouldMount("soap") ? (
           <div id="soap" hidden={active !== "soap"} className={styles.panel}>
             <PreviousConsultationNote previousConsultation={previousConsultation} />
-            <SoapEditor consultationId={consultationId} onDirtyChange={(dirty) => setSectionDirty("soap", dirty)} />
+            <SoapEditor consultationId={consultationId} onDirtyChange={(dirty) => setSectionDirty("soap", dirty)} key={consultationId} />
           </div>
         ) : null}
 

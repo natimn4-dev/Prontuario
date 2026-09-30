@@ -42,7 +42,7 @@ test("consulta não monta todos os workspaces na carga inicial", async () => {
 test("SOAP não carrega medicações e escalas auxiliares antes de serem necessárias", async () => {
   const soap = await text(soapUrl);
 
-  assert.match(soap, /useEffect\(\(\) => \{ void load\(\); \}, \[consultationId\]\)/);
+  assert.match(soap, /useEffect\(\(\) => \{\s*void load\(\);\s*return \(\) => \{ loadRevision\.current \+= 1; \};\s*\}, \[consultationId\]\)/);
   assert.doesNotMatch(soap, /useEffect\(\(\) => \{[^}]*ensureMedications/s);
   assert.doesNotMatch(soap, /useEffect\(\(\) => \{[^}]*ensureScaleResults/s);
   assert.match(soap, /async function ensureMedications/);

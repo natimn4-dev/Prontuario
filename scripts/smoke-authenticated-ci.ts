@@ -38,6 +38,9 @@ function fingerprint(value: string): string {
 }
 
 async function cleanup() {
+  await prisma.clinicalExamRecord.deleteMany({ where: { consultationId: assignedConsultationId } });
+  await prisma.problemEvent.deleteMany({ where: { consultationId: assignedConsultationId } });
+  await prisma.clinicalProblem.deleteMany({ where: { originConsultationId: assignedConsultationId } });
   await prisma.oncogeriatricOperationReceipt.deleteMany({ where: { patientId: assignedPatientId } });
   await prisma.oncogeriatricCheckpoint.deleteMany({ where: { id: oncogeriatricCheckpointId } });
   await prisma.oncogeriatricTreatmentCourse.deleteMany({ where: { id: oncogeriatricCourseId } });
@@ -183,12 +186,91 @@ async function verifyScalesInBrowser() {
   }
 }
 
+
+async function verifySoapPersistence() {
+  const headers = { "x-prontuario-e2e-user": email, "x-prontuario-e2e-secret": secret, "content-type": "application/json" };
+  const path = `/api/consultations/${assignedConsultationId}/note`;
+  type Note = { updatedAt: string; noteVersion: string; fields: { subjective?: string; physicalExam?: string; vitalSigns?: string; anthropometry?: string; vaccinationReview?: { status: string; pendingVaccines?: string[] }; preventiveExamOrders?: string[]; planByProblem?: Record<string, string[]> }; exams: { current: string } };
+  async function read(): Promise<Note> {
+    const response = await request(path, true);
+    assert.equal(response.status, 200);
+    return response.json() as Promise<Note>;
+  }
+  async function put(note: Note, fields: Record<string, unknown>, expectedStatus = 200) {
+    const response = await fetch(new URL(path, baseUrl), { method: "PUT", headers, body: JSON.stringify({ expectedUpdatedAt: note.updatedAt, expectedNoteVersion: note.noteVersion, ...fields }) });
+    assert.equal(response.status, expectedStatus, `SOAP PUT deve retornar ${expectedStatus}`);
+    return response.json() as Promise<Note>;
+  }
+  const problemId = "ci-e2e-soap-resolved";
+  await prisma.clinicalProblem.create({ data: { id: problemId, patientId: assignedPatientId, originConsultationId: assignedConsultationId, type: "CLINICAL", status: "RESOLVED", title: "Problema sintético resolvido" } });
+  await prisma.problemEvent.create({ data: { problemId, patientId: assignedPatientId, consultationId: assignedConsultationId, previousStatus: "ACTIVE", newStatus: "RESOLVED" } });
+  const initial = await read();
+  const saved = await put(initial, { subjective: "  Evolução sintética inicial  ", physicalExam: "Exame sintético", vitalSigns: "PA sintética", anthropometry: "", vaccinationReview: { status: "PENDING", pendingVaccines: ["Influenza"] }, examsText: "Exames sintéticos", planByProblem: { [problemId]: ["Conduta histórica sintética"] }, preventiveExamOrders: ["LABORATORY_TESTS", "MAMMOGRAPHY"] });
+  const reread = await read();
+  assert.equal(saved.noteVersion, reread.noteVersion, "PUT e GET devem devolver a mesma versão normalizada");
+  assert.equal(saved.fields.subjective, "Evolução sintética inicial");
+  const second = await put(saved, { subjective: "Segunda evolução sintética" });
+  assert.equal(second.fields.physicalExam, "Exame sintético", "Campo omitido permanece salvo");
+  assert.deepEqual(second.fields.planByProblem?.[problemId], ["Conduta histórica sintética"]);
+  assert.equal(second.exams.current, "Exames sintéticos");
+  assert.equal(second.fields.vitalSigns, "PA sintética");
+  assert.deepEqual(second.fields.vaccinationReview, { status: "PENDING", pendingVaccines: ["Influenza"] });
+  assert.deepEqual(second.fields.preventiveExamOrders, ["LABORATORY_TESTS", "MAMMOGRAPHY"]);
+  await put(saved, { subjective: "Versão desatualizada" }, 409);
+  const denied = await fetch(new URL(`/api/consultations/${unassignedConsultationId}/note`, baseUrl), { method: "PUT", headers, body: JSON.stringify({ expectedUpdatedAt: second.updatedAt, expectedNoteVersion: second.noteVersion, subjective: "Isolamento sintético" }) });
+  assert.equal(denied.status, 403);
+
+  const browser = await chromium.launch({ headless: true });
+  try {
+    const page = await browser.newPage({ viewport: { width: 1280, height: 850 } });
+    await page.setExtraHTTPHeaders(headers);
+    const errors: string[] = [];
+    page.on("pageerror", error => errors.push(error.message));
+    await page.goto(`${baseUrl}/consultations/${assignedConsultationId}#soap`);
+    const subjective = page.getByLabel("Motivo da consulta, HDA e informações da paciente/acompanhante");
+    await subjective.waitFor({ timeout: 30_000 });
+    await subjective.fill("Texto enviado ao salvar");
+    let releaseResponse!: () => void;
+    const responseGate = new Promise<void>(resolve => { releaseResponse = resolve; });
+    let markRequest!: () => void;
+    const requestStarted = new Promise<void>(resolve => { markRequest = resolve; });
+    await page.route(`**${path}`, async route => {
+      if (route.request().method() !== "PUT") { await route.continue(); return; }
+      const response = await route.fetch();
+      markRequest();
+      await responseGate;
+      await route.fulfill({ response });
+    });
+    await page.getByRole("button", { name: "Salvar evolução e plano", exact: true }).first().click();
+    await requestStarted;
+    await subjective.fill("Texto posterior que precisa continuar pendente");
+    releaseResponse();
+    await page.getByText("A versão enviada foi salva. Há alterações posteriores ainda não salvas; salve novamente antes de sair.", { exact: true }).waitFor();
+    assert.equal(await subjective.inputValue(), "Texto posterior que precisa continuar pendente");
+    await page.unroute(`**${path}`);
+    await page.getByRole("button", { name: "Salvar evolução e plano", exact: true }).first().click();
+    await page.getByText("Evolução, exames, vacinas, solicitações e plano/condutas salvos nesta consulta.", { exact: true }).waitFor();
+    await page.reload();
+    await subjective.waitFor({ timeout: 30_000 });
+    assert.equal(await subjective.inputValue(), "Texto posterior que precisa continuar pendente");
+    const final = await read();
+    assert.deepEqual(final.fields.planByProblem?.[problemId], ["Conduta histórica sintética"]);
+    assert.equal(final.fields.physicalExam, "Exame sintético");
+    assert.deepEqual(final.fields.vaccinationReview, { status: "PENDING", pendingVaccines: ["Influenza"] });
+    assert.deepEqual(final.fields.preventiveExamOrders, ["LABORATORY_TESTS", "MAMMOGRAPHY"]);
+    await page.screenshot({ path: "/tmp/prontuario-soap-persistencia-sintetica.png", fullPage: true });
+    assert.deepEqual(errors, []);
+  } finally { await browser.close(); }
+  console.log("SOAP_PERSISTENCE_E2E=ROUNDTRIP_LATENCY_HISTORY_ISOLATION_OK");
+}
+
 async function main() {
   assert.equal(isCiE2EAuthEnvironment(), true, "O smoke E2E recusou o ambiente: a trava de segurança não foi satisfeita.");
   assert.ok(secret.length >= 32, "E2E_AUTH_SECRET ausente ou curta.");
   assert.match(baseUrl, /^http:\/\/(127\.0\.0\.1|localhost)(:\d+)?\/?$/);
 
   await seed();
+  await verifySoapPersistence();
 
   const patientPage = await request(
     `/patients/${assignedPatientId}`,
