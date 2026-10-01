@@ -72,7 +72,7 @@ O endpoint público de health check deve responder HTTP 200 e incluir:
 
 - `status: "ok"`
 - `database: "ok"`
-- `releaseId: "2026-09-29-soap-persistencia-v1"`
+- `releaseId: "2026-10-01-cognicao-fases-demencia-v1"`
 
 Nesta release, a cópia SOAP omite a seção “A — Avaliação”; os problemas permanecem na seção própria da cópia combinada. Não há migration de banco nesta release.
 
