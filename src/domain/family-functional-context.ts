@@ -204,6 +204,47 @@ const IADL_SUPPORT_GUIDANCE: Readonly<Record<string, readonly string[]>> = {
   ],
 };
 
+const DEMENTIA_COGNITION_GUIDANCE: Readonly<Record<string, readonly string[]>> = {
+  "4": [
+    "Fase leve: podem surgir esquecimentos, repetição de perguntas ou dificuldade para organizar finanças, compromissos e outras tarefas complexas, enquanto muitas atividades continuam independentes. O ritmo de evolução varia de pessoa para pessoa; estas orientações devem acompanhar as necessidades observadas e a avaliação da equipe.",
+    "Inclua a pessoa nas decisões sobre sua vida e tratamento. Preserve sua autonomia no que continua seguro e escute suas preferências, oferecendo ajuda sem assumir todas as tarefas.",
+    "Conversem sobre o futuro enquanto a pessoa pode expressar suas vontades: quem deseja ter ao seu lado nas decisões, preferências de cuidado e diretivas antecipadas. Se desejar, busquem orientação profissional sobre procuração e testamento; a capacidade deve ser avaliada para cada decisão.",
+    "Observe dificuldades ao dirigir, usar o fogão ou administrar medicamentos. Combine apoios discretos, como calendário, lembretes e caixa organizadora de remédios com conferência, e converse com a equipe quando houver erros ou risco.",
+    "Mantenha encontros e atividades de que a pessoa gosta, adaptados ao seu ritmo. Nas consultas, compartilhe mudanças de memória, autonomia, humor, ansiedade e sono para ajustar o cuidado.",
+  ],
+  "5": [
+    "Fase moderada: a pessoa passa a precisar de mais apoio para organizar o dia e escolher roupas adequadas, embora ainda possa participar de muitos cuidados. A desorientação pode aumentar. Nem todas as pessoas apresentam as mesmas mudanças ou evoluem no mesmo ritmo.",
+    "Fale com calma, mantenha contato visual e dê uma instrução por vez, usando frases curtas. Ofereça escolhas simples e tempo para responder; evite discutir ou testar a memória.",
+    "Mantenha horários previsíveis e um ambiente tranquilo. Se houver mais confusão ou agitação no fim da tarde, reduza ruídos, organize a iluminação e observe cansaço, fome, dor e outras necessidades.",
+    "Retire tapetes soltos e objetos de risco, proteja o acesso a medicamentos e ao fogão e acompanhe os deslocamentos quando houver risco de se perder. Adapte portas e janelas preservando saídas seguras em emergência.",
+    "Combine quem acompanha consultas, medicamentos e finanças. Converse com a equipe sobre a capacidade para cada decisão e busque orientação jurídica sobre representação quando necessária, mantendo a participação da pessoa nas escolhas possíveis.",
+    "Dividam as tarefas e reservem descanso para quem cuida. Conforme as necessidades e os recursos da família, considerem cuidador, centro-dia e grupos de apoio; sofrimento ou exaustão merecem acolhimento e ajuda profissional.",
+  ],
+  "6": [
+    "Fase moderadamente grave: costuma ser necessária ajuda para vestir-se, banho e higiene, com maior desorientação e possível dificuldade para reconhecer pessoas próximas. A mobilidade e a comunicação variam; preserve o que a pessoa ainda consegue fazer sem cobrar desempenho.",
+    "Use instruções curtas e uma etapa por vez, expressão tranquila e tom acolhedor. Um toque suave, quando bem recebido, e escolhas simples podem ajudar mais que explicações longas; não corrija a pessoa repetidamente.",
+    "Acompanhe situações com risco de queda ou de sair e se perder. Guarde medicamentos, ferramentas e objetos perigosos em local protegido e supervisione o uso do fogão, preservando circulação e saídas seguras.",
+    "Se houver agitação, agressividade, alucinações ou desorientação noturna, conte à equipe quando acontecem e o que parece ajudar. Investigue dor, constipação, fome, sono e desconforto; priorize ajustes de rotina e ambiente antes de discutir medicação com a equipe.",
+    "Reavaliem juntos o apoio disponível em casa. Cuidador em tempo integral ou uma instituição de longa permanência podem ser considerados conforme as necessidades, preferências e estrutura familiar, sem transformar essa decisão em culpa.",
+    "Retomem as preferências e metas de cuidado com a equipe, incluindo cuidados paliativos para aliviar sintomas e apoiar a família. Cuidar de quem cuida também faz parte do tratamento: planejem descanso e apoio emocional.",
+  ],
+  "7": [
+    "Fase grave: há necessidade de ajuda muito ampla nas atividades diárias e a fala pode estar muito limitada. Podem aparecer dificuldades para engolir e perda de mobilidade, mas as necessidades variam. Este estágio, sozinho, não define que a pessoa esteja nos últimos dias de vida.",
+    ...ADVANCED_DEMENTIA_GUIDANCE.cognicao!,
+    "Priorize conforto e dignidade: observe dor, cuide da higiene e da pele e combine posicionamento e mudanças de posição com a equipe. Respeite a participação e as preferências que a pessoa ainda consegue expressar.",
+    "Se houver dificuldade para engolir ou redução da alimentação, converse com a equipe sobre formas seguras e confortáveis de alimentar e sobre benefícios e riscos das opções, incluindo alimentação assistida e sonda quando discutida. A decisão deve considerar a avaliação individual, os valores da pessoa e o conforto, sem indicação automática pela fase da demência.",
+    "Converse sobre cuidados paliativos para controle de sintomas e apoio à família, inclusive sobre serviços de cuidado no fim da vida quando indicados. Relembrem as vontades previamente expressas pela pessoa ao decidir os próximos passos.",
+    "Mesmo com pouca fala, presença, voz familiar, música e toque bem recebido podem trazer conforto. Respeite sinais de cansaço e desconforto e preserve esses momentos de vínculo.",
+    "Quem cuida também precisa ser cuidado. Dividam responsabilidades, organizem períodos de descanso e busquem apoio psicológico ou grupos de apoio, inclusive para lidar com tristeza e luto antecipatório.",
+  ],
+};
+
+/** Uses only a valid FAST assessed in this consultation, never an ADL or mood score. */
+export function dementiaCognitionGuidance(context: FamilyFunctionalContext): readonly string[] | undefined {
+  const stage = canonicalFastStageLabel(context.fastScore);
+  return stage ? DEMENTIA_COGNITION_GUIDANCE[stage.charAt(0)] : undefined;
+}
+
 /**
  * Substitui orientação genérica por orientação coerente com o grau de dependência.
  * Na linha Funcionalidade, Katz/Barthel/Lawton têm precedência quando foram aplicados;
@@ -214,6 +255,10 @@ export function contextualFamilyGuidance(
   baseGuidance: readonly string[],
   context: FamilyFunctionalContext,
 ): string[] {
+  if (dimension === "cognicao") {
+    const dementiaGuidance = dementiaCognitionGuidance(context);
+    if (dementiaGuidance) return [...dementiaGuidance];
+  }
   const guidanceLevel = dimension === "funcionalidade"
     ? functionalScaleLevel(context) ?? context.level
     : context.level;
