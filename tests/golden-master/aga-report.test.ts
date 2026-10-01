@@ -168,3 +168,25 @@ test("relatório bloqueia mistura de pacientes", () => {
     longitudinalProblems: [{ ...problems[0]!, patientId: "p2" }], longitudinalAssessments: [],
   }), /outro paciente/);
 });
+
+
+test("relatório preserva o contexto de problemas clínicos e geriátricos, inclusive resolvidos", () => {
+  const clinicalContext = "Acompanhamento registrado.\nObservação complementar.";
+  const geriatricContext = "Episódio prévio registrado na consulta.";
+  const report = buildAgaReportModel({
+    patientId: "p1", consultationId: "c1", consultationStatus: "DRAFT", patientName: "Teste",
+    longitudinalProblems: [
+      { ...problems[0]!, description: clinicalContext },
+      { ...problems[1]!, description: geriatricContext },
+      { ...problems[0]!, id: "c2", title: "Sem contexto", description: "   " },
+    ],
+    longitudinalAssessments: [],
+  });
+  assert.ok(renderAgaReportText(report).includes(clinicalContext.replace(/\n/g, "\n  ")));
+  assert.equal(report.clinicalProblems[0]?.description, clinicalContext);
+  assert.equal(report.geriatricProblems[0]?.description, geriatricContext);
+  const text = renderAccessibleAgaReportText(report);
+  assert.ok(text.includes(`- Hipertensão arterial [Ativo]\n  ${clinicalContext.replace(/\n/g, "\n  ")}`));
+  assert.ok(text.includes(`- Delirium prévio [Resolvido]\n  ${geriatricContext}`));
+  assert.ok(text.includes("- Sem contexto [Ativo]\n\nPROBLEMAS GERIÁTRICOS"));
+});

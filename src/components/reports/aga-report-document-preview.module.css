@@ -409,6 +409,15 @@
   padding-left: 0.05rem;
 }
 
+.problemContext {
+  display: block;
+  margin-top: 0.12rem;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  font-size: 0.72rem;
+  line-height: 1.4;
+}
+
 .problemList small {
   margin-left: 0.35rem;
   color: var(--muted);

@@ -122,14 +122,14 @@ export function renderAccessibleAgaReportText(model: AccessibleAgaReportModel): 
     blocks.push(
       "",
       "PROBLEMAS CLÍNICOS",
-      list(model.clinicalProblems.map((problem) => `${problem.title} [${problemStatusLabel(problem.status)}]`)),
+      list(model.clinicalProblems.map((problem) => `${problem.title} [${problemStatusLabel(problem.status)}]${problem.description?.trim() ? `\n  ${problem.description.replace(/\n/g, "\n  ")}` : ""}`)),
     );
   }
   if (model.geriatricProblems.length > 0) {
     blocks.push(
       "",
       "PROBLEMAS GERIÁTRICOS",
-      list(model.geriatricProblems.map((problem) => `${problem.title} [${problemStatusLabel(problem.status)}]`)),
+      list(model.geriatricProblems.map((problem) => `${problem.title} [${problemStatusLabel(problem.status)}]${problem.description?.trim() ? `\n  ${problem.description.replace(/\n/g, "\n  ")}` : ""}`)),
     );
   }
 
