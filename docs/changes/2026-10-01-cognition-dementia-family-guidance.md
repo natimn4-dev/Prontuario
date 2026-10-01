@@ -21,3 +21,9 @@ A capacidade decisória é individual e específica à decisão. Estágio grave 
 - Typecheck completo e de domínio aprovados. Compilação de produção Next.js/webpack aprovada. O pipeline `npm run build` completo com migrations/prestart depende do MySQL/ambiente e será validado na CI; não foi executado localmente contra produção.
 - Chromium: tabela real extraída do componente e renderizada com os estilos atuais e dados sintéticos FAST 4, 5, 6A e 7E. Sem overflow horizontal a 390 px. PDFs A4 contêm todas as orientações; inspeção visual da fase grave sem corte. A linha pode continuar na página seguinte sem cortar cada item. Esta verificação é da tabela, não do fluxo autenticado completo.
 - Publicação/CI/merge/deploy e smoke pós-release devem ser confirmados separadamente.
+
+## Atualização pontual necessária ao gate de segurança
+
+A CI com a melhoria clínica passou isolamento/persistência no MySQL, os 911 testes clínicos, E2E autenticado, typechecks e build com PRESTART. A última etapa (`npm audit --omit=dev --audit-level=critical`) bloqueou a versão Next.js 16.3.4 por GHSA-vcvr-r3jv-pc5j, publicada no banco de avisos em 30/09/2026. A dependência e o fallback SWC foram atualizados juntos para 16.3.8, na mesma série, com lockfile correspondente. Sem codemod, mudança de React, configuração ou migração de banco. O projeto não utiliza `next/og`/`ImageResponse`, mas o gate por dependência continua obrigatório.
+
+Fonte oficial: https://github.com/vercel/next.js/security/advisories/GHSA-vcvr-r3jv-pc5j . A correção está disponível a partir de 16.3.6. Outros avisos preexistentes abaixo do nível crítico não foram ampliados para esta rodada; não se afirma ausência de todas as vulnerabilidades. A validação deve ser repetida na CI com a dependência atualizada antes de merge/produção.
