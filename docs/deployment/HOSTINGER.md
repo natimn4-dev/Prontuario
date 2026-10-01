@@ -74,7 +74,7 @@ O endpoint público de health check deve responder HTTP 200 e incluir:
 - `database: "ok"`
 - `releaseId: "2026-10-01-cognicao-fases-demencia-v1"`
 
-Nesta release, a cópia SOAP omite a seção “A — Avaliação”; os problemas permanecem na seção própria da cópia combinada. Não há migration de banco nesta release.
+Nesta release, o relatório familiar apresenta orientações completas de cognição conforme o FAST atual, com apoio à família por fase da demência. A cópia SOAP mantém a omissão da seção “A — Avaliação”, e os problemas permanecem na seção própria da cópia combinada. Não há migration de banco nesta release.
 
 O `releaseId` é deliberadamente servido com `Cache-Control: no-store`; uma CDN ou proxy não deve reutilizar um identificador antigo para declarar a implantação como atual. O smoke também exige esse header antes de aceitar a resposta de health.
 
