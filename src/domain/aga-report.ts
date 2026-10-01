@@ -330,10 +330,10 @@ export function renderAgaReportText(model: AgaReportModel): string {
   }
 
   if (model.clinicalProblems.length > 0) {
-    blocks.push("", "PROBLEMAS CLÍNICOS", list(model.clinicalProblems.map((problem) => `${problem.title} [${problem.status}]`)));
+    blocks.push("", "PROBLEMAS CLÍNICOS", list(model.clinicalProblems.map((problem) => `${problem.title} [${problem.status}]${problem.description?.trim() ? `\n  ${problem.description.replace(/\n/g, "\n  ")}` : ""}`)));
   }
   if (model.geriatricProblems.length > 0) {
-    blocks.push("", "PROBLEMAS GERIÁTRICOS", list(model.geriatricProblems.map((problem) => `${problem.title} [${problem.status}]`)));
+    blocks.push("", "PROBLEMAS GERIÁTRICOS", list(model.geriatricProblems.map((problem) => `${problem.title} [${problem.status}]${problem.description?.trim() ? `\n  ${problem.description.replace(/\n/g, "\n  ")}` : ""}`)));
   }
 
   const vaccinationItems = model.vaccinationPrevention.status === "PENDING"

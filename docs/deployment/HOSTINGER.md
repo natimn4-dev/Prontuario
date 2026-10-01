@@ -72,7 +72,7 @@ O endpoint público de health check deve responder HTTP 200 e incluir:
 
 - `status: "ok"`
 - `database: "ok"`
-- `releaseId: "2026-10-01-cognicao-fases-demencia-v1"`
+- `releaseId: "2026-10-01-relatorio-contexto-problemas-v1"`
 
 Nesta release, o relatório familiar apresenta orientações completas de cognição conforme o FAST atual, com apoio à família por fase da demência. A cópia SOAP mantém a omissão da seção “A — Avaliação”, e os problemas permanecem na seção própria da cópia combinada. Não há migration de banco nesta release.
 

@@ -102,6 +102,9 @@ function ProblemList({ items }: { items: AgaReportModel["clinicalProblems"] }) {
                   : "Resolvido"}
             </small>
           ) : null}
+          {problem.description?.trim() ? (
+            <em className={styles.problemContext}>{problem.description}</em>
+          ) : null}
         </li>
       ))}
     </ul>
