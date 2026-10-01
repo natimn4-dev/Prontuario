@@ -68,6 +68,64 @@ function domainSummary(scales: AgaScaleReportSection[], code: string) {
   return summary;
 }
 
+test("FAST atual entrega orientações completas para cada fase sem mudar escore ou dados", () => {
+  for (const [score, phase, marker] of [
+    [4, "Fase leve", /diretivas antecipadas/i],
+    [5, "Fase moderada", /centro-dia/i],
+    [6.1, "Fase moderadamente grave", /instituição de longa permanência/i],
+    [6.5, "Fase moderadamente grave", /cuidados paliativos/i],
+    [7.1, "Fase grave", /luto antecipatório/i],
+    [7.5, "Fase grave", /benefícios e riscos/i],
+  ] as const) {
+    const scales = [scale({ code: "fast", name: "FAST", dimension: "cognicao", score, clinicalColor: "vermelho" })];
+    const before = structuredClone(scales);
+    const saved = JSON.parse(JSON.stringify(scales));
+    const summary = domainSummary(scales, "cognicao");
+    assert.ok(summary.guidance[0]?.startsWith(phase));
+    assert.ok(summary.guidance.length >= 5, "conteúdo da fase não deve ser cortado em dois itens");
+    assert.match(summary.guidance.join(" "), marker);
+    assert.deepEqual(scales, before);
+    assert.deepEqual(domainSummary(saved, "cognicao"), summary, "mesmas orientações após recarregar dados salvos");
+    assert.ok(summary.evidenceReferences.some((ref) => ref.pmid === "39544104"));
+    assert.doesNotMatch(summary.guidance.join(" "), /capacidade de tomar decisões já não existe|fase final|hospice/i);
+  }
+});
+
+test("fase leve usa FAST mesmo quando dependência física exige muito apoio", () => {
+  const summary = domainSummary([
+    scale({ code: "fast", name: "FAST", dimension: "cognicao", score: 4, clinicalColor: "vermelho" }),
+    scale({ code: "barthel", name: "Barthel", dimension: "funcionalidade", score: 10, clinicalColor: "vermelho" }),
+  ], "cognicao");
+  assert.match(summary.guidance[0]!, /^Fase leve/);
+  assert.doesNotMatch(summary.guidance.join(" "), /Fase grave|Fase moderadamente grave/);
+});
+
+test("GDS-15, MoCA e FAST histórico não atribuem fase de demência à consulta atual", () => {
+  const historic = scale({ code: "fast", name: "FAST", dimension: "cognicao", score: 7.5, clinicalColor: "vermelho" });
+  historic.assessedInTargetConsultation = false;
+  const scales = [
+    historic,
+    scale({ code: "moca", name: "MoCA", dimension: "cognicao", score: 15, clinicalColor: "vermelho" }),
+    scale({ code: "gds15", name: "GDS-15", dimension: "humor", score: 12, clinicalColor: "vermelho" }),
+  ];
+  assert.doesNotMatch(domainSummary(scales, "cognicao").guidance.join(" "), /Fase (leve|moderada|grave)/);
+  assert.equal(buildReportDomainSummaries([], EMPTY_INTRINSIC_CAPACITY).length, 0);
+  assert.ok(!buildReportDomainSummaries([historic], EMPTY_INTRINSIC_CAPACITY).some((domain) => domain.code === "cognicao"));
+});
+
+test("FAST com NPI positivo mantém aconselhamento específico além das orientações da fase", () => {
+  const summary = domainSummary([
+    scale({ code: "fast", name: "FAST", dimension: "cognicao", score: 6.2, clinicalColor: "vermelho" }),
+    scale({ code: "npi", name: "NPI", dimension: "cognicao", score: 4, clinicalColor: "vermelho", collectedData: [
+      { field: "npi_hallucinations_frequency", value: "2" },
+      { field: "npi_hallucinations_severity", value: "2" },
+    ] }),
+  ], "cognicao");
+  assert.match(summary.guidance[0]!, /^Fase moderadamente grave/);
+  assert.match(summary.guidance.join(" "), /Para delírios ou alucinações, evite confronto/i);
+  assert.match(summary.guidance.join(" "), /Cuidar de quem cuida/i);
+});
+
 test("visão geral mostra MoCA conciso e explica ABVD/AIVD", () => {
   const moca = scale({
     code: "moca",

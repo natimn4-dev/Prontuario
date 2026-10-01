@@ -121,7 +121,7 @@ function DomainSummaryTable({ domains }: { domains: ReportDomainSummary[] }) {
         </thead>
         <tbody>
           {domains.map((domain) => (
-            <tr key={domain.code} data-state={domain.state}>
+            <tr key={domain.code} data-state={domain.state} data-domain={domain.code}>
               <th className={styles.domainCell} scope="row">{domain.label}</th>
               <td>
                 <span className={styles.domainStatus} data-state={domain.state}>{domain.stateLabel}</span>

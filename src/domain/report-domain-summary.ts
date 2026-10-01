@@ -2,6 +2,7 @@ import type { AgaScaleReportSection } from "./aga-report.ts";
 import {
   contextualFamilyGuidance,
   deriveFamilyFunctionalContext,
+  dementiaCognitionGuidance,
 } from "./family-functional-context.ts";
 import {
   contextualizeImmobilityDomainGuidance,
@@ -1041,8 +1042,15 @@ export function buildReportDomainSummaries(
       ? ENTERAL_NUTRITION_GUIDANCE
       : undefined;
     const contextGuidance = enteralNutritionGuidance?.actions ?? contextualGuidance;
+    const dementiaGuidance = dimension === "cognicao" && state !== "preserved"
+      ? dementiaCognitionGuidance(functionalContext)
+      : undefined;
+    // Keep phase guidance complete and retain symptom-specific advice already assessed.
+    const completeContextGuidance = dementiaGuidance
+      ? unique([...contextGuidance, ...targetedCognitiveGuidance(dimensionScales), ...npiNonPharmacologicalGuidance(dimensionScales)])
+      : contextGuidance;
     const guidanceLimit = dimension === "cognicao"
-      ? state === "preserved"
+      ? dementiaGuidance ? completeContextGuidance.length : state === "preserved"
         ? 3
         : (npiPositiveDomains(dimensionScales).length > 0 ? 5 : targetedCognitiveGuidance(dimensionScales).length > 0 ? 4 : 2)
       : enteralNutritionGuidance
@@ -1052,7 +1060,7 @@ export function buildReportDomainSummaries(
         : dimension === "mobilidade" && immobilityContext.established
           ? 4
           : 2;
-    const guidance = unique(contextGuidance).slice(0, isAlteredGds ? 3 : guidanceLimit);
+    const guidance = unique(completeContextGuidance).slice(0, isAlteredGds ? 3 : guidanceLimit);
     const requiresMedicalGuidance = (state === "altered" || state === "attention") && guidance.length === 0;
     const fallbackEvidence = stateAwareGuidance?.evidenceReferences
       ?? alteredIntrinsicGuidance?.evidenceReferences
@@ -1068,6 +1076,12 @@ export function buildReportDomainSummaries(
           targetedGuidance?.evidenceReferences,
           mobilityImmobilityEvidence,
           enteralNutritionGuidance?.evidenceReferences,
+          dementiaGuidance ? [{
+            label: "Diretriz italiana de demência e comprometimento cognitivo leve — adaptação da NICE NG97",
+            pmid: "39544104",
+            url: "https://pubmed.ncbi.nlm.nih.gov/39544104/",
+            relevance: "Diretriz: planejamento antecipado, avaliação de causas de sofrimento, apoio aos cuidadores e cuidado paliativo conforme as necessidades; decisões de alimentação exigem avaliação individual.",
+          }] : undefined,
           fallbackEvidence,
         ]);
 

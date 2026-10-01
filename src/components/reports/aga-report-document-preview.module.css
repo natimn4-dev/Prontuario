@@ -1081,6 +1081,14 @@
     break-inside: avoid;
   }
 
+  .domainTable tr[data-domain="cognicao"] {
+    break-inside: auto;
+  }
+
+  .domainTable tr[data-domain="cognicao"] li {
+    break-inside: avoid;
+  }
+
   .medicationLink {
     display: none;
   }
