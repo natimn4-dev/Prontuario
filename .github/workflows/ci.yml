@@ -108,6 +108,13 @@ jobs:
           name: soap-persistence-synthetic
           path: /tmp/prontuario-soap-*.png
           if-no-files-found: ignore
+      - name: Save synthetic directive signature browser evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: directives-signature-synthetic
+          path: /tmp/prontuario-directives-signature-synthetic.png
+          if-no-files-found: ignore
       - name: Domain typecheck
         run: npm run typecheck:domain
       - name: Full typecheck

@@ -44,7 +44,7 @@ test("consulta expõe navegação por etapas responsiva sem montar todas as áre
   assert.doesNotMatch(workspaceSource, /visited\.has/);
   assert.match(workspaceSource, /hidden=\{active !==/);
   assert.match(workspaceSource, /professionalIdentity: ProfessionalIdentity/);
-  assert.match(workspaceSource, /ReportWorkspaceTabs consultationId=\{consultationId\} professionalIdentity=\{professionalIdentity\}/);
+  assert.match(workspaceSource, /ReportWorkspaceTabs\s+consultationId=\{consultationId\}[\s\S]*?professionalIdentity=\{professionalIdentity\}/);
   assert.doesNotMatch(workspaceSource, /IntersectionObserver/);
 
   assert.match(workspaceStyles, /\.navigation\s*\{[\s\S]*position:\s*sticky/);

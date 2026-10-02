@@ -3,6 +3,8 @@
 import dynamic from "next/dynamic";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { PatientContextActions } from "@/components/navigation/patient-context-actions";
+import type { AgaReportConsultationStatus } from "@/domain/aga-report";
+import type { GeneratedReportResponse } from "@/components/reports/aga-report-document-preview";
 import type { ProfessionalIdentity } from "@/domain/professional-identity";
 import {
   PreviousConsultationNote,
@@ -84,17 +86,22 @@ function sectionFromHash(): WorkspaceSectionId | null {
 
 export function ConsultationWorkspace({
   consultationId,
+  consultationStatus,
   patientName,
   professionalIdentity,
   previousConsultation,
   returnContext,
 }: {
   consultationId: string;
+  consultationStatus: AgaReportConsultationStatus;
   patientName: string;
   professionalIdentity: ProfessionalIdentity;
   previousConsultation?: PreviousConsultationReference;
   returnContext?: { href: string; label: string };
 }) {
+  // Preserva somente os dados da prévia; os workspaces e gráficos continuam sendo desmontados.
+  const [reportPreview, setReportPreview] = useState<GeneratedReportResponse | null>(null);
+  const cachedReport = reportPreview?.report.consultationId === consultationId ? reportPreview : null;
   const [active, setActive] = useState<WorkspaceSectionId>("soap");
   const [dirtySections, setDirtySections] = useState<Set<WorkspaceSectionId>>(new Set());
 
@@ -228,7 +235,13 @@ export function ConsultationWorkspace({
 
         {shouldMount("relatorio") ? (
           <div id="relatorio" hidden={active !== "relatorio"} className={styles.panel}>
-            <ReportWorkspaceTabs consultationId={consultationId} professionalIdentity={professionalIdentity} />
+            <ReportWorkspaceTabs
+              consultationId={consultationId}
+              consultationStatus={consultationStatus}
+              professionalIdentity={professionalIdentity}
+              initialReport={cachedReport}
+              onGeneratedReportChange={setReportPreview}
+            />
           </div>
         ) : null}
 

@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import type { AgaReportConsultationStatus } from "@/domain/aga-report";
 import { isFinalReportSnapshot } from "@/domain/report-signature-eligibility";
 import type { ReportSigningSnapshot } from "./report-signing-snapshot";
 import styles from "./vidaas-signature-panel.module.css";
@@ -27,10 +28,16 @@ function providerLabel(provider: SignatureProvider): string {
 
 export function VidaasSignaturePanel({
   consultationId,
+  consultationStatus,
   snapshot,
+  preparing = false,
+  onPreparePreview,
 }: {
   consultationId: string;
+  consultationStatus: AgaReportConsultationStatus;
   snapshot: ReportSigningSnapshot | null;
+  preparing?: boolean;
+  onPreparePreview?: () => void;
 }) {
   const [agaReviewConfirmed, setAgaReviewConfirmed] = useState(false);
   const [directivesReviewConfirmed, setDirectivesReviewConfirmed] = useState(false);
@@ -39,7 +46,8 @@ export function VidaasSignaturePanel({
   const [signedDocumentId, setSignedDocumentId] = useState("");
   const [signedDocumentKind, setSignedDocumentKind] = useState<DocumentKind | "">("");
 
-  const finalizedSnapshotReady = Boolean(snapshot && isFinalReportSnapshot(snapshot));
+  const consultationFinalized = consultationStatus === "FINALIZED";
+  const finalizedSnapshotReady = Boolean(consultationFinalized && !preparing && snapshot && isFinalReportSnapshot(snapshot));
 
   function snapshotReadyFor(kind: DocumentKind): boolean {
     if (!snapshot || !finalizedSnapshotReady) return false;
@@ -99,14 +107,14 @@ export function VidaasSignaturePanel({
         <button
           type="button"
           onClick={() => void finalizeAndSign(kind, "vidaas")}
-          disabled={!reviewConfirmed || !ready || Boolean(loadingKey)}
+          disabled={!reviewConfirmed || !ready || Boolean(loadingKey) || preparing}
         >
           {loadingKey === `${kind}:vidaas` ? "Preparando assinatura…" : `Assinar ${documentLabel} com VIDaaS`}
         </button>
         <button
           type="button"
           onClick={() => void finalizeAndSign(kind, "bird")}
-          disabled={!reviewConfirmed || !ready || Boolean(loadingKey)}
+          disabled={!reviewConfirmed || !ready || Boolean(loadingKey) || preparing}
         >
           {loadingKey === `${kind}:bird` ? "Preparando assinatura…" : `Assinar ${documentLabel} com Bird ID`}
         </button>
@@ -136,17 +144,21 @@ export function VidaasSignaturePanel({
         </p>
       </div>
 
-      {!snapshot ? (
-        <p className={styles.gateNotice} role="status">
-          Finalize a consulta e gere uma nova prévia. A assinatura ficará vinculada exatamente à versão final que você revisar.
-        </p>
+      {!consultationFinalized ? (
+        <div className={styles.gateNotice} role="status">
+          <p>Finalize a consulta para preparar os documentos finais e habilitar a revisão para assinatura.</p>
+          <a href="#finalizacao">Ir para finalizar consulta</a>
+        </div>
+      ) : preparing ? (
+        <p className={styles.gateNotice} role="status">Preparando a prévia final para revisão e assinatura…</p>
       ) : !finalizedSnapshotReady ? (
-        <p className={styles.gateNotice} role="status">
-          Esta prévia foi gerada antes da finalização. Finalize a consulta e gere uma nova prévia para habilitar a assinatura.
-        </p>
+        <div className={styles.gateNotice} role="status">
+          <p>{snapshot ? "Esta prévia foi gerada antes da finalização. Gere uma nova prévia para habilitar a assinatura." : "Prepare a prévia final e revise o documento antes de assinar."}</p>
+          <button type="button" onClick={onPreparePreview} disabled={!onPreparePreview || Boolean(loadingKey)}>Preparar prévia final para assinatura</button>
+        </div>
       ) : (
         <p className={styles.readyNotice} role="status">
-          Prévia final v{snapshot.version} pronta para revisão e assinatura.
+          Prévia final v{snapshot!.version} pronta para revisão e assinatura. Marque a confirmação de revisão do documento que deseja assinar.
         </p>
       )}
 
@@ -179,6 +191,9 @@ export function VidaasSignaturePanel({
           <div>
             <strong>Diretivas antecipadas</strong>
             <p>Gera e assina um PDF próprio das preferências, valores e objetivos de cuidado exibidos na aba de diretivas.</p>
+            {finalizedSnapshotReady && !snapshot?.hasAdvanceDirectives ? (
+              <p role="status">Não há diretivas antecipadas registradas nesta prévia. A assinatura das diretivas exige um registro salvo e incluído no relatório.</p>
+            ) : null}
           </div>
           {signedResult("advance-directives") ?? (
             <div className={styles.actions}>
