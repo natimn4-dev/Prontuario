@@ -192,7 +192,13 @@ export function VidaasSignaturePanel({
             <strong>Diretivas antecipadas</strong>
             <p>Gera e assina um PDF próprio das preferências, valores e objetivos de cuidado exibidos na aba de diretivas.</p>
             {finalizedSnapshotReady && !snapshot?.hasAdvanceDirectives ? (
-              <p role="status">Não há diretivas antecipadas registradas nesta prévia. A assinatura das diretivas exige um registro salvo e incluído no relatório.</p>
+              <div className={styles.gateNotice} role="status">
+                <p>Esta prévia não contém diretivas antecipadas. Se você já salvou as diretivas, atualize a prévia final para incluir o registro e revise o documento antes de assinar.</p>
+                <button type="button" onClick={onPreparePreview} disabled={!onPreparePreview || Boolean(loadingKey)}>
+                  Atualizar prévia final das diretivas
+                </button>
+                <a href="#diretivas">Conferir registro de diretivas</a>
+              </div>
             ) : null}
           </div>
           {signedResult("advance-directives") ?? (

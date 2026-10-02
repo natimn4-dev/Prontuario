@@ -3,7 +3,6 @@ import { createHash } from "node:crypto";
 import { PrismaMariaDb } from "@prisma/adapter-mariadb";
 import { PrismaClient, type Prisma } from "../src/generated/prisma/client.ts";
 import { chromium } from "playwright";
-import { ADVANCE_DIRECTIVE_PROTOCOL_VERSION, emptyAdvanceDirectiveTopics } from "../src/domain/advance-directives.ts";
 import { isCiE2EAuthEnvironment } from "../src/domain/security/ci-e2e-auth-policy.ts";
 
 function databaseConfig() {
@@ -270,20 +269,6 @@ async function verifySoapPersistence() {
 
 
 async function verifyAdvanceDirectiveSignaturePreparation() {
-  await prisma.advanceDirectiveRecord.create({ data: {
-    patientId: assignedPatientId,
-    consultationId: assignedConsultationId,
-    recordedById: userId,
-    version: 1,
-    protocolVersion: ADVANCE_DIRECTIVE_PROTOCOL_VERSION,
-    disposition: "WANTS_TO_TALK",
-    participationMode: "PATIENT_DIRECT",
-    whatMatters: "Preferência sintética: manter o conforto no domicílio.",
-    priorities: [],
-    topics: emptyAdvanceDirectiveTopics() as unknown as Prisma.InputJsonValue,
-    documentStatus: "DOES_NOT_HAVE",
-    reviewTrigger: "WHEN_PERSON_WANTS_OR_CONDITION_CHANGES",
-  } });
   const browser = await chromium.launch({ headless: true });
   try {
     const page = await browser.newPage({ viewport: { width: 1280, height: 900 } });
@@ -303,15 +288,30 @@ async function verifyAdvanceDirectiveSignaturePreparation() {
     await vidaasButton.waitFor({ timeout: 30_000 });
     assert.ok(await vidaasButton.isDisabled());
     assert.ok(await birdButton.isDisabled());
+    await Promise.all([
+      page.waitForResponse((response) => new URL(response.url()).pathname === reportPath && response.ok()),
+      page.getByRole("button", { name: "Gerar prévia", exact: true }).click(),
+    ]);
+    assert.equal(await page.getByRole("tab", { name: "Diretivas antecipadas", exact: true }).count(), 0);
+    assert.ok(await review.isDisabled());
+    await navigation.getByRole("button", { name: /Diretivas/ }).click();
+    await page.getByRole("heading", { name: "Diretivas antecipadas", exact: true }).first().waitFor();
+    await page.locator('input[name="advance-directive-disposition"][value="WANTS_TO_TALK"]').check();
+    await page.getByLabel("Valores, atividades e relações importantes", { exact: true }).fill("Preferência sintética: manter o conforto no domicílio.");
+    await page.getByRole("button", { name: "Registrar nova versão", exact: true }).click();
+    await page.getByText("Versão 1 registrada sem alterar as versões anteriores.", { exact: true }).waitFor();
+    await navigation.getByRole("button", { name: /Relatório/ }).click();
+    await page.getByRole("button", { name: "Gerar prévia", exact: true }).waitFor();
+    assert.equal(await page.getByRole("tab", { name: "Diretivas antecipadas", exact: true }).count(), 0, "Salvar deve invalidar a prévia antiga sem diretivas.");
     await page.getByRole("button", { name: "Gerar prévia", exact: true }).click();
     await page.getByRole("tab", { name: "Diretivas antecipadas", exact: true }).waitFor();
     assert.ok(await review.isDisabled(), "Rascunho não pode habilitar revisão para assinatura.");
-    const draftSnapshot = reportResponses[0]!.snapshot.id;
+    const draftSnapshot = reportResponses[1]!.snapshot.id;
     await navigation.getByRole("button", { name: /Diretivas/ }).click();
     await page.getByRole("heading", { name: "Diretivas antecipadas", exact: true }).first().waitFor();
     await navigation.getByRole("button", { name: /Relatório/ }).click();
     await page.getByRole("tab", { name: "Diretivas antecipadas", exact: true }).waitFor();
-    assert.equal(reportResponses.length, 1, "Trocar etapas deve restaurar a prévia sem gerar novo snapshot.");
+    assert.equal(reportResponses.length, 2, "Trocar etapas deve restaurar a prévia sem gerar novo snapshot.");
     for (const provider of ["vidaas", "bird"]) {
       const blocked = await request(`/api/consultations/${assignedConsultationId}/reports/advance-directives/signatures/${provider}`, true, { snapshotId: draftSnapshot });
       assert.equal(blocked.status, 409);
@@ -321,10 +321,10 @@ async function verifyAdvanceDirectiveSignaturePreparation() {
     await prisma.consultation.update({ where: { id: assignedConsultationId }, data: { status: "FINALIZED" } });
     await page.reload({ waitUntil: "domcontentloaded" });
     await page.getByText(/Prévia final v\d+ pronta para revisão e assinatura/).waitFor({ timeout: 30_000 });
-    assert.equal(reportResponses.length, 2, "A entrada na consulta finalizada deve preparar uma única versão final.");
-    const finalSnapshot = reportResponses[1]!.snapshot.id;
-    assert.equal(reportResponses[1]!.report.consultationStatus, "FINALIZED");
-    assert.equal(reportResponses[1]!.report.draftContext, false);
+    assert.equal(reportResponses.length, 3, "A entrada na consulta finalizada deve preparar uma única versão final.");
+    const finalSnapshot = reportResponses[2]!.snapshot.id;
+    assert.equal(reportResponses[2]!.report.consultationStatus, "FINALIZED");
+    assert.equal(reportResponses[2]!.report.draftContext, false);
     assert.notEqual(finalSnapshot, draftSnapshot);
     for (const provider of ["vidaas", "bird"]) {
       const stale = await request(`/api/consultations/${assignedConsultationId}/reports/advance-directives/signatures/${provider}`, true, { snapshotId: draftSnapshot });
@@ -342,7 +342,7 @@ async function verifyAdvanceDirectiveSignaturePreparation() {
     await page.getByText("Consulta finalizada", { exact: true }).waitFor();
     await navigation.getByRole("button", { name: /Relatório/ }).click();
     await review.waitFor();
-    assert.equal(reportResponses.length, 2, "A versão final é preservada sem remontar gráficos em segundo plano.");
+    assert.equal(reportResponses.length, 3, "A versão final é preservada sem remontar gráficos em segundo plano.");
     assert.equal(await review.isChecked(), false, "Reabrir o relatório exige nova confirmação de revisão.");
     await review.check();
     for (const [provider, button] of [["vidaas", vidaasButton], ["bird", birdButton]] as const) {
