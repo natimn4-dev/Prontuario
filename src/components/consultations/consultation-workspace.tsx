@@ -222,7 +222,7 @@ export function ConsultationWorkspace({
 
         {shouldMount("diretivas") ? (
           <div id="diretivas" hidden={active !== "diretivas"} className={styles.panel}>
-            <AdvanceDirectivesWorkspace consultationId={consultationId} onDirtyChange={(dirty) => setSectionDirty("diretivas", dirty)} />
+            <AdvanceDirectivesWorkspace consultationId={consultationId} onDirtyChange={(dirty) => setSectionDirty("diretivas", dirty)} onSaved={() => setReportPreview(null)} />
           </div>
         ) : null}
 

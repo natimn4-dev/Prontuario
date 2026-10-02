@@ -54,7 +54,7 @@ async function responseMessage(response: Response, fallback: string): Promise<st
   return body.message || fallback;
 }
 
-export function AdvanceDirectivesWorkspace({ consultationId, onDirtyChange }: { consultationId: string; onDirtyChange?: (dirty: boolean) => void }) {
+export function AdvanceDirectivesWorkspace({ consultationId, onDirtyChange, onSaved }: { consultationId: string; onDirtyChange?: (dirty: boolean) => void; onSaved?: () => void }) {
   const [workspace, setWorkspace] = useState<AdvanceDirectiveWorkspaceView>();
   const [draft, setDraft] = useState<AdvanceDirectiveDraft>(() => emptyAdvanceDirectiveDraft());
   const [loading, setLoading] = useState(true);
@@ -106,6 +106,7 @@ export function AdvanceDirectivesWorkspace({ consultationId, onDirtyChange }: { 
       setWorkspace(next);
       setDraft(draftFromRecord(next.current));
       setDirty(false);
+      onSaved?.();
       setMessage(`Versão ${next.latestVersion} registrada sem alterar as versões anteriores.`);
     } catch (caught) {
       setError(caught instanceof Error ? caught.message : "Não foi possível salvar este registro.");
