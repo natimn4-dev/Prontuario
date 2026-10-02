@@ -1,7 +1,8 @@
 "use client";
 
-import { useMemo, useState } from "react";
-import type { AgaReportModel } from "@/domain/aga-report";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { isFinalReportSnapshot } from "@/domain/report-signature-eligibility";
+import type { AgaReportConsultationStatus, AgaReportModel } from "@/domain/aga-report";
 import { sourceStatusLabel } from "@/domain/accessible-report-language";
 import {
   hasDisplayableLongitudinalHistory,
@@ -25,7 +26,7 @@ import {
 import type { ReportSigningSnapshot } from "./report-signing-snapshot";
 import styles from "./aga-report-document-preview.module.css";
 
-interface GeneratedReportResponse {
+export interface GeneratedReportResponse {
   report: AgaReportModel & {
     capacityHistory: CapacityDimensionHistory;
     overview: AgaReportOverview;
@@ -273,14 +274,27 @@ function AdvanceDirectivesDocument({
 
 export function AgaReportDocumentPreview({
   consultationId,
+  consultationStatus,
+  initialReport = null,
+  preparationRequest = 0,
+  onPreparingChange,
+  onGeneratedReportChange,
   professionalIdentity,
   onSigningSnapshotChange,
 }: {
   consultationId: string;
+  consultationStatus?: AgaReportConsultationStatus;
+  initialReport?: GeneratedReportResponse | null;
+  preparationRequest?: number;
+  onPreparingChange?: (preparing: boolean) => void;
+  onGeneratedReportChange?: (report: GeneratedReportResponse | null) => void;
   professionalIdentity: ProfessionalIdentity;
   onSigningSnapshotChange?: (snapshot: ReportSigningSnapshot | null) => void;
 }) {
-  const [generated, setGenerated] = useState<GeneratedReportResponse | null>(null);
+  const [generated, setGenerated] = useState<GeneratedReportResponse | null>(initialReport);
+  const generationInFlight = useRef(false);
+  const autoPreparationAttempted = useRef(false);
+  const lastPreparationRequest = useRef(0);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
   const [clinicalReviewConfirmed, setClinicalReviewConfirmed] = useState(false);
@@ -296,8 +310,11 @@ export function AgaReportDocumentPreview({
     );
   }, [generated]);
 
-  async function generate() {
+  const generate = useCallback(async () => {
+    if (generationInFlight.current) return;
+    generationInFlight.current = true;
     setLoading(true);
+    onPreparingChange?.(true);
     setError("");
     setClinicalReviewConfirmed(false);
     setActiveTab("aga");
@@ -307,6 +324,7 @@ export function AgaReportDocumentPreview({
       const result = await response.json() as GeneratedReportResponse & { message?: string };
       if (!response.ok) throw new Error(result.message ?? "Não foi possível gerar o relatório.");
       setGenerated(result);
+      onGeneratedReportChange?.(result);
       onSigningSnapshotChange?.({
         id: result.snapshot.id,
         version: result.snapshot.version,
@@ -316,12 +334,26 @@ export function AgaReportDocumentPreview({
       });
     } catch (caught) {
       setGenerated(null);
+      onGeneratedReportChange?.(null);
       onSigningSnapshotChange?.(null);
       setError(caught instanceof Error ? caught.message : "Não foi possível gerar o relatório.");
     } finally {
+      generationInFlight.current = false;
       setLoading(false);
+      onPreparingChange?.(false);
     }
-  }
+  }, [consultationId, onGeneratedReportChange, onPreparingChange, onSigningSnapshotChange]);
+
+  useEffect(() => {
+    const explicitlyRequested = preparationRequest > lastPreparationRequest.current;
+    lastPreparationRequest.current = preparationRequest;
+    const firstFinalEntry = consultationStatus === "FINALIZED" && !autoPreparationAttempted.current;
+    if (consultationStatus === "FINALIZED") autoPreparationAttempted.current = true;
+    // Nunca promove o rascunho anterior. Uma falha exige nova ação, sem repetir POST em um loop.
+    if (explicitlyRequested || (firstFinalEntry && (!generated || !isFinalReportSnapshot(generated.report)))) {
+      void generate();
+    }
+  }, [consultationStatus, preparationRequest, generated, generate]);
 
   function printReport() {
     if (!generated || !clinicalReviewConfirmed) return;

@@ -22,6 +22,18 @@
   font-size: 13px;
   line-height: 1.45;
 }
+.gateNotice p { margin: 0 0 8px; }
+.gateNotice a { color: inherit; font-weight: 700; }
+.gateNotice button {
+  padding: 9px 12px;
+  border: 1px solid currentColor;
+  border-radius: 8px;
+  background: white;
+  color: inherit;
+  font: inherit;
+  font-weight: 700;
+  cursor: pointer;
+}
 .gateNotice {
   border: 1px solid #ead29d;
   background: #fff7e8;

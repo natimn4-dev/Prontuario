@@ -1,8 +1,9 @@
 import assert from "node:assert/strict";
 import { createHash } from "node:crypto";
 import { PrismaMariaDb } from "@prisma/adapter-mariadb";
-import { PrismaClient } from "../src/generated/prisma/client.ts";
+import { PrismaClient, type Prisma } from "../src/generated/prisma/client.ts";
 import { chromium } from "playwright";
+import { ADVANCE_DIRECTIVE_PROTOCOL_VERSION, emptyAdvanceDirectiveTopics } from "../src/domain/advance-directives.ts";
 import { isCiE2EAuthEnvironment } from "../src/domain/security/ci-e2e-auth-policy.ts";
 
 function databaseConfig() {
@@ -38,6 +39,9 @@ function fingerprint(value: string): string {
 }
 
 async function cleanup() {
+  await prisma.digitalSignature.deleteMany({ where: { consultationId: assignedConsultationId } });
+  await prisma.documentSnapshot.deleteMany({ where: { consultationId: assignedConsultationId } });
+  await prisma.advanceDirectiveRecord.deleteMany({ where: { consultationId: assignedConsultationId } });
   await prisma.clinicalExamRecord.deleteMany({ where: { consultationId: assignedConsultationId } });
   await prisma.problemEvent.deleteMany({ where: { consultationId: assignedConsultationId } });
   await prisma.clinicalProblem.deleteMany({ where: { originConsultationId: assignedConsultationId } });
@@ -264,6 +268,101 @@ async function verifySoapPersistence() {
   console.log("SOAP_PERSISTENCE_E2E=ROUNDTRIP_LATENCY_HISTORY_ISOLATION_OK");
 }
 
+
+async function verifyAdvanceDirectiveSignaturePreparation() {
+  await prisma.advanceDirectiveRecord.create({ data: {
+    patientId: assignedPatientId,
+    consultationId: assignedConsultationId,
+    recordedById: userId,
+    version: 1,
+    protocolVersion: ADVANCE_DIRECTIVE_PROTOCOL_VERSION,
+    disposition: "WANTS_TO_TALK",
+    participationMode: "PATIENT_DIRECT",
+    whatMatters: "Preferência sintética: manter o conforto no domicílio.",
+    priorities: [],
+    topics: emptyAdvanceDirectiveTopics() as unknown as Prisma.InputJsonValue,
+    documentStatus: "DOES_NOT_HAVE",
+    reviewTrigger: "WHEN_PERSON_WANTS_OR_CONDITION_CHANGES",
+  } });
+  const browser = await chromium.launch({ headless: true });
+  try {
+    const page = await browser.newPage({ viewport: { width: 1280, height: 900 } });
+    await page.setExtraHTTPHeaders({ "x-prontuario-e2e-user": email, "x-prontuario-e2e-secret": secret });
+    const reportPath = `/api/consultations/${assignedConsultationId}/reports/aga`;
+    const reportResponses: { snapshot: { id: string }; report: { consultationStatus: string; draftContext: boolean } }[] = [];
+    page.on("response", async (response) => {
+      if (new URL(response.url()).pathname === reportPath && response.request().method() === "POST" && response.ok()) {
+        reportResponses.push(await response.json());
+      }
+    });
+    const navigation = page.getByRole("navigation", { name: "Áreas do prontuário" });
+    const review = page.getByRole("checkbox", { name: /Confirmo a revisão final das diretivas antecipadas/ });
+    const vidaasButton = page.getByRole("button", { name: "Assinar diretivas com VIDaaS", exact: true });
+    const birdButton = page.getByRole("button", { name: "Assinar diretivas com Bird ID", exact: true });
+    await page.goto(`${baseUrl}/consultations/${assignedConsultationId}#relatorio`, { waitUntil: "domcontentloaded" });
+    await vidaasButton.waitFor({ timeout: 30_000 });
+    assert.ok(await vidaasButton.isDisabled());
+    assert.ok(await birdButton.isDisabled());
+    await page.getByRole("button", { name: "Gerar prévia", exact: true }).click();
+    await page.getByRole("tab", { name: "Diretivas antecipadas", exact: true }).waitFor();
+    assert.ok(await review.isDisabled(), "Rascunho não pode habilitar revisão para assinatura.");
+    const draftSnapshot = reportResponses[0]!.snapshot.id;
+    await navigation.getByRole("button", { name: /Diretivas/ }).click();
+    await page.getByRole("heading", { name: "Diretivas antecipadas", exact: true }).first().waitFor();
+    await navigation.getByRole("button", { name: /Relatório/ }).click();
+    await page.getByRole("tab", { name: "Diretivas antecipadas", exact: true }).waitFor();
+    assert.equal(reportResponses.length, 1, "Trocar etapas deve restaurar a prévia sem gerar novo snapshot.");
+    for (const provider of ["vidaas", "bird"]) {
+      const blocked = await request(`/api/consultations/${assignedConsultationId}/reports/advance-directives/signatures/${provider}`, true, { snapshotId: draftSnapshot });
+      assert.equal(blocked.status, 409);
+      assert.equal((await blocked.json()).code, "CONSULTATION_NOT_FINALIZED_FOR_SIGNATURE");
+    }
+    // Somente a consulta sintética do MySQL efêmero muda de status para testar o retorno após finalizar.
+    await prisma.consultation.update({ where: { id: assignedConsultationId }, data: { status: "FINALIZED" } });
+    await page.reload({ waitUntil: "domcontentloaded" });
+    await page.getByText(/Prévia final v\d+ pronta para revisão e assinatura/).waitFor({ timeout: 30_000 });
+    assert.equal(reportResponses.length, 2, "A entrada na consulta finalizada deve preparar uma única versão final.");
+    const finalSnapshot = reportResponses[1]!.snapshot.id;
+    assert.equal(reportResponses[1]!.report.consultationStatus, "FINALIZED");
+    assert.equal(reportResponses[1]!.report.draftContext, false);
+    assert.notEqual(finalSnapshot, draftSnapshot);
+    for (const provider of ["vidaas", "bird"]) {
+      const stale = await request(`/api/consultations/${assignedConsultationId}/reports/advance-directives/signatures/${provider}`, true, { snapshotId: draftSnapshot });
+      assert.equal(stale.status, 409);
+      assert.equal((await stale.json()).code, "FINALIZED_REPORT_SNAPSHOT_REQUIRED");
+    }
+    assert.ok(await review.isEnabled());
+    assert.ok(await vidaasButton.isDisabled(), "Revisão explícita continua obrigatória.");
+    await page.getByRole("tab", { name: "Diretivas antecipadas", exact: true }).click();
+    await page.getByText("Preferência sintética: manter o conforto no domicílio.", { exact: true }).waitFor();
+    await review.check();
+    assert.ok(await vidaasButton.isEnabled());
+    assert.ok(await birdButton.isEnabled());
+    await navigation.getByRole("button", { name: /Finalizar/ }).click();
+    await page.getByText("Consulta finalizada", { exact: true }).waitFor();
+    await navigation.getByRole("button", { name: /Relatório/ }).click();
+    await review.waitFor();
+    assert.equal(reportResponses.length, 2, "A versão final é preservada sem remontar gráficos em segundo plano.");
+    assert.equal(await review.isChecked(), false, "Reabrir o relatório exige nova confirmação de revisão.");
+    await review.check();
+    for (const [provider, button] of [["vidaas", vidaasButton], ["bird", birdButton]] as const) {
+      const routePath = `/api/consultations/${assignedConsultationId}/reports/advance-directives/signatures/${provider}`;
+      let sentSnapshot = "";
+      await page.route(`**${routePath}`, async (route) => {
+        sentSnapshot = route.request().postDataJSON().snapshotId;
+        await route.fulfill({ status: 400, contentType: "application/json", body: JSON.stringify({ message: "Autorização externa não executada no teste sintético." }) });
+      });
+      await Promise.all([
+        page.waitForResponse((response) => new URL(response.url()).pathname === routePath && response.request().method() === "POST"),
+        button.click(),
+      ]);
+      await page.getByRole("alert").filter({ hasText: "Autorização externa não executada no teste sintético." }).waitFor();
+      assert.equal(sentSnapshot, finalSnapshot, "Ambos os provedores devem receber o snapshot final exibido.");
+    }
+    await page.screenshot({ path: "/tmp/prontuario-directives-signature-synthetic.png", fullPage: true });
+  } finally { await browser.close(); }
+}
+
 async function main() {
   assert.equal(isCiE2EAuthEnvironment(), true, "O smoke E2E recusou o ambiente: a trava de segurança não foi satisfeita.");
   assert.ok(secret.length >= 32, "E2E_AUTH_SECRET ausente ou curta.");
@@ -359,8 +458,10 @@ async function main() {
   assert.match(reportHtml, /Fonte sintética de teste/);
   assert.match(reportHtml, /Trajetória geriátrica/);
   await verifyScalesInBrowser();
+  await verifyAdvanceDirectiveSignaturePreparation();
 
   console.log("AUTHENTICATED_CI_E2E=SMOKE_OK");
+  console.log("- diretivas: prévia preservada entre etapas; finalização cria versão final; revisão habilita ambos os provedores com o mesmo snapshot; rascunhos continuam bloqueados");
   console.log("- usuário sintético autenticado exclusivamente pelo contexto de CI");
   console.log("- MySQL efêmero validado");
   console.log("- página autenticada do paciente sintético retornou 200");

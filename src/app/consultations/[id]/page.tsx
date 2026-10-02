@@ -149,7 +149,9 @@ export default async function ConsultationPage({
         </section>
 
         <ConsultationWorkspace
+          key={id}
           consultationId={id}
+          consultationStatus={consultation.status}
           patientName={context.patientName}
           professionalIdentity={professionalIdentity}
           previousConsultation={previousConsultation}
