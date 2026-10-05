@@ -388,7 +388,7 @@ async function verifySwallowingTherapies() {
       assert.equal(await swallowing.getByLabel(label, { exact: true }).isChecked(), true);
     }
     const withFollowUp = await request(`/api/consultations/${unlinkedOncoConsultationId}/reports/aga`, true, {});
-    assert.equal(withFollowUp.status, 200);
+    assert.equal(withFollowUp.status, 201);
     const withReport = await withFollowUp.json() as { text: string };
     assert.match(withReport.text, /Mantenha o acompanhamento com o seu fonoaudiólogo/);
     assert.doesNotMatch(withReport.text, /Se ainda não houver acompanhamento/);
@@ -400,7 +400,7 @@ async function verifySwallowingTherapies() {
     await swallowing.getByLabel("Fonoterapia / acompanhamento com fonoaudiólogo", { exact: true }).waitFor();
     assert.equal(await swallowing.getByLabel("Fonoterapia / acompanhamento com fonoaudiólogo", { exact: true }).isChecked(), false);
     const withoutFollowUp = await request(`/api/consultations/${unlinkedOncoConsultationId}/reports/aga`, true, {});
-    assert.equal(withoutFollowUp.status, 200);
+    assert.equal(withoutFollowUp.status, 201);
     const withoutReport = await withoutFollowUp.json() as { text: string };
     assert.match(withoutReport.text, /Se ainda não houver acompanhamento/);
     assert.doesNotMatch(withoutReport.text, /Mantenha o acompanhamento com o seu fonoaudiólogo/);
