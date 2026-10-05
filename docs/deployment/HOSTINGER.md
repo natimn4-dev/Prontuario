@@ -72,9 +72,9 @@ O endpoint público de health check deve responder HTTP 200 e incluir:
 
 - `status: "ok"`
 - `database: "ok"`
-- `releaseId: "2026-10-02-diretivas-assinatura-atualizacao-v1"`
+- `releaseId: "2026-10-05-disfagia-terapias-v1"`
 
-Nesta release, o relatório familiar apresenta orientações completas de cognição conforme o FAST atual, com apoio à família por fase da demência. A cópia SOAP mantém a omissão da seção “A — Avaliação”, e os problemas permanecem na seção própria da cópia combinada. Não há migration de banco nesta release.
+Nesta release, a área de alimentação permite registrar fisioterapia, fonoterapia e terapia ocupacional em andamento por consulta. As orientações de disfagia e Nutrição e vitalidade consideram a fonoterapia registrada, preservando os cuidados de sonda/GTT. Registros anteriores continuam compatíveis; não há migration de banco nesta release.
 
 O `releaseId` é deliberadamente servido com `Cache-Control: no-store`; uma CDN ou proxy não deve reutilizar um identificador antigo para declarar a implantação como atual. O smoke também exige esse header antes de aceitar a resposta de health.
 

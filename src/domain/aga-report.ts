@@ -118,6 +118,8 @@ export interface AgaReportModel {
   safetyGuidance: FamilyReportSafetyGuidance;
   swallowingSupportCare?: {
     enteralRoute: boolean;
+    dysphagia?: boolean;
+    speechTherapy?: boolean;
     practicalActions: string[];
     caregiverActions: string[];
     contactGuidance: string[];

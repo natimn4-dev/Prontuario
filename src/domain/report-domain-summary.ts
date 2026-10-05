@@ -1,3 +1,4 @@
+import { speechTherapySwallowingGuidance } from "./swallowing-support.ts";
 import type { AgaScaleReportSection } from "./aga-report.ts";
 import {
   contextualFamilyGuidance,
@@ -619,15 +620,15 @@ function mobilityTargetedGuidance(scales: readonly AgaScaleReportSection[]): Dom
   };
 }
 
-function eat10TargetedGuidance(scales: readonly AgaScaleReportSection[]): DomainGuidance | undefined {
+function eat10TargetedGuidance(scales: readonly AgaScaleReportSection[], speechTherapy?: boolean): DomainGuidance | undefined {
   const eat10 = scales.find((scale) => scale.assessedInTargetConsultation && scale.code === "eat10");
   const score = eat10 ? scoreNumber(eat10) : undefined;
   if (!eat10 || typeof score !== "number" || score < 3) return undefined;
 
   return {
     actions: [
-      "A avaliação mostrou sinais de dificuldade para engolir. Vale fazer uma avaliação mais detalhada da deglutição, geralmente com fonoaudiólogo. Esse resultado é um sinal de atenção e, sozinho, não confirma disfagia nem aspiração.",
-      "Enquanto aguarda a avaliação, ofereça alimentos e líquidos quando a pessoa estiver desperta, confortável e bem sentada. Prefira um ambiente tranquilo, pequenas quantidades, ritmo lento e pausas entre as ofertas.",
+      "A avaliação mostrou sinais de dificuldade para engolir. Esse resultado é um sinal de atenção e, sozinho, não confirma disfagia nem aspiração. " + speechTherapySwallowingGuidance(speechTherapy),
+      "Quando a alimentação pela boca fizer parte do plano de cuidado, ofereça alimentos e líquidos com a pessoa desperta, confortável e bem sentada. Respeite as orientações da equipe, com um ambiente tranquilo e pausas entre as ofertas.",
       "Evite engrossar líquidos ou mudar a textura dos alimentos sem uma avaliação da deglutição. A melhor consistência, o volume de cada oferta e as estratégias de posicionamento dependem de como a pessoa engole.",
       "Procure a equipe se houver tosse ou engasgos durante as refeições, voz molhada depois de engolir, sensação de alimento parado, refeições muito demoradas, redução persistente da alimentação ou perda de peso. Engasgo com dificuldade para respirar exige atendimento imediato.",
     ],
@@ -948,7 +949,7 @@ function shouldShowFamilyResult(scale: AgaScaleReportSection): boolean {
 export function buildReportDomainSummaries(
   scales: readonly AgaScaleReportSection[],
   intrinsicCapacity: IntrinsicCapacityGuidance,
-  swallowingSupport?: { enteralRoute: boolean },
+  swallowingSupport?: { enteralRoute: boolean; dysphagia?: boolean; speechTherapy?: boolean },
 ): ReportDomainSummary[] {
   const grouped = new Map<string, AgaScaleReportSection[]>();
   for (const scale of scales.filter((item) => item.assessedInTargetConsultation)) {
@@ -994,7 +995,7 @@ export function buildReportDomainSummaries(
     const targetedGuidance = dimension === "mobilidade"
       ? mobilityTargetedGuidance(dimensionScales)
       : dimension === "nutricao"
-        ? eat10TargetedGuidance(dimensionScales)
+        ? eat10TargetedGuidance(dimensionScales, swallowingSupport?.speechTherapy)
         : dimension === "humor"
           ? cornellFamilyGuidance(scales, dimensionScales)
           : undefined;
@@ -1041,7 +1042,12 @@ export function buildReportDomainSummaries(
     const enteralNutritionGuidance = dimension === "nutricao" && swallowingSupport?.enteralRoute
       ? ENTERAL_NUTRITION_GUIDANCE
       : undefined;
-    const contextGuidance = enteralNutritionGuidance?.actions ?? contextualGuidance;
+    const nutritionFollowUp = dimension === "nutricao" && (swallowingSupport?.dysphagia || swallowingSupport?.enteralRoute)
+      ? speechTherapySwallowingGuidance(swallowingSupport.speechTherapy) : undefined;
+    const contextGuidance = enteralNutritionGuidance
+      ? [...enteralNutritionGuidance.actions, ...(nutritionFollowUp ? [nutritionFollowUp] : [])]
+      : nutritionFollowUp && !targetedGuidance
+        ? [nutritionFollowUp, ...contextualGuidance] : contextualGuidance;
     const dementiaGuidance = dimension === "cognicao" && state !== "preserved"
       ? dementiaCognitionGuidance(functionalContext)
       : undefined;
@@ -1054,7 +1060,7 @@ export function buildReportDomainSummaries(
         ? 3
         : (npiPositiveDomains(dimensionScales).length > 0 ? 5 : targetedCognitiveGuidance(dimensionScales).length > 0 ? 4 : 2)
       : enteralNutritionGuidance
-        ? enteralNutritionGuidance.actions.length
+        ? contextGuidance.length
         : targetedGuidance
         ? 4
         : dimension === "mobilidade" && immobilityContext.established

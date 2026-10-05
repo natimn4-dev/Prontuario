@@ -174,3 +174,47 @@ test("relatório inclui orientações de deglutição e cuidado de GTT apenas qu
 test("orientações registram fontes PubMed sobre disfagia geriátrica, dieta adaptada e segurança de fármacos", () => {
   assert.deepEqual(SWALLOWING_SUPPORT_EVIDENCE.map((reference) => reference.pmid), ["26966356", "33371326", "37707775", "35007816", "27815525"]);
 });
+
+test("terapias persistem sem alterar dados anteriores e entradas inválidas são recusadas", () => {
+  const context = { dysphagia: true, adaptedDiet: true, enteralTube: false, gastrostomy: false, physicalTherapy: true, speechTherapy: true, occupationalTherapy: false };
+  const base = { soap: { subjective: "Sintético" }, dietaryAssessment: { meals: [] } };
+  const stored = mergeStoredSwallowingSupportContext(base, context, "2026-10-05T23:00:00Z");
+  assert.deepEqual(readSwallowingSupportContext(stored.swallowingSupportContext), context);
+  assert.deepEqual(stored.soap, base.soap);
+  assert.deepEqual(stored.dietaryAssessment, base.dietaryAssessment);
+  assert.throws(() => normalizeSwallowingSupportContext({ ...context, speechTherapy: "sim" }), /terapias/i);
+  const legacy = readSwallowingSupportContext({ schemaVersion: "swallowing-support-v1", dysphagia: true, adaptedDiet: false, enteralTube: false, gastrostomy: false });
+  assert.equal(legacy?.speechTherapy, undefined);
+  assert.match(swallowingSupportGuidance(legacy!)!.practicalActions.join(" "), /Se ainda não houver acompanhamento/);
+  const cleared = mergeStoredSwallowingSupportContext(stored, { ...context, speechTherapy: false }, "2026-10-05T23:01:00Z");
+  assert.equal(readSwallowingSupportContext(cleared.swallowingSupportContext)?.speechTherapy, false);
+});
+
+test("relatório de nutrição e disfagia respeita fonoterapia atual, inclusive com sonda", () => {
+  const report = buildAgaReportModel({
+    patientId: "synthetic-therapy-patient", consultationId: "synthetic-therapy-visit", consultationStatus: "IN_REVIEW", patientName: "Paciente Sintético",
+    longitudinalProblems: [], longitudinalAssessments: [{ patientId: "synthetic-therapy-patient", consultationId: "synthetic-therapy-visit", scaleCode: "eat10", scaleVersion: "eat10-br-goncalves-2013-v1", score: 3, scoreText: "3/40", classification: "Rastreio positivo", color: "vermelho", appliedAt: "2026-10-05" }],
+  });
+  for (const enteralTube of [false, true]) {
+    for (const speechTherapy of [undefined, false, true]) {
+      const care = buildAgaReportCareSections({ gastrostomyPresent: false, swallowingSupport: { dysphagia: true, adaptedDiet: false, enteralTube, gastrostomy: false, speechTherapy, physicalTherapy: true, occupationalTherapy: true }, savedPlan: null, problems: [] });
+      const safe = sanitizeFamilyReportModel({ ...report, ...care });
+      const nutrition = buildReportDomainSummaries(safe.assessedScales, safe.intrinsicCapacity, safe.swallowingSupportCare).find((d) => d.code === "nutricao")!;
+      const text = renderAccessibleAgaReportText(safe);
+      for (const output of [nutrition.guidance.join(" "), text]) {
+        if (speechTherapy) {
+          assert.match(output, /Mantenha o acompanhamento com o seu fonoaudiólogo/);
+          assert.doesNotMatch(output, /Se ainda não houver acompanhamento|Enquanto aguarda/);
+        } else {
+          assert.match(output, /Se ainda não houver acompanhamento/);
+          assert.doesNotMatch(output, /Mantenha o acompanhamento com o seu fonoaudiólogo/);
+        }
+        if (enteralTube) assert.match(output, /somente se o plano atual da equipe liberar/i);
+      }
+      assert.match(text, /Mantenha a fisioterapia/);
+      assert.match(text, /Mantenha a terapia ocupacional/);
+    }
+  }
+  const withoutCurrentCare = buildReportDomainSummaries(report.assessedScales, report.intrinsicCapacity).find((d) => d.code === "nutricao")!;
+  assert.doesNotMatch(withoutCurrentCare.guidance.join(" "), /Mantenha o acompanhamento/);
+});
