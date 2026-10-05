@@ -363,12 +363,50 @@ async function verifyAdvanceDirectiveSignaturePreparation() {
   } finally { await browser.close(); }
 }
 
+async function verifySwallowingTherapies() {
+  const browser = await chromium.launch({ headless: true });
+  try {
+    const page = await browser.newPage({ viewport: { width: 1280, height: 850 } });
+    const headers = { "x-prontuario-e2e-user": email, "x-prontuario-e2e-secret": secret };
+    await page.setExtraHTTPHeaders(headers);
+    const errors: string[] = [];
+    page.on("pageerror", error => errors.push(error.message));
+    await page.goto(`${baseUrl}/consultations/${unlinkedOncoConsultationId}#alimentacao`);
+    const swallowing = page.getByRole("group", { name: "Deglutição e forma de alimentação", exact: true });
+    await swallowing.waitFor({ timeout: 30_000 });
+    await swallowing.getByLabel("Disfagia", { exact: true }).check();
+    for (const label of ["Fisioterapia", "Fonoterapia / acompanhamento com fonoaudiólogo", "Terapia ocupacional"]) {
+      await swallowing.getByLabel(label, { exact: true }).check();
+    }
+    await swallowing.getByRole("button", { name: "Salvar deglutição e terapias" }).click();
+    await swallowing.getByRole("status").waitFor();
+    await page.reload();
+    for (const label of ["Disfagia", "Fisioterapia", "Fonoterapia / acompanhamento com fonoaudiólogo", "Terapia ocupacional"]) {
+      await swallowing.getByLabel(label, { exact: true }).waitFor();
+      assert.equal(await swallowing.getByLabel(label, { exact: true }).isChecked(), true);
+    }
+    await swallowing.getByLabel("Fonoterapia / acompanhamento com fonoaudiólogo", { exact: true }).uncheck();
+    await swallowing.getByRole("button", { name: "Salvar deglutição e terapias" }).click();
+    await swallowing.getByRole("status").waitFor();
+    await page.reload();
+    await swallowing.getByLabel("Fonoterapia / acompanhamento com fonoaudiólogo", { exact: true }).waitFor();
+    assert.equal(await swallowing.getByLabel("Fonoterapia / acompanhamento com fonoaudiólogo", { exact: true }).isChecked(), false);
+    const denied = await fetch(new URL(`/api/consultations/${unassignedConsultationId}/dietary-assessment`, baseUrl), {
+      method: "PUT", headers: { ...headers, "Content-Type": "application/json" },
+      body: JSON.stringify({ expectedUpdatedAt: new Date().toISOString(), swallowingSupport: { dysphagia: true, adaptedDiet: false, enteralTube: false, gastrostomy: false, speechTherapy: true } }),
+    });
+    assert.equal(denied.status, 403);
+    assert.deepEqual(errors, []);
+  } finally { await browser.close(); }
+}
+
 async function main() {
   assert.equal(isCiE2EAuthEnvironment(), true, "O smoke E2E recusou o ambiente: a trava de segurança não foi satisfeita.");
   assert.ok(secret.length >= 32, "E2E_AUTH_SECRET ausente ou curta.");
   assert.match(baseUrl, /^http:\/\/(127\.0\.0\.1|localhost)(:\d+)?\/?$/);
 
   await seed();
+  await verifySwallowingTherapies();
   await verifySoapPersistence();
 
   const patientPage = await request(

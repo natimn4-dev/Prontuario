@@ -111,6 +111,9 @@ test("avaliação alimentar e formulário parcial sobrevivem à gravação e rea
     );
 
     const support = {
+      physicalTherapy: true,
+      speechTherapy: true,
+      occupationalTherapy: false,
       dysphagia: true,
       adaptedDiet: true,
       enteralTube: false,
@@ -143,11 +146,14 @@ test("avaliação alimentar e formulário parcial sobrevivem à gravação e rea
     });
     const persistedAssessment = reopened.assessment as {
       dietaryAssessment: typeof dietaryAssessment;
-      swallowingSupportContext: { dysphagia: boolean; adaptedDiet: boolean; enteralTube: boolean; gastrostomy: boolean };
+      swallowingSupportContext: { physicalTherapy: boolean; speechTherapy: boolean; occupationalTherapy: boolean; dysphagia: boolean; adaptedDiet: boolean; enteralTube: boolean; gastrostomy: boolean };
     };
     assert.equal(reopened.patientId, patientId);
     assert.deepEqual(persistedAssessment.dietaryAssessment.entryDraft, dietaryAssessment.entryDraft);
     assert.deepEqual({
+      physicalTherapy: persistedAssessment.swallowingSupportContext.physicalTherapy,
+      speechTherapy: persistedAssessment.swallowingSupportContext.speechTherapy,
+      occupationalTherapy: persistedAssessment.swallowingSupportContext.occupationalTherapy,
       dysphagia: persistedAssessment.swallowingSupportContext.dysphagia,
       adaptedDiet: persistedAssessment.swallowingSupportContext.adaptedDiet,
       enteralTube: persistedAssessment.swallowingSupportContext.enteralTube,

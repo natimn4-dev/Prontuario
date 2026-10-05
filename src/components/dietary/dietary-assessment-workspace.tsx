@@ -1565,9 +1565,23 @@ export function DietaryAssessmentWorkspace({
                     <span>{label}</span>
                   </label>
                 ))}
+                <fieldset className={styles.choiceGrid}>
+                  <legend>Terapias já implementadas</legend>
+                  <p>Marque os acompanhamentos em andamento nesta consulta. Uma opção desmarcada não confirma ausência de acompanhamento.</p>
+                  {([
+                    ["physicalTherapy", "Fisioterapia"],
+                    ["speechTherapy", "Fonoterapia / acompanhamento com fonoaudiólogo"],
+                    ["occupationalTherapy", "Terapia ocupacional"],
+                  ] as const).map(([field, label]) => (
+                    <label key={field}>
+                      <input type="checkbox" checked={swallowingSupport[field] === true} disabled={isFinalized || swallowingSupportSaving} onChange={(event) => setSwallowingSupportField(field, event.target.checked)} />
+                      <span>{label}</span>
+                    </label>
+                  ))}
+                </fieldset>
                 <div className={styles.actionRow}>
                   <button type="button" className={styles.primaryButton} onClick={() => void saveSwallowingSupport()} disabled={!swallowingSupportDirty || swallowingSupportSaving || isFinalized}>
-                    {swallowingSupportSaving ? "Salvando…" : isFinalized ? "Consulta finalizada" : "Salvar situação de deglutição"}
+                    {swallowingSupportSaving ? "Salvando…" : isFinalized ? "Consulta finalizada" : "Salvar deglutição e terapias"}
                   </button>
                   {swallowingSupportFeedback ? <span role={swallowingSupportFeedback.kind === "error" ? "alert" : "status"}>{swallowingSupportFeedback.text}</span> : null}
                 </div>

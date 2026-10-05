@@ -5,6 +5,9 @@ export interface SwallowingSupportContext {
   adaptedDiet: boolean;
   enteralTube: boolean;
   gastrostomy: boolean;
+  physicalTherapy?: boolean;
+  speechTherapy?: boolean;
+  occupationalTherapy?: boolean;
 }
 
 export interface StoredSwallowingSupportContext extends SwallowingSupportContext {
@@ -31,7 +34,12 @@ export function normalizeSwallowingSupportContext(value: unknown): SwallowingSup
   if (keys.some((key) => typeof input[key] !== "boolean")) {
     throw new Error("Marque opções válidas de deglutição e suporte alimentar.");
   }
+  const therapies = ["physicalTherapy", "speechTherapy", "occupationalTherapy"] as const;
+  if (therapies.some((key) => input[key] !== undefined && typeof input[key] !== "boolean")) {
+    throw new Error("Marque opções válidas de terapias em andamento.");
+  }
   return {
+    ...Object.fromEntries(therapies.filter((key) => input[key] !== undefined).map((key) => [key, input[key]])),
     dysphagia: input.dysphagia as boolean,
     adaptedDiet: input.adaptedDiet as boolean,
     enteralTube: input.enteralTube as boolean,
@@ -66,9 +74,18 @@ export function readSwallowingSupportContext(value: unknown): SwallowingSupportC
 
 export interface SwallowingSupportGuidance {
   enteralRoute: boolean;
+  dysphagia?: boolean;
+  speechTherapy?: boolean;
   practicalActions: string[];
   caregiverActions: string[];
   contactGuidance: string[];
+}
+
+/** Individualized SLP assessment and caregiver education: https://www.asha.org/practice-portal/clinical-topics/adult-dysphagia/ */
+export function speechTherapySwallowingGuidance(inFollowUp?: boolean): string {
+  return inFollowUp === true
+    ? "Mantenha o acompanhamento com o seu fonoaudiólogo. Converse sobre a segurança para engolir, as consistências de alimentos e líquidos, o ritmo das refeições e as estratégias indicadas para a pessoa. Pratique somente os exercícios e as manobras ensinados por esse profissional."
+    : "Se ainda não houver acompanhamento com fonoaudiólogo, converse com a equipe sobre uma avaliação da deglutição para orientar uma alimentação mais segura e confortável.";
 }
 
 export function hasSwallowingSupport(context: SwallowingSupportContext): boolean {
@@ -82,9 +99,11 @@ export function swallowingSupportGuidance(
   if (!hasSwallowingSupport(context)) return undefined;
 
   const practicalActions: string[] = [];
-  const caregiverActions: string[] = [
-    "Cuide da higiene da boca todos os dias, inclusive quando a alimentação ocorre por sonda.",
-  ];
+  if (context.physicalTherapy) practicalActions.push("Mantenha a fisioterapia em andamento. Converse com o seu fisioterapeuta sobre apoio do tronco, conforto e posicionamento durante os cuidados e as refeições, conforme as possibilidades da pessoa.");
+  if (context.occupationalTherapy) practicalActions.push("Mantenha a terapia ocupacional em andamento. Converse com o seu terapeuta ocupacional sobre utensílios, apoio para as mãos e adaptações que facilitem a participação nas refeições, respeitando as orientações de deglutição.");
+  if (context.dysphagia || context.adaptedDiet || context.enteralTube || context.gastrostomy || context.speechTherapy) practicalActions.unshift(speechTherapySwallowingGuidance(context.speechTherapy));
+  const caregiverActions: string[] = context.dysphagia || context.adaptedDiet || context.enteralTube || context.gastrostomy
+    ? ["Cuide da higiene da boca todos os dias, inclusive quando a alimentação ocorre por sonda."] : [];
   const contactGuidance: string[] = [];
 
   if (context.dysphagia) {
@@ -134,6 +153,8 @@ export function swallowingSupportGuidance(
 
   return {
     enteralRoute: context.enteralTube || context.gastrostomy,
+    dysphagia: context.dysphagia,
+    ...(context.speechTherapy !== undefined ? { speechTherapy: context.speechTherapy } : {}),
     practicalActions: [...new Set(practicalActions)],
     caregiverActions: [...new Set(caregiverActions)],
     contactGuidance: [...new Set(contactGuidance)],
