@@ -39,7 +39,7 @@ function fingerprint(value: string): string {
 
 async function cleanup() {
   await prisma.digitalSignature.deleteMany({ where: { consultationId: assignedConsultationId } });
-  await prisma.documentSnapshot.deleteMany({ where: { consultationId: assignedConsultationId } });
+  await prisma.documentSnapshot.deleteMany({ where: { consultationId: { in: [assignedConsultationId, unlinkedOncoConsultationId] } } });
   await prisma.advanceDirectiveRecord.deleteMany({ where: { consultationId: assignedConsultationId } });
   await prisma.clinicalExamRecord.deleteMany({ where: { consultationId: assignedConsultationId } });
   await prisma.problemEvent.deleteMany({ where: { consultationId: assignedConsultationId } });
@@ -372,6 +372,7 @@ async function verifySwallowingTherapies() {
     const errors: string[] = [];
     page.on("pageerror", error => errors.push(error.message));
     await page.goto(`${baseUrl}/consultations/${unlinkedOncoConsultationId}#alimentacao`);
+    await page.getByRole("button", { name: /Contextualizar/ }).click();
     const swallowing = page.getByRole("group", { name: "Deglutição e forma de alimentação", exact: true });
     await swallowing.waitFor({ timeout: 30_000 });
     await swallowing.getByLabel("Disfagia", { exact: true }).check();
@@ -381,16 +382,28 @@ async function verifySwallowingTherapies() {
     await swallowing.getByRole("button", { name: "Salvar deglutição e terapias" }).click();
     await swallowing.getByRole("status").waitFor();
     await page.reload();
+    await page.getByRole("button", { name: /Contextualizar/ }).click();
     for (const label of ["Disfagia", "Fisioterapia", "Fonoterapia / acompanhamento com fonoaudiólogo", "Terapia ocupacional"]) {
       await swallowing.getByLabel(label, { exact: true }).waitFor();
       assert.equal(await swallowing.getByLabel(label, { exact: true }).isChecked(), true);
     }
+    const withFollowUp = await request(`/api/consultations/${unlinkedOncoConsultationId}/reports/aga`, true, {});
+    assert.equal(withFollowUp.status, 200);
+    const withReport = await withFollowUp.json() as { text: string };
+    assert.match(withReport.text, /Mantenha o acompanhamento com o seu fonoaudiólogo/);
+    assert.doesNotMatch(withReport.text, /Se ainda não houver acompanhamento/);
     await swallowing.getByLabel("Fonoterapia / acompanhamento com fonoaudiólogo", { exact: true }).uncheck();
     await swallowing.getByRole("button", { name: "Salvar deglutição e terapias" }).click();
     await swallowing.getByRole("status").waitFor();
     await page.reload();
+    await page.getByRole("button", { name: /Contextualizar/ }).click();
     await swallowing.getByLabel("Fonoterapia / acompanhamento com fonoaudiólogo", { exact: true }).waitFor();
     assert.equal(await swallowing.getByLabel("Fonoterapia / acompanhamento com fonoaudiólogo", { exact: true }).isChecked(), false);
+    const withoutFollowUp = await request(`/api/consultations/${unlinkedOncoConsultationId}/reports/aga`, true, {});
+    assert.equal(withoutFollowUp.status, 200);
+    const withoutReport = await withoutFollowUp.json() as { text: string };
+    assert.match(withoutReport.text, /Se ainda não houver acompanhamento/);
+    assert.doesNotMatch(withoutReport.text, /Mantenha o acompanhamento com o seu fonoaudiólogo/);
     const denied = await fetch(new URL(`/api/consultations/${unassignedConsultationId}/dietary-assessment`, baseUrl), {
       method: "PUT", headers: { ...headers, "Content-Type": "application/json" },
       body: JSON.stringify({ expectedUpdatedAt: new Date().toISOString(), swallowingSupport: { dysphagia: true, adaptedDiet: false, enteralTube: false, gastrostomy: false, speechTherapy: true } }),

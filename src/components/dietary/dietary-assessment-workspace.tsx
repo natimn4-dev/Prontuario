@@ -1548,7 +1548,7 @@ export function DietaryAssessmentWorkspace({
               </fieldset>
               <fieldset className={styles.choiceGrid} aria-describedby="swallowing-support-help">
                 <legend>Deglutição e forma de alimentação</legend>
-                <p id="swallowing-support-help">Marque apenas condições e recursos confirmados nesta consulta. As orientações serão incluídas no relatório da família depois de salvar.</p>
+                <p id="swallowing-support-help" className={styles.spanTwo}>Marque apenas condições e recursos confirmados nesta consulta. As orientações serão incluídas no relatório da família depois de salvar.</p>
                 {([
                   ["dysphagia", "Disfagia"],
                   ["adaptedDiet", "Dieta adaptada para deglutição"],
@@ -1565,9 +1565,9 @@ export function DietaryAssessmentWorkspace({
                     <span>{label}</span>
                   </label>
                 ))}
-                <fieldset className={styles.choiceGrid}>
+                <fieldset className={`${styles.choiceGrid} ${styles.spanTwo}`}>
                   <legend>Terapias já implementadas</legend>
-                  <p>Marque os acompanhamentos em andamento nesta consulta. Uma opção desmarcada não confirma ausência de acompanhamento.</p>
+                  <p className={styles.spanTwo}>Marque os acompanhamentos em andamento nesta consulta. Uma opção desmarcada não confirma ausência de acompanhamento.</p>
                   {([
                     ["physicalTherapy", "Fisioterapia"],
                     ["speechTherapy", "Fonoterapia / acompanhamento com fonoaudiólogo"],
@@ -1579,7 +1579,7 @@ export function DietaryAssessmentWorkspace({
                     </label>
                   ))}
                 </fieldset>
-                <div className={styles.actionRow}>
+                <div className={`${styles.actionRow} ${styles.spanTwo}`}>
                   <button type="button" className={styles.primaryButton} onClick={() => void saveSwallowingSupport()} disabled={!swallowingSupportDirty || swallowingSupportSaving || isFinalized}>
                     {swallowingSupportSaving ? "Salvando…" : isFinalized ? "Consulta finalizada" : "Salvar deglutição e terapias"}
                   </button>
