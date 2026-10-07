@@ -5,17 +5,9 @@ import {
   type CapacityDimensionRow,
   type CapacityDimensionStatus,
 } from "@/domain/capacity-dimension-history";
-import { proportionalAxisPosition } from "@/domain/chart-geometry";
+import { CAPACITY_STATUS_LABEL as STATUS_LABEL, capacityChartPositions, capacityChartSegments, capacityRecordedResults } from "@/domain/capacity-chart-presentation";
 import styles from "./capacity-dimension-history-chart.module.css";
 
-const STATUS_LABEL: Record<CapacityDimensionStatus, string> = {
-  "not-assessed": "Não avaliada",
-  recorded: "Registrada sem estado de domínio",
-  indeterminate: "Indeterminada / discordante",
-  preserved: "Sem redução detectada",
-  attention: "Sinal de atenção",
-  altered: "Redução identificada",
-};
 const CHART_HEIGHT = 78;
 const LABEL_WIDTH = 190;
 const DATE_AXIS_HEIGHT = 52;
@@ -35,20 +27,14 @@ function assessmentDetail(item: CapacityDimensionRow["cells"][number]["assessmen
   return `${item.scaleName} (${item.scaleVersion})${score}${classification}${selected}${proxy}`;
 }
 
-type SegmentPoint = { x: number; y: number; consultationId: string; status: CapacityComparableStatus; comparabilityKey: string };
 function lineSegments(dimension: CapacityDimensionRow, xByConsultation: ReadonlyMap<string, number>) {
-  const segments: Array<{ crossesUnassessedVisit: boolean; points: SegmentPoint[] }> = [];
-  let previous: SegmentPoint | undefined;
-  let crossesUnassessedVisit = false;
-  for (const cell of dimension.cells) {
-    if (cell.status === "not-assessed") { if (previous) crossesUnassessedVisit = true; continue; }
-    if (!isComparable(cell.status) || !cell.comparabilityKey) { previous = undefined; crossesUnassessedVisit = false; continue; }
-    const x = xByConsultation.get(cell.consultationId); if (x === undefined) continue;
-    const point: SegmentPoint = { x, y: STATUS_Y[cell.status], consultationId: cell.consultationId, status: cell.status, comparabilityKey: cell.comparabilityKey };
-    if (previous?.comparabilityKey === point.comparabilityKey) segments.push({ crossesUnassessedVisit, points: [previous, point] });
-    previous = point; crossesUnassessedVisit = false;
-  }
-  return segments;
+  return capacityChartSegments(dimension).filter((segment) => xByConsultation.has(segment.from) && xByConsultation.has(segment.to)).map((segment) => ({
+    crossesUnassessedVisit: segment.crossesUnassessedVisit,
+    points: [segment.from, segment.to].map((id) => {
+      const cell = dimension.cells.find((item) => item.consultationId === id)!;
+      return { x: xByConsultation.get(id)!, y: STATUS_Y[cell.status as CapacityComparableStatus] };
+    }),
+  }));
 }
 function latestRecordedCell(dimension: CapacityDimensionRow) { return [...dimension.cells].reverse().find((cell) => cell.assessments.length > 0); }
 
@@ -100,21 +86,44 @@ function DimensionTimeline({ dimension, chartWidth, xByConsultation, inflectionB
 }
 
 export function CapacityDimensionHistoryChart({ history, context }: { history: CapacityDimensionHistory; context: "patient-home" | "final-report" }) {
-  if (!hasDisplayableLongitudinalHistory(history)) return <p className={styles.empty}>O gráfico longitudinal será exibido a partir de uma consulta subsequente com um novo resultado registrado no mesmo domínio. Depois disso, consultas sem reaplicação não apagam o histórico.</p>;
+  if (!hasDisplayableLongitudinalHistory(history)) return <p className={styles.empty}>O gráfico longitudinal será exibido a partir da segunda consulta, quando houver ao menos um resultado registrado. Consultas sem reaplicação não apagam o histórico e não criam novos resultados.</p>;
   const chartWidth = Math.max(700, 96 + Math.max(history.consultations.length - 1, 1) * 150); const timelineWidth = LABEL_WIDTH + chartWidth; const left = 24, right = 24, usableWidth = chartWidth - left - right;
-  const times = history.consultations.map((consultation) => new Date(consultation.occurredAt).getTime()); const minTime = Math.min(...times), maxTime = Math.max(...times);
-  const xByConsultation = new Map(history.consultations.map((consultation) => [consultation.id, proportionalAxisPosition({ value: new Date(consultation.occurredAt).getTime(), min: minTime, max: maxTime, start: left, end: left + usableWidth })] as const));
+  const positions = capacityChartPositions(history.consultations, left, left + usableWidth);
+  const xByConsultation = new Map(positions.map((item) => [item.id, item.x]));
   const targetConsultationId = history.consultations.find((consultation) => consultation.isTarget)?.id; const dateByConsultation = new Map(history.consultations.map((consultation) => [consultation.id, consultation.occurredAt])); const inflectionByKey = new Map(history.inflectionPoints.map((point) => [`${point.dimensionCode}:${point.consultationId}`, inflectionDisplay(point)] as const));
   const functionalDimension = history.dimensions.find((dimension) => dimension.framework === "functional-capacity"); const intrinsicDimensions = history.dimensions.filter((dimension) => dimension.framework === "intrinsic-capacity");
   const assessedByConsultation = history.consultations.map((consultation) => { const unique = new Map<string,{name:string;version:string}>(); for (const dimension of history.dimensions) { const cell = dimension.cells.find((item) => item.consultationId === consultation.id); for (const assessment of cell?.assessments ?? []) unique.set(`${assessment.scaleCode}@${assessment.scaleVersion}`, { name: assessment.scaleName, version: assessment.scaleVersion }); } return { consultation, scales: [...unique.values()].sort((a,b)=>a.name.localeCompare(b.name,"pt-BR")) }; }).filter((item)=>item.scales.length>0);
   return <figure className={styles.figure} data-chart="line-small-multiples">
-    <figcaption className={styles.caption}><div><strong>Evolução da capacidade intrínseca e da independência funcional</strong><span>Uma trajetória por domínio. O tempo real entre consultas é preservado.</span></div><span className={styles.methodologyBadge}>{history.methodologyVersion}</span></figcaption>
+    <figcaption className={styles.caption}><div><strong>Evolução da capacidade intrínseca e da independência funcional</strong><span>Uma trajetória por domínio. O tempo real entre consultas é preservado. As faixas não mostram todas as mudanças de pontuação; confira os resultados registrados abaixo.</span></div><span className={styles.methodologyBadge}>{history.methodologyVersion}</span></figcaption>
     <div className={styles.statusLegend} aria-label="Legenda dos estados clínicos"><span><i data-status="preserved" aria-hidden="true"/>Sem redução detectada</span><span><i data-status="attention" aria-hidden="true"/>Sinal de atenção</span><span><i data-status="altered" aria-hidden="true"/>Redução identificada</span><span><i data-status="indeterminate" aria-hidden="true"/>Discordante</span><span><i data-status="missing" aria-hidden="true"/>Não avaliada</span></div>
-    {!history.hasLongitudinalTrendData ? <p className={styles.continuityNote}>Histórico preservado: há resultados deste domínio em mais de uma consulta, mas os trechos sem o mesmo instrumento e versão permanecem desconectados. Uma consulta sem reaplicação não apaga os pontos anteriores.</p> : null}
-    <div className={styles.scroll} tabIndex={0} aria-label="Evolução longitudinal por domínio, rolável por consulta"><div className={styles.timelineCanvas} style={{ width: `${timelineWidth}px` }}><div className={styles.dateRow}><div className={styles.dateRowLabel}>Consultas</div><svg className={styles.dateAxis} viewBox={`0 0 ${chartWidth} ${DATE_AXIS_HEIGHT}`} width={chartWidth} height={DATE_AXIS_HEIGHT} aria-hidden="true"><line className={styles.dateBaseline} x1={left} x2={chartWidth-right} y1={14} y2={14}/>{history.consultations.map((consultation)=>{const x=xByConsultation.get(consultation.id)??left;return <g key={consultation.id}><line className={styles.dateTick} x1={x} x2={x} y1={10} y2={18}/><text className={styles.dateLabel} x={x} y={32} textAnchor="middle">{displayDate(consultation.occurredAt)}</text>{consultation.isTarget?<text className={styles.targetLabel} x={x} y={43} textAnchor="middle">mais recente</text>:null}</g>;})}</svg></div>
+    {!history.hasLongitudinalTrendData ? <p className={styles.continuityNote}>Histórico preservado. A linha exige o mesmo instrumento e versão; dados insuficientes não formam uma tendência. Uma consulta sem reaplicação não apaga os resultados anteriores.</p> : null}
+    <div className={styles.scroll} tabIndex={0} aria-label="Evolução longitudinal por domínio, rolável por consulta"><div className={styles.timelineCanvas} style={{ width: `${timelineWidth}px` }}><div className={styles.dateRow}><div className={styles.dateRowLabel}>Consultas</div><svg className={styles.dateAxis} viewBox={`0 0 ${chartWidth} ${DATE_AXIS_HEIGHT}`} width={chartWidth} height={DATE_AXIS_HEIGHT} aria-hidden="true"><line className={styles.dateBaseline} x1={left} x2={chartWidth-right} y1={14} y2={14}/>{history.consultations.map((consultation)=>{const x=xByConsultation.get(consultation.id)??left;return <g key={consultation.id}><line className={styles.dateTick} x1={positions.find((item) => item.id === consultation.id)?.anchor ?? x} x2={x} y1={14} y2={24}/><line className={styles.dateTick} x1={x} x2={x} y1={10} y2={18}/><text className={styles.dateLabel} x={x} y={32} textAnchor="middle">{history.consultations.indexOf(consultation) + 1}</text>{consultation.isTarget?<text className={styles.targetLabel} x={x} y={43} textAnchor="middle">mais recente</text>:null}</g>;})}</svg></div>
       <section className={styles.dimensionGroup} aria-label="Independência funcional e domínios de capacidade intrínseca">{functionalDimension?<><div className={styles.frameworkHeader}><strong>Independência funcional</strong><span>ABVD/AIVD — apresentada separadamente da capacidade intrínseca</span></div><DimensionTimeline dimension={functionalDimension} chartWidth={chartWidth} xByConsultation={xByConsultation} inflectionByKey={inflectionByKey} targetConsultationId={targetConsultationId} dateByConsultation={dateByConsultation}/></>:null}<div className={styles.frameworkHeader}><strong>Capacidade intrínseca</strong><span>Locomoção, cognição, humor, vitalidade, audição e visão — trajetórias separadas</span></div>{intrinsicDimensions.map((dimension)=><DimensionTimeline key={dimension.code} dimension={dimension} chartWidth={chartWidth} xByConsultation={xByConsultation} inflectionByKey={inflectionByKey} targetConsultationId={targetConsultationId} dateByConsultation={dateByConsultation}/>)}</section>
     </div></div>
+    <div className={styles.printTimeline}>
+      {Array.from({ length: Math.ceil(Math.max(history.consultations.length - 1, 1) / 5) }, (_, block) => {
+        const visits = history.consultations.slice(block * 5, block * 5 + 6);
+        const printPositions = capacityChartPositions(visits, 24, 576);
+        const printX = new Map(printPositions.map((item) => [item.id, item.x]));
+        return <section key={block}>
+          <h4>Consultas {block * 5 + 1} a {block * 5 + visits.length}</h4>
+          <div className={styles.dateRow}><div className={styles.dateRowLabel}>Consultas</div><svg className={styles.dateAxis} viewBox="0 0 600 36" width={600} height={36} aria-hidden="true">{visits.map((visit) => <text className={styles.dateLabel} key={visit.id} x={printX.get(visit.id)} y={24} textAnchor="middle">{history.consultations.findIndex((item) => item.id === visit.id) + 1}</text>)}</svg></div>
+          {history.dimensions.map((dimension) => <DimensionTimeline key={dimension.code} dimension={dimension} chartWidth={600} xByConsultation={printX} inflectionByKey={inflectionByKey} targetConsultationId={targetConsultationId} dateByConsultation={dateByConsultation}/>)}
+        </section>;
+      })}
+    </div>
     {assessedByConsultation.length>0?<details className={styles.assessmentIndex} open={context==="final-report"}><summary>Escalas registradas por consulta ({assessedByConsultation.length})</summary><div>{assessedByConsultation.map(({consultation,scales})=><section key={consultation.id}><strong>{displayDate(consultation.occurredAt)}{consultation.isTarget?" · mais recente":""}</strong><span>{scales.map((scale)=>`${scale.name} (${scale.version})`).join(" · ")}</span></section>)}</div></details>:null}
+    <div className={styles.resultsHistory}>
+      <strong>Resultados registrados por consulta</strong>
+      <p>As datas seguem o tempo real. Marcadores próximos são deslocados para evitar sobreposição; o número identifica a consulta abaixo. Mudanças de pontuação podem ocorrer sem mudança de faixa.</p>
+      {history.consultations.map((consultation, index) => <section key={consultation.id}>
+        <h4>Consulta {index + 1} · {displayDate(consultation.occurredAt)}{consultation.isTarget ? " · mais recente" : ""}</h4>
+        {history.dimensions.filter((dimension) => dimension.cells.some((cell) => cell.assessments.length > 0)).map((dimension) => {
+          const cell = dimension.cells.find((item) => item.consultationId === consultation.id)!;
+          return <p key={dimension.code}><strong>{dimension.label}: {STATUS_LABEL[cell.status]}.</strong> {capacityRecordedResults(cell).join("; ")}</p>;
+        })}
+      </section>)}
+    </div>
     <div className={styles.readingGuide}><strong>Como ler</strong><span>Acima = sem redução • centro = atenção • abaixo = redução. Todo estado válido é exibido; a linha só continua quando instrumento e versão são comparáveis.</span><span>Trecho tracejado = houve consulta intermediária sem reaplicação; compara somente os dois resultados medidos e não implica estabilidade no intervalo.</span><span>Círculo cinza = não avaliada • quadrado = registro sem estado • losango = resultados discordantes. O estado mais recente fica no badge à esquerda.</span></div>
     {history.inflectionPoints.length>0?<section className={styles.inflectionSection} aria-labelledby="capacity-inflection-title"><h3 id="capacity-inflection-title">{history.inflectionPoints.length===1?"Ponto de inflexão observado":"Pontos de inflexão observados"}</h3><ul>{history.inflectionPoints.map((point)=><li key={`${point.dimensionCode}-${point.consultationId}-${point.previousConsultationId}`}><strong>{displayDate(point.occurredAt)} · {point.dimensionLabel} — {point.direction==="worsened"?"piora observada":"melhora observada"} em avaliações comparáveis.</strong>{point.milestones.length>0?<span>Registro temporal associado: {point.milestones.map((milestone)=>milestone.note?`${milestone.title} — ${milestone.note}`:milestone.title).join("; ")}.</span>:<span>Sem motivo associado registrado nesta consulta; o gráfico não atribui causa.</span>}</li>)}</ul><p className={styles.causalityNote}>O software registra coincidência temporal, mas não atribui causalidade.</p></section>:null}
     {context==="patient-home"?<details className={styles.methodDetails}><summary>Critérios metodológicos e proveniência</summary><p>Versão metodológica: {history.methodologyVersion}.</p><p>{history.methodologyNote}</p><p>Resultados originais, versões, classificação e fonte permanecem vinculados aos pontos. Quando o instrumento muda, a linha é interrompida em vez de fabricar uma tendência.</p></details>:<p className={styles.frameworkNote}>Versão metodológica: {history.methodologyVersion}. {history.methodologyNote} Resultados originais, versões, classificação e fonte permanecem vinculados aos pontos.</p>}

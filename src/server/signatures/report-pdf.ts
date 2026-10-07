@@ -1,21 +1,22 @@
+import { CAPACITY_STATUS_LABEL, capacityChartPositions, capacityChartSegments, capacityRecordedResults } from "../../domain/capacity-chart-presentation.ts";
 import type { AgaReportModel } from "@/domain/aga-report";
 import {
   hasDisplayableLongitudinalHistory,
   type CapacityDimensionHistory,
   type CapacityDimensionStatus,
-} from "@/domain/capacity-dimension-history";
+} from "../../domain/capacity-dimension-history.ts";
 import type { ProfessionalIdentity } from "@/domain/professional-identity";
 import {
   buildReportDomainSummaries,
   type ReportDomainState,
   type ReportDomainSummary,
-} from "@/domain/report-domain-summary";
+} from "../../domain/report-domain-summary.ts";
 import type {
   AgaReportClinicalConduct,
   AgaReportGastrostomyCare,
 } from "@/domain/report-care-sections";
 import type { AgaReportOverview } from "@/domain/report-overview";
-import { createValidationQrMatrix } from "./validation-qr";
+import { createValidationQrMatrix } from "./validation-qr.ts";
 
 const A4_WIDTH = 595;
 const A4_HEIGHT = 842;
@@ -593,119 +594,91 @@ class StyledPdfBuilder {
 
   drawCapacityChart(history: CapacityDimensionHistory): void {
     if (!hasDisplayableLongitudinalHistory(history)) return;
-    this.sectionHeading(
-      "3",
-      "Evolução da capacidade e da independência funcional",
-      "O gráfico mostra a evolução de cada área ao longo das consultas. A linha só continua quando instrumento e versão são comparáveis.",
-    );
-    const rowHeight = 50;
-    const titleHeight = 42;
-    const figureHeight = titleHeight + history.dimensions.length * rowHeight + 18;
-    this.ensureSpace(figureHeight);
-    const figureTop = this.y;
-    this.fillRect(MARGIN, figureTop - figureHeight, CONTENT_WIDTH, figureHeight, "#fcfbfd");
-    this.strokeRect(MARGIN, figureTop - figureHeight, CONTENT_WIDTH, figureHeight, COLORS.line);
-    this.text("Evolução da capacidade intrínseca e da independência funcional", MARGIN + 8, figureTop - 13, 8.4, FONT_BOLD, COLORS.primaryStrong);
-    this.text(`Metodologia: ${history.methodologyVersion}`, MARGIN + 8, figureTop - 26, 6.7, FONT_BODY, COLORS.muted);
-
-    const labelWidth = 134;
-    const chartX = MARGIN + labelWidth + 10;
-    const chartWidth = CONTENT_WIDTH - labelWidth - 18;
-    const consultations = history.consultations;
-    const times = consultations.map((item) => new Date(item.occurredAt).getTime());
-    const minTime = Math.min(...times);
-    const maxTime = Math.max(...times);
-    const span = maxTime - minTime;
-    const xFor = (consultationId: string): number => {
-      const index = consultations.findIndex((item) => item.id === consultationId);
-      if (index < 0) return chartX + chartWidth / 2;
-      if (span <= 0) return chartX + chartWidth / 2;
-      const current = new Date(consultations[index]!.occurredAt).getTime();
-      return chartX + 12 + (chartWidth - 24) * ((current - minTime) / span);
+    this.sectionHeading("3", "Evolução da capacidade e da independência funcional");
+    const paragraph = (value: string, bold = false) => {
+      for (const line of this.wrappedLines(value, CONTENT_WIDTH, 11, bold)) {
+        this.ensureSpace(17);
+        this.text(line, MARGIN, this.y - 11, 11, bold ? FONT_BOLD : FONT_BODY, COLORS.ink);
+        this.y -= 15;
+      }
+      this.y -= 5;
     };
-
-    let cursorTop = figureTop - titleHeight;
-    for (const dimension of history.dimensions) {
-      if (cursorTop - rowHeight < BODY_BOTTOM) {
-        this.y = cursorTop;
-        this.addPage(true);
-        cursorTop = this.y;
-      }
-      this.fillRect(MARGIN + 1, cursorTop - rowHeight + 1, labelWidth - 2, rowHeight - 2, "#fbf9fd");
-      const labelLines = this.wrappedLines(dimension.label, labelWidth - 14, 7.4, true);
-      labelLines.slice(0, 2).forEach((line, index) => this.text(line, MARGIN + 7, cursorTop - 13 - index * 9, 7.4, FONT_BOLD, COLORS.primaryStrong));
-      const latest = [...dimension.cells].reverse().find((cell) => cell.assessments.length > 0)?.status ?? "not-assessed";
-      this.text(
-        latest === "preserved" ? "Sem redução" : latest === "attention" ? "Atenção" : latest === "altered" ? "Redução" : "Registro",
-        MARGIN + 7,
-        cursorTop - 39,
-        6.5,
-        FONT_BODY,
-        this.statusColor(latest),
-      );
-
-      const guideTop = cursorTop - 5;
-      [10, 23, 36].forEach((offset) => this.line(chartX + 6, guideTop - offset, chartX + chartWidth - 6, guideTop - offset, COLORS.line, 0.55));
-      for (let index = 1; index < dimension.cells.length; index += 1) {
-        const previous = dimension.cells[index - 1]!;
-        const current = dimension.cells[index]!;
-        const comparable = previous.comparabilityKey
-          && current.comparabilityKey
-          && previous.comparabilityKey === current.comparabilityKey
-          && ["preserved", "attention", "altered"].includes(previous.status)
-          && ["preserved", "attention", "altered"].includes(current.status);
-        if (comparable) {
-          this.line(
-            xFor(previous.consultationId),
-            this.statusY(previous.status, guideTop),
-            xFor(current.consultationId),
-            this.statusY(current.status, guideTop),
-            COLORS.primary,
-            1.15,
-          );
+    paragraph("As faixas não mostram todas as mudanças de pontuação. Os resultados originais estão registrados abaixo. A linha só conecta o mesmo instrumento e versão. Trecho tracejado: consulta intermediária sem reaplicação, sem inferir estabilidade no intervalo.");
+    paragraph("Marcadores próximos são deslocados para evitar sobreposição; os números identificam as consultas e suas datas abaixo. O traço cinza indica a posição temporal original.");
+    paragraph(`Metodologia: ${history.methodologyVersion}`);
+    const labelWidth = 185;
+    const chartX = MARGIN + labelWidth;
+    const chartWidth = CONTENT_WIDTH - labelWidth;
+    // Overlap one visit between blocks, preserving the boundary segment.
+    for (let start = 0; start < history.consultations.length; start += 9) {
+      const consultations = history.consultations.slice(start, start + 10);
+      if (start && consultations.length === 1) break;
+      paragraph(`Consultas ${start + 1} a ${start + consultations.length}`, true);
+      const positions = capacityChartPositions(consultations, chartX + 12, chartX + chartWidth - 12);
+      const xById = new Map(positions.map((item) => [item.id, item.x]));
+      for (const dimension of history.dimensions) {
+        const latest = [...dimension.cells].reverse().find((cell) => cell.assessments.length > 0);
+        const latestDate = history.consultations.find((item) => item.id === latest?.consultationId)?.occurredAt;
+        const summary = latest ? `Último: ${CAPACITY_STATUS_LABEL[latest.status]}` : "Sem resultados registrados";
+        const detail = latestDate ? `${formatShortDate(latestDate)}${latest?.consultationId !== history.consultations.at(-1)?.id ? " · não reaplicada na mais recente" : ""}` : "";
+        const summaryLines = this.wrappedLines(summary, labelWidth - 16, 11);
+        const detailLines = this.wrappedLines(detail, labelWidth - 16, 11);
+        const height = Math.max(105, 32 + (summaryLines.length + detailLines.length) * 14);
+        this.ensureSpace(height + 7);
+        const top = this.y;
+        this.fillRect(MARGIN, top - height, CONTENT_WIDTH, height, "#fcfbfd");
+        this.strokeRect(MARGIN, top - height, CONTENT_WIDTH, height, COLORS.line);
+        this.drawWrappedAt(dimension.label, MARGIN + 7, top - 7, labelWidth - 16, 11, 14, FONT_BOLD);
+        let cursor = top - 27;
+        cursor -= this.drawWrappedAt(summary, MARGIN + 7, cursor, labelWidth - 16, 11, 14);
+        this.drawWrappedAt(detail, MARGIN + 7, cursor - 3, labelWidth - 16, 11, 14);
+        const guideTop = top - 18;
+        [10, 23, 36].forEach((offset) => this.line(chartX + 6, guideTop - offset, chartX + chartWidth - 6, guideTop - offset, COLORS.line, 0.55));
+        for (const segment of capacityChartSegments(dimension)) {
+          const x1 = xById.get(segment.from), x2 = xById.get(segment.to);
+          if (x1 === undefined || x2 === undefined) continue;
+          const from = dimension.cells.find((item) => item.consultationId === segment.from)!;
+          const to = dimension.cells.find((item) => item.consultationId === segment.to)!;
+          this.page.commands.push("q");
+          if (segment.crossesUnassessedVisit) this.page.commands.push("[4 3] 0 d");
+          this.line(x1, this.statusY(from.status, guideTop), x2, this.statusY(to.status, guideTop), COLORS.primary, 1.15);
+          this.page.commands.push("Q");
         }
-      }
-      for (const cell of dimension.cells) {
-        const x = xFor(cell.consultationId);
-        const y = this.statusY(cell.status, guideTop);
-        const color = this.statusColor(cell.status);
-        if (cell.status === "indeterminate") {
-          this.page.commands.push(`${rgb(color)} rg ${x.toFixed(2)} ${(y + 4).toFixed(2)} m ${(x + 4).toFixed(2)} ${y.toFixed(2)} l ${x.toFixed(2)} ${(y - 4).toFixed(2)} l ${(x - 4).toFixed(2)} ${y.toFixed(2)} l h f`);
-        } else {
-          this.fillRect(x - 3.3, y - 3.3, 6.6, 6.6, color);
+        for (const position of positions) {
+          const cell = dimension.cells.find((item) => item.consultationId === position.id)!;
+          const x = position.x, y = this.statusY(cell.status, guideTop);
+          if (position.anchor !== x) this.line(position.anchor, guideTop - 43, x, y, COLORS.muted, 0.5);
+          const color = this.statusColor(cell.status);
+          if (cell.status === "indeterminate") {
+            this.page.commands.push(`${rgb(color)} rg ${x.toFixed(2)} ${(y + 4).toFixed(2)} m ${(x + 4).toFixed(2)} ${y.toFixed(2)} l ${x.toFixed(2)} ${(y - 4).toFixed(2)} l ${(x - 4).toFixed(2)} ${y.toFixed(2)} l h f`);
+          } else if (cell.status === "not-assessed") {
+            this.strokeRect(x - 3, y - 3, 6, 6, color);
+          } else {
+            this.fillRect(x - 3.3, y - 3.3, 6.6, 6.6, color);
+          }
+          const number = history.consultations.findIndex((item) => item.id === position.id) + 1;
+          this.text(String(number), x - 4, top - height + 9, 11, FONT_BODY, COLORS.ink);
         }
+        this.y -= height + 7;
       }
-      cursorTop -= rowHeight;
     }
-
-    const axisY = cursorTop + 7;
-    consultations.forEach((consultation) => {
-      const x = xFor(consultation.id);
-      this.text(formatShortDate(consultation.occurredAt), x - 12, axisY, 5.8, FONT_BODY, COLORS.muted);
+    paragraph("Como ler: acima = sem redução; centro = atenção; abaixo = redução. Quadrado vazio = não avaliada; losango = discordante. Resultados sem estado de domínio permanecem contextuais, sem criar tendência.");
+    paragraph("Resultados registrados por consulta", true);
+    history.consultations.forEach((consultation, index) => {
+      // Keep the heading together with the first result.
+      this.ensureSpace(65);
+      paragraph(`Consulta ${index + 1} · ${formatShortDate(consultation.occurredAt)}${consultation.isTarget ? " · mais recente" : ""}`, true);
+      for (const dimension of history.dimensions.filter((item) => item.cells.some((cell) => cell.assessments.length > 0))) {
+        const cell = dimension.cells.find((item) => item.consultationId === consultation.id)!;
+        paragraph(`${dimension.label}: ${CAPACITY_STATUS_LABEL[cell.status]}. ${capacityRecordedResults(cell).join("; ")}`);
+      }
     });
-    this.y = cursorTop - 8;
-    if (history.inflectionPoints.length > 0) {
-      const inflectionItems = history.inflectionPoints.map((point) => {
-        const direction = point.direction === "worsened" ? "piora observada" : "melhora observada";
-        const context = point.milestones.length
-          ? point.milestones.map((milestone) => milestone.note ? `${milestone.title} — ${milestone.note}` : milestone.title).join("; ")
-          : "Motivo não registrado";
-        return `${formatShortDate(point.occurredAt)} · ${point.dimensionLabel} — ${direction}. Contexto registrado: ${context}.`;
-      });
-      const height = this.measureBullets(inflectionItems, CONTENT_WIDTH, 7.2, 9.2) + 18;
-      this.ensureSpace(height);
-      this.text("Pontos de inflexão e contexto documentado", MARGIN, this.y - 7.6, 7.6, FONT_BOLD, COLORS.primaryStrong);
-      this.y -= 13;
-      this.y -= this.drawBulletsAt(inflectionItems, MARGIN, this.y, CONTENT_WIDTH, 7.2, 9.2, COLORS.ink) + 4;
+    if (history.inflectionPoints.length) paragraph("Pontos de inflexão e contexto documentado", true);
+    for (const point of history.inflectionPoints) {
+      const context = point.milestones.length ? point.milestones.map((item) => item.note ? `${item.title} — ${item.note}` : item.title).join("; ") : "Motivo não registrado";
+      paragraph(`${formatShortDate(point.occurredAt)} · ${point.dimensionLabel} — ${point.direction === "worsened" ? "piora observada" : "melhora observada"} de faixa. Contexto registrado: ${context}.`);
     }
-    const note = "Mudanças que aconteceram em períodos próximos podem estar relacionadas ou não. O gráfico não define a causa da mudança.";
-    const noteLines = this.wrappedLines(note, CONTENT_WIDTH, 7.2);
-    this.ensureSpace(noteLines.length * 9 + 8);
-    for (const line of noteLines) {
-      this.text(line, MARGIN, this.y - 7.2, 7.2, FONT_BODY, COLORS.muted);
-      this.y -= 9;
-    }
-    this.y -= 6;
+    paragraph("Mudanças que aconteceram em períodos próximos podem estar relacionadas ou não. O gráfico não define a causa da mudança.");
   }
 
   drawClinicalConducts(conducts: readonly AgaReportClinicalConduct[] | undefined): void {

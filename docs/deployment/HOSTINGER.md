@@ -72,9 +72,9 @@ O endpoint público de health check deve responder HTTP 200 e incluir:
 
 - `status: "ok"`
 - `database: "ok"`
-- `releaseId: "2026-10-05-disfagia-terapias-v1"`
+- `releaseId: "2026-10-06-graficos-longitudinais-v1"`
 
-Nesta release, a área de alimentação permite registrar fisioterapia, fonoterapia e terapia ocupacional em andamento por consulta. As orientações de disfagia e Nutrição e vitalidade consideram a fonoterapia registrada, preservando os cuidados de sonda/GTT. Registros anteriores continuam compatíveis; não há migration de banco nesta release.
+Nesta release, o histórico aparece a partir da segunda consulta quando existe resultado registrado. Tela e PDF compartilham os trechos comparáveis, incluindo lacunas tracejadas; escores originais, datas e estados ausentes permanecem explícitos. Marcadores coincidentes são separados sem mudar sua âncora temporal. O PDF divide históricos longos em blocos e usa texto de 11 pt na seção longitudinal. Não há migration de banco nesta release.
 
 O `releaseId` é deliberadamente servido com `Cache-Control: no-store`; uma CDN ou proxy não deve reutilizar um identificador antigo para declarar a implantação como atual. O smoke também exige esse header antes de aceitar a resposta de health.
 
