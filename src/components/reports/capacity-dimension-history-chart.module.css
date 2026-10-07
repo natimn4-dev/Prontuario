@@ -587,3 +587,32 @@
     display: block;
   }
 }
+
+.resultsHistory { margin-top: 16px; color: var(--ink); font-size: 14px; line-height: 1.5; }
+.resultsHistory section { margin-top: 12px; }
+.resultsHistory h4 { margin: 0 0 6px; }
+.resultsHistory p { margin: 4px 0; }
+@media print {
+  .figure, .dimensionGroup { break-inside: auto; }
+  .dimensionRow, .resultsHistory section { break-inside: avoid; }
+  .dateRowLabel, .dimensionSummary > div span, .readingGuide, .frameworkNote,
+  .causalityNote, .methodDetails, .inflectionSection li, .dimensionSummary strong,
+  .latestBadge, .latestState small, .assessmentIndex, .resultsHistory { font-size: 11pt; }
+  .latestBadge { max-width: none; }
+  .dimensionSummary { gap: 6px; }
+  .dimensionRow { min-height: 32mm; }
+}
+
+.printTimeline { display: none; }
+@media print {
+  .scroll { display: none; }
+  .printTimeline { display: block; }
+  .printTimeline h4 { font-size: 11pt; margin: 5mm 0 2mm; }
+  .printTimeline .dateLabel { font-size: 22px; }
+  .printTimeline .inflectionLabel { display: none; }
+  .dateRow, .dimensionRow { grid-template-columns: 55mm minmax(0, 1fr); }
+  .dimensionSummary, .dimensionSummary > div { min-width: 0; }
+  .latestBadge { min-width: 0; max-width: 100%; box-sizing: border-box; overflow-wrap: anywhere; }
+  .latestState small { overflow-wrap: anywhere; }
+  .dimensionRow { overflow: visible; }
+}

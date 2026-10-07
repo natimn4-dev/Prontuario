@@ -1111,3 +1111,7 @@
     display: none !important;
   }
 }
+
+@media print {
+  .chartSection { break-inside: auto; }
+}

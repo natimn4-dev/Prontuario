@@ -339,8 +339,8 @@ test("UI usa tempo real, comparabilidade e o design system clínico aprovado sem
   assert.match(generator, /includeTargetWhenEmpty: true/);
   assert.match(generator, /definitionHash/);
   assert.match(generator, /content: \{ report, text \}/);
-  assert.match(chart, /proportionalAxisPosition/);
-  assert.match(chart, /comparabilityKey/);
+  assert.match(chart, /capacityChartPositions/);
+  assert.match(chart, /capacityChartSegments/);
   assert.match(chart, /if \(isComparable\(cell\.status\)\)/);
   assert.doesNotMatch(chart, /if \(isComparable\(cell\.status\) && cell\.comparabilityKey\)/);
   assert.match(chart, /data-gap/);

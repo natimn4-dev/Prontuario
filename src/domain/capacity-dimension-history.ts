@@ -391,15 +391,15 @@ function hasDrawableLongitudinalTrend(dimensions: readonly CapacityDimensionRow[
   });
 }
 
-function hasRepeatedDimensionHistory(dimensions: readonly CapacityDimensionRow[]): boolean {
-  return dimensions.some(
-    (dimension) => dimension.cells.filter((cell) => cell.assessments.length > 0).length >= 2,
-  );
+function hasRecordedHistoryAfterSecondVisit(dimensions: readonly CapacityDimensionRow[]): boolean {
+  // From the second visit, preserve measured history even without reapplication.
+  return dimensions.some((dimension) => dimension.cells.length >= 2
+    && dimension.cells.some((cell) => cell.assessments.length > 0));
 }
 
 /**
  * Decide se o gráfico deve permanecer visível depois que um domínio recebeu
- * resultados em pelo menos duas consultas.
+ * pelo menos um resultado e duas consultas registradas.
  *
  * A propriedade é opcional para manter compatibilidade com snapshots gerados
  * antes desta regra. Nesses snapshots, o estado é reconstruído a partir das
@@ -408,8 +408,7 @@ function hasRepeatedDimensionHistory(dimensions: readonly CapacityDimensionRow[]
 export function hasDisplayableLongitudinalHistory(
   history: Pick<CapacityDimensionHistory, "dimensions" | "hasLongitudinalHistoryData">,
 ): boolean {
-  return history.hasLongitudinalHistoryData
-    ?? hasRepeatedDimensionHistory(history.dimensions);
+  return hasRecordedHistoryAfterSecondVisit(history.dimensions);
 }
 
 export function buildCapacityDimensionHistory(input: {
@@ -521,7 +520,7 @@ export function buildCapacityDimensionHistory(input: {
     dimensions,
     inflectionPoints,
     hasAssessmentData: effective.length > 0,
-    hasLongitudinalHistoryData: hasRepeatedDimensionHistory(dimensions),
+    hasLongitudinalHistoryData: hasRecordedHistoryAfterSecondVisit(dimensions),
     hasLongitudinalTrendData: hasDrawableLongitudinalTrend(dimensions),
   };
 }
