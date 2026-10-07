@@ -72,7 +72,7 @@ O endpoint público de health check deve responder HTTP 200 e incluir:
 
 - `status: "ok"`
 - `database: "ok"`
-- `releaseId: "2026-10-06-graficos-longitudinais-v1"`
+- `releaseId: "2026-10-07-escalas-por-consulta-v1"`
 
 Nesta release, o histórico aparece a partir da segunda consulta quando existe resultado registrado. Tela e PDF compartilham os trechos comparáveis, incluindo lacunas tracejadas; escores originais, datas e estados ausentes permanecem explícitos. Marcadores coincidentes são separados sem mudar sua âncora temporal. O PDF divide históricos longos em blocos e usa texto de 11 pt na seção longitudinal. Não há migration de banco nesta release.
 

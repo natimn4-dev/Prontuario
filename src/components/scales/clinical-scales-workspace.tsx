@@ -242,6 +242,10 @@ function fieldInput(
 }
 
 export function ClinicalScalesWorkspace({ consultationId, onDirtyChange }: { consultationId: string; onDirtyChange?: (dirty: boolean) => void }) {
+  return <ConsultationScalesWorkspace key={consultationId} consultationId={consultationId} onDirtyChange={onDirtyChange} />;
+}
+
+function ConsultationScalesWorkspace({ consultationId, onDirtyChange }: { consultationId: string; onDirtyChange?: (dirty: boolean) => void }) {
   const [coreView, setCoreView] = useState<CoreView | null>(null);
   const [complementaryView, setComplementaryView] = useState<ComplementaryView | null>(null);
   const [statusView, setStatusView] = useState<StatusView | null>(null);
