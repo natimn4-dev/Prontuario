@@ -413,6 +413,77 @@ async function verifySwallowingTherapies() {
   } finally { await browser.close(); }
 }
 
+async function verifyFollowUpScaleIsolation() {
+  const initialId = "ci-e2e-scales-initial";
+  const followUpId = "ci-e2e-scales-follow-up";
+  const ids = [initialId, followUpId];
+  const removeFixtures = async () => {
+    await prisma.scaleAssessment.deleteMany({ where: { consultationId: { in: ids } } });
+    await prisma.consultation.deleteMany({ where: { id: { in: ids } } });
+  };
+  await removeFixtures();
+  const browser = await chromium.launch({ headless: true });
+  try {
+    await prisma.consultation.createMany({ data: [
+      { id: initialId, patientId: assignedPatientId, physicianId: userId, type: "AGA_INITIAL", status: "DRAFT", occurredAt: new Date("2026-03-01T12:00:00Z") },
+      { id: followUpId, patientId: assignedPatientId, physicianId: userId, type: "FOLLOW_UP", status: "DRAFT", occurredAt: new Date("2026-04-01T12:00:00Z") },
+    ] });
+    const initialAnswers = { bath: 1, dress: 1, toilet: 1, transfer: 1, continence: 1, feeding: 1 };
+    for (const [endpoint, body] of [
+      ["freitas-core", { scaleCode: "katz", answers: initialAnswers }],
+      ["complementary", { scaleCode: "fast", answers: { score: 7.5 } }],
+      ["oncogeriatrics", { scaleCode: "ecog", ecog: 3 }],
+    ] as const) {
+      const response = await request(`/api/consultations/${initialId}/scales/${endpoint}`, true, body);
+      assert.equal(response.status, 201, await response.text());
+    }
+    await prisma.consultation.update({ where: { id: initialId }, data: { status: "FINALIZED" } });
+    const read = await request(`/api/consultations/${followUpId}/scales/workspace`, true);
+    assert.equal(read.status, 200);
+    const workspace = await read.json();
+    assert.deepEqual(workspace.core.latest, [], "A segunda consulta não herda respostas das escalas principais.");
+    assert.deepEqual(workspace.complementary.latest, [], "A segunda consulta não herda respostas das escalas complementares.");
+    assert.deepEqual(workspace.status.latest, [], "Nenhuma escala anterior conta como aplicada na segunda consulta.");
+    assert.deepEqual(workspace.oncogeriatricPrefills, { meem: null, mnaSf: null, ecog: null });
+    assert.ok(workspace.status.previous.some((item: { scaleCode: string }) => item.scaleCode === "katz"));
+    assert.ok(workspace.status.previous.some((item: { scaleCode: string; scoreText: string }) => item.scaleCode === "fast" && item.scoreText === "7E"));
+
+    const page = await browser.newPage({ viewport: { width: 1280, height: 850 } });
+    await page.setExtraHTTPHeaders({ "x-prontuario-e2e-user": email, "x-prontuario-e2e-secret": secret });
+    const errors: string[] = [];
+    page.on("pageerror", (error) => errors.push(error.message));
+    await page.goto(`${baseUrl}/consultations/${initialId}#escalas`, { waitUntil: "domcontentloaded" });
+    await page.getByText("Consulta finalizada: resultados e histórico permanecem visíveis, sem nova aplicação.", { exact: true }).waitFor();
+    assert.equal(await page.getByRole("button", { name: "Salvar avaliação" }).isDisabled(), true);
+    await page.goto(`${baseUrl}/consultations/${followUpId}#escalas`, { waitUntil: "domcontentloaded" });
+    await page.locator("#escalas fieldset").first().waitFor();
+    assert.equal(await page.locator('#escalas fieldset input[type="checkbox"]:checked').count(), 0);
+    await page.locator("#escalas fieldset label").filter({ hasText: "Katz" }).locator('input[type="checkbox"]').check();
+    const form = page.locator("#escalas article");
+    assert.equal(await form.locator('input[type="radio"]:checked').count(), 0, "Itens devem iniciar sem resposta.");
+    assert.equal(await page.getByRole("button", { name: "Salvar avaliação" }).isEnabled(), true);
+    await page.getByRole("button", { name: "Salvar avaliação" }).click();
+    await page.getByRole("alert").filter({ hasText: "Preencha Banho" }).waitFor();
+    assert.equal(await prisma.scaleAssessment.count({ where: { consultationId: followUpId } }), 0);
+    for (const radio of await form.locator('input[type="radio"][value="0"]').all()) await radio.check();
+    await page.getByRole("button", { name: "Salvar avaliação" }).click();
+    await page.getByText("Avaliação salva nesta consulta. O resultado permanece sujeito à revisão médica.", { exact: true }).waitFor();
+    await page.reload({ waitUntil: "domcontentloaded" });
+    await page.locator('#escalas article input[type="radio"]:checked').first().waitFor();
+    assert.equal(await page.locator('#escalas article input[type="radio"][value="0"]:checked').count(), 6);
+    const initial = await prisma.scaleAssessment.findFirstOrThrow({ where: { consultationId: initialId, scaleCode: "katz" } });
+    const current = await prisma.scaleAssessment.findFirstOrThrow({ where: { consultationId: followUpId, scaleCode: "katz" } });
+    assert.deepEqual(initial.answers, initialAnswers, "A reaplicação preserva o histórico original.");
+    assert.equal(Number(current.scoreNumeric), 0);
+    assert.equal(Number(initial.scoreNumeric), 6);
+    await page.screenshot({ path: "/tmp/prontuario-onco-follow-up-scales-synthetic.png", fullPage: true });
+    assert.deepEqual(errors, []);
+  } finally {
+    await browser.close();
+    await removeFixtures();
+  }
+}
+
 async function main() {
   assert.equal(isCiE2EAuthEnvironment(), true, "O smoke E2E recusou o ambiente: a trava de segurança não foi satisfeita.");
   assert.ok(secret.length >= 32, "E2E_AUTH_SECRET ausente ou curta.");
@@ -511,7 +582,10 @@ async function main() {
   await verifyScalesInBrowser();
   await verifyAdvanceDirectiveSignaturePreparation();
 
+  await verifyFollowUpScaleIsolation();
+
   console.log("AUTHENTICATED_CI_E2E=SMOKE_OK");
+  console.log("- segunda consulta: escalas vazias, reaplicação editável, persistência após recarga e histórico original preservado");
   console.log("- diretivas: prévia preservada entre etapas; finalização cria versão final; revisão habilita ambos os provedores com o mesmo snapshot; rascunhos continuam bloqueados");
   console.log("- usuário sintético autenticado exclusivamente pelo contexto de CI");
   console.log("- MySQL efêmero validado");

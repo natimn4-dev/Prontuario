@@ -5,6 +5,7 @@ import {
   unconfirmedElectronicScaleRestrictions,
 } from "@/domain/clinical-config/electronic-scale-license-policy";
 import { latestPreviousScaleAssessments } from "@/domain/previous-scale-assessments";
+import { latestCurrentScaleAssessments } from "@/domain/current-scale-assessments";
 import { scaleConsultationHorizonIds } from "@/domain/scale-consultation-horizon";
 import { hasAccessProfilePermission } from "@/domain/security/auth-policy";
 import { AccessForbiddenError, AuthenticationRequiredError } from "@/server/auth/access-errors";
@@ -35,14 +36,6 @@ function serialized(row: AssessmentRow) {
     scoreNumeric: row.scoreNumeric === null ? null : Number(row.scoreNumeric),
     appliedAt: row.appliedAt.toISOString(),
   };
-}
-
-function latestByCode(rows: readonly AssessmentRow[]): Map<string, AssessmentRow> {
-  const latest = new Map<string, AssessmentRow>();
-  for (const row of rows) {
-    if (!latest.has(row.scaleCode)) latest.set(row.scaleCode, row);
-  }
-  return latest;
 }
 
 function prefill(latest: Map<string, AssessmentRow>, code: string) {
@@ -106,9 +99,11 @@ export async function GET(request: Request, context: { params: Promise<{ id: str
           appliedAt: true,
         },
       }) as unknown as AssessmentRow[];
-      const latest = latestByCode(assessments);
-      const current = assessments.filter((assessment) => assessment.consultationId === consultation.id);
-      const currentLatest = latestByCode(current);
+      const currentLatest = latestCurrentScaleAssessments({
+        patientId: consultation.patientId,
+        consultationId: consultation.id,
+        assessments,
+      });
       const previous = latestPreviousScaleAssessments({
         patientId: consultation.patientId,
         targetConsultationId: consultation.id,
@@ -131,14 +126,14 @@ export async function GET(request: Request, context: { params: Promise<{ id: str
           definitions: coreDefinitions,
           licensingRestrictions: unconfirmedElectronicScaleRestrictions(electronicScaleLicenseFlagsFromEnvironment(process.env)).map(({ code, name, reason }) => ({ code, name, reason })),
           latest: coreDefinitions.flatMap((definition) => {
-            const row = latest.get(definition.code);
+            const row = currentLatest.get(definition.code);
             return row ? [serialized(row)] : [];
           }),
         },
         complementary: {
           definitions: complementaryDefinitions,
           latest: complementaryDefinitions.flatMap((definition) => {
-            const row = latest.get(definition.code);
+            const row = currentLatest.get(definition.code);
             return row ? [serialized(row)] : [];
           }),
         },
@@ -157,7 +152,7 @@ export async function GET(request: Request, context: { params: Promise<{ id: str
           })),
         },
         oncogeriatricPrefills: canWrite
-          ? { meem: prefill(latest, "meem"), mnaSf: prefill(latest, "mna_sf"), ecog: prefill(latest, "ecog") }
+          ? { meem: prefill(currentLatest, "meem"), mnaSf: prefill(currentLatest, "mna_sf"), ecog: prefill(currentLatest, "ecog") }
           : { meem: null, mnaSf: null, ecog: null },
       }, { headers: { "Cache-Control": "private, no-store, max-age=0" } });
     } catch (error) {
