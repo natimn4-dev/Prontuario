@@ -14,6 +14,8 @@ import { scaleCatalogEntry } from "./scale-catalog.ts";
 
 export type { CapacityDimensionCode } from "./intrinsic-capacity-methodology.ts";
 
+type StoredClinicalColor = ClinicalColor | "green" | "yellow" | "red";
+
 export type CapacityDimensionStatus =
   | "not-assessed"
   | "recorded"
@@ -44,7 +46,7 @@ export interface CapacityTimelineAssessment {
   scoreText?: string | null;
   classification?: string | null;
   interpretation?: string | null;
-  clinicalColor?: ClinicalColor | null;
+  clinicalColor?: StoredClinicalColor | null;
   appliedAt: Date | string;
   consultationOccurredAt?: Date | string;
   consultationCreatedAt?: Date | string;
@@ -75,7 +77,7 @@ export interface CapacityDimensionCellAssessment {
   scoreText?: string | null;
   classification?: string | null;
   interpretation?: string | null;
-  clinicalColor: ClinicalColor | null;
+  clinicalColor: StoredClinicalColor | null;
   role: CapacityEvidenceRole;
   mappingStrength: ConstructMappingStrength;
   basis: DomainEvidenceBasis;
@@ -156,10 +158,10 @@ function timestamp(value: Date | string | undefined, fallback = 0): number {
   return Number.isFinite(result) ? result : fallback;
 }
 
-function mappedColorStatus(color: ClinicalColor | null): CapacityComparableStatus | "recorded" {
-  if (color === "vermelho") return "altered";
-  if (color === "amarelo") return "attention";
-  if (color === "verde") return "preserved";
+function mappedColorStatus(color: StoredClinicalColor | null): CapacityComparableStatus | "recorded" {
+  if (color === "vermelho" || color === "red") return "altered";
+  if (color === "amarelo" || color === "yellow") return "attention";
+  if (color === "verde" || color === "green") return "preserved";
   return "recorded";
 }
 
@@ -391,15 +393,25 @@ function hasDrawableLongitudinalTrend(dimensions: readonly CapacityDimensionRow[
   });
 }
 
+export function capacityChartDimensions(dimensions: readonly CapacityDimensionRow[]): CapacityDimensionRow[] {
+  const codes: readonly CapacityDimensionCode[] = ["funcionalidade", "cognicao", "locomocao", "psicologico", "vitalidade"];
+  return codes.flatMap((code) => {
+    const dimension = dimensions.find((item) => item.code === code);
+    return dimension ? [{ ...dimension, label: code === "psicologico" ? "Humor" : code === "funcionalidade" ? "Funcionalidade" : dimension.label }] : [];
+  });
+}
+
 function hasRecordedHistoryAfterSecondVisit(dimensions: readonly CapacityDimensionRow[]): boolean {
-  // From the second visit, preserve measured history even without reapplication.
-  return dimensions.some((dimension) => dimension.cells.length >= 2
-    && dimension.cells.some((cell) => cell.assessments.length > 0));
+  // Returns without reapplication do not count as a second measured visit.
+  return capacityChartDimensions(dimensions).some((dimension) => new Set(dimension.cells
+    .filter((cell) => cell.assessments.length > 0)
+    .map((cell) => cell.consultationId)).size >= 2);
 }
 
 /**
  * Decide se o gráfico deve permanecer visível depois que um domínio recebeu
- * pelo menos um resultado e duas consultas registradas.
+ * resultados em pelo menos duas consultas distintas. Retornos sem reaplicação
+ * preservam um gráfico já existente, mas não habilitam um gráfico novo.
  *
  * A propriedade é opcional para manter compatibilidade com snapshots gerados
  * antes desta regra. Nesses snapshots, o estado é reconstruído a partir das

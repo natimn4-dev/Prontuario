@@ -1,18 +1,52 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import { buildCapacityDimensionHistory, hasDisplayableLongitudinalHistory } from "../../src/domain/capacity-dimension-history.ts";
-import { capacityChartPositions, capacityChartSegments, capacityRecordedResults } from "../../src/domain/capacity-chart-presentation.ts";
+import { capacityChartHistory, capacityChartPositions, capacityChartSegments, capacityRecordedResults } from "../../src/domain/capacity-chart-presentation.ts";
 
 const consultations = [1, 2, 3].map((number) => ({ id: `c${number}`, patientId: "synthetic", occurredAt: `2026-0${number}-01` }));
 const assessment = (number: number, score: number, version = "1") => ({ patientId: "synthetic", consultationId: `c${number}`, scaleCode: "moca", scaleVersion: version, scoreNumeric: score, clinicalColor: "amarelo" as const, appliedAt: `2026-0${number}-01` });
 
-test("second consultation preserves the first measured result without fabricating a second one", () => {
-  const history = buildCapacityDimensionHistory({ patientId: "synthetic", consultations: consultations.slice(0, 2), assessments: [assessment(1, 25)] });
+test("HTML and PDF projection excludes sensory charts while preserving clinical records", () => {
+  const history = buildCapacityDimensionHistory({ patientId: "synthetic", consultations, assessments: [1, 2].flatMap((number) => [assessment(number, 25), { ...assessment(number, 1), scaleCode: "audicao" }, { ...assessment(number, 1), scaleCode: "visao" }]) });
+  const before = JSON.stringify(history);
+  const chart = capacityChartHistory(history);
+  assert.deepEqual(new Set(chart.dimensions.map((dimension) => dimension.code)), new Set(["funcionalidade", "cognicao", "locomocao", "psicologico", "vitalidade"]));
+  assert.ok(history.dimensions.find((dimension) => dimension.code === "audicao")!.cells[0]!.assessments.length);
+  assert.ok(history.dimensions.find((dimension) => dimension.code === "visao")!.cells[0]!.assessments.length);
+  assert.equal(JSON.stringify(history), before);
   assert.equal(hasDisplayableLongitudinalHistory(history), true);
+});
+
+test("sensory assessments alone cannot enable a longitudinal chart", () => {
+  const history = buildCapacityDimensionHistory({ patientId: "synthetic", consultations, assessments: [1, 2].flatMap((number) => [{ ...assessment(number, 1), scaleCode: "audicao" }, { ...assessment(number, 1), scaleCode: "visao" }]) });
+  assert.equal(hasDisplayableLongitudinalHistory(history), false);
+});
+
+test("return without reapplication preserves results but does not enable a chart", () => {
+  const history = buildCapacityDimensionHistory({ patientId: "synthetic", consultations: consultations.slice(0, 2), assessments: [assessment(1, 25)] });
+  assert.equal(hasDisplayableLongitudinalHistory(history), false);
+  assert.equal(history.hasLongitudinalHistoryData, false);
+  assert.equal(hasDisplayableLongitudinalHistory({ ...history, hasLongitudinalHistoryData: true }), false);
   const cognition = history.dimensions.find((item) => item.code === "cognicao")!;
   assert.equal(cognition.cells[1]!.status, "not-assessed");
   assert.deepEqual(capacityChartSegments(cognition), []);
   assert.deepEqual(capacityRecordedResults(cognition.cells[1]!), []);
+});
+
+test("reapplication enables the chart even after an unassessed return", () => {
+  const history = buildCapacityDimensionHistory({ patientId: "synthetic", consultations, assessments: [assessment(1, 25), assessment(3, 23)] });
+  assert.equal(hasDisplayableLongitudinalHistory(history), true);
+  assert.equal(history.hasLongitudinalHistoryData, true);
+});
+
+test("multiple scales in one visit and repeated unassessed returns do not enable a chart", () => {
+  const history = buildCapacityDimensionHistory({ patientId: "synthetic", consultations, assessments: [assessment(1, 25), { ...assessment(1, 20), scaleCode: "mmse" }] });
+  assert.equal(hasDisplayableLongitudinalHistory(history), false);
+});
+
+test("two visits with assessments in different domains do not imply domain reapplication", () => {
+  const history = buildCapacityDimensionHistory({ patientId: "synthetic", consultations, assessments: [assessment(1, 25), { ...assessment(2, 5), scaleCode: "gds15" }] });
+  assert.equal(hasDisplayableLongitudinalHistory(history), false);
 });
 
 test("first consultation and empty history do not display a longitudinal chart", () => {
@@ -48,4 +82,57 @@ test("zero remains measured and missing score is never replaced with zero", () =
   const cognition = history.dimensions.find((item) => item.code === "cognicao")!;
   assert.match(capacityRecordedResults(cognition.cells[0]!)[0]!, /: 0/);
   assert.match(capacityRecordedResults(cognition.cells[1]!)[0]!, /sem escore numérico/);
+});
+
+
+test("convergent instruments keep a visible segment without changing the clinical model", () => {
+  const assessments = [1, 2, 3].flatMap((number) => ["lawton", "barthel"].map((scaleCode) => ({ ...assessment(number, 5), scaleCode })));
+  const history = buildCapacityDimensionHistory({ patientId: "synthetic", consultations, assessments });
+  const functionality = history.dimensions.find((item) => item.code === "funcionalidade")!;
+  assert.equal(functionality.cells[0]!.comparabilityKey, undefined);
+  assert.deepEqual(capacityChartSegments(functionality), [
+    { from: "c1", to: "c2", crossesUnassessedVisit: false },
+    { from: "c2", to: "c3", crossesUnassessedVisit: false },
+  ]);
+  assert.equal(history.inflectionPoints.length, 0);
+  const changedVersion = structuredClone(functionality);
+  changedVersion.cells[1]!.assessments[0]!.scaleVersion = "2";
+  assert.deepEqual(capacityChartSegments(changedVersion), []);
+  const changedSet = structuredClone(functionality);
+  changedSet.cells[1]!.assessments.pop();
+  assert.deepEqual(capacityChartSegments(changedSet), []);
+});
+
+test("discordant instruments remain disconnected and an unmeasured visit is dashed", () => {
+  const history = buildCapacityDimensionHistory({ patientId: "synthetic", consultations, assessments: [1, 3].flatMap((number) => ["lawton", "barthel"].map((scaleCode) => ({ ...assessment(number, 5), scaleCode }))) });
+  const functionality = history.dimensions.find((item) => item.code === "funcionalidade")!;
+  assert.deepEqual(capacityChartSegments(functionality), [{ from: "c1", to: "c3", crossesUnassessedVisit: true }]);
+  functionality.cells[2]!.status = "indeterminate";
+  assert.deepEqual(capacityChartSegments(functionality), []);
+});
+
+test("only the five requested domains generate graphs, preserving sensory records", async () => {
+  const { capacityChartDimensions } = await import("../../src/domain/capacity-chart-presentation.ts");
+  const history = buildCapacityDimensionHistory({ patientId: "synthetic", consultations, assessments: [assessment(1, 25), { ...assessment(2, 1), scaleCode: "hearing", scaleVersion: "hearing-v1" }] });
+  assert.deepEqual(capacityChartDimensions(history.dimensions).map((item) => item.code), ["funcionalidade", "cognicao", "locomocao", "psicologico", "vitalidade"]);
+  assert.equal(history.dimensions.find((item) => item.code === "audicao")!.cells[1]!.assessments.length, 1);
+  const sensoryOnly = buildCapacityDimensionHistory({ patientId: "synthetic", consultations, assessments: [{ ...assessment(2, 1), scaleCode: "hearing", scaleVersion: "hearing-v1" }] });
+  assert.equal(hasDisplayableLongitudinalHistory({ ...sensoryOnly, dimensions: capacityChartDimensions(sensoryOnly.dimensions) }), false);
+});
+
+
+test("English persisted colors from the real GDS scorer remain comparable without inventing absent colors", async () => {
+  const { CORE_FREITAS_SCALES, scoreCoreFreitasScale } = await import("../../src/domain/freitas-core-scales.ts");
+  const questions = CORE_FREITAS_SCALES.find((definition) => definition.code === "gds15")!.questions;
+  const assessments = [7, 15].map((count, index) => {
+    const scored = scoreCoreFreitasScale("gds15", Object.fromEntries(questions.map((question, number) => [question.id, number < count ? 1 : 0])));
+    return { ...assessment(index + 1, scored.result.score), scaleCode: "gds15", scaleVersion: scored.version, clinicalColor: scored.result.clinicalColor };
+  });
+  const history = buildCapacityDimensionHistory({ patientId: "synthetic", consultations, assessments });
+  const mood = history.dimensions.find((dimension) => dimension.code === "psicologico")!;
+  assert.deepEqual(mood.cells.slice(0, 2).map((cell) => cell.status), ["attention", "altered"]);
+  assert.deepEqual(capacityChartSegments(mood), [{ from: "c1", to: "c2", crossesUnassessedVisit: false }]);
+  assert.deepEqual(mood.cells.slice(0, 2).map((cell) => cell.assessments[0]!.clinicalColor), ["yellow", "red"]);
+  const unclassified = buildCapacityDimensionHistory({ patientId: "synthetic", consultations, assessments: [{ ...assessment(1, 6), scaleCode: "katz", clinicalColor: null }, { ...assessment(2, 0), scaleCode: "katz", clinicalColor: null }] });
+  assert.deepEqual(capacityChartSegments(unclassified.dimensions.find((dimension) => dimension.code === "funcionalidade")!), []);
 });

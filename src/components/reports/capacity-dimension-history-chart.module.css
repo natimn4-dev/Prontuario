@@ -264,7 +264,7 @@
 }
 
 .statusGuide {
-  stroke-dasharray: none;
+  stroke-dasharray: 4 5;
   opacity: .9;
 }
 
@@ -278,10 +278,16 @@
 .seriesLine {
   fill: none;
   stroke: currentColor;
-  stroke-width: 2.2;
+  stroke-width: 3;
   stroke-linejoin: round;
   stroke-linecap: round;
-  opacity: .82;
+  opacity: 1;
+}
+
+.statusAxisLabel {
+  fill: #514b55;
+  font-family: "Segoe UI", Arial, sans-serif;
+  font-size: 11px;
 }
 
 .seriesLine[data-gap="unassessed"] {
@@ -300,9 +306,9 @@
   stroke-width: 2;
 }
 
-.seriesPoint[data-status="preserved"] { fill: #edf7f1; }
-.seriesPoint[data-status="attention"] { fill: #fff7e8; }
-.seriesPoint[data-status="altered"] { fill: #faecee; }
+.seriesPoint[data-status="preserved"],
+.seriesPoint[data-status="attention"],
+.seriesPoint[data-status="altered"] { fill: currentColor; }
 
 .inflectionHalo {
   fill: none;
@@ -488,6 +494,25 @@
 
   .timelineCanvas {
     padding: 7px;
+    width: 100% !important;
+    box-sizing: border-box;
+  }
+
+  .dimensionRow {
+    display: block;
+  }
+
+  .dimensionSummary {
+    min-height: auto;
+  }
+
+  .domainChart {
+    width: 100%;
+    height: auto;
+  }
+
+  .dateRow {
+    display: none;
   }
 
   .dimensionSummary strong {
@@ -495,7 +520,8 @@
   }
 
   .frameworkHeader {
-    grid-template-columns: 190px minmax(0, 1fr);
+    grid-template-columns: 1fr;
+    gap: 4px;
   }
 
   .readingGuide {
@@ -615,4 +641,23 @@
   .latestBadge { min-width: 0; max-width: 100%; box-sizing: border-box; overflow-wrap: anywhere; }
   .latestState small { overflow-wrap: anywhere; }
   .dimensionRow { overflow: visible; }
+}
+
+.domainDateLabel { fill: var(--muted); font: 11px "Segoe UI", Arial, sans-serif; }
+@media print { .domainDateLabel { display: none; } }
+
+.resultsTableWrap { max-width: 100%; overflow-x: auto; }
+.resultsTable { width: 100%; border-collapse: collapse; font-size: 14px; text-align: left; }
+.resultsTable caption { text-align: left; font-weight: 700; margin-bottom: 10px; }
+.resultsTable th, .resultsTable td { padding: 10px; border: 1px solid var(--line); vertical-align: top; }
+.resultsTable thead th { color: var(--primary); background: var(--primary-soft); }
+.resultsTable th span, .resultsTable small { display: block; color: var(--muted); font-weight: 400; overflow-wrap: anywhere; }
+.resultsTable small { margin-top: 4px; font-size: 11px; }
+@media print {
+  .resultsTableWrap { overflow: visible; }
+  .resultsTable { table-layout: fixed; font-size: 11pt; }
+  .resultsTable th, .resultsTable td { padding: 2mm; overflow-wrap: anywhere; }
+  .resultsTable small { font-size: 9pt; }
+  .resultsTable thead { display: table-header-group; }
+  .resultsTable tr { break-inside: avoid; }
 }
