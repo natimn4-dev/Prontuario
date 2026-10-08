@@ -206,36 +206,28 @@ const IADL_SUPPORT_GUIDANCE: Readonly<Record<string, readonly string[]>> = {
 
 const DEMENTIA_COGNITION_GUIDANCE: Readonly<Record<string, readonly string[]>> = {
   "4": [
-    "Fase leve: podem surgir esquecimentos, repetição de perguntas ou dificuldade para organizar finanças, compromissos e outras tarefas complexas, enquanto muitas atividades continuam independentes. O ritmo de evolução varia de pessoa para pessoa; estas orientações devem acompanhar as necessidades observadas e a avaliação da equipe.",
-    "Inclua a pessoa nas decisões sobre sua vida e tratamento. Preserve sua autonomia no que continua seguro e escute suas preferências, oferecendo ajuda sem assumir todas as tarefas.",
-    "Conversem sobre o futuro enquanto a pessoa pode expressar suas vontades: quem deseja ter ao seu lado nas decisões, preferências de cuidado e diretivas antecipadas. Se desejar, busquem orientação profissional sobre procuração e testamento; a capacidade deve ser avaliada para cada decisão.",
-    "Observe dificuldades ao dirigir, usar o fogão ou administrar medicamentos. Combine apoios discretos, como calendário, lembretes e caixa organizadora de remédios com conferência, e converse com a equipe quando houver erros ou risco.",
-    "Mantenha encontros e atividades de que a pessoa gosta, adaptados ao seu ritmo. Nas consultas, compartilhe mudanças de memória, autonomia, humor, ansiedade e sono para ajustar o cuidado.",
+    "Fase leve: esquecimentos, perguntas repetidas e dificuldades em finanças ou compromissos podem surgir, com muitas atividades ainda independentes. A evolução varia; adapte o apoio às necessidades e à avaliação da equipe.",
+    "Preserve autonomia, preferências e participação nas decisões. Conversem sobre quem ajudará nas decisões futuras, preferências de cuidado e diretivas antecipadas; busquem orientação sobre procuração e testamento se desejado. A capacidade é avaliada para cada decisão.",
+    "Observe segurança ao dirigir, usar fogão e tomar medicamentos. Use calendário, lembretes e caixa de remédios com conferência; ofereça apoio se houver erros. Mantenha atividades e encontros prazerosos e relate mudanças de memória, autonomia, humor, ansiedade ou sono.",
   ],
   "5": [
-    "Fase moderada: a pessoa passa a precisar de mais apoio para organizar o dia e escolher roupas adequadas, embora ainda possa participar de muitos cuidados. A desorientação pode aumentar. Nem todas as pessoas apresentam as mesmas mudanças ou evoluem no mesmo ritmo.",
-    "Fale com calma, mantenha contato visual e dê uma instrução por vez, usando frases curtas. Ofereça escolhas simples e tempo para responder; evite discutir ou testar a memória.",
-    "Mantenha horários previsíveis e um ambiente tranquilo. Se houver mais confusão ou agitação no fim da tarde, reduza ruídos, organize a iluminação e observe cansaço, fome, dor e outras necessidades.",
-    "Retire tapetes soltos e objetos de risco, proteja o acesso a medicamentos e ao fogão e acompanhe os deslocamentos quando houver risco de se perder. Adapte portas e janelas preservando saídas seguras em emergência.",
-    "Combine quem acompanha consultas, medicamentos e finanças. Converse com a equipe sobre a capacidade para cada decisão e busque orientação jurídica sobre representação quando necessária, mantendo a participação da pessoa nas escolhas possíveis.",
-    "Dividam as tarefas e reservem descanso para quem cuida. Conforme as necessidades e os recursos da família, considerem cuidador, centro-dia e grupos de apoio; sofrimento ou exaustão merecem acolhimento e ajuda profissional.",
+    "Fase moderada: pode ser necessário apoio para organizar o dia e escolher roupas, com maior desorientação. Preserve a participação; as mudanças e o ritmo de evolução variam.",
+    "Fale com calma, contato visual, frases curtas e uma instrução por vez. Ofereça escolhas simples e tempo para responder, sem discutir ou testar a memória. Mantenha rotina tranquila; na agitação ao entardecer, ajuste ruídos e iluminação e observe cansaço, fome e dor.",
+    "Retire tapetes soltos e objetos perigosos; proteja medicamentos e fogão e acompanhe saídas se houver risco de se perder. Adapte portas e janelas mantendo saídas seguras em emergência.",
+    "Combine apoio em consultas, medicamentos e finanças. Converse sobre capacidade para cada decisão e representação jurídica quando necessária. Dividam tarefas e planejem descanso; cuidador, centro-dia, grupos de apoio e ajuda profissional podem acolher sofrimento ou exaustão.",
   ],
   "6": [
-    "Fase moderadamente grave: costuma ser necessária ajuda para vestir-se, banho e higiene, com maior desorientação e possível dificuldade para reconhecer pessoas próximas. A mobilidade e a comunicação variam; preserve o que a pessoa ainda consegue fazer sem cobrar desempenho.",
-    "Use instruções curtas e uma etapa por vez, expressão tranquila e tom acolhedor. Um toque suave, quando bem recebido, e escolhas simples podem ajudar mais que explicações longas; não corrija a pessoa repetidamente.",
-    "Acompanhe situações com risco de queda ou de sair e se perder. Guarde medicamentos, ferramentas e objetos perigosos em local protegido e supervisione o uso do fogão, preservando circulação e saídas seguras.",
-    "Se houver agitação, agressividade, alucinações ou desorientação noturna, conte à equipe quando acontecem e o que parece ajudar. Investigue dor, constipação, fome, sono e desconforto; priorize ajustes de rotina e ambiente antes de discutir medicação com a equipe.",
-    "Reavaliem juntos o apoio disponível em casa. Cuidador em tempo integral ou uma instituição de longa permanência podem ser considerados conforme as necessidades, preferências e estrutura familiar, sem transformar essa decisão em culpa.",
-    "Retomem as preferências e metas de cuidado com a equipe, incluindo cuidados paliativos para aliviar sintomas e apoiar a família. Cuidar de quem cuida também faz parte do tratamento: planejem descanso e apoio emocional.",
+    "Fase moderadamente grave: banho, vestir-se e higiene costumam exigir ajuda; pode haver desorientação e dificuldade de reconhecer pessoas. Mobilidade e comunicação variam: preserve a participação sem cobrar desempenho.",
+    "Use tom acolhedor, instruções curtas, uma etapa por vez e escolhas simples; ofereça toque suave quando bem recebido, sem correções repetidas. Supervisione quedas, saídas, fogão, medicamentos e objetos perigosos, mantendo circulação e saídas seguras.",
+    "Relate agitação, agressividade, alucinações ou desorientação noturna e o que ajuda. Observe dor, constipação, fome, sono e desconforto; priorize rotina e ambiente antes de discutir medicamentos com a equipe.",
+    "Reavaliem cuidador em tempo integral ou instituição de longa permanência conforme necessidades, preferências e recursos, sem culpa. Retomem metas e cuidados paliativos para aliviar sintomas e apoiar a família. Cuidar de quem cuida inclui descanso e apoio emocional.",
   ],
   "7": [
-    "Fase grave: há necessidade de ajuda muito ampla nas atividades diárias e a fala pode estar muito limitada. Podem aparecer dificuldades para engolir e perda de mobilidade, mas as necessidades variam. Este estágio, sozinho, não define que a pessoa esteja nos últimos dias de vida.",
-    ...ADVANCED_DEMENTIA_GUIDANCE.cognicao!,
-    "Priorize conforto e dignidade: observe dor, cuide da higiene e da pele e combine posicionamento e mudanças de posição com a equipe. Respeite a participação e as preferências que a pessoa ainda consegue expressar.",
-    "Se houver dificuldade para engolir ou redução da alimentação, converse com a equipe sobre formas seguras e confortáveis de alimentar e sobre benefícios e riscos das opções, incluindo alimentação assistida e sonda quando discutida. A decisão deve considerar a avaliação individual, os valores da pessoa e o conforto, sem indicação automática pela fase da demência.",
-    "Converse sobre cuidados paliativos para controle de sintomas e apoio à família, inclusive sobre serviços de cuidado no fim da vida quando indicados. Relembrem as vontades previamente expressas pela pessoa ao decidir os próximos passos.",
-    "Mesmo com pouca fala, presença, voz familiar, música e toque bem recebido podem trazer conforto. Respeite sinais de cansaço e desconforto e preserve esses momentos de vínculo.",
-    "Quem cuida também precisa ser cuidado. Dividam responsabilidades, organizem períodos de descanso e busquem apoio psicológico ou grupos de apoio, inclusive para lidar com tristeza e luto antecipatório.",
+    "Fase grave: há ajuda muito ampla nas atividades, fala limitada e possíveis dificuldades para engolir ou se movimentar. As necessidades variam; este estágio, sozinho, não define os últimos dias de vida.",
+    "Use comunicação calma e afetuosa, frases curtas, contato visual e toque bem recebido. Observe expressões, gestos e sinais de dor, medo ou desconforto. Mantenha rotina familiar; em vez de cobrar memória ou orientação, ofereça pistas e respeite o ritmo da pessoa.",
+    "Deixe medicamentos, compromissos e decisões práticas com uma pessoa de confiança, incluindo a pessoa nas escolhas possíveis. Confusão ou sonolência súbita, agitação muito diferente ou perda abrupta de interação exigem avaliação rápida.",
+    "Priorize conforto e dignidade: cuide de dor, higiene, pele e posicionamento com a equipe. Se houver dificuldade para engolir ou comer menos, discutam benefícios e riscos da alimentação assistida e da sonda, sem indicação automática pela fase da demência; considerem valores e conforto.",
+    "Converse sobre cuidados paliativos e serviços de fim de vida quando indicados, respeitando vontades anteriores. Voz familiar, música, presença e toque podem manter o vínculo; respeite cansaço e desconforto. Dividam responsabilidades e busquem descanso, apoio psicológico e grupos de apoio, inclusive no luto antecipatório.",
   ],
 };
 
@@ -243,6 +235,32 @@ const DEMENTIA_COGNITION_GUIDANCE: Readonly<Record<string, readonly string[]>> =
 export function dementiaCognitionGuidance(context: FamilyFunctionalContext): readonly string[] | undefined {
   const stage = canonicalFastStageLabel(context.fastScore);
   return stage ? DEMENTIA_COGNITION_GUIDANCE[stage.charAt(0)] : undefined;
+}
+
+/** Educational support bands requested by the clinician; does not reclassify stored results. */
+export function functionalScoreGuidance(context: FamilyFunctionalContext): string[] {
+  const actions: string[] = [];
+  const barthel = context.barthelScore;
+  const katzNeedsMoreSupport = typeof context.katzScore === "number"
+    && (typeof barthel !== "number" || LEVEL_RANK[katzLevel(context.katzScore)] > LEVEL_RANK[barthelLevel(barthel)]);
+  if (katzNeedsMoreSupport) {
+    actions.push(...(katzLevel(context.katzScore!) === "high-dependence"
+      ? HIGH_DEPENDENCE_GUIDANCE.funcionalidade!
+      : katzLevel(context.katzScore!) === "adl-support" ? ADL_SUPPORT_GUIDANCE.funcionalidade! : []));
+  } else if (typeof barthel === "number" && Number.isFinite(barthel) && barthel >= 0 && barthel <= 100) {
+    if (barthel > 90) actions.push("Atividades básicas: mantenha supervisão discreta e preserve a autonomia, sem assumir tarefas que a pessoa ainda realiza. Observe quedas e dificuldades novas ou progressivas.");
+    else if (barthel > 60) actions.push("Atividades básicas: ajude nos momentos necessários, como banho, vestir-se e transferências. Adapte o banheiro com barras de apoio, cadeira de banho e piso antiderrapante; acompanhe transferências e caminhada para prevenir quedas.");
+    else if (barthel > 20) actions.push("Há necessidade importante de ajuda nas atividades básicas: banho, vestir-se, higiene, alimentação e transferências. Organize horários para os cuidados e mudanças de posição; proteja a pele e converse sobre cuidador, fisioterapia ou enfermagem domiciliar conforme a necessidade.");
+    else actions.push("Atividades básicas: organize apoio familiar ou profissional contínuo para higiene, alimentação e transferências. Cuide da pele, da boca e das perdas de urina e fezes; combine mudanças de posição com a equipe conforme conforto e risco de feridas. Mantenha avaliações regulares e converse sobre cuidados paliativos quando indicados.");
+  }
+  const lawton = context.lawtonScore;
+  if (typeof lawton === "number" && Number.isFinite(lawton) && lawton >= 7 && lawton <= 21) {
+    if (lawton === 21) actions.push("Atividades instrumentais: preserve a independência no telefone, compras, refeições, tarefas domésticas, transporte, medicamentos e finanças. Observe esquecimentos ou dificuldades novas nas tarefas habituais.");
+    else if (lawton > 7) actions.push("Nas atividades instrumentais, atividades mais complexas como finanças, compras, transporte e medicamentos podem exigir ajuda por perto. Organize e confira os remédios em caixa semanal quando adequada; acompanhe consultas e exames e assuma pagamentos e compras aos poucos, preservando as tarefas ainda seguras.");
+    else actions.push("Atividades instrumentais: uma pessoa de confiança deve assumir medicamentos, finanças, compras e transporte, mantendo a participação nas escolhas possíveis. Supervisione fogão, saídas e risco de golpes; perda dessas habilidades, especialmente com mudanças cognitivas, requer avaliação médica para investigar a causa, incluindo demência.");
+  }
+  if (actions.length) actions.push("Preserve a participação e as escolhas da pessoa: ajude apenas no necessário, sem excesso de cuidado. Avise a equipe se a necessidade de ajuda aumentar; perda funcional súbita exige avaliação rápida.");
+  return actions;
 }
 
 /**
@@ -255,6 +273,10 @@ export function contextualFamilyGuidance(
   baseGuidance: readonly string[],
   context: FamilyFunctionalContext,
 ): string[] {
+  if (dimension === "funcionalidade") {
+    const scoreGuidance = functionalScoreGuidance(context);
+    if (scoreGuidance.length) return scoreGuidance;
+  }
   if (dimension === "cognicao") {
     const dementiaGuidance = dementiaCognitionGuidance(context);
     if (dementiaGuidance) return [...dementiaGuidance];

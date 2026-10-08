@@ -135,3 +135,37 @@ test("FAST 7d adapta cognição para comunicação e cuidado, sem exigir desempe
   assert.match(guidance, /expressões, gestos/i);
   assert.match(guidance, /em vez de cobrar memória ou orientação/i);
 });
+
+test("Barthel orienta apoio nas fronteiras das faixas sem omitir pontuação 20", () => {
+  for (const [score, expected] of [
+    [0, /apoio familiar ou profissional contínuo/], [20, /apoio familiar ou profissional contínuo/],
+    [21, /necessidade importante de ajuda/], [60, /necessidade importante de ajuda/],
+    [61, /cadeira de banho/], [90, /cadeira de banho/],
+    [91, /supervisão discreta/], [100, /supervisão discreta/],
+  ] as const) {
+    const context = deriveFamilyFunctionalContext([scale("barthel", score)]);
+    const before = structuredClone(context);
+    const guidance = contextualFamilyGuidance("funcionalidade", [], context).join(" ");
+    assert.match(guidance, expected);
+    assert.match(guidance, /sem excesso de cuidado/);
+    assert.deepEqual(context, before, "orientação não altera o resultado registrado");
+    assert.doesNotMatch(guidance, /a cada 2|a cada 3/);
+  }
+});
+
+test("Lawton diferencia independência, apoio parcial e total sem inferir demência", () => {
+  for (const [score, expected] of [
+    [21, /preserve a independência/], [20, /caixa semanal/], [8, /caixa semanal/],
+    [7, /investigar a causa, incluindo demência/],
+  ] as const) {
+    const guidance = contextualFamilyGuidance("funcionalidade", [], deriveFamilyFunctionalContext([scale("lawton", score)])).join(" ");
+    assert.match(guidance, expected);
+    assert.doesNotMatch(guidance, /diagnóstico de demência confirmado/);
+  }
+});
+
+test("resultados históricos não ativam orientação de Barthel ou Lawton na consulta atual", () => {
+  const historical = [scale("barthel", 0), scale("lawton", 7)].map((item) => ({ ...item, assessedInTargetConsultation: false }));
+  assert.deepEqual(contextualFamilyGuidance("funcionalidade", [], deriveFamilyFunctionalContext(historical)), []);
+  assert.deepEqual(contextualFamilyGuidance("funcionalidade", [], deriveFamilyFunctionalContext([])), []);
+});

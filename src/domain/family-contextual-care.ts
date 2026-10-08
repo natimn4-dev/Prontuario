@@ -168,19 +168,15 @@ export function gastrostomyFamilyGuidance(): ContextualFamilyCareGuidance {
   return {
     now: [
       "Lave as mãos antes de mexer na gastrostomia, na dieta, na água ou nos medicamentos e mantenha conexões e utensílios limpos.",
-      "Use a fórmula, o volume, a velocidade e os horários prescritos para a dieta enteral. Se algo estiver difícil ou precisar mudar, converse com a equipe antes de fazer ajustes.",
-      "Durante a dieta, mantenha a pessoa bem posicionada e com a cabeceira elevada. Depois, mantenha essa posição pelo tempo combinado para ajudar a reduzir refluxo e aspiração.",
-      "Lave a sonda com água antes e depois da dieta e dos medicamentos, e entre medicamentos diferentes, usando o volume prescrito. Se houver um limite diário de líquidos, conte também essa água no total do dia.",
+      "Na dieta enteral, siga fórmula, volume, velocidade e horários prescritos. Se algo estiver difícil ou precisar mudar, converse com a equipe antes de ajustes. Mantenha a cabeceira elevada durante e após a dieta pelo tempo orientado, para reduzir refluxo e aspiração.",
+      "Lave a sonda antes e depois da dieta e dos medicamentos, e entre medicamentos, com o volume prescrito de água. Inclua essa água no limite diário de líquidos, quando houver.",
     ],
     caregiver: [
-      "Dê os medicamentos separadamente e não os misture diretamente à fórmula da dieta. Antes de usar um medicamento pela gastrostomia, confirme se aquela apresentação pode ser administrada pela sonda.",
-      "Antes de triturar um comprimido ou abrir uma cápsula, confirme se isso pode ser feito. Algumas apresentações perdem a segurança ou o efeito quando são abertas ou trituradas.",
-      "Mantenha a pele ao redor do estoma limpa e seca e observe todos os dias se apareceu vermelhidão que não melhora, inchaço, dor, secreção, sangramento ou vazamento.",
-      "Se houver resistência para lavar ou usar a sonda, não force. Pare e procure orientação para evitar machucar a pessoa ou danificar a gastrostomia.",
+      "Dê medicamentos separadamente, sem misturá-los à fórmula. Antes de triturar um comprimido ou abrir uma cápsula, confirme com médico ou farmacêutico se a apresentação pode ser usada pela sonda sem perder segurança ou efeito.",
+      "Mantenha a pele ao redor do estoma limpa e seca; observe diariamente vermelhidão persistente, inchaço, dor, secreção, sangramento ou vazamento. Evite tração e só manipule fixação, rotação ou balão com treinamento específico para o modelo e a cicatrização. Se houver resistência ao usar ou lavar a sonda, não force: pare e procure orientação.",
     ],
     contact: [
-      "Procure a equipe se houver obstrução persistente, vazamento importante, dor nova, sangramento, secreção, piora da pele ao redor do estoma, vômitos repetidos ou dificuldade para tolerar a dieta.",
-      "Se a gastrostomia deslocar ou sair, procure atendimento imediatamente e não tente recolocá-la em casa.",
+      "Procure a equipe por obstrução persistente, vazamento importante, dor nova, sangramento, secreção, piora da pele, vômitos repetidos ou intolerância à dieta. Se a gastrostomia deslocar ou sair, suspenda dieta, água e medicamentos, procure atendimento imediatamente e não tente recolocá-la em casa: a abertura pode fechar rapidamente. Dor abdominal intensa, febre ou sangramento importante exigem avaliação urgente.",
     ],
   };
 }

@@ -74,6 +74,8 @@ export function readSwallowingSupportContext(value: unknown): SwallowingSupportC
 
 export interface SwallowingSupportGuidance {
   enteralRoute: boolean;
+  enteralTube?: boolean;
+  gastrostomy?: boolean;
   dysphagia?: boolean;
   speechTherapy?: boolean;
   practicalActions: string[];
@@ -84,7 +86,7 @@ export interface SwallowingSupportGuidance {
 /** Individualized SLP assessment and caregiver education: https://www.asha.org/practice-portal/clinical-topics/adult-dysphagia/ */
 export function speechTherapySwallowingGuidance(inFollowUp?: boolean): string {
   return inFollowUp === true
-    ? "Mantenha o acompanhamento com o seu fonoaudiólogo. Converse sobre a segurança para engolir, as consistências de alimentos e líquidos, o ritmo das refeições e as estratégias indicadas para a pessoa. Pratique somente os exercícios e as manobras ensinados por esse profissional."
+    ? "Mantenha o acompanhamento com o seu fonoaudiólogo para segurança ao engolir, consistências, ritmo e estratégias nas refeições. Pratique somente os exercícios e as manobras ensinados por esse profissional."
     : "Se ainda não houver acompanhamento com fonoaudiólogo, converse com a equipe sobre uma avaliação da deglutição para orientar uma alimentação mais segura e confortável.";
 }
 
@@ -95,6 +97,7 @@ export function hasSwallowingSupport(context: SwallowingSupportContext): boolean
 /** Family-facing education; it does not set a feeding route, texture, or prescription. */
 export function swallowingSupportGuidance(
   context: SwallowingSupportContext,
+  options: { includeEnteralCare?: boolean } = {},
 ): SwallowingSupportGuidance | undefined {
   if (!hasSwallowingSupport(context)) return undefined;
 
@@ -136,23 +139,30 @@ export function swallowingSupportGuidance(
     );
   }
 
-  if (context.enteralTube || context.gastrostomy) {
+  if ((context.enteralTube || context.gastrostomy) && options.includeEnteralCare !== false) {
     practicalActions.push(
-      "Antes de iniciar a dieta enteral pela sonda, confira no plano individual a fórmula, o volume, a velocidade e os horários. Não aumente, reduza nem mude o esquema por conta própria; se não conseguir segui-lo, converse com a equipe.",
-      "Durante a dieta, mantenha o tronco elevado conforme a orientação da equipe e pelo período indicado após o término. Se essa orientação não estiver clara ou a posição não for possível, peça ajuda à equipe.",
+      "Na dieta enteral pela sonda, confira a fórmula, o volume, a velocidade e os horários do plano individual. Converse com a equipe se não conseguir segui-lo ou precisar de ajustes.",
+      "Mantenha o tronco elevado durante e após a dieta pelo tempo orientado; peça ajuda se a orientação não estiver clara ou a posição não for possível.",
+    );
+    if (context.enteralTube) caregiverActions.push(
+      "Na sonda nasoenteral, confira a marca externa e a fixação da sonda como a equipe ensinou; mantenha nariz e boca limpos e observe a pele da narina. A marca não garante, sozinha, a posição correta. Se mudar, a sonda sair ou houver dúvida, suspenda dieta, água e remédios até a equipe confirmar a posição; não reposicione em casa.",
+    );
+    if (context.gastrostomy) caregiverActions.push(
+      "Na gastrostomia, cuide da abertura na barriga (estoma): mantenha limpa e seca e observe vermelhidão persistente, dor, secreção, sangramento ou vazamento. Evite puxar a sonda; não ajuste a fixação, gire a sonda nem mexa no balão sem treinamento específico para o modelo e a fase de cicatrização.",
     );
     caregiverActions.push(
-      "Observe se a marca externa e a fixação da sonda permanecem como a equipe ensinou e veja se a pele ao redor da narina está íntegra. Se a sonda sair ou a marca mudar, não a reposicione nem administre dieta ou remédios até receber orientação da equipe.",
       "Antes de triturar comprimidos, abrir cápsulas ou administrar qualquer medicamento pela sonda, confirme com o médico ou farmacêutico se aquela apresentação pode ser usada dessa forma. Não misture medicamentos à fórmula.",
       "Faça a lavagem da sonda somente conforme o plano individual, inclusive quanto ao volume de água. Se essa orientação não estiver registrada, confirme com a equipe, pois a quantidade pode depender das necessidades clínicas da pessoa.",
     );
-    contactGuidance.push(
-      "Avise a equipe prontamente se a sonda sair, mudar de posição, entupir ou vazar, ou se houver irritação/ferida na narina, tosse persistente ou mudança na respiração durante a dieta, vômitos repetidos, dor ou dificuldade para tolerá-la. Falta de ar intensa exige atendimento de urgência.",
-    );
+    if (context.enteralTube) contactGuidance.push("Na sonda nasoenteral, avise prontamente sobre mudança da marca, saída, obstrução, vazamento ou ferida na narina. Não use a sonda com posição duvidosa.");
+    if (context.gastrostomy) contactGuidance.push("Se a gastrostomia deslocar ou sair, pare dieta, água e medicamentos e procure atendimento imediatamente; a abertura pode fechar rapidamente. Não tente recolocar em casa. Dor abdominal intensa, febre ou sangramento importante exigem avaliação urgente.");
+    contactGuidance.push("Avise a equipe por tosse persistente ou mudança na respiração durante a dieta, vômitos repetidos, dor ou intolerância. Falta de ar intensa exige atendimento de urgência.");
   }
 
   return {
     enteralRoute: context.enteralTube || context.gastrostomy,
+    enteralTube: context.enteralTube,
+    gastrostomy: context.gastrostomy,
     dysphagia: context.dysphagia,
     ...(context.speechTherapy !== undefined ? { speechTherapy: context.speechTherapy } : {}),
     practicalActions: [...new Set(practicalActions)],
