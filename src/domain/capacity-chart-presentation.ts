@@ -7,6 +7,25 @@ export const CAPACITY_STATUS_LABEL: Record<CapacityDimensionStatus, string> = {
   attention: "Sinal de atenção", altered: "Redução identificada",
 };
 
+/** Graph selection only: sensory findings remain in the clinical record. */
+export function capacityChartDimensions(dimensions: readonly CapacityDimensionRow[]): CapacityDimensionRow[] {
+  return ["funcionalidade", "cognicao", "locomocao", "psicologico", "vitalidade"].flatMap((code) => {
+    const dimension = dimensions.find((item) => item.code === code);
+    return dimension ? [{ ...dimension, label: code === "psicologico" ? "Humor" : code === "funcionalidade" ? "Funcionalidade" : dimension.label }] : [];
+  });
+}
+
+function presentationKey(cell: CapacityDimensionRow["cells"][number]): string | undefined {
+  if (cell.comparabilityKey) return cell.comparabilityKey;
+  // Convergent ABVD/AIVD (or other co-selected instruments) previously had no
+  // single key, so every segment was suppressed. Require the exact same set
+  // and versions; this connects recorded categories without a composite score
+  // or changing the clinical model's inflection/comparison rules.
+  const selected = cell.assessments.filter((item) => item.selectedForDomainState);
+  if (selected.length < 2) return undefined;
+  return selected.map((item) => `${item.scaleCode}@${item.scaleVersion}`).sort().join("|");
+}
+
 /** Presentation shared by HTML and PDF: never interpolate an unmeasured visit. */
 export function capacityChartSegments(dimension: CapacityDimensionRow) {
   const segments: Array<{ from: string; to: string; crossesUnassessedVisit: boolean }> = [];
@@ -14,10 +33,11 @@ export function capacityChartSegments(dimension: CapacityDimensionRow) {
   let gap = false;
   for (const cell of dimension.cells) {
     if (cell.status === "not-assessed") { if (previous) gap = true; continue; }
-    if (!["preserved", "attention", "altered"].includes(cell.status) || !cell.comparabilityKey) {
+    const key = presentationKey(cell);
+    if (!["preserved", "attention", "altered"].includes(cell.status) || !key) {
       previous = undefined; gap = false; continue;
     }
-    if (previous?.comparabilityKey === cell.comparabilityKey) {
+    if (previous && presentationKey(previous) === key) {
       segments.push({ from: previous.consultationId, to: cell.consultationId, crossesUnassessedVisit: gap });
     }
     previous = cell; gap = false;

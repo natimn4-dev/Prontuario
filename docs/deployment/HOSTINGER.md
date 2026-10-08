@@ -72,9 +72,9 @@ O endpoint público de health check deve responder HTTP 200 e incluir:
 
 - `status: "ok"`
 - `database: "ok"`
-- `releaseId: "2026-10-07-escalas-por-consulta-v1"`
+- `releaseId: "2026-10-08-cinco-dominios-linhas-v1"`
 
-Nesta release, o histórico aparece a partir da segunda consulta quando existe resultado registrado. Tela e PDF compartilham os trechos comparáveis, incluindo lacunas tracejadas; escores originais, datas e estados ausentes permanecem explícitos. Marcadores coincidentes são separados sem mudar sua âncora temporal. O PDF divide históricos longos em blocos e usa texto de 11 pt na seção longitudinal. Não há migration de banco nesta release.
+Nesta release, somente Funcionalidade, Cognição, Locomoção, Humor e Vitalidade geram gráficos. Estados convergentes conectam o mesmo conjunto de instrumentos e versões; visão e audição permanecem registradas sem gráficos. O histórico aparece a partir da segunda consulta quando existe resultado registrado. Tela e PDF compartilham os trechos comparáveis, incluindo lacunas tracejadas; escores originais, datas e estados ausentes permanecem explícitos. Marcadores coincidentes são separados sem mudar sua âncora temporal. O PDF divide históricos longos em blocos e usa texto de 11 pt na seção longitudinal. Não há migration de banco nesta release.
 
 O `releaseId` é deliberadamente servido com `Cache-Control: no-store`; uma CDN ou proxy não deve reutilizar um identificador antigo para declarar a implantação como atual. O smoke também exige esse header antes de aceitar a resposta de health.
 

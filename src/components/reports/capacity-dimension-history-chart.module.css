@@ -264,7 +264,7 @@
 }
 
 .statusGuide {
-  stroke-dasharray: none;
+  stroke-dasharray: 4 5;
   opacity: .9;
 }
 
@@ -278,10 +278,16 @@
 .seriesLine {
   fill: none;
   stroke: currentColor;
-  stroke-width: 2.2;
+  stroke-width: 3;
   stroke-linejoin: round;
   stroke-linecap: round;
-  opacity: .82;
+  opacity: 1;
+}
+
+.statusAxisLabel {
+  fill: #514b55;
+  font-family: "Segoe UI", Arial, sans-serif;
+  font-size: 11px;
 }
 
 .seriesLine[data-gap="unassessed"] {
@@ -300,9 +306,9 @@
   stroke-width: 2;
 }
 
-.seriesPoint[data-status="preserved"] { fill: #edf7f1; }
-.seriesPoint[data-status="attention"] { fill: #fff7e8; }
-.seriesPoint[data-status="altered"] { fill: #faecee; }
+.seriesPoint[data-status="preserved"],
+.seriesPoint[data-status="attention"],
+.seriesPoint[data-status="altered"] { fill: currentColor; }
 
 .inflectionHalo {
   fill: none;
@@ -488,6 +494,25 @@
 
   .timelineCanvas {
     padding: 7px;
+    width: 100% !important;
+    box-sizing: border-box;
+  }
+
+  .dimensionRow {
+    display: block;
+  }
+
+  .dimensionSummary {
+    min-height: auto;
+  }
+
+  .domainChart {
+    width: 100%;
+    height: auto;
+  }
+
+  .dateRow {
+    display: none;
   }
 
   .dimensionSummary strong {
@@ -495,7 +520,8 @@
   }
 
   .frameworkHeader {
-    grid-template-columns: 190px minmax(0, 1fr);
+    grid-template-columns: 1fr;
+    gap: 4px;
   }
 
   .readingGuide {
@@ -616,3 +642,6 @@
   .latestState small { overflow-wrap: anywhere; }
   .dimensionRow { overflow: visible; }
 }
+
+.domainDateLabel { fill: var(--muted); font: 11px "Segoe UI", Arial, sans-serif; }
+@media print { .domainDateLabel { display: none; } }

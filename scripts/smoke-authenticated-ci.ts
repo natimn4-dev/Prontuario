@@ -477,6 +477,17 @@ async function verifyFollowUpScaleIsolation() {
     assert.equal(Number(current.scoreNumeric), 0);
     assert.equal(Number(initial.scoreNumeric), 6);
     await page.screenshot({ path: "/tmp/prontuario-onco-follow-up-scales-synthetic.png", fullPage: true });
+    await page.goto(`${baseUrl}/patients/${assignedPatientId}`, { waitUntil: "domcontentloaded" });
+    const chart = page.locator('[data-chart="line-small-multiples"]');
+    await chart.waitFor();
+    assert.deepEqual(await chart.locator('[data-dimension]').evaluateAll((rows) => [...new Set(rows.map((row) => row.getAttribute("data-dimension")))]), ["funcionalidade", "cognicao", "locomocao", "psicologico", "vitalidade"]);
+    const segment = chart.locator('[data-dimension="funcionalidade"] polyline').first();
+    await segment.waitFor();
+    const renderedLine = await segment.evaluate((line) => ({ stroke: getComputedStyle(line).stroke, width: line.getBoundingClientRect().width, height: line.getBoundingClientRect().height }));
+    assert.notEqual(renderedLine.stroke, "none");
+    assert.ok(renderedLine.width > 0 && renderedLine.height > 0, "Resultados persistidos da primeira e segunda consultas devem produzir uma linha visível.");
+    assert.equal(await chart.locator('[data-dimension="audicao"], [data-dimension="visao"]').count(), 0);
+    await page.screenshot({ path: "/tmp/prontuario-onco-five-domain-lines-synthetic.png", fullPage: true });
     assert.deepEqual(errors, []);
   } finally {
     await browser.close();

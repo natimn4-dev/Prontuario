@@ -49,3 +49,38 @@ test("zero remains measured and missing score is never replaced with zero", () =
   assert.match(capacityRecordedResults(cognition.cells[0]!)[0]!, /: 0/);
   assert.match(capacityRecordedResults(cognition.cells[1]!)[0]!, /sem escore numérico/);
 });
+
+test("convergent instruments keep a visible segment without changing the clinical model", () => {
+  const assessments = [1, 2, 3].flatMap((number) => ["lawton", "barthel"].map((scaleCode) => ({ ...assessment(number, 5), scaleCode })));
+  const history = buildCapacityDimensionHistory({ patientId: "synthetic", consultations, assessments });
+  const functionality = history.dimensions.find((item) => item.code === "funcionalidade")!;
+  assert.equal(functionality.cells[0]!.comparabilityKey, undefined);
+  assert.deepEqual(capacityChartSegments(functionality), [
+    { from: "c1", to: "c2", crossesUnassessedVisit: false },
+    { from: "c2", to: "c3", crossesUnassessedVisit: false },
+  ]);
+  assert.equal(history.inflectionPoints.length, 0);
+  const changedVersion = structuredClone(functionality);
+  changedVersion.cells[1]!.assessments[0]!.scaleVersion = "2";
+  assert.deepEqual(capacityChartSegments(changedVersion), []);
+  const changedSet = structuredClone(functionality);
+  changedSet.cells[1]!.assessments.pop();
+  assert.deepEqual(capacityChartSegments(changedSet), []);
+});
+
+test("discordant instruments remain disconnected and an unmeasured visit is dashed", () => {
+  const history = buildCapacityDimensionHistory({ patientId: "synthetic", consultations, assessments: [1, 3].flatMap((number) => ["lawton", "barthel"].map((scaleCode) => ({ ...assessment(number, 5), scaleCode }))) });
+  const functionality = history.dimensions.find((item) => item.code === "funcionalidade")!;
+  assert.deepEqual(capacityChartSegments(functionality), [{ from: "c1", to: "c3", crossesUnassessedVisit: true }]);
+  functionality.cells[2]!.status = "indeterminate";
+  assert.deepEqual(capacityChartSegments(functionality), []);
+});
+
+test("only the five requested domains generate graphs, preserving sensory records", async () => {
+  const { capacityChartDimensions } = await import("../../src/domain/capacity-chart-presentation.ts");
+  const history = buildCapacityDimensionHistory({ patientId: "synthetic", consultations, assessments: [assessment(1, 25), { ...assessment(2, 1), scaleCode: "hearing", scaleVersion: "hearing-v1" }] });
+  assert.deepEqual(capacityChartDimensions(history.dimensions).map((item) => item.code), ["funcionalidade", "cognicao", "locomocao", "psicologico", "vitalidade"]);
+  assert.equal(history.dimensions.find((item) => item.code === "audicao")!.cells[1]!.assessments.length, 1);
+  const sensoryOnly = buildCapacityDimensionHistory({ patientId: "synthetic", consultations, assessments: [{ ...assessment(2, 1), scaleCode: "hearing", scaleVersion: "hearing-v1" }] });
+  assert.equal(hasDisplayableLongitudinalHistory({ ...sensoryOnly, dimensions: capacityChartDimensions(sensoryOnly.dimensions) }), false);
+});

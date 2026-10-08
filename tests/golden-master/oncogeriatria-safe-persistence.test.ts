@@ -142,7 +142,7 @@ test("pontos de inflexão usam associação temporal sem atribuir causalidade", 
   assert.match(chart, /Sem motivo associado registrado nesta consulta/);
   assert.match(chart, /não atribui causalidade/);
   assert.match(chart, /não reaplicada na mais recente/);
-  assert.match(chart, /mesmo instrumento e versão/);
+  assert.match(chart, /mesmos instrumentos e versões/);
 });
 
 test("relatório mostra tabela cronológica completa sem reduzir trajetória a três momentos", async () => {

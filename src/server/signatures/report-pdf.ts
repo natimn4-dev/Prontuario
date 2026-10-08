@@ -1,4 +1,4 @@
-import { CAPACITY_STATUS_LABEL, capacityChartPositions, capacityChartSegments, capacityRecordedResults } from "../../domain/capacity-chart-presentation.ts";
+import { CAPACITY_STATUS_LABEL, capacityChartDimensions, capacityChartPositions, capacityChartSegments, capacityRecordedResults } from "../../domain/capacity-chart-presentation.ts";
 import type { AgaReportModel } from "@/domain/aga-report";
 import {
   hasDisplayableLongitudinalHistory,
@@ -580,8 +580,8 @@ class StyledPdfBuilder {
 
   private statusY(status: CapacityDimensionStatus, top: number): number {
     if (status === "preserved") return top - 10;
-    if (status === "altered") return top - 36;
-    return top - 23;
+    if (status === "altered") return top - 94;
+    return top - 52;
   }
 
   private statusColor(status: CapacityDimensionStatus): string {
@@ -593,7 +593,8 @@ class StyledPdfBuilder {
   }
 
   drawCapacityChart(history: CapacityDimensionHistory): void {
-    if (!hasDisplayableLongitudinalHistory(history)) return;
+    const dimensions = capacityChartDimensions(history.dimensions);
+    if (!hasDisplayableLongitudinalHistory({ ...history, dimensions })) return;
     this.sectionHeading("3", "Evolução da capacidade e da independência funcional");
     const paragraph = (value: string, bold = false) => {
       for (const line of this.wrappedLines(value, CONTENT_WIDTH, 11, bold)) {
@@ -603,7 +604,7 @@ class StyledPdfBuilder {
       }
       this.y -= 5;
     };
-    paragraph("As faixas não mostram todas as mudanças de pontuação. Os resultados originais estão registrados abaixo. A linha só conecta o mesmo instrumento e versão. Trecho tracejado: consulta intermediária sem reaplicação, sem inferir estabilidade no intervalo.");
+    paragraph("As faixas não mostram todas as mudanças de pontuação. Os resultados originais estão registrados abaixo. A linha só conecta os mesmos instrumentos e versões. Trecho tracejado: consulta intermediária sem reaplicação, sem inferir estabilidade no intervalo.");
     paragraph("Marcadores próximos são deslocados para evitar sobreposição; os números identificam as consultas e suas datas abaixo. O traço cinza indica a posição temporal original.");
     paragraph(`Metodologia: ${history.methodologyVersion}`);
     const labelWidth = 185;
@@ -616,14 +617,14 @@ class StyledPdfBuilder {
       paragraph(`Consultas ${start + 1} a ${start + consultations.length}`, true);
       const positions = capacityChartPositions(consultations, chartX + 12, chartX + chartWidth - 12);
       const xById = new Map(positions.map((item) => [item.id, item.x]));
-      for (const dimension of history.dimensions) {
+      for (const dimension of dimensions) {
         const latest = [...dimension.cells].reverse().find((cell) => cell.assessments.length > 0);
         const latestDate = history.consultations.find((item) => item.id === latest?.consultationId)?.occurredAt;
         const summary = latest ? `Último: ${CAPACITY_STATUS_LABEL[latest.status]}` : "Sem resultados registrados";
         const detail = latestDate ? `${formatShortDate(latestDate)}${latest?.consultationId !== history.consultations.at(-1)?.id ? " · não reaplicada na mais recente" : ""}` : "";
         const summaryLines = this.wrappedLines(summary, labelWidth - 16, 11);
         const detailLines = this.wrappedLines(detail, labelWidth - 16, 11);
-        const height = Math.max(105, 32 + (summaryLines.length + detailLines.length) * 14);
+        const height = Math.max(160, 32 + (summaryLines.length + detailLines.length) * 14);
         this.ensureSpace(height + 7);
         const top = this.y;
         this.fillRect(MARGIN, top - height, CONTENT_WIDTH, height, "#fcfbfd");
@@ -633,7 +634,14 @@ class StyledPdfBuilder {
         cursor -= this.drawWrappedAt(summary, MARGIN + 7, cursor, labelWidth - 16, 11, 14);
         this.drawWrappedAt(detail, MARGIN + 7, cursor - 3, labelWidth - 16, 11, 14);
         const guideTop = top - 18;
-        [10, 23, 36].forEach((offset) => this.line(chartX + 6, guideTop - offset, chartX + chartWidth - 6, guideTop - offset, COLORS.line, 0.55));
+        [10, 52, 94].forEach((offset) => this.line(chartX + 6, guideTop - offset, chartX + chartWidth - 6, guideTop - offset, COLORS.line, 0.55));
+        this.line(chartX + 6, guideTop, chartX + 6, guideTop - 110, COLORS.muted, 0.7);
+        this.line(chartX + 6, guideTop - 110, chartX + chartWidth - 6, guideTop - 110, COLORS.muted, 0.7);
+        for (const position of positions) {
+          this.page.commands.push("q", "[2 3] 0 d");
+          this.line(position.x, guideTop, position.x, guideTop - 110, COLORS.line, 0.55);
+          this.page.commands.push("Q");
+        }
         for (const segment of capacityChartSegments(dimension)) {
           const x1 = xById.get(segment.from), x2 = xById.get(segment.to);
           if (x1 === undefined || x2 === undefined) continue;
@@ -673,8 +681,8 @@ class StyledPdfBuilder {
         paragraph(`${dimension.label}: ${CAPACITY_STATUS_LABEL[cell.status]}. ${capacityRecordedResults(cell).join("; ")}`);
       }
     });
-    if (history.inflectionPoints.length) paragraph("Pontos de inflexão e contexto documentado", true);
-    for (const point of history.inflectionPoints) {
+    if (history.inflectionPoints.some((point) => dimensions.some((dimension) => dimension.code === point.dimensionCode))) paragraph("Pontos de inflexão e contexto documentado", true);
+    for (const point of history.inflectionPoints.filter((point) => dimensions.some((dimension) => dimension.code === point.dimensionCode))) {
       const context = point.milestones.length ? point.milestones.map((item) => item.note ? `${item.title} — ${item.note}` : item.title).join("; ") : "Motivo não registrado";
       paragraph(`${formatShortDate(point.occurredAt)} · ${point.dimensionLabel} — ${point.direction === "worsened" ? "piora observada" : "melhora observada"} de faixa. Contexto registrado: ${context}.`);
     }
