@@ -127,11 +127,11 @@ const DOMAIN_CONTENT: Readonly<Record<IntrinsicCapacityDomainCode, Omit<Intrinsi
     label: "Vitalidade",
     whyItMatters: "Vitalidade representa a reserva que o organismo usa para enfrentar doenças e manter as atividades do dia. O estado nutricional e os sinais de possível perda de força muscular são acompanhados junto com a funcionalidade e as demais condições de saúde.",
     actions: [
-      "Para tornar as refeições mais agradáveis e menos cansativas, ofereça porções menores ao longo do dia quando refeições grandes forem difíceis. Valorize alimentos de que a pessoa gosta, respeite o ritmo da refeição e procure manter esse momento tranquilo e prazeroso.",
-      "Ofereça líquidos várias vezes ao longo do dia, em pequenas quantidades e nos horários de melhor aceitação. Se foi combinado um limite diário de líquidos, distribua essa quantidade ao longo do dia para facilitar a hidratação sem ultrapassar o volume recomendado.",
-      "Observe sinais simples que podem mostrar perda de força ou de reserva: roupas ficando mais folgadas, porções menores, falta de apetite, dificuldade para mastigar ou engolir e cansaço maior durante as refeições.",
-      "Se a avaliação indicar maior risco de perda de força muscular, converse com a equipe sobre uma avaliação mais completa de força, mobilidade e nutrição. Esse resultado é um sinal de atenção e, sozinho, não confirma sarcopenia.",
-      "Ajude a pessoa a continuar ativa nas tarefas que fazem parte da sua rotina e que consegue realizar com segurança. Exercícios de força e movimentos funcionais podem ser incluídos de forma gradual, respeitando a capacidade, o equilíbrio e o risco de quedas.",
+      "Para refeições mais agradáveis e menos cansativas, ofereça porções menores se necessário, alimentos preferidos e um ambiente tranquilo, respeitando o ritmo da pessoa.",
+      "Ofereça líquidos várias vezes ao longo do dia, em pequenas quantidades e nos horários de melhor aceitação. Se foi combinado um limite diário de líquidos, distribua-o sem ultrapassar o volume recomendado.",
+      "Observe roupas mais folgadas, porções menores, falta de apetite, dificuldade de mastigar ou engolir e cansaço nas refeições.",
+      "Se a avaliação indicar maior risco de perda de força muscular, converse sobre avaliar força, mobilidade e nutrição. O resultado, sozinho, não confirma sarcopenia.",
+      "Preserve tarefas e movimentos seguros; inclua exercícios de força gradualmente, respeitando capacidade, equilíbrio e risco de quedas.",
     ],
     attentionSigns: [
       "Procure a equipe se houver perda de peso sem intenção, apetite muito menor, redução persistente da alimentação, perda de força, quedas repetidas ou cansaço que esteja aumentando.",

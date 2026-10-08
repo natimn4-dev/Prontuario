@@ -107,6 +107,8 @@ export function sanitizeFamilyReportModel(report: AgaReportModel): AgaReportMode
     ...(report.swallowingSupportCare ? {
       swallowingSupportCare: {
         enteralRoute: report.swallowingSupportCare.enteralRoute,
+        enteralTube: report.swallowingSupportCare.enteralTube,
+        gastrostomy: report.swallowingSupportCare.gastrostomy,
         dysphagia: report.swallowingSupportCare.dysphagia,
         speechTherapy: report.swallowingSupportCare.speechTherapy,
         practicalActions: filterFamilySafeCareItems(report.swallowingSupportCare.practicalActions),

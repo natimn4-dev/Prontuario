@@ -78,8 +78,8 @@ type DomainGuidance = {
 
 const ENTERAL_NUTRITION_GUIDANCE: DomainGuidance = {
   actions: [
-    "Na dieta pela sonda, siga o plano individual: confira fórmula, volume, velocidade e horários; não faça ajustes por conta própria e avise a equipe se não conseguir administrar como orientado.",
-    "Durante a dieta, mantenha o tronco elevado conforme a orientação da equipe e pelo período indicado após o término. Se essa orientação não estiver clara ou a posição não for possível, peça ajuda à equipe.",
+    "Na dieta pela sonda, siga fórmula, volume, velocidade e horários do plano individual; converse com a equipe se não conseguir segui-lo ou precisar de ajustes.",
+    "Mantenha o tronco elevado durante e após a dieta pelo tempo orientado; peça ajuda se a orientação não estiver clara ou a posição não for possível.",
     "Ofereça alimentos ou líquidos pela boca somente se o plano atual da equipe liberar, respeitando a consistência e a quantidade nele descritas.",
   ],
   evidenceReferences: [
@@ -160,9 +160,9 @@ const FRAILTY_GUIDANCE: Readonly<Record<FrailtyGuidanceProfile, DomainGuidance>>
 const COGNITIVE_SCREEN_GUIDANCE: Readonly<Record<"preserved" | "attention" | "altered", DomainGuidance>> = {
   preserved: {
     actions: [
-      "A avaliação da memória e do raciocínio nesta consulta foi tranquilizadora. Mantenha a autonomia nas atividades habituais e a participação ativa nas decisões, na organização da rotina e nas escolhas do dia a dia.",
-      "Para fortalecer a reserva cognitiva, incentive atividades que tragam interesse e desafio na medida certa: aprender algo novo, ler e conversar sobre o que leu, praticar música, jogos de estratégia, trabalhos manuais, cursos ou outras atividades de que a pessoa goste. Atividade física e convívio social também fazem parte desse cuidado.",
-      "Uma alimentação saudável, sono de boa qualidade, atividade física, convívio social e cuidado com visão e audição ajudam a proteger a saúde do cérebro. Se aparecer uma mudança persistente de memória, raciocínio ou autonomia, vale reavaliar.",
+      "A avaliação da memória e do raciocínio nesta consulta foi tranquilizadora. Mantenha a autonomia nas atividades habituais e a participação ativa nas decisões e escolhas do dia a dia.",
+      "Fortaleça a reserva cognitiva com atividades prazerosas e desafiadoras: aprender, ler e conversar, música, jogos de estratégia, trabalhos manuais ou cursos. Inclua atividade física e convívio social.",
+      "Alimentação saudável, sono de boa qualidade e cuidado com visão e audição protegem a saúde do cérebro. Reavalie se houver mudança persistente de memória, raciocínio ou autonomia.",
     ],
     evidenceReferences: [
       {
@@ -193,8 +193,8 @@ const COGNITIVE_SCREEN_GUIDANCE: Readonly<Record<"preserved" | "attention" | "al
   },
   attention: {
     actions: [
-      "A avaliação da memória e do raciocínio mostrou um sinal de atenção. Isso não significa, sozinho, diagnóstico de demência. Vale aprofundar a avaliação considerando escolaridade, mudanças percebidas no dia a dia, autonomia, humor, sono, visão, audição, medicamentos e outras causas que possam afetar a cognição.",
-      "Mantenha a autonomia no que continua sendo feito com segurança. Nas tarefas em que começaram a aparecer erros ou insegurança, ofereça apoio de forma discreta e proporcional à dificuldade, enquanto a avaliação é aprofundada.",
+      "A avaliação da memória e do raciocínio mostrou um sinal de atenção. Isso não significa, sozinho, diagnóstico de demência. Converse sobre aprofundar a avaliação de escolaridade, mudanças no dia a dia, autonomia, humor, sono, visão, audição, medicamentos e outras causas.",
+      "Preserve a autonomia nas tarefas seguras; ofereça apoio de forma discreta e proporcional à dificuldade onde surgirem erros ou insegurança enquanto a avaliação é aprofundada.",
     ],
     evidenceReferences: [{
       label: "Diretriz DETeCD-ADRD para avaliação diagnóstica de suspeita de comprometimento cognitivo",
@@ -205,8 +205,8 @@ const COGNITIVE_SCREEN_GUIDANCE: Readonly<Record<"preserved" | "attention" | "al
   },
   altered: {
     actions: [
-      "A avaliação da memória e do raciocínio mostrou alterações importantes e merece ser aprofundada, mas esse resultado, sozinho, não define diagnóstico de demência nem sua causa. A investigação deve considerar a história das mudanças, a autonomia no dia a dia, humor, sono, visão, audição, medicamentos e outras condições que possam interferir na cognição.",
-      "Se já houver erros em medicamentos, finanças, deslocamentos ou outras tarefas de risco, ofereça ajuda direta nessas situações e preserve a participação no que ainda é seguro. Confusão, sonolência ou piora cognitiva que apareça de repente precisa de avaliação rápida.",
+      "A avaliação da memória e do raciocínio mostrou alterações importantes. O resultado, sozinho, não define diagnóstico de demência nem sua causa. Investigue a história das mudanças, autonomia, humor, sono, visão, audição, medicamentos e outras condições.",
+      "Se houver erros em medicamentos, finanças ou deslocamentos, ofereça ajuda direta nessas situações, preservando as tarefas seguras. Confusão, sonolência ou piora cognitiva súbita exige avaliação rápida.",
     ],
     evidenceReferences: [{
       label: "Diretriz DETeCD-ADRD para avaliação diagnóstica de suspeita de comprometimento cognitivo",
@@ -378,11 +378,6 @@ const CORNELL_DEMENTIA_DEPRESSION_EVIDENCE: readonly IntrinsicCapacityEvidenceRe
     url: "https://pubmed.ncbi.nlm.nih.gov/3337862/",
     relevance: "Instrumento clínico desenvolvido para avaliar sinais de depressão em pessoas com demência combinando entrevista e observação clínica.",
   },
-];
-
-const IADL_FAMILY_GUIDANCE: readonly string[] = [
-  "Algumas atividades mais complexas, como finanças, compras, transporte, organização da casa e medicamentos, podem precisar de ajuda por perto. Preserve o que a pessoa ainda faz bem e ofereça apoio apenas onde começaram a aparecer erros ou insegurança.",
-  "Mantenha a participação da pessoa nas decisões e tarefas que continuam possíveis. Aumente a ajuda aos poucos, apenas onde a dificuldade realmente apareceu.",
 ];
 
 function unique(items: readonly string[]): string[] {
@@ -949,7 +944,7 @@ function shouldShowFamilyResult(scale: AgaScaleReportSection): boolean {
 export function buildReportDomainSummaries(
   scales: readonly AgaScaleReportSection[],
   intrinsicCapacity: IntrinsicCapacityGuidance,
-  swallowingSupport?: { enteralRoute: boolean; dysphagia?: boolean; speechTherapy?: boolean },
+  swallowingSupport?: { enteralRoute: boolean; enteralTube?: boolean; gastrostomy?: boolean; dysphagia?: boolean; speechTherapy?: boolean },
 ): ReportDomainSummary[] {
   const grouped = new Map<string, AgaScaleReportSection[]>();
   for (const scale of scales.filter((item) => item.assessedInTargetConsultation)) {
@@ -1025,12 +1020,9 @@ export function buildReportDomainSummaries(
       && dimensionScales.some((scale) => scale.assessedInTargetConsultation && scale.code === "cornell");
     const gdsScore = dimension === "humor" ? currentGdsScore(dimensionScales) : undefined;
     const isAlteredGds = !hasCornell && typeof gdsScore === "number" && gdsScore >= 6;
-    const isIadlSupport = dimension === "funcionalidade" && functionalContext.level === "iadl-support";
     // Imobilidade contextualiza mobilidade, mas não pode apagar a orientação de
     // Funcionalidade derivada de Katz/Barthel/Lawton.
-    const contextualGuidance = isIadlSupport
-      ? IADL_FAMILY_GUIDANCE
-      : isAlteredGds
+    const contextualGuidance = isAlteredGds
         ? LATE_LIFE_DEPRESSION_GUIDANCE
         : dimension === "funcionalidade"
           ? functionallyContextualized
@@ -1045,7 +1037,12 @@ export function buildReportDomainSummaries(
     const nutritionFollowUp = dimension === "nutricao" && (swallowingSupport?.dysphagia || swallowingSupport?.enteralRoute)
       ? speechTherapySwallowingGuidance(swallowingSupport.speechTherapy) : undefined;
     const contextGuidance = enteralNutritionGuidance
-      ? [...enteralNutritionGuidance.actions, ...(nutritionFollowUp ? [nutritionFollowUp] : [])]
+      ? [
+          ...enteralNutritionGuidance.actions,
+          ...(swallowingSupport?.enteralTube ? ["Sonda nasoenteral: cuide da narina e da fixação; confira a marca externa como ensinado. Se a marca mudar, a sonda sair ou houver dúvida sobre a posição, suspenda dieta, água e medicamentos até confirmação pela equipe; não reposicione em casa."] : []),
+          ...(swallowingSupport?.gastrostomy ? ["Gastrostomia: mantenha a abertura na barriga (estoma) limpa e seca; observe dor, vermelhidão, secreção ou vazamento. Evite tração e só manipule fixação ou balão com treinamento. Se sair ou deslocar, suspenda o uso e procure atendimento imediatamente; não recoloque em casa."] : []),
+          ...(nutritionFollowUp ? [nutritionFollowUp] : []),
+        ]
       : nutritionFollowUp && !targetedGuidance
         ? [nutritionFollowUp, ...contextualGuidance] : contextualGuidance;
     const dementiaGuidance = dimension === "cognicao" && state !== "preserved"
@@ -1055,7 +1052,7 @@ export function buildReportDomainSummaries(
     const completeContextGuidance = dementiaGuidance
       ? unique([...contextGuidance, ...targetedCognitiveGuidance(dimensionScales), ...npiNonPharmacologicalGuidance(dimensionScales)])
       : contextGuidance;
-    const guidanceLimit = dimension === "cognicao"
+    const guidanceLimit = dimension === "funcionalidade" ? completeContextGuidance.length : dimension === "cognicao"
       ? dementiaGuidance ? completeContextGuidance.length : state === "preserved"
         ? 3
         : (npiPositiveDomains(dimensionScales).length > 0 ? 5 : targetedCognitiveGuidance(dimensionScales).length > 0 ? 4 : 2)

@@ -25,6 +25,8 @@ export interface AgaReportGastrostomyCare {
 
 export interface AgaReportSwallowingSupportCare {
   enteralRoute: boolean;
+  enteralTube?: boolean;
+  gastrostomy?: boolean;
   dysphagia?: boolean;
   speechTherapy?: boolean;
   practicalActions: string[];
@@ -74,8 +76,14 @@ export function buildAgaReportCareSections(input: {
 
   const gastrostomyPresent = input.gastrostomyPresent || Boolean(input.swallowingSupport?.gastrostomy);
   const gastrostomyGuidance = gastrostomyPresent ? gastrostomyFamilyGuidance() : undefined;
-  const swallowingGuidance = input.swallowingSupport
-    ? swallowingSupportGuidance(input.swallowingSupport)
+  const swallowingContext = input.swallowingSupport
+    ? { ...input.swallowingSupport, gastrostomy: gastrostomyPresent }
+    : gastrostomyPresent ? { dysphagia: false, adaptedDiet: false, enteralTube: false, gastrostomy: true } : undefined;
+  const swallowingGuidance = swallowingContext
+    ? swallowingSupportGuidance(swallowingContext, {
+        // The dedicated GTT section owns diet/medication/stoma care; avoid duplication.
+        includeEnteralCare: !gastrostomyPresent || swallowingContext.enteralTube,
+      })
     : undefined;
 
   return {

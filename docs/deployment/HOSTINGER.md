@@ -72,9 +72,9 @@ O endpoint público de health check deve responder HTTP 200 e incluir:
 
 - `status: "ok"`
 - `database: "ok"`
-- `releaseId: "2026-10-08-graficos-reaplicacao-v1"`
+- `releaseId: "2026-10-08-orientacoes-funcionalidade-vias-v1"`
 
-Nesta release, o gráfico exige escalas registradas em duas consultas distintas no mesmo domínio. Retornos sem reaplicação preservam resultados anteriores, mas não habilitam um gráfico novo. Visão e audição permanecem no registro clínico, sem gráficos. Os resultados longitudinais permanecem em tabela, sem linhas para avaliações ausentes. Tela e PDF compartilham os trechos comparáveis, incluindo lacunas tracejadas; escores originais, datas e estados ausentes permanecem explícitos. Marcadores coincidentes são separados sem mudar sua âncora temporal. O PDF divide históricos longos em blocos e usa texto de 11 pt na seção longitudinal. Não há migration de banco nesta release.
+Nesta release, as orientações familiares de funcionalidade consideram Barthel e Lawton da consulta atual, sem corte arbitrário após dois itens. Cognição, vitalidade e cuidados enterais usam redação mais concisa. A nutrição diferencia cuidados de sonda nasoenteral (narina, fixação e posicionamento) e gastrostomia (estoma, proteção e deslocamento), preservando os sinais de alerta e evitando duplicação dos cuidados de GTT. Tabelas, SOAP, pontuações e classificações históricas são preservados. Não há migration de banco nesta release.
 
 O `releaseId` é deliberadamente servido com `Cache-Control: no-store`; uma CDN ou proxy não deve reutilizar um identificador antigo para declarar a implantação como atual. O smoke também exige esse header antes de aceitar a resposta de health.
 

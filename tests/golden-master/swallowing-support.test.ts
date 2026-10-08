@@ -75,6 +75,34 @@ test("orientações mudam somente conforme as opções registradas e não prescr
   assert.equal(swallowingSupportGuidance({ dysphagia: false, adaptedDiet: false, enteralTube: false, gastrostomy: false }), undefined);
 });
 
+test("vias enterais preservam cuidados próprios sem confundir estoma com narina", () => {
+  const base = { dysphagia: false, adaptedDiet: false, enteralTube: false, gastrostomy: false };
+  for (const [route, include, exclude] of [
+    ["enteralTube", /narina.*posição correta|marca externa/s, /estoma|balão/],
+    ["gastrostomy", /estoma.*balão/s, /narina|nasoenteral/],
+  ] as const) {
+    const context = { ...base, [route]: true };
+    const saved = mergeStoredSwallowingSupportContext({}, context, "2026-10-08T23:00:00Z");
+    const reloaded = readSwallowingSupportContext(saved.swallowingSupportContext)!;
+    const care = swallowingSupportGuidance(reloaded)!;
+    assert.deepEqual(care, swallowingSupportGuidance(context));
+    const text = [...care.practicalActions, ...care.caregiverActions, ...care.contactGuidance].join(" ");
+    assert.match(text, include);
+    assert.doesNotMatch(text, exclude);
+    assert.doesNotMatch(text, /\d+\s*mL|gire.*diariamente/i);
+    assert.match(text, /dieta, água e remédios|dieta, água e medicamentos/);
+  }
+});
+
+test("relatório com gastrostomia registrada na via de medicação contextualiza nutrição e não duplica dieta", () => {
+  const care = buildAgaReportCareSections({ gastrostomyPresent: true, savedPlan: undefined, problems: [] });
+  assert.equal(care.swallowingSupportCare?.gastrostomy, true);
+  assert.equal(care.swallowingSupportCare?.enteralTube, false);
+  assert.doesNotMatch(care.swallowingSupportCare?.caregiverActions.join(" ") ?? "", /narina|estoma/);
+  assert.match(care.gastrostomyCare?.caregiverActions.join(" ") ?? "", /estoma/);
+  assert.doesNotMatch(care.swallowingSupportCare?.practicalActions.join(" ") ?? "", /fórmula|volume|velocidade/);
+});
+
 test("Nutrição no relatório substitui a orientação oral genérica quando a via enteral está marcada", () => {
   const report = buildAgaReportModel({
     patientId: "synthetic-enteral-patient",
@@ -127,6 +155,8 @@ test("Nutrição no relatório substitui a orientação oral genérica quando a 
   assert.match(guidance, /fórmula, volume, velocidade e horários/i);
   assert.match(guidance, /tronco elevado/i);
   assert.match(guidance, /somente se o plano atual da equipe liberar/i);
+  assert.match(guidance, /Sonda nasoenteral.*narina/s);
+  assert.doesNotMatch(guidance, /estoma|balão/);
   assert.doesNotMatch(guidance, /Ofereça alimentos e líquidos com a ajuda necessária/i);
   assert.doesNotMatch(guidance, /voz molhada depois de engolir/i);
   assert.ok(nutrition?.evidenceReferences.some((reference) => reference.pmid === "35007816"));
@@ -154,7 +184,7 @@ test("relatório inclui orientações de deglutição e cuidado de GTT apenas qu
     savedPlan: null,
     problems: [],
   });
-  assert.ok(gtt.swallowingSupportCare?.practicalActions.some((item) => /dieta enteral/i.test(item)));
+  assert.ok(gtt.gastrostomyCare?.practicalActions.some((item) => /dieta enteral/i.test(item)));
   assert.ok(gtt.gastrostomyCare?.practicalActions.some((item) => /mãos/i.test(item)));
 
   const report = buildAgaReportModel({
@@ -168,7 +198,20 @@ test("relatório inclui orientações de deglutição e cuidado de GTT apenas qu
   const accessibleText = renderAccessibleAgaReportText({ ...report, ...gtt });
   assert.match(accessibleText, /DEGLUTIÇÃO E FORMA DE ALIMENTAÇÃO/);
   assert.match(accessibleText, /CUidados com GASTROSTOMIA/i);
-  assert.match(accessibleText, /triturar comprimidos/i);
+  assert.match(accessibleText, /triturar um comprimido/i);
+  const safe = sanitizeFamilyReportModel({ ...report, ...gtt });
+  assert.equal(safe.swallowingSupportCare?.gastrostomy, true);
+  const eat10Report = buildAgaReportModel({
+    patientId: "synthetic-patient", consultationId: "synthetic-consultation",
+    consultationStatus: "DRAFT", patientName: "Paciente de teste",
+    longitudinalProblems: [], longitudinalAssessments: [{
+      patientId: "synthetic-patient", consultationId: "synthetic-consultation",
+      scaleCode: "eat10", scaleVersion: "1.0", score: 3, color: "vermelho", appliedAt: "2026-10-08",
+    }],
+  });
+  const nutrition = buildReportDomainSummaries(eat10Report.assessedScales, eat10Report.intrinsicCapacity, safe.swallowingSupportCare).find((domain) => domain.code === "nutricao");
+  assert.match(nutrition?.guidance.join(" ") ?? "", /Gastrostomia.*estoma/s);
+  assert.doesNotMatch(nutrition?.guidance.join(" ") ?? "", /narina|nasoenteral/);
 });
 
 test("orientações registram fontes PubMed sobre disfagia geriátrica, dieta adaptada e segurança de fármacos", () => {
