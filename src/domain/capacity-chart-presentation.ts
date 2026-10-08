@@ -1,11 +1,31 @@
-import type { CapacityDimensionRow, CapacityDimensionStatus } from "./capacity-dimension-history.ts";
+import { capacityChartDimensions, type CapacityDimensionHistory, type CapacityDimensionRow, type CapacityDimensionStatus } from "./capacity-dimension-history.ts";
+export { capacityChartDimensions } from "./capacity-dimension-history.ts";
 import { proportionalAxisPosition } from "./chart-geometry.ts";
+
+/** Chart-only projection; sensory records remain intact in the clinical history. */
+export function capacityChartHistory(history: CapacityDimensionHistory): CapacityDimensionHistory {
+  const dimensions = capacityChartDimensions(history.dimensions);
+  const codes = new Set(dimensions.map((dimension) => dimension.code));
+  return { ...history, dimensions, inflectionPoints: history.inflectionPoints.filter((point) => codes.has(point.dimensionCode)),
+    methodologyNote: "Representação categórica auditável; não é escore composto. Linhas só conectam avaliações comparáveis do mesmo instrumento e versão. Vitalidade usa MNA-SF como indicador nutricional proxy, não como equivalente ao construto fisiológico completo." };
+}
 
 export const CAPACITY_STATUS_LABEL: Record<CapacityDimensionStatus, string> = {
   "not-assessed": "Não avaliada", recorded: "Registrada sem estado de domínio",
   indeterminate: "Indeterminada / discordante", preserved: "Sem redução detectada",
   attention: "Sinal de atenção", altered: "Redução identificada",
 };
+
+function presentationKey(cell: CapacityDimensionRow["cells"][number]): string | undefined {
+  if (cell.comparabilityKey) return cell.comparabilityKey;
+  // Convergent ABVD/AIVD (or other co-selected instruments) previously had no
+  // single key, so every segment was suppressed. Require the exact same set
+  // and versions; this connects recorded categories without a composite score
+  // or changing the clinical model's inflection/comparison rules.
+  const selected = cell.assessments.filter((item) => item.selectedForDomainState);
+  if (selected.length < 2) return undefined;
+  return selected.map((item) => `${item.scaleCode}@${item.scaleVersion}`).sort().join("|");
+}
 
 /** Presentation shared by HTML and PDF: never interpolate an unmeasured visit. */
 export function capacityChartSegments(dimension: CapacityDimensionRow) {
@@ -14,10 +34,11 @@ export function capacityChartSegments(dimension: CapacityDimensionRow) {
   let gap = false;
   for (const cell of dimension.cells) {
     if (cell.status === "not-assessed") { if (previous) gap = true; continue; }
-    if (!["preserved", "attention", "altered"].includes(cell.status) || !cell.comparabilityKey) {
+    const key = presentationKey(cell);
+    if (!["preserved", "attention", "altered"].includes(cell.status) || !key) {
       previous = undefined; gap = false; continue;
     }
-    if (previous?.comparabilityKey === cell.comparabilityKey) {
+    if (previous && presentationKey(previous) === key) {
       segments.push({ from: previous.consultationId, to: cell.consultationId, crossesUnassessedVisit: gap });
     }
     previous = cell; gap = false;

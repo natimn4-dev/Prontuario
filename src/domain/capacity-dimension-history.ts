@@ -391,15 +391,25 @@ function hasDrawableLongitudinalTrend(dimensions: readonly CapacityDimensionRow[
   });
 }
 
+export function capacityChartDimensions(dimensions: readonly CapacityDimensionRow[]): CapacityDimensionRow[] {
+  const codes: readonly CapacityDimensionCode[] = ["funcionalidade", "cognicao", "locomocao", "psicologico", "vitalidade"];
+  return codes.flatMap((code) => {
+    const dimension = dimensions.find((item) => item.code === code);
+    return dimension ? [{ ...dimension, label: code === "psicologico" ? "Humor" : code === "funcionalidade" ? "Funcionalidade" : dimension.label }] : [];
+  });
+}
+
 function hasRecordedHistoryAfterSecondVisit(dimensions: readonly CapacityDimensionRow[]): boolean {
-  // From the second visit, preserve measured history even without reapplication.
-  return dimensions.some((dimension) => dimension.cells.length >= 2
-    && dimension.cells.some((cell) => cell.assessments.length > 0));
+  // Returns without reapplication do not count as a second measured visit.
+  return capacityChartDimensions(dimensions).some((dimension) => new Set(dimension.cells
+    .filter((cell) => cell.assessments.length > 0)
+    .map((cell) => cell.consultationId)).size >= 2);
 }
 
 /**
  * Decide se o gráfico deve permanecer visível depois que um domínio recebeu
- * pelo menos um resultado e duas consultas registradas.
+ * resultados em pelo menos duas consultas distintas. Retornos sem reaplicação
+ * preservam um gráfico já existente, mas não habilitam um gráfico novo.
  *
  * A propriedade é opcional para manter compatibilidade com snapshots gerados
  * antes desta regra. Nesses snapshots, o estado é reconstruído a partir das

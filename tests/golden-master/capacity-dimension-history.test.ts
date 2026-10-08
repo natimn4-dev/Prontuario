@@ -325,7 +325,7 @@ test("gráfico bloqueia mistura de pacientes em avaliações, consultas e marcos
   }), /marcos clínicos/);
 });
 
-test("UI usa tempo real, comparabilidade e o design system clínico aprovado sem criar tabela estatística", () => {
+test("UI usa tempo real, comparabilidade e o design system clínico aprovado com tabela de resultados preservada", () => {
   const patientPage = readFileSync("src/app/patients/[id]/page.tsx", "utf8");
   const report = readFileSync("src/components/reports/aga-report-preview.tsx", "utf8");
   const generator = readFileSync("src/server/clinical/generate-aga-report.ts", "utf8");
@@ -347,7 +347,8 @@ test("UI usa tempo real, comparabilidade e o design system clínico aprovado sem
   assert.match(chart, /Escalas registradas por consulta/);
   assert.match(chart, /Ponto de inflexão observado/);
   assert.match(chart, /não atribui causa/);
-  assert.doesNotMatch(chart, /<table/);
+  assert.match(chart, /<table/);
+  assert.match(chart, /<th scope="col">Classificação/);
   assert.match(chartStyles, /var\(--primary\)/);
   assert.match(chartStyles, /var\(--line\)/);
   assert.match(chartStyles, /var\(--primary-soft\)/);

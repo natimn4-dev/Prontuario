@@ -73,28 +73,29 @@ test("relatório e impressão carregam camada premium e preservam relatório ani
   assert.match(branding, /professional-signature/);
 });
 
-test("gráfico longitudinal aprovado reproduz o modelo visual por sete trajetórias", () => {
+test("gráfico longitudinal aprovado reproduz o modelo visual por cinco trajetórias", () => {
   const chart = source("src/components/reports/capacity-dimension-history-chart.tsx");
   const reportDocument = source("src/components/reports/aga-report-document-preview.tsx");
   const css = source("src/components/reports/capacity-dimension-history-chart.module.css");
 
   assert.match(chart, /Evolução da capacidade intrínseca e da independência funcional/);
-  assert.match(chart, /Uma trajetória por domínio\. O tempo real entre consultas é preservado\./);
+  assert.match(chart, /Linhas e pontos por domínio, com grade e datas das consultas\./);
   assert.match(chart, /hasDisplayableLongitudinalHistory/);
-  assert.match(chart, /consultas sem reaplicação não apagam o histórico/i);
-  assert.match(chart, /hasLongitudinalTrendData/);
+  assert.match(chart, /Retornos sem reaplicação não criam novos resultados/i);
+  assert.match(chart, /dimensions.some/);
   assert.match(chart, /data-chart="line-small-multiples"/);
   assert.match(chart, /<polyline/);
   assert.match(chart, /Independência funcional/);
   assert.match(chart, /Capacidade intrínseca/);
-  assert.match(chart, /Locomoção, cognição, humor, vitalidade, audição e visão/);
+  assert.match(chart, /Cognição, locomoção, humor e vitalidade/);
   assert.match(chart, /ABVD\/AIVD/);
   assert.match(chart, /methodologyBadge/);
   assert.match(chart, /targetLabel[\s\S]*?mais recente/);
   assert.match(chart, /targetGuide/);
   assert.match(chart, /Pontos de inflexão observados/);
   assert.match(chart, /não atribui causa/);
-  assert.doesNotMatch(chart, /<table/);
+  assert.match(chart, /<table/);
+  assert.match(chart, /<th scope="col">Classificação/);
   assert.match(reportDocument, /hasDisplayableLongitudinalHistory/);
 
   assert.match(css, /data-dimension="funcionalidade"\]\s*\{\s*color:\s*#8b7478/);

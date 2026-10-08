@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { scaleDomains } from "@/domain/intrinsic-capacity-methodology";
 import type { AgaScaleReportSection } from "@/domain/aga-report";
 import { proportionalAxisPosition } from "@/domain/chart-geometry";
 import { displayScaleScore } from "@/domain/fast-stage";
@@ -56,7 +57,7 @@ export function ScaleHistoryChart({ scale }: { scale: AgaScaleReportSection }) {
   const fullSeries = scale.chartSeries;
   const chartSeries = selectScaleChartWindow(fullSeries, window);
   const presentation = buildScaleChartPresentation(chartSeries);
-  if (!presentation.hasHistory) return null;
+  if (!presentation.hasHistory || !scaleDomains(scale.code).some((domain) => ["funcionalidade", "cognicao", "locomocao", "psicologico", "vitalidade"].includes(domain))) return null;
 
   const points = chartSeries.points;
   const numeric = points.filter((point): point is typeof point & { score: number } => point.score !== null);
