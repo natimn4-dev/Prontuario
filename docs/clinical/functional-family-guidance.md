@@ -54,7 +54,7 @@ A seção específica de GTT concentra os cuidados enterais para evitar duplica�
 na seção de deglutição, sem remover cuidados de higiene oral ou terapias registradas.
 
 Referência clínica: ESPEN practical guideline Home enteral nutrition (2022),
-recomendações de cuidado do estoma, prevenção de obstrução e treinamento: 
+recomendações de cuidado do estoma, prevenção de obstrução e treinamento:
 https://www.espen.org/files/ESPEN-Guidelines/ESPEN_practical_guideline_Home_enteral_nutrition.pdf
 
 Nova release esperada: `2026-10-08-orientacoes-funcionalidade-vias-v1`.
