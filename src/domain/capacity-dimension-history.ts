@@ -14,6 +14,8 @@ import { scaleCatalogEntry } from "./scale-catalog.ts";
 
 export type { CapacityDimensionCode } from "./intrinsic-capacity-methodology.ts";
 
+type StoredClinicalColor = ClinicalColor | "green" | "yellow" | "red";
+
 export type CapacityDimensionStatus =
   | "not-assessed"
   | "recorded"
@@ -44,7 +46,7 @@ export interface CapacityTimelineAssessment {
   scoreText?: string | null;
   classification?: string | null;
   interpretation?: string | null;
-  clinicalColor?: ClinicalColor | null;
+  clinicalColor?: StoredClinicalColor | null;
   appliedAt: Date | string;
   consultationOccurredAt?: Date | string;
   consultationCreatedAt?: Date | string;
@@ -75,7 +77,7 @@ export interface CapacityDimensionCellAssessment {
   scoreText?: string | null;
   classification?: string | null;
   interpretation?: string | null;
-  clinicalColor: ClinicalColor | null;
+  clinicalColor: StoredClinicalColor | null;
   role: CapacityEvidenceRole;
   mappingStrength: ConstructMappingStrength;
   basis: DomainEvidenceBasis;
@@ -156,10 +158,10 @@ function timestamp(value: Date | string | undefined, fallback = 0): number {
   return Number.isFinite(result) ? result : fallback;
 }
 
-function mappedColorStatus(color: ClinicalColor | null): CapacityComparableStatus | "recorded" {
-  if (color === "vermelho") return "altered";
-  if (color === "amarelo") return "attention";
-  if (color === "verde") return "preserved";
+function mappedColorStatus(color: StoredClinicalColor | null): CapacityComparableStatus | "recorded" {
+  if (color === "vermelho" || color === "red") return "altered";
+  if (color === "amarelo" || color === "yellow") return "attention";
+  if (color === "verde" || color === "green") return "preserved";
   return "recorded";
 }
 

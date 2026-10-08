@@ -4,6 +4,7 @@ import { PrismaMariaDb } from "@prisma/adapter-mariadb";
 import { PrismaClient, type Prisma } from "../src/generated/prisma/client.ts";
 import { chromium } from "playwright";
 import { isCiE2EAuthEnvironment } from "../src/domain/security/ci-e2e-auth-policy.ts";
+import { CORE_FREITAS_SCALES } from "../src/domain/freitas-core-scales.ts";
 
 function databaseConfig() {
   const raw = process.env.DATABASE_URL;
@@ -429,8 +430,10 @@ async function verifyFollowUpScaleIsolation() {
       { id: followUpId, patientId: assignedPatientId, physicianId: userId, type: "FOLLOW_UP", status: "DRAFT", occurredAt: new Date("2026-04-01T12:00:00Z") },
     ] });
     const initialAnswers = { bath: 1, dress: 1, toilet: 1, transfer: 1, continence: 1, feeding: 1 };
+    const moodQuestions = CORE_FREITAS_SCALES.find((definition) => definition.code === "gds15")!.questions;
     for (const [endpoint, body] of [
       ["freitas-core", { scaleCode: "katz", answers: initialAnswers }],
+      ["freitas-core", { scaleCode: "gds15", answers: Object.fromEntries(moodQuestions.map((question, index) => [question.id, index < 7 ? 1 : 0])) }],
       ["complementary", { scaleCode: "fast", answers: { score: 7.5 } }],
       ["oncogeriatrics", { scaleCode: "ecog", ecog: 3 }],
     ] as const) {
@@ -476,12 +479,14 @@ async function verifyFollowUpScaleIsolation() {
     assert.deepEqual(initial.answers, initialAnswers, "A reaplicação preserva o histórico original.");
     assert.equal(Number(current.scoreNumeric), 0);
     assert.equal(Number(initial.scoreNumeric), 6);
+    const moodResponse = await request(`/api/consultations/${followUpId}/scales/freitas-core`, true, { scaleCode: "gds15", answers: Object.fromEntries(moodQuestions.map((question) => [question.id, 1])) });
+    assert.equal(moodResponse.status, 201, await moodResponse.text());
     await page.screenshot({ path: "/tmp/prontuario-onco-follow-up-scales-synthetic.png", fullPage: true });
     await page.goto(`${baseUrl}/patients/${assignedPatientId}`, { waitUntil: "domcontentloaded" });
     const chart = page.locator('[data-chart="line-small-multiples"]');
     await chart.waitFor();
     assert.deepEqual(await chart.locator('[data-dimension]').evaluateAll((rows) => [...new Set(rows.map((row) => row.getAttribute("data-dimension")))]), ["funcionalidade", "cognicao", "locomocao", "psicologico", "vitalidade"]);
-    const segment = chart.locator('[data-dimension="funcionalidade"] polyline').first();
+    const segment = chart.locator('[data-dimension="psicologico"] polyline').first();
     await segment.waitFor();
     const renderedLine = await segment.evaluate((line) => ({ stroke: getComputedStyle(line).stroke, width: line.getBoundingClientRect().width, height: line.getBoundingClientRect().height }));
     assert.notEqual(renderedLine.stroke, "none");

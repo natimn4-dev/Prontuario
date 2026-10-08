@@ -119,3 +119,20 @@ test("only the five requested domains generate graphs, preserving sensory record
   const sensoryOnly = buildCapacityDimensionHistory({ patientId: "synthetic", consultations, assessments: [{ ...assessment(2, 1), scaleCode: "hearing", scaleVersion: "hearing-v1" }] });
   assert.equal(hasDisplayableLongitudinalHistory({ ...sensoryOnly, dimensions: capacityChartDimensions(sensoryOnly.dimensions) }), false);
 });
+
+
+test("English persisted colors from the real GDS scorer remain comparable without inventing absent colors", async () => {
+  const { CORE_FREITAS_SCALES, scoreCoreFreitasScale } = await import("../../src/domain/freitas-core-scales.ts");
+  const questions = CORE_FREITAS_SCALES.find((definition) => definition.code === "gds15")!.questions;
+  const assessments = [7, 15].map((count, index) => {
+    const scored = scoreCoreFreitasScale("gds15", Object.fromEntries(questions.map((question, number) => [question.id, number < count ? 1 : 0])));
+    return { ...assessment(index + 1, scored.result.score), scaleCode: "gds15", scaleVersion: scored.version, clinicalColor: scored.result.clinicalColor };
+  });
+  const history = buildCapacityDimensionHistory({ patientId: "synthetic", consultations, assessments });
+  const mood = history.dimensions.find((dimension) => dimension.code === "psicologico")!;
+  assert.deepEqual(mood.cells.slice(0, 2).map((cell) => cell.status), ["attention", "altered"]);
+  assert.deepEqual(capacityChartSegments(mood), [{ from: "c1", to: "c2", crossesUnassessedVisit: false }]);
+  assert.deepEqual(mood.cells.slice(0, 2).map((cell) => cell.assessments[0]!.clinicalColor), ["yellow", "red"]);
+  const unclassified = buildCapacityDimensionHistory({ patientId: "synthetic", consultations, assessments: [{ ...assessment(1, 6), scaleCode: "katz", clinicalColor: null }, { ...assessment(2, 0), scaleCode: "katz", clinicalColor: null }] });
+  assert.deepEqual(capacityChartSegments(unclassified.dimensions.find((dimension) => dimension.code === "funcionalidade")!), []);
+});
