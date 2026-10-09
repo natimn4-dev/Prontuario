@@ -74,7 +74,7 @@ O endpoint público de health check deve responder HTTP 200 e incluir:
 - `database: "ok"`
 - `releaseId: "2026-10-09-sonda-vesical-v1"`
 
-Nesta release, as orientações familiares de funcionalidade consideram Barthel e Lawton da consulta atual, sem corte arbitrário após dois itens. Cognição, vitalidade e cuidados enterais usam redação mais concisa. A nutrição diferencia cuidados de sonda nasoenteral (narina, fixação e posicionamento) e gastrostomia (estoma, proteção e deslocamento), preservando os sinais de alerta e evitando duplicação dos cuidados de GTT. Tabelas, SOAP, pontuações e classificações históricas são preservados. Não há migration de banco nesta release.
+Nesta release, Nutrição → Contextualizar inclui opções independentes de sonda vesical de demora e de alívio. A seleção é salva por consulta e os novos relatórios texto/HTML/PDF incluem somente os cuidados dos tipos marcados, com observação diária e sinais de atendimento. Desmarcar ambos remove a seção das novas saídas. As trocas e os horários seguem o plano individual da equipe. Contextos de nutrição/deglutição, SOAP, medicamentos, escalas e snapshots anteriores são preservados. Não há migration de banco nesta release.
 
 O `releaseId` é deliberadamente servido com `Cache-Control: no-store`; uma CDN ou proxy não deve reutilizar um identificador antigo para declarar a implantação como atual. O smoke também exige esse header antes de aceitar a resposta de health.
 

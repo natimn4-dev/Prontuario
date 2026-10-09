@@ -15,6 +15,7 @@ O contexto versionado `urinary-catheter-support-v1` fica em `assessment.urinaryC
 ## Fontes primárias
 
 - CDC, Summary of Recommendations, prevenção de infecção associada a cateter: https://www.cdc.gov/infection-control/hcp/cauti/summary-of-recommendations.html (II.A–E, III.A–D, III.G–H).
+- CDC, Urine Culture Stewardship: https://www.cdc.gov/uti/hcp/clinical-guidance/culture-stewardship-strategize.html (odor/urina turva isolados não distinguem infecção de colonização).
 - IDSA 2019, Asymptomatic Bacteriuria: https://www.idsociety.org/practice-guideline/asymptomatic-bacteriuria/ (idosos, delirium sem sintomas urinários/sistêmicos; cateteres).
 - NHS, Living with a urinary catheter: https://www.nhs.uk/tests-and-treatments/urinary-catheters/living-with/ (higiene, bolsa, sintomas e suporte).
 - Gloucestershire Hospitals NHS, ISC for adults: https://www.gloshospitals.nhs.uk/your-visit/patient-information-leaflets/intermittent-self-catheterisation-isc-adults/ (treinamento, técnica limpa, sonda descartável, frequência individual).

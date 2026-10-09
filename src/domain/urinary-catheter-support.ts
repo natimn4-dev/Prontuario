@@ -57,6 +57,7 @@ export function urinaryCatheterGuidance(context?: UrinaryCatheterContext): Urina
 export const URINARY_CATHETER_EVIDENCE = [
   "https://www.cdc.gov/infection-control/hcp/cauti/summary-of-recommendations.html",
   "https://www.idsociety.org/practice-guideline/asymptomatic-bacteriuria/",
+  "https://www.cdc.gov/uti/hcp/clinical-guidance/culture-stewardship-strategize.html",
   "https://www.nhs.uk/tests-and-treatments/urinary-catheters/living-with/",
   "https://www.gloshospitals.nhs.uk/your-visit/patient-information-leaflets/intermittent-self-catheterisation-isc-adults/",
 ] as const;
