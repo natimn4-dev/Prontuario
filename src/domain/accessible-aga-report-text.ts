@@ -199,6 +199,14 @@ export function renderAccessibleAgaReportText(model: AccessibleAgaReportModel): 
     );
   }
 
+  if (model.urinaryCatheterCare) {
+    const care = model.urinaryCatheterCare;
+    blocks.push("", "CUIDADOS COM SONDA VESICAL", "Orientações para família e cuidadores conforme o tipo registrado nesta consulta; siga o plano individual e o treinamento da equipe.");
+    if (care.indwellingActions.length) blocks.push("Sonda de demora (com bolsa coletora):", list(care.indwellingActions));
+    if (care.intermittentActions.length) blocks.push("Sonda de alívio (intermitente):", list(care.intermittentActions));
+    blocks.push("Observação diária e cuidados gerais:", list(care.generalActions), "Quando procurar atendimento:", list(care.contactGuidance));
+  }
+
   if (model.advanceDirectives) {
     blocks.push(...advanceDirectiveBlocks(model.advanceDirectives));
   }

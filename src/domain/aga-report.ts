@@ -116,6 +116,7 @@ export interface AgaReportModel {
   vaccinationPrevention: VaccinationPreventionSection;
   intrinsicCapacity: IntrinsicCapacityGuidance;
   safetyGuidance: FamilyReportSafetyGuidance;
+  urinaryCatheterCare?: import("./urinary-catheter-support.ts").UrinaryCatheterGuidance;
   swallowingSupportCare?: {
     enteralRoute: boolean;
     enteralTube?: boolean;

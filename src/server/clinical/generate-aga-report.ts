@@ -25,6 +25,7 @@ import {
   MedicationPlanSnapshotError,
 } from "../../domain/medication-plan-snapshot";
 import { buildAgaReportCareSections } from "../../domain/report-care-sections";
+import { readUrinaryCatheterContext } from "@/domain/urinary-catheter-support";
 import { readSwallowingSupportContext } from "../../domain/swallowing-support.ts";
 import { buildAgaReportEnrichment } from "../../domain/report-overview";
 import type { VaccinationReview } from "../../domain/vaccination-prevention";
@@ -228,6 +229,10 @@ export async function generateAgaReport(input: {
           ? consultation.assessment.swallowingSupportContext
           : undefined,
       );
+      const urinaryCatheter = readUrinaryCatheterContext(
+        consultation.assessment && typeof consultation.assessment === "object" && !Array.isArray(consultation.assessment)
+          ? consultation.assessment.urinaryCatheterContext : undefined,
+      );
       const gastrostomyPresent = hasGastrostomyMedicationRoute(medicationWorkspace.items)
         || Boolean(swallowingSupport?.gastrostomy);
       const directiveWorkspace = await advanceDirectiveWorkspaceContext(tx, consultation.id);
@@ -273,6 +278,7 @@ export async function generateAgaReport(input: {
       const reportCareSections = buildAgaReportCareSections({
         gastrostomyPresent,
         swallowingSupport,
+        urinaryCatheter,
         savedPlan: consultation.plan,
         problems: problems.map((problem) => ({ id: problem.id, title: problem.title })),
       });

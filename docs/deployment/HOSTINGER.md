@@ -72,7 +72,7 @@ O endpoint público de health check deve responder HTTP 200 e incluir:
 
 - `status: "ok"`
 - `database: "ok"`
-- `releaseId: "2026-10-08-orientacoes-funcionalidade-vias-v1"`
+- `releaseId: "2026-10-09-sonda-vesical-v1"`
 
 Nesta release, as orientações familiares de funcionalidade consideram Barthel e Lawton da consulta atual, sem corte arbitrário após dois itens. Cognição, vitalidade e cuidados enterais usam redação mais concisa. A nutrição diferencia cuidados de sonda nasoenteral (narina, fixação e posicionamento) e gastrostomia (estoma, proteção e deslocamento), preservando os sinais de alerta e evitando duplicação dos cuidados de GTT. Tabelas, SOAP, pontuações e classificações históricas são preservados. Não há migration de banco nesta release.
 

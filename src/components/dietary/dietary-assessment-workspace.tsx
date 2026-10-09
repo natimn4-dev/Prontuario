@@ -35,6 +35,7 @@ import {
 } from "@/domain/dietary-guidance";
 import { crossCheckDietaryEnergy } from "@/domain/dietary-assessment-quality";
 import { CLINICAL_RELEASE_ID } from "@/domain/clinical-release";
+import { EMPTY_URINARY_CATHETER, type UrinaryCatheterContext } from "@/domain/urinary-catheter-support";
 import styles from "./dietary-assessment-workspace.module.css";
 
 type UiDietaryItem = DietaryFoodDraft & {
@@ -52,6 +53,7 @@ type LoadPayload = {
   references: { calciumMg: number | null; fiberG: number | null };
   assessment: DietaryAssessmentSnapshot | null;
   swallowingSupport: SwallowingSupportContext | null;
+  urinaryCatheter: UrinaryCatheterContext | null;
   history: Array<{
     occurredAt: string;
     summary: DietaryAssessmentSnapshot["summary"];
@@ -195,6 +197,10 @@ export function DietaryAssessmentWorkspace({
   const [swallowingSupportDirty, setSwallowingSupportDirty] = useState(false);
   const [swallowingSupportSaving, setSwallowingSupportSaving] = useState(false);
   const [swallowingSupportFeedback, setSwallowingSupportFeedback] = useState<{ kind: "error" | "success"; text: string } | null>(null);
+  const [urinaryCatheter, setUrinaryCatheter] = useState<UrinaryCatheterContext>({ ...EMPTY_URINARY_CATHETER });
+  const [urinaryDirty, setUrinaryDirty] = useState(false);
+  const [urinarySaving, setUrinarySaving] = useState(false);
+  const [urinaryFeedback, setUrinaryFeedback] = useState<{ kind: "error" | "success"; text: string } | null>(null);
   const [meals, setMeals] = useState<UiDietaryMeal[]>(freshMeals);
   const [targets, setTargets] = useState<DietaryTargets>({});
   const [weightOverride, setWeightOverride] = useState("");
@@ -365,7 +371,7 @@ export function DietaryAssessmentWorkspace({
     setDirty(true);
   };
 
-  useEffect(() => { onDirtyChange?.(dirty || swallowingSupportDirty); }, [dirty, swallowingSupportDirty, onDirtyChange]);
+  useEffect(() => { onDirtyChange?.(dirty || swallowingSupportDirty || urinaryDirty); }, [dirty, swallowingSupportDirty, urinaryDirty, onDirtyChange]);
 
   async function load() {
     setLoading(true);
@@ -387,6 +393,9 @@ export function DietaryAssessmentWorkspace({
       setSwallowingSupport(body.swallowingSupport ?? { ...EMPTY_SWALLOWING_SUPPORT });
       setSwallowingSupportDirty(false);
       setSwallowingSupportFeedback(null);
+      setUrinaryCatheter(body.urinaryCatheter ?? { ...EMPTY_URINARY_CATHETER });
+      setUrinaryDirty(false);
+      setUrinaryFeedback(null);
       setMeals(nextMeals);
       setMealId((current) =>
         nextMeals.some((meal) => meal.id === current)
@@ -470,6 +479,27 @@ export function DietaryAssessmentWorkspace({
     }
   }
 
+  async function saveUrinaryCatheter() {
+    if (!data || !urinaryDirty || urinarySaving || swallowingSupportSaving || isFinalized) return;
+    setUrinarySaving(true);
+    setUrinaryFeedback(null);
+    try {
+      const response = await fetch(`/api/consultations/${consultationId}/dietary-assessment`, {
+        method: "PUT", headers: { "content-type": "application/json" },
+        body: JSON.stringify({ expectedUpdatedAt: data.updatedAt, urinaryCatheter }),
+      });
+      const body = await response.json().catch(() => null) as { error?: string; updatedAt?: string; urinaryCatheter?: UrinaryCatheterContext } | null;
+      if (!response.ok || !body?.updatedAt || !body.urinaryCatheter) throw new Error(body?.error ?? "Não foi possível salvar o uso de sonda vesical.");
+      setData((current) => current ? { ...current, updatedAt: body.updatedAt!, urinaryCatheter: body.urinaryCatheter! } : current);
+      setUrinaryCatheter(body.urinaryCatheter);
+      setUrinaryDirty(false);
+      setUrinaryFeedback({ kind: "success", text: "Uso de sonda vesical salvo nesta consulta; o relatório incluirá apenas as orientações dos tipos marcados." });
+      window.dispatchEvent(new CustomEvent("clinical-nutrition-context-changed", { detail: { consultationId } }));
+    } catch (cause) {
+      setUrinaryFeedback({ kind: "error", text: cause instanceof Error ? cause.message : "Não foi possível salvar o uso de sonda vesical." });
+    } finally { setUrinarySaving(false); }
+  }
+
   function setSwallowingSupportField(field: keyof SwallowingSupportContext, checked: boolean) {
     setSwallowingSupport((current) => ({ ...current, [field]: checked }));
     setSwallowingSupportDirty(true);
@@ -477,7 +507,7 @@ export function DietaryAssessmentWorkspace({
   }
 
   async function saveSwallowingSupport() {
-    if (!data || !swallowingSupportDirty || swallowingSupportSaving || isFinalized) return;
+    if (!data || !swallowingSupportDirty || swallowingSupportSaving || urinarySaving || isFinalized) return;
     setSwallowingSupportSaving(true);
     setSwallowingSupportFeedback(null);
     try {
@@ -1580,10 +1610,27 @@ export function DietaryAssessmentWorkspace({
                   ))}
                 </fieldset>
                 <div className={`${styles.actionRow} ${styles.spanTwo}`}>
-                  <button type="button" className={styles.primaryButton} onClick={() => void saveSwallowingSupport()} disabled={!swallowingSupportDirty || swallowingSupportSaving || isFinalized}>
+                  <button type="button" className={styles.primaryButton} onClick={() => void saveSwallowingSupport()} disabled={!swallowingSupportDirty || swallowingSupportSaving || urinarySaving || isFinalized}>
                     {swallowingSupportSaving ? "Salvando…" : isFinalized ? "Consulta finalizada" : "Salvar deglutição e terapias"}
                   </button>
                   {swallowingSupportFeedback ? <span role={swallowingSupportFeedback.kind === "error" ? "alert" : "status"}>{swallowingSupportFeedback.text}</span> : null}
+                </div>
+              </fieldset>
+              <fieldset className={styles.choiceGrid} aria-describedby="urinary-catheter-help">
+                <legend>Uso de sonda vesical</legend>
+                <p id="urinary-catheter-help" className={styles.spanTwo}>Marque os tipos confirmados nesta consulta. Depois de salvar, o relatório da família incluirá cuidados específicos de cada tipo marcado.</p>
+                {([["indwelling", "Sonda vesical de demora (com bolsa coletora)"], ["intermittent", "Sonda vesical de alívio (intermitente)"]] as const).map(([field, label]) => (
+                  <label key={field}>
+                    <input type="checkbox" checked={urinaryCatheter[field]} disabled={isFinalized || urinarySaving} onChange={(event) => {
+                      setUrinaryCatheter((current) => ({ ...current, [field]: event.target.checked }));
+                      setUrinaryDirty(true); setUrinaryFeedback(null);
+                    }} />
+                    <span>{label}</span>
+                  </label>
+                ))}
+                <div className={`${styles.actionRow} ${styles.spanTwo}`}>
+                  <button type="button" className={styles.primaryButton} onClick={() => void saveUrinaryCatheter()} disabled={!urinaryDirty || urinarySaving || swallowingSupportSaving || isFinalized}>{urinarySaving ? "Salvando…" : isFinalized ? "Consulta finalizada" : "Salvar uso de sonda vesical"}</button>
+                  {urinaryFeedback ? <span role={urinaryFeedback.kind === "error" ? "alert" : "status"}>{urinaryFeedback.text}</span> : null}
                 </div>
               </fieldset>
               {data?.clinicalContext.ckd ? (

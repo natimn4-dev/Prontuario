@@ -1,3 +1,4 @@
+import { urinaryCatheterGuidance, type UrinaryCatheterContext, type UrinaryCatheterGuidance } from "./urinary-catheter-support.ts";
 import { parsePlanNote } from "./consultation-note-contract.ts";
 import { gastrostomyFamilyGuidance } from "./family-contextual-care.ts";
 import { preventiveExamOrderLabel } from "./preventive-exam-orders.ts";
@@ -38,11 +39,13 @@ export interface AgaReportCareSections {
   clinicalConducts: AgaReportClinicalConduct[];
   gastrostomyCare?: AgaReportGastrostomyCare;
   swallowingSupportCare?: AgaReportSwallowingSupportCare;
+  urinaryCatheterCare?: UrinaryCatheterGuidance;
 }
 
 export function buildAgaReportCareSections(input: {
   gastrostomyPresent: boolean;
   swallowingSupport?: SwallowingSupportContext;
+  urinaryCatheter?: UrinaryCatheterContext;
   savedPlan: unknown;
   problems: readonly ReportProblemInput[];
 }): AgaReportCareSections {
@@ -86,8 +89,10 @@ export function buildAgaReportCareSections(input: {
       })
     : undefined;
 
+  const urinaryGuidance = urinaryCatheterGuidance(input.urinaryCatheter);
   return {
     clinicalConducts,
+    ...(urinaryGuidance ? { urinaryCatheterCare: urinaryGuidance } : {}),
     ...(gastrostomyGuidance ? {
       gastrostomyCare: {
         practicalActions: [...gastrostomyGuidance.now],

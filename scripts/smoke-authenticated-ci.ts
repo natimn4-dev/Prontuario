@@ -405,6 +405,32 @@ async function verifySwallowingTherapies() {
     const withoutReport = await withoutFollowUp.json() as { text: string };
     assert.match(withoutReport.text, /Se ainda não houver acompanhamento/);
     assert.doesNotMatch(withoutReport.text, /Mantenha o acompanhamento com o seu fonoaudiólogo/);
+    const urinaryGroup = page.getByRole("group", { name: "Uso de sonda vesical", exact: true });
+    const indwelling = urinaryGroup.getByLabel("Sonda vesical de demora (com bolsa coletora)", { exact: true });
+    const intermittent = urinaryGroup.getByLabel("Sonda vesical de alívio (intermitente)", { exact: true });
+    for (const state of [{ indwelling: true, intermittent: false }, { indwelling: false, intermittent: true }, { indwelling: true, intermittent: true }, { indwelling: false, intermittent: false }]) {
+      await indwelling.setChecked(state.indwelling);
+      await intermittent.setChecked(state.intermittent);
+      await urinaryGroup.getByRole("button", { name: "Salvar uso de sonda vesical", exact: true }).click();
+      await urinaryGroup.getByRole("status").waitFor();
+      await page.reload();
+      await page.getByRole("button", { name: /Contextualizar/ }).click();
+      await indwelling.waitFor();
+      assert.equal(await indwelling.isChecked(), state.indwelling);
+      assert.equal(await intermittent.isChecked(), state.intermittent);
+      const snapshotResponse = await request(`/api/consultations/${unlinkedOncoConsultationId}/reports/aga`, true, {});
+      assert.equal(snapshotResponse.status, 201);
+      const snapshot = await snapshotResponse.json() as { text: string };
+      assert.equal(snapshot.text.includes("CUIDADOS COM SONDA VESICAL"), state.indwelling || state.intermittent);
+      assert.equal(snapshot.text.includes("Sonda de demora (com bolsa coletora):"), state.indwelling);
+      assert.equal(snapshot.text.includes("Sonda de alívio (intermitente):"), state.intermittent);
+      assert.match(snapshot.text, /Se ainda não houver acompanhamento/);
+    }
+    const deniedUrinary = await fetch(new URL(`/api/consultations/${unassignedConsultationId}/dietary-assessment`, baseUrl), {
+      method: "PUT", headers: { ...headers, "Content-Type": "application/json" },
+      body: JSON.stringify({ expectedUpdatedAt: new Date().toISOString(), urinaryCatheter: { indwelling: true, intermittent: false } }),
+    });
+    assert.equal(deniedUrinary.status, 403);
     const denied = await fetch(new URL(`/api/consultations/${unassignedConsultationId}/dietary-assessment`, baseUrl), {
       method: "PUT", headers: { ...headers, "Content-Type": "application/json" },
       body: JSON.stringify({ expectedUpdatedAt: new Date().toISOString(), swallowingSupport: { dysphagia: true, adaptedDiet: false, enteralTube: false, gastrostomy: false, speechTherapy: true } }),

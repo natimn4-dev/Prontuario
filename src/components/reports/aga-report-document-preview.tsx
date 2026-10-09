@@ -508,6 +508,17 @@ export function AgaReportDocumentPreview({
               </div>
             </section> : null}
 
+            {generated.report.urinaryCatheterCare ? <section className={`${styles.section} ${styles.supportPanel}`}>
+              <div className={styles.sectionHeading}><span>Cuidados</span><h2>Cuidados com sonda vesical</h2></div>
+              <p className={styles.sectionLead}>Orientações para família e cuidadores conforme o tipo registrado nesta consulta. Siga o plano individual e o treinamento da equipe.</p>
+              <div className={styles.problemGrid}>
+                {generated.report.urinaryCatheterCare.indwellingActions.length > 0 ? <article><h3>Sonda de demora (com bolsa coletora)</h3><ul className={styles.compactList}>{generated.report.urinaryCatheterCare.indwellingActions.map((item) => <li key={item}>{item}</li>)}</ul></article> : null}
+                {generated.report.urinaryCatheterCare.intermittentActions.length > 0 ? <article><h3>Sonda de alívio (intermitente)</h3><ul className={styles.compactList}>{generated.report.urinaryCatheterCare.intermittentActions.map((item) => <li key={item}>{item}</li>)}</ul></article> : null}
+                <article><h3>Observação diária e cuidados gerais</h3><ul className={styles.compactList}>{generated.report.urinaryCatheterCare.generalActions.map((item) => <li key={item}>{item}</li>)}</ul></article>
+                <article><div className={styles.problemTitle}><ReportGlyph name="attention" /><h3>Quando procurar atendimento</h3></div><ul className={styles.compactList}>{generated.report.urinaryCatheterCare.contactGuidance.map((item) => <li key={item}>{item}</li>)}</ul></article>
+              </div>
+            </section> : null}
+
             {generated.report.gastrostomyCare ? <section className={`${styles.section} ${styles.supportPanel}`}>
               <div className={styles.sectionHeading}><span>GTT</span><h2>Cuidados com gastrostomia</h2></div>
               <p className={styles.sectionLead}>Orientações práticas para o cuidado diário da gastrostomia já registrada. Fórmula, volumes, horários e preparo de medicamentos seguem a orientação individual da equipe.</p>

@@ -3,6 +3,7 @@ import { randomUUID } from "node:crypto";
 import test from "node:test";
 import { PrismaMariaDb } from "@prisma/adapter-mariadb";
 import { Prisma, PrismaClient } from "../../src/generated/prisma/client.ts";
+import { mergeStoredUrinaryCatheterContext, readUrinaryCatheterContext } from "../../src/domain/urinary-catheter-support.ts";
 import { mergeStoredSwallowingSupportContext } from "../../src/domain/swallowing-support.ts";
 
 const databaseUrl = process.env.TEST_DATABASE_URL;
@@ -159,6 +160,20 @@ test("avaliação alimentar e formulário parcial sobrevivem à gravação e rea
       enteralTube: persistedAssessment.swallowingSupportContext.enteralTube,
       gastrostomy: persistedAssessment.swallowingSupportContext.gastrostomy,
     }, support);
+    const current = await db.consultation.findUniqueOrThrow({ where: { id: consultationId }, select: { updatedAt: true, assessment: true } });
+    const urinary = { indwelling: true, intermittent: false };
+    const mergedUrinary = mergeStoredUrinaryCatheterContext(current.assessment as Record<string, unknown>, urinary, new Date().toISOString());
+    const condition = { id: consultationId, patientId, status: { not: "FINALIZED" as const }, updatedAt: current.updatedAt };
+    assert.equal((await db.consultation.updateMany({ where: { ...condition, patientId: otherPatientId }, data: { assessment: mergedUrinary as Prisma.InputJsonValue } })).count, 0);
+    assert.equal((await db.consultation.updateMany({ where: { ...condition, updatedAt: new Date(0) }, data: { assessment: mergedUrinary as Prisma.InputJsonValue } })).count, 0);
+    assert.equal((await db.consultation.updateMany({ where: condition, data: { assessment: mergedUrinary as Prisma.InputJsonValue } })).count, 1);
+    const urinaryReload = await db.consultation.findUniqueOrThrow({ where: { id: consultationId }, select: { assessment: true } });
+    const urinaryAssessment = urinaryReload.assessment as Record<string, unknown>;
+    assert.deepEqual(readUrinaryCatheterContext(urinaryAssessment.urinaryCatheterContext), urinary);
+    assert.deepEqual(urinaryAssessment.dietaryAssessment, persistedAssessment.dietaryAssessment);
+    assert.deepEqual(urinaryAssessment.swallowingSupportContext, persistedAssessment.swallowingSupportContext);
+    await db.consultation.update({ where: { id: consultationId }, data: { status: "FINALIZED" } });
+    assert.equal((await db.consultation.updateMany({ where: { id: consultationId, patientId, status: { not: "FINALIZED" } }, data: { assessment: {} } })).count, 0);
   } finally {
     await db.consultation.deleteMany({ where: { id: consultationId } });
     await db.patient.deleteMany({ where: { id: patientId } });

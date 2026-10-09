@@ -104,6 +104,12 @@ export function sanitizeFamilyReportModel(report: AgaReportModel): AgaReportMode
       contact: filterFamilySafeCareItems(report.carePlan.contact),
       urgent: filterFamilySafeCareItems(report.carePlan.urgent),
     },
+    ...(report.urinaryCatheterCare ? { urinaryCatheterCare: {
+      indwellingActions: filterFamilySafeCareItems(report.urinaryCatheterCare.indwellingActions),
+      intermittentActions: filterFamilySafeCareItems(report.urinaryCatheterCare.intermittentActions),
+      generalActions: filterFamilySafeCareItems(report.urinaryCatheterCare.generalActions),
+      contactGuidance: filterFamilySafeCareItems(report.urinaryCatheterCare.contactGuidance),
+    } } : {}),
     ...(report.swallowingSupportCare ? {
       swallowingSupportCare: {
         enteralRoute: report.swallowingSupportCare.enteralRoute,

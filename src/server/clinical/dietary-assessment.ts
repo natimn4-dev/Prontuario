@@ -27,6 +27,7 @@ import {
   SWALLOWING_SUPPORT_SCHEMA_VERSION,
   type SwallowingSupportContext,
 } from "../../domain/swallowing-support.ts";
+import { normalizeUrinaryCatheterContext, mergeStoredUrinaryCatheterContext, readUrinaryCatheterContext, URINARY_CATHETER_SCHEMA_VERSION, type UrinaryCatheterContext } from "../../domain/urinary-catheter-support.ts";
 import { buildConditionalDietaryGuidance, guidanceAsText } from "../../domain/dietary-guidance";
 import { getTacoFood, searchTacoFoods } from "./taco-food-catalog";
 import { getCommercialFood, searchCommercialFoods } from "./commercial-food-catalog";
@@ -193,6 +194,7 @@ export async function getDietaryAssessment(id: string) {
     swallowingSupport: plain(consultation.assessment)
       ? readSwallowingSupportContext(consultation.assessment.swallowingSupportContext) ?? null
       : null,
+    urinaryCatheter: plain(consultation.assessment) ? readUrinaryCatheterContext(consultation.assessment.urinaryCatheterContext) ?? null : null,
     references: { calciumMg: calciumReferenceMg(context.ageYears, context.sex), fiberG: fiberReferenceG(context.ageYears, context.sex) },
     assessment: snapshot(consultation.assessment),
     history: prior.map((entry) => ({ occurredAt: entry.occurredAt.toISOString(), assessment: snapshot(entry.assessment) })).filter((entry) => entry.assessment).slice(0, 3).map((entry) => ({ occurredAt: entry.occurredAt, summary: entry.assessment!.summary })),
@@ -263,6 +265,74 @@ export async function saveSwallowingSupport(args: {
       consultationId: consultation.id,
       updatedAt: saved.updatedAt.toISOString(),
       swallowingSupport: context,
+    };
+  }, { isolationLevel: "Serializable" }));
+}
+
+export async function saveUrinaryCatheter(args: {
+  consultationId: string;
+  expectedUpdatedAt: string;
+  urinaryCatheter: unknown;
+  requestId?: string;
+}) {
+  const auth = await requireConsultationAccess(args.consultationId, "consultation.write");
+  const expected = new Date(args.expectedUpdatedAt);
+  if (!Number.isFinite(expected.getTime())) {
+    throw new DietaryAssessmentError("INVALID_VERSION", "Versão da consulta inválida.");
+  }
+  let context: UrinaryCatheterContext;
+  try {
+    context = normalizeUrinaryCatheterContext(args.urinaryCatheter);
+  } catch (error) {
+    throw new DietaryAssessmentError(
+      "INVALID_INPUT",
+      error instanceof Error ? error.message : "Seleção de sonda vesical inválida.",
+    );
+  }
+
+  return measureClinicalTransaction(() => prisma.$transaction(async (tx) => {
+    const consultation = await tx.consultation.findUnique({
+      where: { id: args.consultationId },
+      select: { id: true, patientId: true, status: true, updatedAt: true, assessment: true },
+    });
+    if (!consultation) throw new DietaryAssessmentError("NOT_FOUND", "Consulta não encontrada.");
+    if (consultation.status === "FINALIZED") throw new DietaryAssessmentError("FINALIZED", "Consulta finalizada é imutável.");
+    if (consultation.assessment !== null && !plain(consultation.assessment)) {
+      throw new DietaryAssessmentError("LEGACY_ASSESSMENT", "Avaliação em formato legado requer revisão antes de incluir este registro.");
+    }
+
+    const base = consultation.assessment === null ? {} : consultation.assessment;
+    const stored = mergeStoredUrinaryCatheterContext(base, context, new Date().toISOString());
+    const updated = await tx.consultation.updateMany({
+      where: {
+        id: consultation.id,
+        patientId: consultation.patientId,
+        status: { not: "FINALIZED" },
+        updatedAt: expected,
+      },
+      data: { assessment: stored as Prisma.InputJsonValue },
+    });
+    if (updated.count !== 1) {
+      throw new DietaryAssessmentError("CONCURRENT_CHANGE", "A consulta mudou em outra sessão. Recarregue antes de salvar.");
+    }
+
+    await tx.auditEvent.create({
+      data: {
+        userId: auth.user.id,
+        entityType: "Consultation",
+        entityId: consultation.id,
+        action: "consultation.urinary-catheter.update",
+        requestId: args.requestId,
+        outcome: "success",
+        reasonCode: URINARY_CATHETER_SCHEMA_VERSION,
+      },
+    });
+    const saved = await tx.consultation.findUnique({ where: { id: consultation.id }, select: { updatedAt: true } });
+    if (!saved) throw new DietaryAssessmentError("NOT_FOUND", "Consulta não encontrada.");
+    return {
+      consultationId: consultation.id,
+      updatedAt: saved.updatedAt.toISOString(),
+      urinaryCatheter: context,
     };
   }, { isolationLevel: "Serializable" }));
 }
