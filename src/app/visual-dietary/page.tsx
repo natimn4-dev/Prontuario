@@ -17,6 +17,7 @@ import {
   type DietaryFoodDraft,
   type DietaryFoodComposition,
 } from "@/domain/dietary-assessment";
+import { EMPTY_URINARY_CATHETER, type UrinaryCatheterContext } from "@/domain/urinary-catheter-support";
 import { EMPTY_SWALLOWING_SUPPORT, type SwallowingSupportContext } from "@/domain/swallowing-support";
 
 const previewFood: DietaryFoodComposition = {
@@ -160,6 +161,7 @@ function previewPayload() {
     clinicalContext: previewContext,
     references: { calciumMg: 1200, fiberG: 21 },
     swallowingSupport: { ...EMPTY_SWALLOWING_SUPPORT },
+    urinaryCatheter: { ...EMPTY_URINARY_CATHETER },
     assessment,
     history: [],
   };
@@ -253,10 +255,12 @@ export default function VisualDietaryPreviewPage() {
       if (url.endsWith("/dietary-assessment") && init?.method === "PUT") {
         const body =
           typeof init.body === "string"
-            ? (JSON.parse(init.body) as { assessment?: DietaryAssessmentInput; swallowingSupport?: SwallowingSupportContext })
+            ? (JSON.parse(init.body) as { assessment?: DietaryAssessmentInput; swallowingSupport?: SwallowingSupportContext; urinaryCatheter?: UrinaryCatheterContext })
             : null;
         if (body?.assessment) {
           payload = previewPayloadFromInput(payload, body.assessment);
+        } else if (body?.urinaryCatheter) {
+          payload = { ...payload, updatedAt: new Date().toISOString(), urinaryCatheter: body.urinaryCatheter };
         } else if (body?.swallowingSupport) {
           payload = {
             ...payload,

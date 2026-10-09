@@ -6,6 +6,7 @@ import {
   DietaryAssessmentError,
   getDietaryAssessment,
   saveSwallowingSupport,
+  saveUrinaryCatheter,
   saveDietaryAssessment,
 } from "@/server/clinical/dietary-assessment";
 
@@ -55,9 +56,13 @@ export async function PUT(request: Request, { params }: { params: Promise<{ id: 
         expectedUpdatedAt?: string;
         assessment?: DietaryAssessmentInput;
         swallowingSupport?: unknown;
+        urinaryCatheter?: unknown;
       };
-      if (!body.expectedUpdatedAt || (Boolean(body.assessment) === (body.swallowingSupport !== undefined))) {
+      if (!body.expectedUpdatedAt || [body.assessment !== undefined, body.swallowingSupport !== undefined, body.urinaryCatheter !== undefined].filter(Boolean).length !== 1) {
         return NextResponse.json({ error: "Dados incompletos." }, { status: 400 });
+      }
+      if (body.urinaryCatheter !== undefined) {
+        return NextResponse.json(await saveUrinaryCatheter({ consultationId: id, expectedUpdatedAt: body.expectedUpdatedAt, urinaryCatheter: body.urinaryCatheter, requestId: request.headers.get("x-request-id") ?? undefined }), { headers: { "Cache-Control": "private, no-store" } });
       }
       if (body.swallowingSupport !== undefined) {
         return NextResponse.json(await saveSwallowingSupport({

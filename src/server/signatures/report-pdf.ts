@@ -783,6 +783,24 @@ class StyledPdfBuilder {
     );
   }
 
+  drawUrinaryCatheter(care: AgaReportModel["urinaryCatheterCare"]): void {
+    if (!care) return;
+    this.sectionHeading("Cuidados", "Cuidados com sonda vesical", "Orientações para família e cuidadores conforme o tipo registrado nesta consulta. Siga o plano individual e o treinamento da equipe.");
+    const sections = [
+      { title: "Sonda de demora (com bolsa coletora)", items: care.indwellingActions },
+      { title: "Sonda de alívio (intermitente)", items: care.intermittentActions },
+      { title: "Observação diária e cuidados gerais", items: care.generalActions },
+      { title: "Quando procurar atendimento", items: care.contactGuidance },
+    ];
+    for (const section of sections.filter((item) => item.items.length)) {
+      const height = this.measureBullets(section.items, CONTENT_WIDTH, 11, 14.5) + 28;
+      this.ensureSpace(height);
+      this.text(section.title, MARGIN, this.y - 11.2, 11.2, FONT_BOLD, COLORS.primaryStrong);
+      this.y -= 22;
+      this.y -= this.drawBulletsAt(section.items, MARGIN, this.y, CONTENT_WIDTH, 11, 14.5, COLORS.ink) + 12;
+    }
+  }
+
   drawSafety(report: AgaSignedReportModel): void {
     const left: StyledCard = {
       title: "Situações de urgência",
@@ -933,6 +951,7 @@ export function buildAgaReportPdf(input: {
   builder.drawClinicalConducts(input.report.clinicalConducts);
   builder.drawSwallowingSupport(input.report.swallowingSupportCare);
   builder.drawGastrostomy(input.report.gastrostomyCare);
+  builder.drawUrinaryCatheter(input.report.urinaryCatheterCare);
   builder.drawSafety(input.report);
   builder.drawSupport(input.report);
   builder.drawFinalVerification(input.verificationUrl);
