@@ -4,7 +4,7 @@ Especificação funcional e técnica autorizada pela product owner, Dra. Natalia
 
 [Baixar o relatório completo em Word](./projeto-saude-da-familia.docx)
 
-Versão 1.3 — 8 de outubro de 2026.
+Versão 1.4 — 10 de outubro de 2026.
 
 ## Escopo aprovado
 
@@ -15,6 +15,7 @@ Versão 1.3 — 8 de outubro de 2026.
 - Quedas e revisão medicamentosa: STOPPFall, sem escore global inventado ou suspensão automática de medicamentos.
 - Disfagia quando houver queixa; PPS quando houver indicação de cuidados paliativos.
 - Visão, audição, cinco ou mais doenças crônicas e uso diário de cinco ou mais medicamentos.
+- Incontinência urinária, incontinência fecal e insônia: três checkboxes independentes; cada positivo indica discussão geriátrica.
 - Internação nos últimos seis meses: abrir LACE com episódio e data da alta identificados.
 
 ## Informações técnicas no relatório final
@@ -36,18 +37,18 @@ GDS positiva não confirma diagnóstico ou gravidade de depressão. MEEM alterad
 
 ### Regra única de discussão com o geriatra
 
-**Qualquer domínio alterado exige discussão com o geriatra do programa, mesmo quando a conduta inicial já foi iniciada.** Matriciamento pode ser discussão de caso sem consulta presencial.
+**Qualquer domínio alterado ou resposta positiva para incontinência urinária, incontinência fecal ou insônia exige discussão com o geriatra do programa, mesmo quando a conduta inicial já foi iniciada.** Matriciamento pode ser discussão de caso sem consulta presencial.
 
 - Alteração isolada: condução pela equipe de família, matriciamento e reavaliação em 3–6 meses, ajustada à necessidade clínica.
 - Dois ou mais domínios alterados, FRAIL ≥3, declínio funcional agudo/progressivo ou suspeita de demência reforçada em avaliação de segundo nível: priorizar avaliação geriátrica ampla e seguimento compartilhado.
-- Seis domínios completos sem alteração: prevenção e revisão anual; discussão não obrigatória pelo protocolo.
+- Seis domínios completos sem alteração e três itens adicionais negativos: prevenção e revisão anual; discussão não obrigatória pelo protocolo.
 - Emergência: fluxo de urgência independente. Avaliar imediatamente o risco diante de ideação suicida; risco iminente, lesão relevante após queda, instabilidade clínica ou repercussões graves da desnutrição seguem atendimento adequado sem aguardar matriciamento.
 
 ```mermaid
 flowchart TD
- A["Avaliar seis domínios e gravidade"] --> B{"Emergência clínica?"}
+ A["Avaliar seis domínios, continência, sono e gravidade"] --> B{"Emergência clínica?"}
  B -->|Sim| U["Fluxo de urgência"]
- B -->|Não| C{"Algum domínio alterado?"}
+ B -->|Não| C{"Domínio alterado ou continência/insônia positiva?"}
  C -->|Sim| D["Conduta inicial e discussão com geriatra"]
  C -->|Não| E{"Rastreio completo?"}
  E -->|Sim| F["Prevenção e revisão anual"]
@@ -63,7 +64,7 @@ Preservar respostas e resultados por paciente e consulta; abrir reaplicações e
 
 Gerar orientações a partir de regras clínicas versionadas fora dos componentes React. Contar domínios distintos: Katz e Lawton alterados contam uma alteração funcional. FRAIL 1–2 ativa matriciamento; ≥3 também ativa prioridade. Uma alteração válida continua indicando discussão mesmo que outro domínio esteja incompleto.
 
-Ausência de dados não equivale a zero ou normalidade. Somente avaliações completas sem alterações permitem a recomendação anual sem discussão obrigatória. Distinguir resultados atuais de históricos.
+Ausência de dados não equivale a zero ou normalidade. Somente avaliações completas sem alterações e três itens adicionais explicitamente negativos permitem a recomendação anual sem discussão obrigatória. Distinguir resultados atuais de históricos.
 
 Persistir indicação, motivo, prioridade, estado pendente/discutido/encaminhado, responsável, data, participantes, plano acordado e prazo de seguimento. A sugestão só se torna conduta após confirmação médica. Abrir o painel ou finalizar a consulta não confirma encaminhamento nem discussão realizada.
 
@@ -72,3 +73,17 @@ No relatório familiar, usar linguagem acessível e condutas confirmadas; inclui
 Homologar: nenhum domínio alterado; alteração isolada com conduta iniciada; dois instrumentos do mesmo domínio; múltiplos domínios; FRAIL 1–2/≥3; limiares GDS, 5xSTS, 10-CS e MNA-SF; demência diagnosticada; peso como alerta independente; dados ausentes/históricos; urgência e exportação familiar. O Word contém a matriz completa de aceite e referências clínicas.
 
 Esta entrega é documentação de planejamento para implementação pela engenharia.
+
+## Checkboxes de continência e sono
+
+| Campo | Pergunta de apoio | Regra |
+| --- | --- | --- |
+| Incontinência urinária | Há perda involuntária de urina? | Se sim, discutir com o geriatra. |
+| Incontinência fecal | Há perda involuntária de fezes? | Se sim, discutir com o geriatra. |
+| Insônia | Há queixa de insônia? | Se sim, discutir com o geriatra. |
+
+Registrar sim, não ou não avaliado/informação indisponível, com informante, data e contexto opcional. Checkbox desmarcado não representa negativo sem resposta explícita. Salvar por paciente e consulta; retorno inicia sem resposta atual e histórico separado.
+
+No painel Informações técnicas, qualquer positivo mostra o motivo e “Discutir o caso com o geriatra do programa e definir o plano de cuidado compartilhado.” Vários positivos geram uma indicação com todos os motivos. Não somar esses itens aos seis domínios para priorizar AGA automaticamente; preservar os critérios clínicos existentes. Recalcular a indicação quando uma resposta mudar, preservando histórico de discussões e condutas confirmadas.
+
+Homologar cada positivo isolado com seis domínios normais; combinações com uma indicação e todos os motivos; três negativos explícitos; não avaliado; positivo com dados ausentes; salvamento/recarga; retorno sem herança; remoção de um motivo sem perder os outros. Nenhuma prescrição ou encaminhamento automático.
