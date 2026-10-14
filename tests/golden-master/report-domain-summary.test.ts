@@ -3,6 +3,39 @@ import test from "node:test";
 import { buildAgaReportModel } from "../../src/domain/aga-report.ts";
 import { buildReportDomainSummaries } from "../../src/domain/report-domain-summary.ts";
 
+test("nutrição mantém os quatro cuidados no relatório e prioriza a via enteral", () => {
+  const report = buildAgaReportModel({
+    patientId: "synthetic-nutrition",
+    consultationId: "synthetic-current",
+    consultationStatus: "IN_REVIEW",
+    patientName: "Paciente Sintético",
+    longitudinalProblems: [],
+    longitudinalAssessments: [{
+      patientId: "synthetic-nutrition",
+      consultationId: "synthetic-current",
+      scaleCode: "sarc_calf",
+      scaleVersion: "1.0",
+      score: 12,
+      color: "vermelho",
+      appliedAt: "2026-10-14",
+    }],
+  });
+  const nutrition = buildReportDomainSummaries(report.assessedScales, report.intrinsicCapacity)
+    .find((domain) => domain.code === "nutricao");
+  assert.equal(nutrition?.guidance.length, 4);
+  assert.match(nutrition!.guidance[0]!, /proteína.*café da manhã.*almoço.*lanche.*jantar/);
+  assert.match(nutrition!.guidance[1]!, /energia suficiente/);
+  assert.match(nutrition!.guidance[2]!, /mesmo sem sede.*limite diário/);
+  assert.match(nutrition!.guidance[3]!, /faixas elásticas.*capacidade atual.*equilíbrio.*supervisão/);
+
+  const enteral = buildReportDomainSummaries(report.assessedScales, report.intrinsicCapacity, {
+    enteralRoute: true, enteralTube: true,
+  }).find((domain) => domain.code === "nutricao");
+  assert.ok(enteral?.guidance.some((item) => /Sonda nasoenteral/.test(item)));
+  assert.ok(enteral?.guidance.every((item) => !/café da manhã/.test(item)));
+  assert.match(enteral!.guidance.join(" "), /pela boca somente se o plano atual da equipe liberar/);
+});
+
 test("relatório compartilhável agrega avaliações por domínio sem expor escalas", () => {
   const report = buildAgaReportModel({
     patientId: "patient-domain-summary",
