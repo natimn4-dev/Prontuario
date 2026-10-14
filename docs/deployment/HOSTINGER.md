@@ -72,9 +72,9 @@ O endpoint público de health check deve responder HTTP 200 e incluir:
 
 - `status: "ok"`
 - `database: "ok"`
-- `releaseId: "2026-10-09-sonda-vesical-v1"`
+- `releaseId: "2026-10-14-nutricao-sarcopenia-v1"`
 
-Nesta release, Nutrição → Contextualizar inclui opções independentes de sonda vesical de demora e de alívio. A seleção é salva por consulta e os novos relatórios texto/HTML/PDF incluem somente os cuidados dos tipos marcados, com observação diária e sinais de atendimento. Desmarcar ambos remove a seção das novas saídas. As trocas e os horários seguem o plano individual da equipe. Contextos de nutrição/deglutição, SOAP, medicamentos, escalas e snapshots anteriores são preservados. Não há migration de banco nesta release.
+Nesta release, o relatório de Nutrição e vitalidade apresenta quatro cuidados práticos: proteína distribuída nas refeições, energia suficiente, hidratação e exercícios de força com movimento diário, caminhada e equilíbrio conforme a capacidade atual. Orientações específicas de disfagia, sondas, dependência avançada e imobilidade permanecem prioritárias. Escalas, SOAP, medicamentos e snapshots anteriores são preservados. Não há migration de banco nesta release.
 
 O `releaseId` é deliberadamente servido com `Cache-Control: no-store`; uma CDN ou proxy não deve reutilizar um identificador antigo para declarar a implantação como atual. O smoke também exige esse header antes de aceitar a resposta de health.
 

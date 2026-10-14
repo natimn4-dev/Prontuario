@@ -1058,6 +1058,8 @@ export function buildReportDomainSummaries(
         : (npiPositiveDomains(dimensionScales).length > 0 ? 5 : targetedCognitiveGuidance(dimensionScales).length > 0 ? 4 : 2)
       : enteralNutritionGuidance
         ? contextGuidance.length
+        : dimension === "nutricao" && !targetedGuidance
+          ? 4
         : targetedGuidance
         ? 4
         : dimension === "mobilidade" && immobilityContext.established

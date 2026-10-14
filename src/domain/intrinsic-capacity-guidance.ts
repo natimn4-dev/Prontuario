@@ -127,8 +127,10 @@ const DOMAIN_CONTENT: Readonly<Record<IntrinsicCapacityDomainCode, Omit<Intrinsi
     label: "Vitalidade",
     whyItMatters: "Vitalidade representa a reserva que o organismo usa para enfrentar doenças e manter as atividades do dia. O estado nutricional e os sinais de possível perda de força muscular são acompanhados junto com a funcionalidade e as demais condições de saúde.",
     actions: [
-      "Para refeições mais agradáveis e menos cansativas, ofereça porções menores se necessário, alimentos preferidos e um ambiente tranquilo, respeitando o ritmo da pessoa.",
-      "Ofereça líquidos várias vezes ao longo do dia, em pequenas quantidades e nos horários de melhor aceitação. Se foi combinado um limite diário de líquidos, distribua-o sem ultrapassar o volume recomendado.",
+      "Inclua uma fonte de proteína no café da manhã, almoço, lanche e jantar, como carnes magras, peixe, ovos, leite e derivados, feijão ou outras leguminosas. A proteína ajuda a manter e recuperar os músculos; siga as quantidades e a consistência orientadas pela equipe.",
+      "Evite longos períodos sem comer. Se o apetite for pequeno, ofereça porções menores e lanches entre as refeições para garantir energia suficiente. Para refeições mais agradáveis e menos cansativas, respeite preferências e o ritmo da pessoa.",
+      "Ofereça líquidos várias vezes ao longo do dia, mesmo sem sede, respeitando a consistência indicada. Se foi combinado um limite diário de líquidos, distribua-o sem ultrapassar o volume recomendado.",
+      "Os exercícios de força ajudam a recuperar força e massa muscular. Converse com o seu fisioterapeuta sobre musculação leve, faixas elásticas ou levantar e sentar da cadeira, conforme a capacidade atual. Quando possível, combine movimento diário, caminhada e exercícios de equilíbrio, com segurança e supervisão. Exercício e boa alimentação juntos trazem melhores resultados.",
       "Observe roupas mais folgadas, porções menores, falta de apetite, dificuldade de mastigar ou engolir e cansaço nas refeições.",
       "Se a avaliação indicar maior risco de perda de força muscular, converse sobre avaliar força, mobilidade e nutrição. O resultado, sozinho, não confirma sarcopenia.",
       "Preserve tarefas e movimentos seguros; inclua exercícios de força gradualmente, respeitando capacidade, equilíbrio e risco de quedas.",
