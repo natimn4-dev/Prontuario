@@ -1,3 +1,4 @@
+import { oncoPrognosisFamilyGuidance } from "./onco-prognosis-family-guidance.ts";
 import { buildClinicalChangeSummary, type LongitudinalAssessment } from "./clinical-change-summary.ts";
 import type { ClinicalAlert } from "./clinical-alerts.ts";
 import {
@@ -386,6 +387,18 @@ export function renderAgaReportText(model: AgaReportModel): string {
       "Intervenções/sugestões pendentes de revisão médica:",
       list(scale.interventionSuggestions.map((suggestion) => suggestion.text)),
     );
+  }
+
+  for (const [dimension, label] of [
+    ["oncogeriatria", "ONCOGERIATRIA"],
+    ["prognostico", "PROGNÓSTICO E CUIDADOS PALIATIVOS"],
+  ] as const) {
+    const guidance = oncoPrognosisFamilyGuidance(dimension, model.assessedScales);
+    if (!guidance) continue;
+    blocks.push("", `ORIENTAÇÕES PARA PACIENTE E FAMÍLIA — ${label}`,
+      "Sugestões educativas sujeitas à revisão médica:",
+      list(guidance.actions),
+      `Base científica: ${guidance.evidenceReferences.map((reference) => `PMID ${reference.pmid} — ${reference.url}`).join("; ")}.`);
   }
 
   const carePlanBlocks = [

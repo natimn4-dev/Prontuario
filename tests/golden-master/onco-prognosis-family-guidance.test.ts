@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { buildAgaReportModel } from "../../src/domain/aga-report.ts";
+import { buildAgaReportModel, renderAgaReportText } from "../../src/domain/aga-report.ts";
 import { buildReportDomainSummaries } from "../../src/domain/report-domain-summary.ts";
 
 function reportFor(codes: string[], consultationId = "synthetic-current", patientId = "synthetic-onco") {
@@ -62,4 +62,15 @@ test("modelo do relatório continua isolando pacientes e mantém escores após s
   assert.deepEqual(buildReportDomainSummaries(persisted.assessedScales, persisted.intrinsicCapacity),
     buildReportDomainSummaries(report.assessedScales, report.intrinsicCapacity));
   assert.deepEqual(report.assessedScales.map((scale) => scale.result.score).sort((a, b) => a! - b!), [2, 2, 60]);
+});
+
+
+test("exportação textual mantém as mesmas orientações e referências da tabela", () => {
+  const report = reportFor(["charlson", "kps", "ecog"]);
+  const text = renderAgaReportText(report);
+  for (const domain of buildReportDomainSummaries(report.assessedScales, report.intrinsicCapacity)) {
+    for (const action of domain.guidance) assert.ok(text.includes(action));
+    for (const reference of domain.evidenceReferences) assert.ok(text.includes(reference.url));
+  }
+  assert.doesNotMatch(renderAgaReportText(reportFor(["ecog", "charlson", "kps"], "synthetic-previous")), /ORIENTAÇÕES PARA PACIENTE E FAMÍLIA — (ONCOGERIATRIA|PROGNÓSTICO)/);
 });
