@@ -1,4 +1,5 @@
 import { oncoPrognosisFamilyGuidance } from "./onco-prognosis-family-guidance.ts";
+import { removeRepeatedFamilyGuidance } from "./family-guidance-deduplication.ts";
 import { speechTherapySwallowingGuidance } from "./swallowing-support.ts";
 import type { AgaScaleReportSection } from "./aga-report.ts";
 import {
@@ -931,7 +932,7 @@ export function buildReportDomainSummaries(
   const functionalContext = deriveFamilyFunctionalContext(scales);
   const immobilityContext = deriveEstablishedImmobilityContext({ scales });
 
-  return DIMENSION_ORDER.flatMap((dimension): ReportDomainSummary[] => {
+  return removeRepeatedFamilyGuidance(DIMENSION_ORDER.flatMap((dimension): ReportDomainSummary[] => {
     const dimensionScales = grouped.get(dimension);
     if (!dimensionScales?.length) return [];
     const familyVisibleScales = dimensionScales.filter(shouldShowFamilyResult);
@@ -1081,5 +1082,5 @@ export function buildReportDomainSummaries(
       evidenceReferences: evidenceReferences.map((reference) => ({ ...reference })),
       requiresMedicalGuidance,
     }];
-  });
+  }), "guidance");
 }
