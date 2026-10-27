@@ -570,7 +570,10 @@ async function verifyOncoPrognosisFamilyGuidance() {
     assert.match(await onco.innerText(), /não é preciso esperar a próxima visita/);
     assert.match(await prognosis.innerText(), /Charlson.*não determina quanto tempo/s);
     assert.match(await prognosis.innerText(), /Karnofsky 60%.*ajuda ocasional/s);
-    assert.match(await prognosis.innerText(), /exigem avaliação imediata/);
+    const reportGuidance = await table.innerText();
+    assert.match(await onco.innerText(), /exigem avaliação imediata/);
+    assert.equal((reportGuidance.match(/A capacidade funcional pode mudar ao longo do acompanhamento/g) ?? []).length, 1);
+    assert.equal((reportGuidance.match(/exigem avaliação imediata/g) ?? []).length, 1);
     await table.screenshot({ path: "/tmp/prontuario-onco-prognosis-guidance-desktop-synthetic.png" });
     await page.setViewportSize({ width: 390, height: 844 });
     assert.equal(await page.evaluate(() => document.documentElement.scrollWidth > window.innerWidth), false);

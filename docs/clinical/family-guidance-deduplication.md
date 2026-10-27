@@ -6,7 +6,7 @@ Ao montar as linhas de orientação de cada domínio, o relatório remove a segu
 
 A regra vale para a tabela/relatório acessível e a exportação em texto. Itens específicos, avisos diferentes que tratam do mesmo assunto e variações que dependem da pontuação permanecem. Essa abordagem remove duplicação literal sem tentar inferir equivalência clínica. Os resultados das escalas, interpretações, plano de cuidado e orientações fora das linhas de domínio não são modificados.
 
-Um teste com ECOG 2, KPS 60 e Charlson verifica que as três orientações gerais antes repetidas ficam uma vez no relatório e no texto, enquanto os cuidados próprios de ECOG, Karnofsky e Charlson continuam presentes. Uma análise sintética com vários domínios não encontrou outras frases completas idênticas entre as orientações amostradas.
+Um teste com ECOG 2, KPS 60 e Charlson verifica que as três orientações gerais antes repetidas ficam uma vez no relatório e no texto, enquanto os cuidados próprios de ECOG, Karnofsky e Charlson continuam presentes. O cenário E2E também confirma que os sinais de urgência permanecem visíveis e aparecem uma vez no documento. Uma análise sintética com vários domínios não encontrou outras frases completas idênticas entre as orientações amostradas.
 
 ## Validação
 
