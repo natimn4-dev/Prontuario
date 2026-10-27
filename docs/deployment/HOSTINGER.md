@@ -72,7 +72,7 @@ O endpoint público de health check deve responder HTTP 200 e incluir:
 
 - `status: "ok"`
 - `database: "ok"`
-- `releaseId: "2026-10-14-nutricao-sarcopenia-v1"`
+- `releaseId: "2026-10-27-oncogeriatria-prognostico-v1"`
 
 Nesta release, o relatório de Nutrição e vitalidade apresenta quatro cuidados práticos: proteína distribuída nas refeições, energia suficiente, hidratação e exercícios de força com movimento diário, caminhada e equilíbrio conforme a capacidade atual. Orientações específicas de disfagia, sondas, dependência avançada e imobilidade permanecem prioritárias. Escalas, SOAP, medicamentos e snapshots anteriores são preservados. Não há migration de banco nesta release.
 
