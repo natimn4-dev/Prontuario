@@ -72,9 +72,9 @@ O endpoint público de health check deve responder HTTP 200 e incluir:
 
 - `status: "ok"`
 - `database: "ok"`
-- `releaseId: "2026-10-27-orientacoes-domiciliares-v2"`
+- `releaseId: "2026-10-27-orientacoes-domiciliares-v3"`
 
-Nesta release, o relatório de Nutrição e vitalidade apresenta quatro cuidados práticos: proteína distribuída nas refeições, energia suficiente, hidratação e exercícios de força com movimento diário, caminhada e equilíbrio conforme a capacidade atual. Orientações específicas de disfagia, sondas, dependência avançada e imobilidade permanecem prioritárias. Escalas, SOAP, medicamentos e snapshots anteriores são preservados. Não há migration de banco nesta release.
+Nesta release, itens educativos inteiros e idênticos deixam de aparecer em mais de um domínio do relatório familiar. Recomendações e avisos específicos continuam em seus domínios. O ajuste também vale para a exportação textual. Escalas, SOAP, medicamentos e snapshots anteriores são preservados. Não há migration de banco nesta release.
 
 O `releaseId` é deliberadamente servido com `Cache-Control: no-store`; uma CDN ou proxy não deve reutilizar um identificador antigo para declarar a implantação como atual. O smoke também exige esse header antes de aceitar a resposta de health.
 

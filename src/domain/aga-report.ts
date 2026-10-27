@@ -1,4 +1,5 @@
 import { oncoPrognosisFamilyGuidance } from "./onco-prognosis-family-guidance.ts";
+import { removeRepeatedFamilyGuidance } from "./family-guidance-deduplication.ts";
 import { buildClinicalChangeSummary, type LongitudinalAssessment } from "./clinical-change-summary.ts";
 import type { ClinicalAlert } from "./clinical-alerts.ts";
 import {
@@ -389,15 +390,19 @@ export function renderAgaReportText(model: AgaReportModel): string {
     );
   }
 
-  for (const [dimension, label] of [
-    ["oncogeriatria", "ONCOGERIATRIA"],
-    ["prognostico", "PROGNÓSTICO E CUIDADOS PALIATIVOS"],
-  ] as const) {
-    const guidance = oncoPrognosisFamilyGuidance(dimension, model.assessedScales);
+  const educationalSections = removeRepeatedFamilyGuidance([
+    ...(["oncogeriatria", "prognostico"] as const).flatMap((dimension) => {
+      const guidance = oncoPrognosisFamilyGuidance(dimension, model.assessedScales);
+      return guidance ? [{ code: dimension, actions: guidance.actions }] : [];
+    }),
+  ], "actions");
+  for (const section of educationalSections) {
+    const label = section.code === "oncogeriatria" ? "ONCOGERIATRIA" : "PROGNÓSTICO E CUIDADOS PALIATIVOS";
+    const guidance = oncoPrognosisFamilyGuidance(section.code, model.assessedScales);
     if (!guidance) continue;
     blocks.push("", `ORIENTAÇÕES PARA PACIENTE E FAMÍLIA — ${label}`,
       "Sugestões educativas sujeitas à revisão médica:",
-      list(guidance.actions),
+      list(section.actions),
       `Base científica: ${guidance.evidenceReferences.map((reference) => `PMID ${reference.pmid} — ${reference.url}`).join("; ")}.`);
   }
 

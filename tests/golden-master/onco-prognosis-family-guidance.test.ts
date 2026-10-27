@@ -70,6 +70,24 @@ test("escore ausente, fora da escala ou fracionário não inventa estágio nem u
   }
 });
 
+test("frases idênticas aparecem uma vez entre Oncogeriatria e Prognóstico", () => {
+  const codes = ["ecog", "kps", "charlson"];
+  const domains = domainsFor(codes);
+  const allGuidance = domains.flatMap((domain) => domain.guidance);
+  const shared = [
+    "A capacidade funcional pode mudar ao longo do acompanhamento. A pontuação ajuda a organizar o apoio, mas, sozinha, não define o tempo de vida nem quais tratamentos devem ser realizados. As decisões consideram a avaliação médica e o que é importante para o paciente e sua família.",
+    "Avise se houver aumento do cansaço, dor, falta de apetite, quedas, mais tempo na cama ou maior necessidade de ajuda. Essas mudanças podem ter diferentes causas e ajudam a ajustar o cuidado; não é preciso esperar a próxima visita para comunicá-las.",
+    "Mantenha acessíveis os contatos de acompanhamento e o plano combinado para situações de piora. Falta de ar intensa, confusão súbita, dificuldade para despertar ou engasgo com dificuldade para respirar exigem avaliação imediata.",
+  ];
+  for (const action of shared) assert.equal(allGuidance.filter((item) => item === action).length, 1);
+  assert.ok(domains.find((domain) => domain.code === "oncogeriatria")?.guidance.some((item) => /ECOG 2/.test(item)));
+  assert.ok(domains.find((domain) => domain.code === "prognostico")?.guidance.some((item) => /Karnofsky 60%/.test(item)));
+  assert.ok(domains.find((domain) => domain.code === "prognostico")?.guidance.some((item) => /Charlson/.test(item)));
+
+  const rendered = renderAgaReportText(reportFor(codes));
+  for (const action of shared) assert.equal(rendered.split(action).length - 1, 1);
+});
+
 test("explica apenas instrumentos avaliados na consulta e preserva outros domínios", () => {
   const charlson = domainsFor(["charlson"])[0]!;
   assert.match(charlson.guidance.join(" "), /Charlson/);
