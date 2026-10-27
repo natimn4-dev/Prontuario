@@ -1,20 +1,92 @@
 import type { AgaScaleReportSection } from "./aga-report.ts";
 import type { IntrinsicCapacityEvidenceReference } from "./intrinsic-capacity-guidance.ts";
 
-const ASCO_GA: IntrinsicCapacityEvidenceReference = {
-  label: "ASCO 2023 — avaliação geriátrica e manejo de vulnerabilidades no câncer",
-  pmid: "37459573",
-  url: "https://pubmed.ncbi.nlm.nih.gov/37459573/",
-  relevance: "Diretriz: avaliação multidimensional e intervenções individualizadas durante terapia sistêmica; desempenho global isolado não substitui avaliação geriátrica.",
-};
 const PERFORMANCE: IntrinsicCapacityEvidenceReference = {
-  label: "Karnofsky e ECOG — concordância entre pacientes e profissionais",
+  label: "ECOG e Karnofsky — capacidade funcional e avaliação clínica",
   pmid: "31806655",
   url: "https://pubmed.ncbi.nlm.nih.gov/31806655/",
-  relevance: "Revisão sistemática e meta-análise: concordância apenas razoável a moderada, reforçando a escuta do paciente e a avaliação clínica contextualizada.",
+  relevance: "A escuta do paciente e da família complementa a avaliação profissional. As orientações educativas usam as descrições funcionais da ECOG-ACRIN, sem conversão entre escalas.",
+};
+const ECOG_SOURCE: IntrinsicCapacityEvidenceReference = {
+  label: "Eastern Cooperative Oncology Group Performance Status — ECOG-ACRIN",
+  pmid: "7165009",
+  url: "https://ecog-acrin.org/resources/ecog-performance-status/",
+  relevance: "ECOG desenvolvida pelo Eastern Cooperative Oncology Group, hoje ECOG-ACRIN Cancer Research Group; Oken et al., 1982. A página também apresenta as descrições de Karnofsky (Karnofsky e Burchenal, 1949).",
 };
 
-/** Educação por instrumento presente, sem criar cortes, converter escalas ou prescrever. */
+const ECOG: Readonly<Record<number, readonly string[]>> = {
+  0: [
+    "ECOG 0 — As atividades habituais estão preservadas. Incentive a rotina, os momentos de convivência e as atividades de que o paciente gosta, respeitando as orientações recebidas na consulta e as restrições do tratamento.",
+    "Ofereça apoio quando necessário, sem assumir tarefas que o paciente consegue realizar. Manter suas escolhas e sua independência também faz parte do cuidado.",
+  ],
+  1: [
+    "ECOG 1 — Há dificuldade com esforços maiores, mas a independência está preservada. Ajude em tarefas como carregar compras e fazer limpeza pesada, mantendo a participação nas atividades mais leves.",
+    "O cansaço pode tornar as tarefas mais demoradas. Respeite esse ritmo e intercale atividades com pausas para descanso, preservando os momentos de convivência e lazer.",
+  ],
+  2: [
+    "ECOG 2 — O paciente consegue cuidar de si, mas não mantém atividades de trabalho. Permanece em pé ou circulando por mais da metade do tempo em que está acordado.",
+    "Ofereça ajuda com compras, preparo das refeições e transporte. No banho, na alimentação e na troca de roupa, preserve o que ele consegue fazer com segurança, sem pressa e respeitando seu ritmo.",
+    "Deixe os objetos de uso diário ao alcance e os caminhos livres de obstáculos. Facilite o acesso ao banheiro e ofereça apoio nos deslocamentos quando necessário.",
+  ],
+  3: [
+    "ECOG 3 — O paciente precisa de ajuda nos cuidados pessoais e passa mais da metade do tempo acordado na cama ou em uma cadeira.",
+    "No banho, na troca de roupa, na alimentação e ao se levantar, ofereça a ajuda necessária com calma. Explique cada cuidado, escute suas preferências e permita que ele participe do que ainda consegue fazer.",
+    "Ajude a encontrar posições confortáveis e siga as orientações recebidas na visita sobre mudanças de posição. Durante a higiene, observe a pele, principalmente nas costas, no quadril e nos calcanhares. Avise se houver vermelhidão persistente, feridas ou dor.",
+    "Deixe os objetos próximos e os caminhos livres para facilitar o cuidado. Use os equipamentos de apoio conforme a indicação individual registrada na consulta.",
+  ],
+  4: [
+    "ECOG 4 — O paciente permanece restrito à cama ou à cadeira e precisa de ajuda para todos os cuidados pessoais.",
+    "Faça a higiene com delicadeza, preserve a privacidade e respeite os momentos de descanso. Ajude nas mudanças de posição conforme as orientações recebidas na visita, buscando conforto e observando a pele.",
+    "Ao oferecer alimentos e líquidos, siga o plano individual de alimentação. Não insista quando houver desconforto e avise se aparecerem tosse, engasgos ou dificuldade para engolir.",
+    "A presença da família, uma conversa tranquila e o contato afetuoso podem trazer segurança e acolhimento. Respeite as preferências do paciente, inclusive quando ele desejar silêncio ou descanso.",
+  ],
+};
+
+const KPS: Readonly<Record<number, readonly string[]>> = {
+  100: [
+    "Karnofsky 100% — As atividades habituais estão preservadas. Incentive a rotina, a convivência e os hábitos saudáveis, conforme as orientações da consulta. Ofereça ajuda quando necessário, preservando a independência.",
+  ],
+  90: [
+    "Karnofsky 90% — O paciente mantém suas atividades, com poucos sintomas. Incentive os momentos de trabalho, lazer e convivência que lhe fazem bem. Se houver dificuldade, ajude a organizar os medicamentos e os compromissos.",
+  ],
+  80: [
+    "Karnofsky 80% — As atividades exigem mais esforço. Ajude a escolher o que é mais importante no dia e intercale as tarefas com descanso. Reduza cobranças e ofereça ajuda nas atividades mais cansativas, sem retirar as escolhas do paciente.",
+  ],
+  70: [
+    "Karnofsky 70% — O paciente cuida de si, mas já não consegue manter o trabalho ou a rotina habitual. Redistribua as responsabilidades da casa e preserve sua participação no banho, na alimentação e na troca de roupa, respeitando seus limites.",
+  ],
+  60: [
+    "Karnofsky 60% — Há necessidade de ajuda ocasional. Combine quem poderá ajudar com compras, refeições, transporte e outras tarefas em que exista dificuldade. Preserve os cuidados pessoais que o paciente consegue realizar com segurança.",
+    "Se estiver difícil organizar ou tomar os medicamentos, ofereça ajuda seguindo a prescrição e as orientações recebidas na consulta. Compartilhe as dificuldades durante o acompanhamento para que o cuidado seja ajustado.",
+  ],
+  50: [
+    "Karnofsky 50% — Há necessidade de ajuda frequente e acompanhamento médico próximo. Combine uma pessoa de referência para organizar os cuidados e divida as tarefas entre familiares e cuidadores.",
+    "Deixe os objetos de uso diário ao alcance e os caminhos livres. Ao ajudar no banho e nas transferências, respeite o ritmo do paciente e siga as orientações recebidas na visita e as indicações de equipamentos registradas no plano de cuidado.",
+  ],
+  40: [
+    "Karnofsky 40% — O paciente precisa de ajuda importante nas atividades diárias. No banho, na alimentação, na troca de roupa e na movimentação, explique o que será feito e permita que ele participe do que ainda consegue fazer.",
+    "Ajude a encontrar posições confortáveis, observe a pele durante a higiene e siga o plano de cuidados recebido na visita. Informe dor, falta de ar ou outros desconfortos para que o cuidado seja ajustado.",
+  ],
+  30: [
+    "Karnofsky 30% — A limitação é grave e exige ajuda contínua. Organize a presença de familiares ou cuidadores e mantenha por perto os itens necessários para higiene, alimentação e conforto.",
+    "Escute o que é mais importante para o paciente e respeite suas preferências. As decisões sobre tratamentos e o local do cuidado serão individualizadas durante o acompanhamento; essa pontuação, sozinha, não determina internação ou fim de vida.",
+  ],
+  20: [
+    "Karnofsky 20% — O estado de saúde está muito comprometido e exige cuidados integrais e acompanhamento próximo. Faça a higiene com delicadeza, ajude a encontrar posições confortáveis e siga o plano individual de alimentação e alívio dos sintomas.",
+    "Respeite os momentos de descanso e ofereça companhia sem exigir interação. Mantenha acessíveis os contatos de acompanhamento e siga o plano combinado para situações de piora. A necessidade de internação depende da avaliação individual e dos objetivos de cuidado.",
+  ],
+  10: [
+    "Karnofsky 10% — O estado de saúde é extremamente grave. Priorize o conforto, a higiene delicada e o alívio dos sintomas conforme o plano prescrito. Ofereça presença, afeto e apoio espiritual, se isso fizer sentido para o paciente.",
+    "Se a avaliação médica confirmar que o paciente está nos últimos dias de vida, siga as orientações individualizadas para esse momento. A família também precisa de acolhimento e apoio, inclusive durante o luto.",
+  ],
+};
+
+const CHANGES = "Avise se houver aumento do cansaço, dor, falta de apetite, quedas, mais tempo na cama ou maior necessidade de ajuda. Essas mudanças podem ter diferentes causas e ajudam a ajustar o cuidado; não é preciso esperar a próxima visita para comunicá-las.";
+const CONTACT = "Mantenha acessíveis os contatos de acompanhamento e o plano combinado para situações de piora. Falta de ar intensa, confusão súbita, dificuldade para despertar ou engasgo com dificuldade para respirar exigem avaliação imediata.";
+const CAREGIVER = "Quem cuida também precisa de cuidado. Sempre que possível, divida as tarefas e combine períodos de descanso. Compartilhe suas dificuldades durante o acompanhamento: suas necessidades também fazem parte do plano de cuidado.";
+const LIMITS = "A capacidade funcional pode mudar ao longo do acompanhamento. A pontuação ajuda a organizar o apoio, mas, sozinha, não define o tempo de vida nem quais tratamentos devem ser realizados. As decisões consideram a avaliação médica e o que é importante para o paciente e sua família.";
+
+/** Texto educativo por resultado atual exato; sem arredondar, converter escalas ou prescrever. */
 export function oncoPrognosisFamilyGuidance(
   dimension: string,
   scales: readonly AgaScaleReportSection[],
@@ -22,41 +94,31 @@ export function oncoPrognosisFamilyGuidance(
   if (dimension !== "oncogeriatria" && dimension !== "prognostico") return undefined;
   const current = scales.filter((scale) => scale.assessedInTargetConsultation && scale.dimension === dimension);
   if (current.length === 0) return undefined;
-  const has = (code: string) => current.some((scale) => scale.code === code);
-  if (dimension === "oncogeriatria") {
-    return {
-      actions: [
-        "Converse com oncologia e geriatria sobre o objetivo do tratamento, os benefícios esperados, os efeitos indesejados e o que é mais importante para você. A avaliação considera sua autonomia, memória, alimentação, outras doenças, medicamentos e rede de apoio.",
-        ...(has("ecog") ? ["A ECOG descreve quanto você consegue se movimentar e cuidar de si no dia a dia. Conte à equipe o que ainda faz sozinho e em que precisa de ajuda. O resultado deve ser interpretado junto com a avaliação completa e não determina, sozinho, qual tratamento receber."] : []),
-        "Mantenha as atividades que consegue realizar com segurança, alternando movimento e descanso. Se houver perda de peso, pouco apetite ou dificuldade para se movimentar, peça um plano individual de alimentação e reabilitação, respeitando as restrições da equipe.",
-        "Leve às consultas a lista de medicamentos, vitaminas e suplementos. Combine quem pode ajudar com transporte, refeições e horários dos remédios; mudanças no tratamento precisam ser discutidas com a equipe.",
-        "Anote sintomas novos, quedas, redução da alimentação e dificuldade nas tarefas habituais. Combine um canal de contato e um plano para piora dos sintomas durante o tratamento; comunique mudanças precocemente, sem esperar a próxima consulta.",
-      ],
-      evidenceReferences: [ASCO_GA, ...(has("ecog") ? [PERFORMANCE] : [])],
-    };
-  }
+  const find = (code: string) => current.find((scale) => scale.code === code);
+  const functional = find(dimension === "oncogeriatria" ? "ecog" : "kps");
+  const score = functional?.result.score;
+  const content = typeof score === "number" && Number.isFinite(score)
+    ? (dimension === "oncogeriatria" ? ECOG : KPS)[score]
+    : undefined;
+  const needsHelp = content !== undefined && typeof score === "number"
+    && (dimension === "oncogeriatria" ? score >= 3 : score <= 50);
   return {
     actions: [
-      ...(has("charlson") ? ["O índice de Charlson reúne doenças que podem influenciar a evolução da saúde. Ele ajuda a planejar o cuidado, mas não prevê com precisão quanto tempo uma pessoa viverá. Revise com a equipe o controle das doenças e como os tratamentos podem ser combinados com segurança."] : []),
-      ...(has("kps") ? ["A escala de Karnofsky descreve sua capacidade de realizar atividades e a necessidade de ajuda. Informe mudanças para caminhar, tomar banho, vestir-se ou alimentar-se. O resultado retrata o momento da avaliação e, sozinho, não define o tempo de vida nem a indicação de tratamento."] : []),
-      "Acompanhe mudanças em mobilidade, alimentação, dor, falta de ar e necessidade de ajuda. Se aparecer uma dificuldade nova, procure a equipe para avaliar a causa e ajustar o apoio; mantenha a participação da pessoa nas atividades que consegue realizar com segurança.",
-      "Converse sobre suas prioridades, como conforto, autonomia e convívio com a família. Combine os próximos passos, quem ajudará nas decisões e a data de reavaliação. As decisões dependem da avaliação médica e das preferências da pessoa, e não apenas de um escore.",
-      "Se houver sofrimento ou sintomas difíceis de controlar, converse sobre apoio de cuidados paliativos para você e sua família, inclusive junto ao tratamento do câncer quando indicado. Mantenha acessíveis os contatos e o plano para piora; diante de falta de ar intensa ou confusão súbita, procure atendimento imediatamente.",
+      ...(content ?? ["Respeite o ritmo e as preferências do paciente. Ofereça ajuda nas tarefas em que houver dificuldade, preservando sua participação no que consegue fazer com segurança."]),
+      ...(find("charlson") ? ["O índice de Charlson reúne informações sobre as doenças já existentes e ajuda a planejar o acompanhamento. Esse número não determina quanto tempo uma pessoa viverá. O cuidado considera também como o paciente está no dia a dia, suas prioridades e suas necessidades."] : []),
+      LIMITS,
+      ...(needsHelp ? [CAREGIVER] : []),
+      CHANGES,
+      CONTACT,
     ],
     evidenceReferences: [
-      ...(has("charlson") ? [{
+      ...(functional ? [PERFORMANCE, ECOG_SOURCE] : []),
+      ...(find("charlson") ? [{
         label: "Charlson — revisão crítica das propriedades do índice",
         pmid: "34991091",
         url: "https://pubmed.ncbi.nlm.nih.gov/34991091/",
-        relevance: "Revisão da validade prognóstica em populações clínicas; não fornece previsão exata de sobrevida individual nem decisão terapêutica isolada.",
+        relevance: "Validade prognóstica em populações clínicas; sem previsão exata da sobrevida individual ou decisão terapêutica isolada.",
       }] : []),
-      ...(has("kps") ? [PERFORMANCE] : []),
-      {
-        label: "ASCO 2024 — integração dos cuidados paliativos em oncologia",
-        pmid: "38748941",
-        url: "https://pubmed.ncbi.nlm.nih.gov/38748941/",
-        relevance: "Diretriz: cuidado paliativo precoce junto ao tratamento ativo no câncer avançado, atenção a sintomas e apoio a cuidadores; sem indicação automática por escore.",
-      },
     ],
   };
 }
