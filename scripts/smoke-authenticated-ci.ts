@@ -566,11 +566,11 @@ async function verifyOncoPrognosisFamilyGuidance() {
     await table.waitFor({ timeout: 30_000 });
     const onco = table.locator('tr[data-domain="oncogeriatria"]');
     const prognosis = table.locator('tr[data-domain="prognostico"]');
-    assert.match(await onco.innerText(), /A ECOG descreve/);
-    assert.match(await onco.innerText(), /canal de contato/);
-    assert.match(await prognosis.innerText(), /Charlson.*não prevê com precisão/s);
-    assert.match(await prognosis.innerText(), /Karnofsky.*retrata o momento/s);
-    assert.match(await prognosis.innerText(), /procure atendimento imediatamente/);
+    assert.match(await onco.innerText(), /ECOG 2 — O paciente consegue cuidar de si/);
+    assert.match(await onco.innerText(), /não é preciso esperar a próxima visita/);
+    assert.match(await prognosis.innerText(), /Charlson.*não determina quanto tempo/s);
+    assert.match(await prognosis.innerText(), /Karnofsky 60%.*ajuda ocasional/s);
+    assert.match(await prognosis.innerText(), /exigem avaliação imediata/);
     await table.screenshot({ path: "/tmp/prontuario-onco-prognosis-guidance-desktop-synthetic.png" });
     await page.setViewportSize({ width: 390, height: 844 });
     assert.equal(await page.evaluate(() => document.documentElement.scrollWidth > window.innerWidth), false);
