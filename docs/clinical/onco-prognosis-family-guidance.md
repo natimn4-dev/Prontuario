@@ -24,3 +24,14 @@ As frases educativas são uma síntese clínica em linguagem acessível, não tr
 Testes específicos verificam preservação do item final de contato, explicações por instrumento, ausência de previsão numérica de sobrevida, ausência de dados, exclusão de consulta anterior, isolamento de paciente e serialização do modelo. A suíte existente cobre persistência real em MySQL na CI, SOAP, medicamentos, bloqueio de compartilhamento e impressão.
 
 Validação local: 950 testes golden master, typecheck completo e domínio, Prisma generate e build Next.js de produção com configuração sintética. O build guardado completo (`npm run build`) e a persistência MySQL dependem do banco efêmero da CI; não foi usado banco de produção. O Chromium local não abre por bloqueio de sockets do ambiente. A tentativa de renderização alternativa com WeasyPrint não reproduz fielmente a largura da tabela; não é considerada aprovação visual. A CI ganhou um cenário autenticado específico que preenche as três escalas, gera o relatório real, verifica as explicações e a orientação final de contato, verifica largura mobile e produz capturas desktop/mobile/print e PDF A4. Merge depende dos gates remotos e revisão dessa evidência.
+
+## Atualização necessária para o gate de segurança
+
+A CI do conteúdo clínico aprovou MySQL, 951 testes, E2E e build guardado/PRESTART, mas falhou em `npm audit --omit=dev --audit-level=critical`. O gate foi preservado. Atualizados Next.js e SWC de 16.3.8 para 16.4.3; Better Auth e o adaptador Prisma de 1.6.27 para 1.7.14, com dependências coordenadas no lockfile. React, Prisma, esquema do banco, configuração OAuth, permissões e regras clínicas não foram modificados. O lockfile foi resolvido sem `--force`/`--legacy-peer-deps` e validado com `npm ci` e `npm ls`.
+
+Referências dos alertas de pacote:
+- https://github.com/advisories/GHSA-2464-fhr4-w9xw — Next/Image Optimization; correção a partir de 16.4.1 e sharp 0.35.5.
+- https://github.com/advisories/GHSA-673q-mjm6-r5xr — Next/Cache Components; correção a partir de 16.4.1.
+- https://github.com/advisories/GHSA-965c-763c-88jm — Better Auth/OAuth state + Magic Link; correção a partir de 1.7.7. O aplicativo não configura Magic Link; o alerta do pacote não é evidência de exploração ou de incidente no prontuário. A atualização é exigida pelo gate por versão.
+
+Após a atualização, a auditoria local não identificou dependências críticas. Permanecem 8 alertas não críticos (1 moderado e 7 altos) em dependências preexistentes; não são considerados resolvidos nesta rodada. Não foi realizado um scan de segurança de toda a aplicação. Os 951 golden masters e typechecks foram repetidos com as novas versões. O novo SHA exige CI completa antes de merge.
