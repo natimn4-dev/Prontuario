@@ -80,9 +80,19 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          npm run dev -- --hostname 127.0.0.1 --port 3100 > /tmp/prontuario-e2e-next.log 2>&1 &
+          setsid npm run dev -- --hostname 127.0.0.1 --port 3100 > /tmp/prontuario-e2e-next.log 2>&1 &
           SERVER_PID=$!
-          trap 'kill "$SERVER_PID" 2>/dev/null || true; cat /tmp/prontuario-e2e-next.log || true' EXIT
+          cleanup_e2e() {
+            kill -- "-${SERVER_PID}" 2>/dev/null || true
+            for shutdown_attempt in $(seq 1 20); do
+              if ! kill -0 -- "-${SERVER_PID}" 2>/dev/null; then break; fi
+              sleep 0.25
+            done
+            kill -KILL -- "-${SERVER_PID}" 2>/dev/null || true
+            wait "$SERVER_PID" 2>/dev/null || true
+            cat /tmp/prontuario-e2e-next.log || true
+          }
+          trap cleanup_e2e EXIT
           for attempt in $(seq 1 40); do
             if curl -fsS --max-time 3 http://127.0.0.1:3100/login >/dev/null; then
               break
