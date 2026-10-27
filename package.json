@@ -34,12 +34,12 @@
     "test:backup": "bash scripts/test-backup-roundtrip.sh"
   },
   "dependencies": {
-    "@better-auth/prisma-adapter": "^1.6.0",
+    "@better-auth/prisma-adapter": "1.7.14",
     "@prisma/adapter-mariadb": "^7.7.0",
     "@prisma/client": "^7.7.0",
-    "better-auth": "^1.6.0",
+    "better-auth": "1.7.14",
     "dotenv": "^17.0.0",
-    "next": "16.3.8",
+    "next": "16.4.3",
     "react": "19.2.0",
     "react-dom": "19.2.0"
   },
@@ -60,6 +60,6 @@
     "sharp@0.34.5": true
   },
   "optionalDependencies": {
-    "@next/swc-wasm-nodejs": "16.3.8"
+    "@next/swc-wasm-nodejs": "16.4.3"
   }
 }

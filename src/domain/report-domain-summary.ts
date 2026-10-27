@@ -1,3 +1,4 @@
+import { oncoPrognosisFamilyGuidance } from "./onco-prognosis-family-guidance.ts";
 import { speechTherapySwallowingGuidance } from "./swallowing-support.ts";
 import type { AgaScaleReportSection } from "./aga-report.ts";
 import {
@@ -307,32 +308,6 @@ const DOMAIN_GUIDANCE: Readonly<Partial<Record<string, DomainGuidance>>> = {
       pmid: "29233097",
       url: "https://pubmed.ncbi.nlm.nih.gov/29233097/",
       relevance: "Ensaio clínico: apoio estruturado, treinamento e acompanhamento podem reduzir ou estabilizar a sobrecarga do cuidador.",
-    }],
-  },
-  oncogeriatria: {
-    actions: [
-      "Leve este resumo às consultas de oncologia e geriatria para que função, cognição, nutrição, medicamentos e apoio social sejam considerados em conjunto.",
-      "Registre sintomas novos, redução da ingestão, quedas, confusão, perda funcional e dificuldade do cuidador durante o tratamento e comunique precocemente à equipe.",
-      "Confirme com a equipe o canal de contato e quais sintomas exigem avaliação no mesmo dia durante o tratamento.",
-    ],
-    evidenceReferences: [{
-      label: "Atualização da diretriz ASCO de avaliação geriátrica em oncologia",
-      pmid: "37459573",
-      url: "https://pubmed.ncbi.nlm.nih.gov/37459573/",
-      relevance: "Diretriz recomenda avaliação geriátrica e manejo orientado pelos domínios identificados em idosos recebendo terapia sistêmica.",
-    }],
-  },
-  prognostico: {
-    actions: [
-      "Mantenha acessíveis os contatos da equipe, as preferências de cuidado já discutidas e o plano combinado para piora de sintomas.",
-      "Registre mudanças em dor, falta de ar, ingestão, consciência, mobilidade e necessidade de ajuda para facilitar ajustes do plano pela equipe.",
-      "Compartilhe com a equipe as prioridades do paciente e da família, especialmente quando houver mudança importante de funcionalidade ou sintomas.",
-    ],
-    evidenceReferences: [{
-      label: "Cuidados paliativos e desfechos de pacientes e cuidadores",
-      pmid: "27893131",
-      url: "https://pubmed.ncbi.nlm.nih.gov/27893131/",
-      relevance: "Meta-análise de ensaios clínicos: cuidados paliativos foram associados a melhor qualidade de vida, carga de sintomas e planejamento do cuidado.",
     }],
   },
   sintomas: {
@@ -977,7 +952,7 @@ export function buildReportDomainSummaries(
     const intrinsicGuidance = intrinsicCode
       ? intrinsicCapacityGuidanceForDomain(intrinsicCode)
       : undefined;
-    const domainGuidance = DOMAIN_GUIDANCE[dimension];
+    const domainGuidance = oncoPrognosisFamilyGuidance(dimension, dimensionScales) ?? DOMAIN_GUIDANCE[dimension];
     const stateAwareGuidance = dimension === "fragilidade"
       ? (() => {
           const profile = frailtyProfileFor(dimensionScales);
@@ -1052,7 +1027,9 @@ export function buildReportDomainSummaries(
     const completeContextGuidance = dementiaGuidance
       ? unique([...contextGuidance, ...targetedCognitiveGuidance(dimensionScales), ...npiNonPharmacologicalGuidance(dimensionScales)])
       : contextGuidance;
-    const guidanceLimit = dimension === "funcionalidade" ? completeContextGuidance.length : dimension === "cognicao"
+    const guidanceLimit = dimension === "oncogeriatria" || dimension === "prognostico"
+      ? completeContextGuidance.length
+      : dimension === "funcionalidade" ? completeContextGuidance.length : dimension === "cognicao"
       ? dementiaGuidance ? completeContextGuidance.length : state === "preserved"
         ? 3
         : (npiPositiveDomains(dimensionScales).length > 0 ? 5 : targetedCognitiveGuidance(dimensionScales).length > 0 ? 4 : 2)
