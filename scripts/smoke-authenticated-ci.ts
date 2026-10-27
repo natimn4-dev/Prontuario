@@ -4,6 +4,7 @@ import { PrismaMariaDb } from "@prisma/adapter-mariadb";
 import { PrismaClient, type Prisma } from "../src/generated/prisma/client.ts";
 import { chromium } from "playwright";
 import { isCiE2EAuthEnvironment } from "../src/domain/security/ci-e2e-auth-policy.ts";
+import { CHARLSON_STRUCTURED_DEFINITION } from "../src/domain/structured-g8-charlson-esas.ts";
 import { CORE_FREITAS_SCALES } from "../src/domain/freitas-core-scales.ts";
 
 function databaseConfig() {
@@ -538,6 +539,54 @@ async function verifyFollowUpScaleIsolation() {
   }
 }
 
+async function verifyOncoPrognosisFamilyGuidance() {
+  const id = "ci-e2e-onco-prognosis-guidance";
+  const cleanup = async () => {
+    await prisma.documentSnapshot.deleteMany({ where: { consultationId: id } });
+    await prisma.scaleAssessment.deleteMany({ where: { consultationId: id } });
+    await prisma.consultation.deleteMany({ where: { id } });
+  };
+  await cleanup();
+  const browser = await chromium.launch({ headless: true });
+  try {
+    await prisma.consultation.create({ data: { id, patientId: assignedPatientId, physicianId: userId, type: "FOLLOW_UP", status: "DRAFT", occurredAt: new Date("2026-10-27T12:00:00Z") } });
+    for (const [endpoint, body] of [
+      ["complementary", { scaleCode: "kps", answers: { score: 60 } }],
+      ["complementary", { scaleCode: "charlson", answers: { ...Object.fromEntries(CHARLSON_STRUCTURED_DEFINITION.fields.map((field) => [field.id, 0])), diabetes: 2 } }],
+      ["oncogeriatrics", { scaleCode: "ecog", ecog: 2 }],
+    ] as const) {
+      const response = await request(`/api/consultations/${id}/scales/${endpoint}`, true, body);
+      assert.equal(response.status, 201, await response.text());
+    }
+    const page = await browser.newPage({ viewport: { width: 1440, height: 1080 } });
+    await page.setExtraHTTPHeaders({ "x-prontuario-e2e-user": email, "x-prontuario-e2e-secret": secret });
+    await page.goto(`${baseUrl}/consultations/${id}#relatorio`, { waitUntil: "domcontentloaded" });
+    await page.getByRole("button", { name: "Gerar prévia", exact: true }).click();
+    const table = page.getByRole("table", { name: "Resultados das avaliações resumidos por domínio", exact: true });
+    await table.waitFor({ timeout: 30_000 });
+    const onco = table.locator('tr[data-domain="oncogeriatria"]');
+    const prognosis = table.locator('tr[data-domain="prognostico"]');
+    assert.match(await onco.innerText(), /A ECOG descreve/);
+    assert.match(await onco.innerText(), /canal de contato/);
+    assert.match(await prognosis.innerText(), /Charlson.*não prevê com precisão/s);
+    assert.match(await prognosis.innerText(), /Karnofsky.*retrata o momento/s);
+    assert.match(await prognosis.innerText(), /procure atendimento imediatamente/);
+    await table.screenshot({ path: "/tmp/prontuario-onco-prognosis-guidance-desktop-synthetic.png" });
+    await page.setViewportSize({ width: 390, height: 844 });
+    assert.equal(await page.evaluate(() => document.documentElement.scrollWidth > window.innerWidth), false);
+    await table.screenshot({ path: "/tmp/prontuario-onco-prognosis-guidance-mobile-synthetic.png" });
+    await page.getByRole("checkbox", { name: /Confirmo que revisei problemas, avaliações, alertas, orientações e o contexto desta consulta/ }).check();
+    await page.setViewportSize({ width: 1440, height: 1080 });
+    await page.emulateMedia({ media: "print" });
+    assert.equal(await table.isVisible(), true);
+    await table.screenshot({ path: "/tmp/prontuario-onco-prognosis-guidance-print-synthetic.png" });
+    await page.pdf({ path: "/tmp/prontuario-onco-prognosis-guidance-print-synthetic.pdf", format: "A4", printBackground: true });
+  } finally {
+    await browser.close();
+    await cleanup();
+  }
+}
+
 async function main() {
   assert.equal(isCiE2EAuthEnvironment(), true, "O smoke E2E recusou o ambiente: a trava de segurança não foi satisfeita.");
   assert.ok(secret.length >= 32, "E2E_AUTH_SECRET ausente ou curta.");
@@ -546,6 +595,7 @@ async function main() {
   await seed();
   await verifySwallowingTherapies();
   await verifySoapPersistence();
+  await verifyOncoPrognosisFamilyGuidance();
 
   const patientPage = await request(
     `/patients/${assignedPatientId}`,
