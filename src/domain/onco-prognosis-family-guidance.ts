@@ -66,7 +66,7 @@ const KPS: Readonly<Record<number, readonly string[]>> = {
   ],
   30: [
     "Karnofsky 30% — Organize a presença de familiares ou cuidadores e mantenha por perto os itens necessários para higiene, alimentação e conforto.",
-    "Escute o que é mais importante para o paciente e respeite suas preferências. As decisões sobre tratamentos e o local do cuidado serão individualizadas durante o acompanhamento; essa pontuação, sozinha, não determina internação ou fim de vida.",
+    "Escute o que é mais importante para o paciente e respeite suas preferências. As decisões sobre tratamentos e o local do cuidado serão individualizadas durante o acompanhamento, considerando suas necessidades e escolhas.",
   ],
   20: [
     "Karnofsky 20% — Faça a higiene com delicadeza, ajude a encontrar posições confortáveis e siga o plano individual de alimentação e alívio dos sintomas.",

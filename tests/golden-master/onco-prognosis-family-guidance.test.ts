@@ -66,6 +66,8 @@ test("cada resultado exato de ECOG e KPS recebe apenas suas orientações", () =
   assert.match(guidanceAt("ecog", 3), /Quem cuida também precisa/);
   assert.match(guidanceAt("kps", 10), /Se a avaliação médica confirmar/);
   assert.match(guidanceAt("kps", 30), /Organize a presença de familiares ou cuidadores/);
+  assert.match(guidanceAt("kps", 30), /decisões sobre tratamentos e o local do cuidado serão individualizadas/);
+  assert.doesNotMatch(guidanceAt("kps", 30), /essa pontuação, sozinha/);
 });
 
 test("escore ausente, fora da escala ou fracionário não inventa estágio nem usa histórico", () => {
