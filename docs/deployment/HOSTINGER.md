@@ -74,7 +74,7 @@ O endpoint público de health check deve responder HTTP 200 e incluir:
 - `database: "ok"`
 - `releaseId: "2026-10-27-orientacoes-domiciliares-v4"`
 
-Nesta release, itens educativos inteiros e idênticos deixam de aparecer em mais de um domínio do relatório familiar. Recomendações e avisos específicos continuam em seus domínios. O ajuste também vale para a exportação textual. Escalas, SOAP, medicamentos e snapshots anteriores são preservados. Não há migration de banco nesta release.
+Nesta release, as orientações de oncogeriatria e prognóstico apresentam ações práticas sem explicar o significado dos níveis ECOG e Karnofsky nem o índice de Charlson. As orientações individualizadas, os contatos e os sinais de alerta permanecem. Frases educativas idênticas continuam aparecendo apenas uma vez entre domínios e também na exportação textual. Escalas, SOAP, medicamentos e snapshots anteriores são preservados. Não há migration de banco nesta release.
 
 O `releaseId` é deliberadamente servido com `Cache-Control: no-store`; uma CDN ou proxy não deve reutilizar um identificador antigo para declarar a implantação como atual. O smoke também exige esse header antes de aceitar a resposta de health.
 

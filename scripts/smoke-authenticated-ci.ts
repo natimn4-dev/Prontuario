@@ -1,3 +1,6 @@
+Warning: truncated output (original token count: 11745)
+Total output lines: 715
+
 import assert from "node:assert/strict";
 import { createHash } from "node:crypto";
 import { PrismaMariaDb } from "@prisma/adapter-mariadb";
@@ -278,209 +281,7 @@ async function verifyAdvanceDirectiveSignaturePreparation() {
     const reportPath = `/api/consultations/${assignedConsultationId}/reports/aga`;
     const reportResponses: { snapshot: { id: string }; report: { consultationStatus: string; draftContext: boolean } }[] = [];
     page.on("response", async (response) => {
-      if (new URL(response.url()).pathname === reportPath && response.request().method() === "POST" && response.ok()) {
-        reportResponses.push(await response.json());
-      }
-    });
-    const navigation = page.getByRole("navigation", { name: "Áreas do prontuário" });
-    const review = page.getByRole("checkbox", { name: /Confirmo a revisão final das diretivas antecipadas/ });
-    const vidaasButton = page.getByRole("button", { name: "Assinar diretivas com VIDaaS", exact: true });
-    const birdButton = page.getByRole("button", { name: "Assinar diretivas com Bird ID", exact: true });
-    await page.goto(`${baseUrl}/consultations/${assignedConsultationId}#relatorio`, { waitUntil: "domcontentloaded" });
-    await vidaasButton.waitFor({ timeout: 30_000 });
-    assert.ok(await vidaasButton.isDisabled());
-    assert.ok(await birdButton.isDisabled());
-    await Promise.all([
-      page.waitForResponse((response) => new URL(response.url()).pathname === reportPath && response.ok()),
-      page.getByRole("button", { name: "Gerar prévia", exact: true }).click(),
-    ]);
-    assert.equal(await page.getByRole("tab", { name: "Diretivas antecipadas", exact: true }).count(), 0);
-    assert.ok(await review.isDisabled());
-    await navigation.getByRole("button", { name: /Diretivas/ }).click();
-    await page.getByRole("heading", { name: "Diretivas antecipadas", exact: true }).first().waitFor();
-    await page.locator('input[name="advance-directive-disposition"][value="WANTS_TO_TALK"]').check();
-    await page.getByLabel("Valores, atividades e relações importantes", { exact: true }).fill("Preferência sintética: manter o conforto no domicílio.");
-    await page.getByRole("button", { name: "Registrar nova versão", exact: true }).click();
-    await page.getByText("Versão 1 registrada sem alterar as versões anteriores.", { exact: true }).waitFor();
-    await navigation.getByRole("button", { name: /Relatório/ }).click();
-    await page.getByRole("button", { name: "Gerar prévia", exact: true }).waitFor();
-    assert.equal(await page.getByRole("tab", { name: "Diretivas antecipadas", exact: true }).count(), 0, "Salvar deve invalidar a prévia antiga sem diretivas.");
-    await page.getByRole("button", { name: "Gerar prévia", exact: true }).click();
-    await page.getByRole("tab", { name: "Diretivas antecipadas", exact: true }).waitFor();
-    assert.ok(await review.isDisabled(), "Rascunho não pode habilitar revisão para assinatura.");
-    const draftSnapshot = reportResponses[1]!.snapshot.id;
-    await navigation.getByRole("button", { name: /Diretivas/ }).click();
-    await page.getByRole("heading", { name: "Diretivas antecipadas", exact: true }).first().waitFor();
-    await navigation.getByRole("button", { name: /Relatório/ }).click();
-    await page.getByRole("tab", { name: "Diretivas antecipadas", exact: true }).waitFor();
-    assert.equal(reportResponses.length, 2, "Trocar etapas deve restaurar a prévia sem gerar novo snapshot.");
-    for (const provider of ["vidaas", "bird"]) {
-      const blocked = await request(`/api/consultations/${assignedConsultationId}/reports/advance-directives/signatures/${provider}`, true, { snapshotId: draftSnapshot });
-      assert.equal(blocked.status, 409);
-      assert.equal((await blocked.json()).code, "CONSULTATION_NOT_FINALIZED_FOR_SIGNATURE");
-    }
-    // Somente a consulta sintética do MySQL efêmero muda de status para testar o retorno após finalizar.
-    await prisma.consultation.update({ where: { id: assignedConsultationId }, data: { status: "FINALIZED" } });
-    await page.reload({ waitUntil: "domcontentloaded" });
-    await page.getByText(/Prévia final v\d+ pronta para revisão e assinatura/).waitFor({ timeout: 30_000 });
-    assert.equal(reportResponses.length, 3, "A entrada na consulta finalizada deve preparar uma única versão final.");
-    const finalSnapshot = reportResponses[2]!.snapshot.id;
-    assert.equal(reportResponses[2]!.report.consultationStatus, "FINALIZED");
-    assert.equal(reportResponses[2]!.report.draftContext, false);
-    assert.notEqual(finalSnapshot, draftSnapshot);
-    for (const provider of ["vidaas", "bird"]) {
-      const stale = await request(`/api/consultations/${assignedConsultationId}/reports/advance-directives/signatures/${provider}`, true, { snapshotId: draftSnapshot });
-      assert.equal(stale.status, 409);
-      assert.equal((await stale.json()).code, "FINALIZED_REPORT_SNAPSHOT_REQUIRED");
-    }
-    assert.ok(await review.isEnabled());
-    assert.ok(await vidaasButton.isDisabled(), "Revisão explícita continua obrigatória.");
-    await page.getByRole("tab", { name: "Diretivas antecipadas", exact: true }).click();
-    await page.getByText("Preferência sintética: manter o conforto no domicílio.", { exact: true }).waitFor();
-    await review.check();
-    assert.ok(await vidaasButton.isEnabled());
-    assert.ok(await birdButton.isEnabled());
-    await navigation.getByRole("button", { name: /Finalizar/ }).click();
-    await page.getByText("Consulta finalizada", { exact: true }).waitFor();
-    await navigation.getByRole("button", { name: /Relatório/ }).click();
-    await review.waitFor();
-    assert.equal(reportResponses.length, 3, "A versão final é preservada sem remontar gráficos em segundo plano.");
-    assert.equal(await review.isChecked(), false, "Reabrir o relatório exige nova confirmação de revisão.");
-    await review.check();
-    for (const [provider, button] of [["vidaas", vidaasButton], ["bird", birdButton]] as const) {
-      const routePath = `/api/consultations/${assignedConsultationId}/reports/advance-directives/signatures/${provider}`;
-      let sentSnapshot = "";
-      await page.route(`**${routePath}`, async (route) => {
-        sentSnapshot = route.request().postDataJSON().snapshotId;
-        await route.fulfill({ status: 400, contentType: "application/json", body: JSON.stringify({ message: "Autorização externa não executada no teste sintético." }) });
-      });
-      await Promise.all([
-        page.waitForResponse((response) => new URL(response.url()).pathname === routePath && response.request().method() === "POST"),
-        button.click(),
-      ]);
-      await page.getByRole("alert").filter({ hasText: "Autorização externa não executada no teste sintético." }).waitFor();
-      assert.equal(sentSnapshot, finalSnapshot, "Ambos os provedores devem receber o snapshot final exibido.");
-    }
-    await page.screenshot({ path: "/tmp/prontuario-directives-signature-synthetic.png", fullPage: true });
-  } finally { await browser.close(); }
-}
-
-async function verifySwallowingTherapies() {
-  const browser = await chromium.launch({ headless: true });
-  try {
-    const page = await browser.newPage({ viewport: { width: 1280, height: 850 } });
-    const headers = { "x-prontuario-e2e-user": email, "x-prontuario-e2e-secret": secret };
-    await page.setExtraHTTPHeaders(headers);
-    const errors: string[] = [];
-    page.on("pageerror", error => errors.push(error.message));
-    await page.goto(`${baseUrl}/consultations/${unlinkedOncoConsultationId}#alimentacao`);
-    await page.getByRole("button", { name: /Contextualizar/ }).click();
-    const swallowing = page.getByRole("group", { name: "Deglutição e forma de alimentação", exact: true });
-    await swallowing.waitFor({ timeout: 30_000 });
-    await swallowing.getByLabel("Disfagia", { exact: true }).check();
-    for (const label of ["Fisioterapia", "Fonoterapia / acompanhamento com fonoaudiólogo", "Terapia ocupacional"]) {
-      await swallowing.getByLabel(label, { exact: true }).check();
-    }
-    await swallowing.getByRole("button", { name: "Salvar deglutição e terapias" }).click();
-    await swallowing.getByRole("status").waitFor();
-    await page.reload();
-    await page.getByRole("button", { name: /Contextualizar/ }).click();
-    for (const label of ["Disfagia", "Fisioterapia", "Fonoterapia / acompanhamento com fonoaudiólogo", "Terapia ocupacional"]) {
-      await swallowing.getByLabel(label, { exact: true }).waitFor();
-      assert.equal(await swallowing.getByLabel(label, { exact: true }).isChecked(), true);
-    }
-    const withFollowUp = await request(`/api/consultations/${unlinkedOncoConsultationId}/reports/aga`, true, {});
-    assert.equal(withFollowUp.status, 201);
-    const withReport = await withFollowUp.json() as { text: string };
-    assert.match(withReport.text, /Mantenha o acompanhamento com o seu fonoaudiólogo/);
-    assert.doesNotMatch(withReport.text, /Se ainda não houver acompanhamento/);
-    await swallowing.getByLabel("Fonoterapia / acompanhamento com fonoaudiólogo", { exact: true }).uncheck();
-    await swallowing.getByRole("button", { name: "Salvar deglutição e terapias" }).click();
-    await swallowing.getByRole("status").waitFor();
-    await page.reload();
-    await page.getByRole("button", { name: /Contextualizar/ }).click();
-    await swallowing.getByLabel("Fonoterapia / acompanhamento com fonoaudiólogo", { exact: true }).waitFor();
-    assert.equal(await swallowing.getByLabel("Fonoterapia / acompanhamento com fonoaudiólogo", { exact: true }).isChecked(), false);
-    const withoutFollowUp = await request(`/api/consultations/${unlinkedOncoConsultationId}/reports/aga`, true, {});
-    assert.equal(withoutFollowUp.status, 201);
-    const withoutReport = await withoutFollowUp.json() as { text: string };
-    assert.match(withoutReport.text, /Se ainda não houver acompanhamento/);
-    assert.doesNotMatch(withoutReport.text, /Mantenha o acompanhamento com o seu fonoaudiólogo/);
-    const urinaryGroup = page.getByRole("group", { name: "Uso de sonda vesical", exact: true });
-    const indwelling = urinaryGroup.getByLabel("Sonda vesical de demora (com bolsa coletora)", { exact: true });
-    const intermittent = urinaryGroup.getByLabel("Sonda vesical de alívio (intermitente)", { exact: true });
-    for (const state of [{ indwelling: true, intermittent: false }, { indwelling: false, intermittent: true }, { indwelling: true, intermittent: true }, { indwelling: false, intermittent: false }]) {
-      await indwelling.setChecked(state.indwelling);
-      await intermittent.setChecked(state.intermittent);
-      await urinaryGroup.getByRole("button", { name: "Salvar uso de sonda vesical", exact: true }).click();
-      await urinaryGroup.getByRole("status").waitFor();
-      await page.reload();
-      await page.getByRole("button", { name: /Contextualizar/ }).click();
-      await indwelling.waitFor();
-      assert.equal(await indwelling.isChecked(), state.indwelling);
-      assert.equal(await intermittent.isChecked(), state.intermittent);
-      const snapshotResponse = await request(`/api/consultations/${unlinkedOncoConsultationId}/reports/aga`, true, {});
-      assert.equal(snapshotResponse.status, 201);
-      const snapshot = await snapshotResponse.json() as { text: string };
-      assert.equal(snapshot.text.includes("CUIDADOS COM SONDA VESICAL"), state.indwelling || state.intermittent);
-      assert.equal(snapshot.text.includes("Sonda de demora (com bolsa coletora):"), state.indwelling);
-      assert.equal(snapshot.text.includes("Sonda de alívio (intermitente):"), state.intermittent);
-      assert.match(snapshot.text, /Se ainda não houver acompanhamento/);
-    }
-    const deniedUrinary = await fetch(new URL(`/api/consultations/${unassignedConsultationId}/dietary-assessment`, baseUrl), {
-      method: "PUT", headers: { ...headers, "Content-Type": "application/json" },
-      body: JSON.stringify({ expectedUpdatedAt: new Date().toISOString(), urinaryCatheter: { indwelling: true, intermittent: false } }),
-    });
-    assert.equal(deniedUrinary.status, 403);
-    const denied = await fetch(new URL(`/api/consultations/${unassignedConsultationId}/dietary-assessment`, baseUrl), {
-      method: "PUT", headers: { ...headers, "Content-Type": "application/json" },
-      body: JSON.stringify({ expectedUpdatedAt: new Date().toISOString(), swallowingSupport: { dysphagia: true, adaptedDiet: false, enteralTube: false, gastrostomy: false, speechTherapy: true } }),
-    });
-    assert.equal(denied.status, 403);
-    assert.deepEqual(errors, []);
-  } finally { await browser.close(); }
-}
-
-async function verifyFollowUpScaleIsolation() {
-  const initialId = "ci-e2e-scales-initial";
-  const followUpId = "ci-e2e-scales-follow-up";
-  const ids = [initialId, followUpId];
-  const removeFixtures = async () => {
-    await prisma.scaleAssessment.deleteMany({ where: { consultationId: { in: ids } } });
-    await prisma.consultation.deleteMany({ where: { id: { in: ids } } });
-  };
-  await removeFixtures();
-  const browser = await chromium.launch({ headless: true });
-  try {
-    await prisma.consultation.createMany({ data: [
-      { id: initialId, patientId: assignedPatientId, physicianId: userId, type: "AGA_INITIAL", status: "DRAFT", occurredAt: new Date("2026-03-01T12:00:00Z") },
-      { id: followUpId, patientId: assignedPatientId, physicianId: userId, type: "FOLLOW_UP", status: "DRAFT", occurredAt: new Date("2026-04-01T12:00:00Z") },
-    ] });
-    const initialAnswers = { bath: 1, dress: 1, toilet: 1, transfer: 1, continence: 1, feeding: 1 };
-    const moodQuestions = CORE_FREITAS_SCALES.find((definition) => definition.code === "gds15")!.questions;
-    for (const [endpoint, body] of [
-      ["freitas-core", { scaleCode: "katz", answers: initialAnswers }],
-      ["freitas-core", { scaleCode: "gds15", answers: Object.fromEntries(moodQuestions.map((question, index) => [question.id, index < 7 ? 1 : 0])) }],
-      ["complementary", { scaleCode: "fast", answers: { score: 7.5 } }],
-      ["oncogeriatrics", { scaleCode: "ecog", ecog: 3 }],
-    ] as const) {
-      const response = await request(`/api/consultations/${initialId}/scales/${endpoint}`, true, body);
-      assert.equal(response.status, 201, await response.text());
-    }
-    await prisma.consultation.update({ where: { id: initialId }, data: { status: "FINALIZED" } });
-    const read = await request(`/api/consultations/${followUpId}/scales/workspace`, true);
-    assert.equal(read.status, 200);
-    const workspace = await read.json();
-    assert.deepEqual(workspace.core.latest, [], "A segunda consulta não herda respostas das escalas principais.");
-    assert.deepEqual(workspace.complementary.latest, [], "A segunda consulta não herda respostas das escalas complementares.");
-    assert.deepEqual(workspace.status.latest, [], "Nenhuma escala anterior conta como aplicada na segunda consulta.");
-    assert.deepEqual(workspace.oncogeriatricPrefills, { meem: null, mnaSf: null, ecog: null });
-    assert.ok(workspace.status.previous.some((item: { scaleCode: string }) => item.scaleCode === "katz"));
-    assert.ok(workspace.status.previous.some((item: { scaleCode: string; scoreText: string }) => item.scaleCode === "fast" && item.scoreText === "7E"));
-
-    const page = await browser.newPage({ viewport: { width: 1280, height: 850 } });
-    await page.setExtraHTTPHeaders({ "x-prontuario-e2e-user": email, "x-prontuario-e2e-secret": secret });
-    const errors: string[] = [];
+      if (new URL(response.url()…3745 tokens truncated…   const errors: string[] = [];
     page.on("pageerror", (error) => errors.push(error.message));
     await page.goto(`${baseUrl}/consultations/${initialId}#escalas`, { waitUntil: "domcontentloaded" });
     await page.getByText("Consulta finalizada: resultados e histórico permanecem visíveis, sem nova aplicação.", { exact: true }).waitFor();
@@ -566,13 +367,15 @@ async function verifyOncoPrognosisFamilyGuidance() {
     await table.waitFor({ timeout: 30_000 });
     const onco = table.locator('tr[data-domain="oncogeriatria"]');
     const prognosis = table.locator('tr[data-domain="prognostico"]');
-    assert.match(await onco.innerText(), /ECOG 2 — O paciente consegue cuidar de si/);
+    assert.match(await onco.innerText(), /ECOG 2 — Ofereça ajuda com compras/);
+    assert.doesNotMatch(await onco.innerText(), /O paciente consegue cuidar de si, mas não mantém atividades de trabalho/);
     assert.match(await onco.innerText(), /não é preciso esperar a próxima visita/);
-    assert.match(await prognosis.innerText(), /Charlson.*não determina quanto tempo/s);
-    assert.match(await prognosis.innerText(), /Karnofsky 60%.*ajuda ocasional/s);
+    assert.doesNotMatch(await prognosis.innerText(), /índice de Charlson reúne informações sobre as doenças já existentes/);
+    assert.match(await prognosis.innerText(), /Karnofsky 60% — Combine quem poderá ajudar com compras/s);
+    assert.doesNotMatch(await prognosis.innerText(), /Há necessidade de ajuda ocasional/);
     const reportGuidance = await table.innerText();
     assert.match(await onco.innerText(), /exigem avaliação imediata/);
-    assert.equal((reportGuidance.match(/A capacidade funcional pode mudar ao longo do acompanhamento/g) ?? []).length, 1);
+    assert.equal((reportGuidance.match(/As decisões sobre o cuidado e os tratamentos são individualizadas/g) ?? []).length, 1);
     assert.equal((reportGuidance.match(/exigem avaliação imediata/g) ?? []).length, 1);
     await table.screenshot({ path: "/tmp/prontuario-onco-prognosis-guidance-desktop-synthetic.png" });
     await page.setViewportSize({ width: 390, height: 844 });
