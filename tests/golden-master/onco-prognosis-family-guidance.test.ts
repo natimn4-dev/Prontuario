@@ -27,12 +27,12 @@ test("ECOG atual recebe cuidado domiciliar completo e orientação de contato", 
   assert.ok(domain.evidenceReferences.some((reference) => reference.pmid === "31806655"));
 });
 
-test("Charlson contextualizado e KPS atual orientam ajuda sem prever sobrevida", () => {
+test("KPS atual mantém orientações práticas sem descrever a escala", () => {
   const domain = domainsFor(["charlson", "kps"]).find((item) => item.code === "prognostico")!;
   const text = domain.guidance.join(" ");
-  assert.match(text, /Charlson.*não determina quanto tempo/);
-  assert.match(text, /Karnofsky 60%.*ajuda ocasional/);
-  assert.match(text, /prioridades e suas necessidades/);
+  assert.match(text, /Karnofsky 60% — Combine quem poderá ajudar com compras/);
+  assert.doesNotMatch(text, /índice de Charlson reúne|não determina quanto tempo/);
+  assert.doesNotMatch(text, /Há necessidade de ajuda ocasional|O paciente mantém suas atividades/);
   assert.doesNotMatch(text, /\d+\s*(meses|anos)/);
   assert.doesNotMatch(text, /Converse com oncologia|avalie com a equipe|peça um plano|converse sobre apoio/i);
   assert.ok(domain.evidenceReferences.some((reference) => reference.pmid === "34991091"));
@@ -51,17 +51,21 @@ test("cada resultado exato de ECOG e KPS recebe apenas suas orientações", () =
   ] as const) {
     for (const score of scores) {
       const text = guidanceAt(code, score);
-      assert.ok(text.includes(`${label} ${score}${code === "kps" ? "%" : " —"}`));
+      assert.ok(text.includes(`${label} ${score}`));
       assert.equal((text.match(code === "ecog" ? /ECOG \d+ —/g : /Karnofsky \d+%/g) ?? []).length, 1);
       assert.match(text, /exigem avaliação imediata/);
-      assert.match(text, /não define o tempo de vida/);
+      assert.match(text, /decisões sobre o cuidado e os tratamentos são individualizadas/);
     }
   }
-  assert.match(guidanceAt("ecog", 0), /independência/);
+  assert.match(guidanceAt("ecog", 0), /Incentive a rotina/);
+  assert.match(guidanceAt("ecog", 3), /No banho, na troca de roupa/);
+  assert.doesNotMatch(guidanceAt("ecog", 3), /precisa de ajuda nos cuidados pessoais e passa mais da metade/);
+  assert.match(guidanceAt("kps", 40), /No banho, na alimentação, na troca de roupa/);
+  assert.doesNotMatch(guidanceAt("kps", 40), /precisa de ajuda importante nas atividades diárias/);
   assert.doesNotMatch(guidanceAt("ecog", 0), /todos os cuidados pessoais|Quem cuida também/);
   assert.match(guidanceAt("ecog", 3), /Quem cuida também precisa/);
   assert.match(guidanceAt("kps", 10), /Se a avaliação médica confirmar/);
-  assert.match(guidanceAt("kps", 30), /não determina internação ou fim de vida/);
+  assert.match(guidanceAt("kps", 30), /Organize a presença de familiares ou cuidadores/);
 });
 
 test("escore ausente, fora da escala ou fracionário não inventa estágio nem usa histórico", () => {
@@ -75,22 +79,22 @@ test("frases idênticas aparecem uma vez entre Oncogeriatria e Prognóstico", ()
   const domains = domainsFor(codes);
   const allGuidance = domains.flatMap((domain) => domain.guidance);
   const shared = [
-    "A capacidade funcional pode mudar ao longo do acompanhamento. A pontuação ajuda a organizar o apoio, mas, sozinha, não define o tempo de vida nem quais tratamentos devem ser realizados. As decisões consideram a avaliação médica e o que é importante para o paciente e sua família.",
+    "As decisões sobre o cuidado e os tratamentos são individualizadas e consideram a avaliação médica, as prioridades do paciente e as necessidades da família.",
     "Avise se houver aumento do cansaço, dor, falta de apetite, quedas, mais tempo na cama ou maior necessidade de ajuda. Essas mudanças podem ter diferentes causas e ajudam a ajustar o cuidado; não é preciso esperar a próxima visita para comunicá-las.",
     "Mantenha acessíveis os contatos de acompanhamento e o plano combinado para situações de piora. Falta de ar intensa, confusão súbita, dificuldade para despertar ou engasgo com dificuldade para respirar exigem avaliação imediata.",
   ];
   for (const action of shared) assert.equal(allGuidance.filter((item) => item === action).length, 1);
   assert.ok(domains.find((domain) => domain.code === "oncogeriatria")?.guidance.some((item) => /ECOG 2/.test(item)));
   assert.ok(domains.find((domain) => domain.code === "prognostico")?.guidance.some((item) => /Karnofsky 60%/.test(item)));
-  assert.ok(domains.find((domain) => domain.code === "prognostico")?.guidance.some((item) => /Charlson/.test(item)));
+  assert.ok(domains.find((domain) => domain.code === "prognostico")?.evidenceReferences.some((item) => item.pmid === "34991091"));
 
   const rendered = renderAgaReportText(reportFor(codes));
   for (const action of shared) assert.equal(rendered.split(action).length - 1, 1);
 });
 
-test("explica apenas instrumentos avaliados na consulta e preserva outros domínios", () => {
+test("mantém orientações dos instrumentos avaliados e preserva outros domínios", () => {
   const charlson = domainsFor(["charlson"])[0]!;
-  assert.match(charlson.guidance.join(" "), /Charlson/);
+  assert.doesNotMatch(charlson.guidance.join(" "), /índice de Charlson reúne|doenças já existentes/);
   assert.doesNotMatch(charlson.guidance.join(" "), /Karnofsky|ECOG/);
   const kps = domainsFor(["kps"])[0]!;
   assert.match(kps.guidance.join(" "), /Karnofsky/);

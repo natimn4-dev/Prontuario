@@ -72,7 +72,7 @@ O endpoint público de health check deve responder HTTP 200 e incluir:
 
 - `status: "ok"`
 - `database: "ok"`
-- `releaseId: "2026-10-27-orientacoes-domiciliares-v3"`
+- `releaseId: "2026-10-27-orientacoes-domiciliares-v4"`
 
 Nesta release, itens educativos inteiros e idênticos deixam de aparecer em mais de um domínio do relatório familiar. Recomendações e avisos específicos continuam em seus domínios. O ajuste também vale para a exportação textual. Escalas, SOAP, medicamentos e snapshots anteriores são preservados. Não há migration de banco nesta release.
 
